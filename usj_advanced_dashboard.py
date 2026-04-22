@@ -18,24 +18,27 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-APP_PASSWORD = "HadiSawaya"   # change this
-
+# =========================================================
+# PASSWORD PROTECTION
+# =========================================================
 def check_password():
     if "password_correct" not in st.session_state:
         st.session_state["password_correct"] = False
 
     def password_entered():
-        if st.session_state["password"] == APP_PASSWORD:
+        if st.session_state["password"] == st.secrets["APP_PASSWORD"]:
             st.session_state["password_correct"] = True
         else:
             st.session_state["password_correct"] = False
 
     if not st.session_state["password_correct"]:
+        st.title("Protected Dashboard Access")
+        st.info("Please enter the password to access the dashboard.")
         st.text_input(
-            "Enter dashboard password",
+            "Dashboard password",
             type="password",
             on_change=password_entered,
-            key="password"
+            key="password",
         )
 
         if "password" in st.session_state and st.session_state["password"] != "":
@@ -45,6 +48,9 @@ def check_password():
 
 check_password()
 
+# =========================================================
+# STYLING
+# =========================================================
 st.markdown(
     """
     <style>
@@ -92,7 +98,7 @@ st.markdown(
 @st.cache_resource
 def get_engine():
     db_user = "postgres.zaauwyrpcshrhangorxw"
-    db_password = "UsjDashboard2026"
+    db_password = st.secrets["DB_PASSWORD"]
     db_host = "aws-1-ap-northeast-2.pooler.supabase.com"
     db_port = "5432"
     db_name = "postgres"
@@ -197,7 +203,10 @@ def train_predictive_model(df: pd.DataFrame):
     X = pd.get_dummies(model_df.drop(columns=["credits"]), drop_first=False)
     y = model_df["credits"]
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.3, random_state=42
+    )
+
     model = RandomForestRegressor(n_estimators=200, random_state=42)
     model.fit(X_train, y_train)
     preds = model.predict(X_test)
@@ -300,17 +309,15 @@ def predictive_narrative(model_output) -> str:
         return "The predictive model cannot be estimated reliably with the current filtered sample size."
     metrics, importance_df, _ = model_output
     top_feature = importance_df.iloc[0]
-    r2_text = f"{metrics['r2']}" if metrics['r2'] is not None else "N/A"
+    r2_text = f"{metrics['r2']}" if metrics["r2"] is not None else "N/A"
     return (
         f"The illustrative predictive model achieved an R² of <b>{r2_text}</b> and a mean absolute error of <b>{metrics['mae']}</b>. "
         f"The most influential predictor in the current model is <b>{top_feature['feature']}</b>."
     )
 
-
 # =========================================================
 # FILTERS
 # =========================================================
-
 def sidebar_filters(df: pd.DataFrame) -> pd.DataFrame:
     st.sidebar.title("USJ Analytics")
     st.sidebar.caption("Interactive institutional dashboard")
@@ -349,7 +356,6 @@ def sidebar_filters(df: pd.DataFrame) -> pd.DataFrame:
     st.sidebar.caption(f"Rows after filtering: {filtered_df.shape[0]}")
 
     return filtered_df
-
 
 # =========================================================
 # PAGES
@@ -603,7 +609,6 @@ def data_explorer(df: pd.DataFrame):
     st.dataframe(df, use_container_width=True, height=500)
     add_download_button(df)
 
-
 # =========================================================
 # MAIN APP
 # =========================================================
@@ -613,8 +618,8 @@ with header_left:
     st.markdown('<div class="small-note">Professional interactive dashboard for institutional student analytics</div>', unsafe_allow_html=True)
 with header_right:
     pass
-    # Example if you want the logo later:
-    # st.image(r"C:\Users\710584\Downloads\25-04-28-Logo-UniteAssuranceQualite-150 ans-LK-01.png", width=260)
+    # Optional logo later:
+    # st.image("logo.png", width=240)
 
 try:
     df = load_data()
