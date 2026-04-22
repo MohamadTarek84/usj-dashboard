@@ -1,9 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[17]:
-
-
 import os
 from urllib.parse import quote_plus
 
@@ -23,6 +17,33 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
+
+APP_PASSWORD = "HadiSawaya"   # change this
+
+def check_password():
+    if "password_correct" not in st.session_state:
+        st.session_state["password_correct"] = False
+
+    def password_entered():
+        if st.session_state["password"] == APP_PASSWORD:
+            st.session_state["password_correct"] = True
+        else:
+            st.session_state["password_correct"] = False
+
+    if not st.session_state["password_correct"]:
+        st.text_input(
+            "Enter dashboard password",
+            type="password",
+            on_change=password_entered,
+            key="password"
+        )
+
+        if "password" in st.session_state and st.session_state["password"] != "":
+            st.error("Incorrect password")
+
+        st.stop()
+
+check_password()
 
 st.markdown(
     """
@@ -639,10 +660,3 @@ elif page == "Predictive Model":
     predictive_model(filtered_df)
 elif page == "Data Explorer":
     data_explorer(filtered_df)
-
-
-# In[ ]:
-
-
-
-
