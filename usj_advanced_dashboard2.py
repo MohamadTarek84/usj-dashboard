@@ -1,9 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[1]:
-
-
 import os
 from urllib.parse import quote_plus
 
@@ -613,10 +607,17 @@ def data_explorer(df: pd.DataFrame):
 # =========================================================
 # MAIN APP
 # =========================================================
-header_left, header_right = st.columns([4, 1.4])
+header_left, header_right = st.columns([3, 2])
+
 with header_left:
     st.title("USJ Advanced Analytics Dashboard")
-    st.markdown('<div class="small-note">Professional interactive dashboard for institutional student analytics</div>', unsafe_allow_html=True)
+    st.caption("Professional interactive dashboard for institutional student analytics")
+
+with header_right:
+    st.image(r"C:\Users\710584\Downloads\LOGO\usj_logo.png", width=520)
+
+
+
 with header_right:
     pass
     # Example if you want the logo later:
@@ -638,6 +639,10 @@ filtered_df = sidebar_filters(df)
 
 # =========================================================
 # BUTTON NAVIGATION WITH PAGE PASSWORDS
+# =========================================================
+
+# =========================================================
+# HOME PAGE NAVIGATION WITH PROTECTED SECTIONS
 # =========================================================
 
 PAGES = [
@@ -663,31 +668,11 @@ PAGE_PASSWORDS = {
 }
 
 if "current_page" not in st.session_state:
-    st.session_state.current_page = "Executive Overview"
+    st.session_state.current_page = "Home"
 
-st.markdown("### Navigation")
 
-row1 = st.columns(4)
-for i, page_name in enumerate(PAGES[:4]):
-    label = page_name
-    if PAGE_PASSWORDS[page_name] is not None:
-        label = "🔒 " + label
-
-    if row1[i].button(label, use_container_width=True):
-        st.session_state.current_page = page_name
-
-row2 = st.columns(4)
-for i, page_name in enumerate(PAGES[4:]):
-    label = page_name
-    if PAGE_PASSWORDS[page_name] is not None:
-        label = "🔒 " + label
-
-    if row2[i].button(label, use_container_width=True):
-        st.session_state.current_page = page_name
-
-page = st.session_state.current_page
-
-st.markdown(f"**Current section:** {page}")
+def go_to_page(page_name):
+    st.session_state.current_page = page_name
 
 
 def check_page_password(page_name):
@@ -723,6 +708,54 @@ def check_page_password(page_name):
     return False
 
 
+# =========================================================
+# HOME PAGE ONLY
+# =========================================================
+
+if st.session_state.current_page == "Home":
+
+    st.markdown("## Dashboard Navigation")
+    st.caption("Select the dashboard section you want to open.")
+
+    row1 = st.columns(4)
+    for i, page_name in enumerate(PAGES[:4]):
+        label = page_name
+        if PAGE_PASSWORDS[page_name] is not None:
+            label = "🔒 " + label
+
+        if row1[i].button(label, use_container_width=True):
+            go_to_page(page_name)
+            st.rerun()
+
+    row2 = st.columns(4)
+    for i, page_name in enumerate(PAGES[4:]):
+        label = page_name
+        if PAGE_PASSWORDS[page_name] is not None:
+            label = "🔒 " + label
+
+        if row2[i].button(label, use_container_width=True):
+            go_to_page(page_name)
+            st.rerun()
+
+    st.stop()
+
+
+# =========================================================
+# INSIDE DASHBOARD PAGES
+# =========================================================
+
+page = st.session_state.current_page
+
+back_col, title_col = st.columns([1, 5])
+
+with back_col:
+    if st.button("⬅ Back", use_container_width=True):
+        st.session_state.current_page = "Home"
+        st.rerun()
+
+with title_col:
+    st.markdown(f"## {page}")
+
 if check_page_password(page):
 
     if page == "Executive Overview":
@@ -748,10 +781,3 @@ if check_page_password(page):
 
     elif page == "Data Explorer":
         data_explorer(filtered_df)
-
-
-# In[ ]:
-
-
-
-
