@@ -805,7 +805,7 @@ with header_left:
 
 with header_right:
     # For Streamlit Cloud, upload usj_logo.png to GitHub and keep this relative path.
-    st.image(r"C:\Users\710584\Downloads\LOGO\usj_logo.png", width=520)
+    st.image("usj_logo.png", width=520)
 
 try:
     df = load_data()
