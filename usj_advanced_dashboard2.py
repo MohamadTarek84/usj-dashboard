@@ -614,7 +614,7 @@ with header_left:
     st.caption("Professional interactive dashboard for institutional student analytics")
 
 with header_right:
-    st.image(r"C:\Users\710584\Downloads\LOGO\usj_logo.png", width=520)
+    st.image("usj_logo.png", width=550)
 
 
 
