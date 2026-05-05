@@ -7,7 +7,7 @@ import plotly.express as px
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 
 # =====================================================
-# Configuration de la page
+# Configuration
 # =====================================================
 
 st.set_page_config(
@@ -63,7 +63,7 @@ def kpi_color_percentage(value_pct):
         return USJ_RED
 
 
-def kpi_card(title, value, subtitle="Satisfaction globale"):
+def kpi_card(title, value, subtitle="Score de satisfaction"):
     value_pct = np.nan if pd.isna(value) else value / 4 * 100
     color = kpi_color_percentage(value_pct)
     display_value = "NA" if pd.isna(value_pct) else f"{value_pct:.1f}%"
@@ -152,6 +152,8 @@ def importance_card(title, value, subtitle):
 
 
 def filter_options(data, column):
+    if column not in data.columns:
+        return ["Tous"]
     values = sorted(data[column].dropna().astype(str).unique())
     return ["Tous"] + values
 
@@ -170,6 +172,32 @@ def clean_component_name(name):
         .replace("score ", "")
         .strip()
         .capitalize()
+    )
+
+
+def pct_from_mean(value):
+    if pd.isna(value):
+        return np.nan
+    return value / 4 * 100
+
+
+def summary_box(text, color=USJ_BLUE, background="#F7F9FC"):
+    st.markdown(
+        f"""
+        <div style="
+            background-color:{background};
+            border-left:6px solid {color};
+            padding:18px;
+            border-radius:14px;
+            margin-top:20px;
+            margin-bottom:20px;
+            font-size:16px;
+            line-height:1.6;
+        ">
+            {text}
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
 
@@ -297,31 +325,51 @@ infrastructures_items = [
 
 for col in enseignement_items:
     if col in df_coded.columns:
-        df_coded[col] = pd.to_numeric(recode_series(df_original[col], satisfaction_mapping_f), errors="coerce")
+        df_coded[col] = pd.to_numeric(
+            recode_series(df_original[col], satisfaction_mapping_f),
+            errors="coerce"
+        )
+
 enseignement_existing = [col for col in enseignement_items if col in df_coded.columns]
 df_coded["Score enseignement et apprentissage"] = df_coded[enseignement_existing].mean(axis=1, skipna=True)
 
 for col in accompagnement_items:
     if col in df_coded.columns:
-        df_coded[col] = pd.to_numeric(recode_series(df_original[col], satisfaction_mapping_f), errors="coerce")
+        df_coded[col] = pd.to_numeric(
+            recode_series(df_original[col], satisfaction_mapping_f),
+            errors="coerce"
+        )
+
 accompagnement_existing = [col for col in accompagnement_items if col in df_coded.columns]
 df_coded["Score accompagnement et encadrement"] = df_coded[accompagnement_existing].mean(axis=1, skipna=True)
 
 for col in competences_items:
     if col in df_coded.columns:
-        df_coded[col] = pd.to_numeric(recode_series(df_original[col], accord_mapping), errors="coerce")
+        df_coded[col] = pd.to_numeric(
+            recode_series(df_original[col], accord_mapping),
+            errors="coerce"
+        )
+
 competences_existing = [col for col in competences_items if col in df_coded.columns]
 df_coded["Score développement des compétences"] = df_coded[competences_existing].mean(axis=1, skipna=True)
 
 for col in experience_items:
     if col in df_coded.columns:
-        df_coded[col] = pd.to_numeric(recode_series(df_original[col], satisfaction_mapping_f), errors="coerce")
+        df_coded[col] = pd.to_numeric(
+            recode_series(df_original[col], satisfaction_mapping_f),
+            errors="coerce"
+        )
+
 experience_existing = [col for col in experience_items if col in df_coded.columns]
 df_coded["Score expérience globale USJ"] = df_coded[experience_existing].mean(axis=1, skipna=True)
 
 for col in services_items:
     if col in df_coded.columns:
-        df_coded[col] = pd.to_numeric(recode_series(df_original[col], satisfaction_mapping_f), errors="coerce")
+        df_coded[col] = pd.to_numeric(
+            recode_series(df_original[col], satisfaction_mapping_f),
+            errors="coerce"
+        )
+
 services_existing = [col for col in services_items if col in df_coded.columns]
 df_coded["Score services USJ"] = df_coded[services_existing].mean(axis=1, skipna=True)
 
@@ -335,12 +383,20 @@ vie_mapping = {
 
 for col in vie_items:
     if col in df_coded.columns:
-        df_coded[col] = pd.to_numeric(recode_series(df_original[col], vie_mapping), errors="coerce")
+        df_coded[col] = pd.to_numeric(
+            recode_series(df_original[col], vie_mapping),
+            errors="coerce"
+        )
+
 df_coded["Score vie étudiante et activités"] = df_coded[vie_items].mean(axis=1, skipna=True)
 
 for col in infrastructures_items:
     if col in df_coded.columns:
-        df_coded[col] = pd.to_numeric(recode_series(df_original[col], satisfaction_mapping_f), errors="coerce")
+        df_coded[col] = pd.to_numeric(
+            recode_series(df_original[col], satisfaction_mapping_f),
+            errors="coerce"
+        )
+
 infrastructures_existing = [col for col in infrastructures_items if col in df_coded.columns]
 df_coded["Score infrastructures et équipements"] = df_coded[infrastructures_existing].mean(axis=1, skipna=True)
 
@@ -451,12 +507,15 @@ if page == "Vue générale des indicateurs":
 
     c1, c2, c3 = st.columns(3)
 
+    satisfaction_pct = pct_from_mean(df_filtered["Score satisfaction globale"].mean())
+    recommandation_pct = calculate_recommendation_rate(df_filtered, q43)
+    experience_pct = pct_from_mean(df_filtered["Score expérience globale USJ"].mean())
+
     with c1:
         kpi_card("Satisfaction globale à l’Université", df_filtered["Score satisfaction globale"].mean())
 
     with c2:
-        taux_recommandation = calculate_recommendation_rate(df_filtered, q43)
-        percent_card("Taux de recommandation de l’USJ", taux_recommandation)
+        percent_card("Taux de recommandation de l’USJ", recommandation_pct)
 
     with c3:
         kpi_card("Expérience globale USJ", df_filtered["Score expérience globale USJ"].mean())
@@ -509,6 +568,51 @@ if page == "Vue générale des indicateurs":
     with c11:
         kpi_card("Frais de scolarité / autres universités", df_filtered["Score frais / autres universités"].mean())
 
+    # Executive summary
+    component_summary = pd.DataFrame({
+        "Dimension": [
+            "Enseignement et apprentissage",
+            "Accompagnement et encadrement",
+            "Développement des compétences",
+            "Expérience globale USJ",
+            "Services de l’USJ",
+            "Vie étudiante et activités",
+            "Infrastructures et équipements",
+            "Frais / qualité de l’enseignement",
+            "Frais / autres universités"
+        ],
+        "Pourcentage": [
+            pct_from_mean(df_filtered["Score enseignement et apprentissage"].mean()),
+            pct_from_mean(df_filtered["Score accompagnement et encadrement"].mean()),
+            pct_from_mean(df_filtered["Score développement des compétences"].mean()),
+            pct_from_mean(df_filtered["Score expérience globale USJ"].mean()),
+            pct_from_mean(df_filtered["Score services USJ"].mean()),
+            pct_from_mean(df_filtered["Score vie étudiante et activités"].mean()),
+            pct_from_mean(df_filtered["Score infrastructures et équipements"].mean()),
+            pct_from_mean(df_filtered["Score frais / qualité enseignement"].mean()),
+            pct_from_mean(df_filtered["Score frais / autres universités"].mean())
+        ]
+    }).dropna()
+
+    if not component_summary.empty:
+        best_dimension = component_summary.sort_values("Pourcentage", ascending=False).iloc[0]
+        weakest_dimension = component_summary.sort_values("Pourcentage", ascending=True).iloc[0]
+
+        summary_box(
+            f"""
+            <b>Lecture synthétique :</b><br>
+            Pour les filtres sélectionnés, la satisfaction globale atteint
+            <b>{satisfaction_pct:.1f}%</b>, tandis que le taux de recommandation de l’USJ est de
+            <b>{recommandation_pct:.1f}%</b>. La dimension la mieux évaluée est
+            <b>{best_dimension["Dimension"]}</b> avec <b>{best_dimension["Pourcentage"]:.1f}%</b>.
+            La dimension la plus faible est <b>{weakest_dimension["Dimension"]}</b> avec
+            <b>{weakest_dimension["Pourcentage"]:.1f}%</b>, ce qui en fait un axe prioritaire
+            à suivre dans les actions d’amélioration.
+            """,
+            color=USJ_BLUE,
+            background="#F7F9FC"
+        )
+
 # =====================================================
 # Page 2
 # =====================================================
@@ -522,9 +626,9 @@ elif page == "Facteurs clés d’amélioration":
 
     st.markdown(
         """
-        Cette section identifie les dimensions les plus importantes pour expliquer :
-        **la satisfaction globale à l’Université** et **la recommandation de l’USJ**.
-        Les résultats sont présentés comme des priorités d’action pour les décideurs.
+        Cette section étudie l’impact des principales dimensions de l’expérience étudiante sur deux variables dépendantes :
+        **la satisfaction globale à l’Université** et **la recommandation de l’USJ**.  
+        L’objectif est d’identifier les leviers les plus utiles pour guider les décisions d’amélioration.
         """
     )
 
@@ -546,12 +650,9 @@ elif page == "Facteurs clés d’amélioration":
         for col in feature_columns
     }
 
-    # -----------------------------
     # Satisfaction globale
-    # -----------------------------
-
     st.markdown(
-        f"<h3 style='color:{USJ_BLUE};'>1. Priorités liées à la satisfaction globale</h3>",
+        f"<h3 style='color:{USJ_BLUE};'>1. Impact sur la satisfaction globale</h3>",
         unsafe_allow_html=True
     )
 
@@ -583,15 +684,12 @@ elif page == "Facteurs clés d’amélioration":
         importance_sat = importance_sat.sort_values("Importance (%)", ascending=False)
 
         top_sat = importance_sat.iloc[0]
+        second_sat = importance_sat.iloc[1] if len(importance_sat) > 1 else top_sat
 
         c1, c2, c3 = st.columns(3)
 
         with c1:
-            importance_card(
-                "Priorité principale",
-                top_sat["Importance (%)"],
-                top_sat["Dimension"]
-            )
+            importance_card("Principal levier", top_sat["Importance (%)"], top_sat["Dimension"])
 
         with c2:
             importance_card(
@@ -603,7 +701,7 @@ elif page == "Facteurs clés d’amélioration":
         with c3:
             importance_card(
                 "Dimensions analysées",
-                len(feature_columns) / 10 * 100,
+                len(feature_columns) / 8 * 100,
                 f"{len(feature_columns)} dimensions"
             )
 
@@ -615,7 +713,7 @@ elif page == "Facteurs clés d’amélioration":
             text="Importance (%)",
             color="Importance (%)",
             color_continuous_scale=["#C0003B", "#F57C00", "#2E7D32"],
-            title="Poids relatif des dimensions dans la satisfaction globale"
+            title="Importance relative des dimensions dans la satisfaction globale"
         )
 
         fig_sat.update_layout(
@@ -630,20 +728,25 @@ elif page == "Facteurs clés d’amélioration":
 
         st.plotly_chart(fig_sat, use_container_width=True)
 
-        st.info(
-            f"La dimension la plus déterminante pour la satisfaction globale est "
-            f"**{top_sat['Dimension']}** avec une importance relative de "
-            f"**{top_sat['Importance (%)']:.1f}%**."
+        summary_box(
+            f"""
+            <b>Interprétation décisionnelle :</b><br>
+            La dimension <b>{top_sat["Dimension"]}</b> est le facteur le plus déterminant
+            pour expliquer la satisfaction globale, avec une importance relative de
+            <b>{top_sat["Importance (%)"]:.1f}%</b>. La deuxième dimension la plus importante est
+            <b>{second_sat["Dimension"]}</b>. Ces résultats indiquent que les efforts d’amélioration
+            devraient prioritairement cibler ces dimensions, car elles semblent avoir le poids le plus
+            important dans la perception globale des étudiants.
+            """,
+            color=USJ_ORANGE,
+            background="#FFF8F0"
         )
 
     st.divider()
 
-    # -----------------------------
     # Recommandation
-    # -----------------------------
-
     st.markdown(
-        f"<h3 style='color:{USJ_BLUE};'>2. Priorités liées à la recommandation de l’USJ</h3>",
+        f"<h3 style='color:{USJ_BLUE};'>2. Impact sur la recommandation de l’USJ</h3>",
         unsafe_allow_html=True
     )
 
@@ -680,15 +783,12 @@ elif page == "Facteurs clés d’amélioration":
         importance_rec = importance_rec.sort_values("Importance (%)", ascending=False)
 
         top_rec = importance_rec.iloc[0]
+        second_rec = importance_rec.iloc[1] if len(importance_rec) > 1 else top_rec
 
         c1, c2, c3 = st.columns(3)
 
         with c1:
-            importance_card(
-                "Priorité principale",
-                top_rec["Importance (%)"],
-                top_rec["Dimension"]
-            )
+            importance_card("Principal levier", top_rec["Importance (%)"], top_rec["Dimension"])
 
         with c2:
             importance_card(
@@ -712,7 +812,7 @@ elif page == "Facteurs clés d’amélioration":
             text="Importance (%)",
             color="Importance (%)",
             color_continuous_scale=["#C0003B", "#F57C00", "#2E7D32"],
-            title="Poids relatif des dimensions dans la recommandation de l’USJ"
+            title="Importance relative des dimensions dans la recommandation de l’USJ"
         )
 
         fig_rec.update_layout(
@@ -727,10 +827,18 @@ elif page == "Facteurs clés d’amélioration":
 
         st.plotly_chart(fig_rec, use_container_width=True)
 
-        st.info(
-            f"La dimension la plus déterminante pour la recommandation de l’USJ est "
-            f"**{top_rec['Dimension']}** avec une importance relative de "
-            f"**{top_rec['Importance (%)']:.1f}%**."
+        summary_box(
+            f"""
+            <b>Interprétation décisionnelle :</b><br>
+            La dimension <b>{top_rec["Dimension"]}</b> est le facteur le plus déterminant
+            pour expliquer la recommandation de l’USJ, avec une importance relative de
+            <b>{top_rec["Importance (%)"]:.1f}%</b>. La deuxième dimension la plus importante est
+            <b>{second_rec["Dimension"]}</b>. Cette lecture permet d’identifier les leviers qui
+            peuvent renforcer l’image positive de l’Université, l’attachement des étudiants et leur
+            propension à recommander l’USJ à leur entourage.
+            """,
+            color=USJ_GREEN,
+            background="#F3FAF5"
         )
 
 # =====================================================
