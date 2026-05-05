@@ -31,7 +31,7 @@ USJ_ORANGE = "#F57C00"
 
 @st.cache_data
 def load_data():
-    df = pd.read_excel("Exit Survey 24-25.xlsx")
+    df = pd.read_excel("Exit survey 24-25.xlsx")
     return df
 
 def recode_series(series, mapping):
