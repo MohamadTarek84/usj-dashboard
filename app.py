@@ -1,10 +1,3 @@
-
-import streamlit as st
-import pandas as pd
-import numpy as np
-
-# paste the full Streamlit dashboard code here
-
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -31,8 +24,9 @@ USJ_ORANGE = "#F57C00"
 
 @st.cache_data
 def load_data():
-    df = pd.read_excel("Exit survey 24-25.xlsx")
+    df = pd.read_excel("Exit Survey 24-25.xlsx")
     return df
+
 
 def recode_series(series, mapping):
     return (
@@ -41,6 +35,7 @@ def recode_series(series, mapping):
         .replace(mapping)
         .replace({"nan": np.nan})
     )
+
 
 def classer_satisfaction(score):
     if pd.isna(score):
@@ -54,6 +49,7 @@ def classer_satisfaction(score):
     else:
         return "Forte satisfaction"
 
+
 def kpi_color(value):
     if pd.isna(value):
         return "#777777"
@@ -63,6 +59,7 @@ def kpi_color(value):
         return USJ_ORANGE
     else:
         return USJ_RED
+
 
 def kpi_card(title, value, subtitle="Moyenne /4"):
     color = kpi_color(value)
@@ -92,6 +89,7 @@ def kpi_card(title, value, subtitle="Moyenne /4"):
         unsafe_allow_html=True
     )
 
+
 def percent_card(title, value, subtitle="Pourcentage"):
     display_value = "NA" if pd.isna(value) else f"{value:.1f}%"
 
@@ -118,6 +116,27 @@ def percent_card(title, value, subtitle="Pourcentage"):
         """,
         unsafe_allow_html=True
     )
+
+
+def filter_options(data, column):
+    if column not in data.columns:
+        return ["Tous"]
+
+    values = sorted(data[column].dropna().astype(str).unique())
+    return ["Tous"] + values
+
+
+def calculate_recommendation_rate(data, column):
+    if column not in data.columns:
+        return np.nan
+
+    valid = data[column].dropna().astype(str).str.strip()
+
+    if len(valid) == 0:
+        return np.nan
+
+    return valid.eq("Oui").sum() / len(valid) * 100
+
 
 # =====================================================
 # Charger les données
@@ -243,33 +262,53 @@ vie_items = [
 
 for col in enseignement_items:
     if col in df_coded.columns:
-        df_coded[col] = pd.to_numeric(recode_series(df_original[col], satisfaction_mapping_f), errors="coerce")
+        df_coded[col] = pd.to_numeric(
+            recode_series(df_original[col], satisfaction_mapping_f),
+            errors="coerce"
+        )
 
-df_coded["Score enseignement et apprentissage"] = df_coded[enseignement_items].mean(axis=1, skipna=True)
+enseignement_existing = [col for col in enseignement_items if col in df_coded.columns]
+df_coded["Score enseignement et apprentissage"] = df_coded[enseignement_existing].mean(axis=1, skipna=True)
 
 for col in accompagnement_items:
     if col in df_coded.columns:
-        df_coded[col] = pd.to_numeric(recode_series(df_original[col], satisfaction_mapping_f), errors="coerce")
+        df_coded[col] = pd.to_numeric(
+            recode_series(df_original[col], satisfaction_mapping_f),
+            errors="coerce"
+        )
 
-df_coded["Score accompagnement et encadrement"] = df_coded[accompagnement_items].mean(axis=1, skipna=True)
+accompagnement_existing = [col for col in accompagnement_items if col in df_coded.columns]
+df_coded["Score accompagnement et encadrement"] = df_coded[accompagnement_existing].mean(axis=1, skipna=True)
 
 for col in competences_items:
     if col in df_coded.columns:
-        df_coded[col] = pd.to_numeric(recode_series(df_original[col], accord_mapping), errors="coerce")
+        df_coded[col] = pd.to_numeric(
+            recode_series(df_original[col], accord_mapping),
+            errors="coerce"
+        )
 
-df_coded["Score développement des compétences"] = df_coded[competences_items].mean(axis=1, skipna=True)
+competences_existing = [col for col in competences_items if col in df_coded.columns]
+df_coded["Score développement des compétences"] = df_coded[competences_existing].mean(axis=1, skipna=True)
 
 for col in experience_items:
     if col in df_coded.columns:
-        df_coded[col] = pd.to_numeric(recode_series(df_original[col], satisfaction_mapping_f), errors="coerce")
+        df_coded[col] = pd.to_numeric(
+            recode_series(df_original[col], satisfaction_mapping_f),
+            errors="coerce"
+        )
 
-df_coded["Score expérience globale USJ"] = df_coded[experience_items].mean(axis=1, skipna=True)
+experience_existing = [col for col in experience_items if col in df_coded.columns]
+df_coded["Score expérience globale USJ"] = df_coded[experience_existing].mean(axis=1, skipna=True)
 
 for col in services_items:
     if col in df_coded.columns:
-        df_coded[col] = pd.to_numeric(recode_series(df_original[col], satisfaction_mapping_f), errors="coerce")
+        df_coded[col] = pd.to_numeric(
+            recode_series(df_original[col], satisfaction_mapping_f),
+            errors="coerce"
+        )
 
-df_coded["Score services USJ"] = df_coded[services_items].mean(axis=1, skipna=True)
+services_existing = [col for col in services_items if col in df_coded.columns]
+df_coded["Score services USJ"] = df_coded[services_existing].mean(axis=1, skipna=True)
 
 vie_mapping = {
     "Pas au courant": 0,
@@ -280,15 +319,23 @@ vie_mapping = {
 }
 
 for col in vie_items:
-    df_coded[col] = pd.to_numeric(recode_series(df_original[col], vie_mapping), errors="coerce")
+    if col in df_coded.columns:
+        df_coded[col] = pd.to_numeric(
+            recode_series(df_original[col], vie_mapping),
+            errors="coerce"
+        )
 
 df_coded["Score vie étudiante et activités"] = df_coded[vie_items].mean(axis=1, skipna=True)
 
 for col in infrastructures_items:
     if col in df_coded.columns:
-        df_coded[col] = pd.to_numeric(recode_series(df_original[col], satisfaction_mapping_f), errors="coerce")
+        df_coded[col] = pd.to_numeric(
+            recode_series(df_original[col], satisfaction_mapping_f),
+            errors="coerce"
+        )
 
-df_coded["Score infrastructures et équipements"] = df_coded[infrastructures_items].mean(axis=1, skipna=True)
+infrastructures_existing = [col for col in infrastructures_items if col in df_coded.columns]
+df_coded["Score infrastructures et équipements"] = df_coded[infrastructures_existing].mean(axis=1, skipna=True)
 
 q42 = "42-Quel est le niveau de votre satisfaction globale à l’Université ?"
 df_coded["Score satisfaction globale"] = pd.to_numeric(
@@ -331,40 +378,76 @@ st.markdown(
 st.divider()
 
 # =====================================================
-# Filtres
+# Filtres liés
 # =====================================================
 
 filter_cols = st.columns(4)
 
-def filter_options(column):
-    values = sorted(df_coded[column].dropna().astype(str).unique())
-    return ["Tous"] + values
+df_filter_base = df_coded.copy()
 
+# -----------------------------
+# Genre
+# -----------------------------
 with filter_cols[0]:
-    genre = st.selectbox("Genre", filter_options("Genre"))
+    genre = st.selectbox(
+        "Genre",
+        filter_options(df_filter_base, "Genre"),
+        key="filter_genre"
+    )
 
-with filter_cols[1]:
-    faculte = st.selectbox("Faculté", filter_options("Faculté_Institut_g"))
-
-with filter_cols[2]:
-    cursus = st.selectbox("Cursus", filter_options("Cursus"))
-
-with filter_cols[3]:
-    niveau = st.selectbox("Niveau", filter_options("Niveau"))
-
-df_filtered = df_coded.copy()
-
+df_after_genre = df_filter_base.copy()
 if genre != "Tous":
-    df_filtered = df_filtered[df_filtered["Genre"].astype(str) == genre]
+    df_after_genre = df_after_genre[
+        df_after_genre["Genre"].astype(str) == genre
+    ]
 
+# -----------------------------
+# Faculté
+# -----------------------------
+with filter_cols[1]:
+    faculte = st.selectbox(
+        "Faculté",
+        filter_options(df_after_genre, "Faculté_Institut_g"),
+        key="filter_faculte"
+    )
+
+df_after_faculte = df_after_genre.copy()
 if faculte != "Tous":
-    df_filtered = df_filtered[df_filtered["Faculté_Institut_g"].astype(str) == faculte]
+    df_after_faculte = df_after_faculte[
+        df_after_faculte["Faculté_Institut_g"].astype(str) == faculte
+    ]
 
+# -----------------------------
+# Cursus
+# -----------------------------
+with filter_cols[2]:
+    cursus = st.selectbox(
+        "Cursus",
+        filter_options(df_after_faculte, "Cursus"),
+        key="filter_cursus"
+    )
+
+df_after_cursus = df_after_faculte.copy()
 if cursus != "Tous":
-    df_filtered = df_filtered[df_filtered["Cursus"].astype(str) == cursus]
+    df_after_cursus = df_after_cursus[
+        df_after_cursus["Cursus"].astype(str) == cursus
+    ]
 
+# -----------------------------
+# Niveau
+# -----------------------------
+with filter_cols[3]:
+    niveau = st.selectbox(
+        "Niveau",
+        filter_options(df_after_cursus, "Niveau"),
+        key="filter_niveau"
+    )
+
+df_filtered = df_after_cursus.copy()
 if niveau != "Tous":
-    df_filtered = df_filtered[df_filtered["Niveau"].astype(str) == niveau]
+    df_filtered = df_filtered[
+        df_filtered["Niveau"].astype(str) == niveau
+    ]
 
 st.markdown(
     f"""
@@ -387,25 +470,40 @@ st.markdown(
 c1, c2, c3 = st.columns(3)
 
 with c1:
-    kpi_card("Satisfaction globale à l’Université", df_filtered["Score satisfaction globale"].mean())
+    kpi_card(
+        "Satisfaction globale à l’Université",
+        df_filtered["Score satisfaction globale"].mean()
+    )
 
 with c2:
-    taux_recommandation = df_filtered[q43].eq("Oui").sum() / df_filtered[q43].notna().sum() * 100
+    taux_recommandation = calculate_recommendation_rate(df_filtered, q43)
     percent_card("Taux de recommandation de l’USJ", taux_recommandation)
 
 with c3:
-    kpi_card("Expérience globale USJ", df_filtered["Score expérience globale USJ"].mean())
+    kpi_card(
+        "Expérience globale USJ",
+        df_filtered["Score expérience globale USJ"].mean()
+    )
 
 c4, c5, c6 = st.columns(3)
 
 with c4:
-    kpi_card("Enseignement et apprentissage", df_filtered["Score enseignement et apprentissage"].mean())
+    kpi_card(
+        "Enseignement et apprentissage",
+        df_filtered["Score enseignement et apprentissage"].mean()
+    )
 
 with c5:
-    kpi_card("Accompagnement et encadrement", df_filtered["Score accompagnement et encadrement"].mean())
+    kpi_card(
+        "Accompagnement et encadrement",
+        df_filtered["Score accompagnement et encadrement"].mean()
+    )
 
 with c6:
-    kpi_card("Développement des compétences", df_filtered["Score développement des compétences"].mean())
+    kpi_card(
+        "Développement des compétences",
+        df_filtered["Score développement des compétences"].mean()
+    )
 
 st.markdown("<br>", unsafe_allow_html=True)
 
@@ -421,13 +519,23 @@ st.markdown(
 c7, c8, c9 = st.columns(3)
 
 with c7:
-    kpi_card("Services de l’USJ", df_filtered["Score services USJ"].mean())
+    kpi_card(
+        "Services de l’USJ",
+        df_filtered["Score services USJ"].mean()
+    )
 
 with c8:
-    kpi_card("Vie étudiante et activités", df_filtered["Score vie étudiante et activités"].mean(), "Moyenne /4 incluant Pas au courant = 0")
+    kpi_card(
+        "Vie étudiante et activités",
+        df_filtered["Score vie étudiante et activités"].mean(),
+        "Moyenne /4 incluant Pas au courant = 0"
+    )
 
 with c9:
-    kpi_card("Infrastructures et équipements", df_filtered["Score infrastructures et équipements"].mean())
+    kpi_card(
+        "Infrastructures et équipements",
+        df_filtered["Score infrastructures et équipements"].mean()
+    )
 
 st.markdown("<br>", unsafe_allow_html=True)
 
@@ -443,10 +551,16 @@ st.markdown(
 c10, c11 = st.columns(2)
 
 with c10:
-    kpi_card("Frais de scolarité / qualité de l’enseignement", df_filtered["Score frais / qualité enseignement"].mean())
+    kpi_card(
+        "Frais de scolarité / qualité de l’enseignement",
+        df_filtered["Score frais / qualité enseignement"].mean()
+    )
 
 with c11:
-    kpi_card("Frais de scolarité / autres universités", df_filtered["Score frais / autres universités"].mean())
+    kpi_card(
+        "Frais de scolarité / autres universités",
+        df_filtered["Score frais / autres universités"].mean()
+    )
 
 st.markdown("<br>", unsafe_allow_html=True)
 
