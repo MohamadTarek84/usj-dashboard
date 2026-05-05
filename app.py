@@ -412,7 +412,7 @@ with header_left:
 
 with header_right:
     if os.path.exists("usj_logo.png"):
-        st.image("usj_logo.png", width=500)
+        st.image("usj_logo.png", width=800)
 
 st.divider()
 
