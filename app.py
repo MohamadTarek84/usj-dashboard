@@ -10,10 +10,6 @@ st.set_page_config(
 
 MAX_SCORE = 4
 
-# ============================================================
-# LOAD DATA
-# ============================================================
-
 @st.cache_data
 def load_data():
     df = pd.read_excel("Exit survey 24-25.xlsx")
@@ -22,61 +18,32 @@ def load_data():
 
 df_original = load_data()
 
-# ============================================================
-# TEXT CLEANING
-# ============================================================
 
 def normalize_text(x):
     x = str(x).strip().lower()
     x = x.replace("’", "'").replace("`", "'")
     x = unicodedata.normalize("NFKD", x)
-    x = "".join([c for c in x if not unicodedata.combining(c)])
+    x = "".join(c for c in x if not unicodedata.combining(c))
     return x
 
-
-def find_column(df, possible_names):
-    normalized_cols = {normalize_text(col): col for col in df.columns}
-
-    for name in possible_names:
-        name_clean = normalize_text(name)
-        if name_clean in normalized_cols:
-            return normalized_cols[name_clean]
-
-    for col in df.columns:
-        col_clean = normalize_text(col)
-        for name in possible_names:
-            if normalize_text(name) in col_clean:
-                return col
-
-    return None
-
-
-# ============================================================
-# LIKERT CONVERSION
-# ============================================================
 
 LIKERT_MAP = {
     "pas du tout d'accord": 1,
     "pas d'accord": 2,
     "d'accord": 3,
     "tout a fait d'accord": 4,
-    "tout à fait d'accord": 4,
-
     "pas du tout satisfait": 1,
     "peu satisfait": 2,
     "satisfait": 3,
     "tres satisfait": 4,
-    "très satisfait": 4,
-
-    "tres mauvaise": 1,
-    "mauvaise": 2,
-    "bonne": 3,
-    "tres bonne": 4,
-
     "non": 1,
     "plutot non": 2,
     "plutot oui": 3,
     "oui": 4,
+    "1": 1,
+    "2": 2,
+    "3": 3,
+    "4": 4,
 }
 
 
@@ -86,14 +53,23 @@ def to_numeric_score(series):
     if numeric.notna().sum() > 0:
         return numeric
 
-    return series.astype(str).apply(
-        lambda x: LIKERT_MAP.get(normalize_text(x), pd.NA)
-    ).astype("float")
+    converted = series.astype(str).apply(
+        lambda x: LIKERT_MAP.get(normalize_text(x), None)
+    )
+
+    return pd.to_numeric(converted, errors="coerce")
 
 
-# ============================================================
-# SATISFACTION FUNCTIONS
-# ============================================================
+def find_column(df, possible_names):
+    normalized_cols = {normalize_text(col): col for col in df.columns}
+
+    for name in possible_names:
+        key = normalize_text(name)
+        if key in normalized_cols:
+            return normalized_cols[key]
+
+    return None
+
 
 def satisfaction_label(pct):
     if pd.isna(pct):
@@ -110,7 +86,7 @@ def satisfaction_label(pct):
 
 def satisfaction_color(pct):
     if pd.isna(pct):
-        return "#F57C00"
+        return "#777777"
     elif pct <= 43.75:
         return "#C62828"
     elif pct <= 81.25:
@@ -161,14 +137,17 @@ def kpi_card(title, value, subtitle, level, color):
 
 
 def score_to_percentage(df, col):
+    if col is None or col not in df.columns:
+        return pd.NA
+
     scores = to_numeric_score(df[col])
     mean_score = scores.mean()
+
+    if pd.isna(mean_score):
+        return pd.NA
+
     return mean_score / MAX_SCORE * 100
 
-
-# ============================================================
-# FILTERS
-# ============================================================
 
 def apply_filters(df):
     st.sidebar.title("USJ Exit Survey Dashboard")
@@ -176,29 +155,21 @@ def apply_filters(df):
 
     filtered_df = df.copy()
 
-    filter_map = {
-        "Institution": ["Institution", "Institut", "Faculté / Institution"],
-        "Faculté": ["Faculté", "Faculte", "Faculty", "Institution"],
-        "Genre": ["Genre", "Gender", "Sexe"],
-        "Diplôme": ["Diplôme", "Diplome", "Degree"],
-        "Cursus": ["Cursus", "Programme", "Program"],
-        "Niveau": ["Niveau", "Level"]
-    }
+    filters = [
+        ("Genre", "Genre"),
+        ("Faculté", "Faculté_Institut_g"),
+        ("Cursus", "Cursus"),
+        ("Niveau", "Niveau"),
+    ]
 
-    used_cols = []
-
-    for label, possible_names in filter_map.items():
-        col = find_column(filtered_df, possible_names)
-
-        if col is not None and col not in used_cols:
-            used_cols.append(col)
-
+    for label, col in filters:
+        if col in filtered_df.columns:
             options = sorted(filtered_df[col].dropna().astype(str).unique())
 
             selected = st.sidebar.selectbox(
                 label,
                 ["Tous"] + options,
-                key=f"filter_{label}"
+                key=f"filter_{col}"
             )
 
             if selected != "Tous":
@@ -221,8 +192,9 @@ if df.empty:
     st.warning("Aucune donnée disponible pour les filtres sélectionnés.")
     st.stop()
 
+
 # ============================================================
-# KPI COLUMN DETECTION
+# KPI VARIABLES
 # ============================================================
 
 satisfaction_col = find_column(
@@ -231,9 +203,7 @@ satisfaction_col = find_column(
         "Satisfaction globale à l’Université",
         "Satisfaction globale a l'Universite",
         "Satisfaction globale",
-        "Satisfaction à l’Université",
-        "Satisfaction a l'Universite",
-        "Q1"
+        "Q1",
     ]
 )
 
@@ -244,8 +214,7 @@ recommendation_col = find_column(
         "Taux de recommandation de l'USJ",
         "Recommandation",
         "Recommander",
-        "Recommendation",
-        "Q2"
+        "Q2",
     ]
 )
 
@@ -256,33 +225,15 @@ experience_col = find_column(
         "Experience globale USJ",
         "Expérience globale",
         "Experience globale",
-        "Expérience à l’USJ",
-        "Experience a l'USJ",
-        "Q3"
+        "Q3",
     ]
 )
 
-# ============================================================
-# CALCULATE KPIs
-# ============================================================
 
-satisfaction_pct = (
-    score_to_percentage(df, satisfaction_col)
-    if satisfaction_col is not None
-    else pd.NA
-)
+satisfaction_pct = score_to_percentage(df, satisfaction_col)
+recommendation_pct = score_to_percentage(df, recommendation_col)
+experience_pct = score_to_percentage(df, experience_col)
 
-recommendation_pct = (
-    score_to_percentage(df, recommendation_col)
-    if recommendation_col is not None
-    else pd.NA
-)
-
-experience_pct = (
-    score_to_percentage(df, experience_col)
-    if experience_col is not None
-    else pd.NA
-)
 
 # ============================================================
 # KPI CARDS
@@ -317,9 +268,6 @@ with col3:
         satisfaction_color(experience_pct)
     )
 
-# ============================================================
-# DEBUG
-# ============================================================
 
 with st.expander("Variables utilisées"):
     st.write({
@@ -328,5 +276,5 @@ with st.expander("Variables utilisées"):
         "Expérience globale": experience_col
     })
 
-with st.expander("Voir toutes les colonnes du fichier"):
+with st.expander("Colonnes disponibles"):
     st.write(df_original.columns.tolist())
