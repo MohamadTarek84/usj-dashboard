@@ -204,6 +204,15 @@ def alpha_interpretation(alpha):
 df_original = load_data()
 df_coded = df_original.copy()
 
+# Replace old faculty label
+df_coded["Faculté_Institut_g"] = df_coded["Faculté_Institut_g"].replace({
+    "ELFS": "ESTS"
+})
+
+df_original["Faculté_Institut_g"] = df_original["Faculté_Institut_g"].replace({
+    "ELFS": "ESTS"
+})
+
 # =====================================================
 # Recodages
 # =====================================================
