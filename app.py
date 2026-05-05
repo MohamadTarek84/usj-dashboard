@@ -12,10 +12,6 @@ st.set_page_config(
     layout="wide"
 )
 
-# ============================================================
-# CONSTANTS
-# ============================================================
-
 MAX_SCORE = 4
 
 # ============================================================
@@ -26,6 +22,7 @@ MAX_SCORE = 4
 def load_data():
     file_path = "Exit survey 24-25.xlsx"
     df = pd.read_excel(file_path)
+    df.columns = df.columns.astype(str).str.strip()
     return df
 
 df_original = load_data()
@@ -33,6 +30,26 @@ df_original = load_data()
 # ============================================================
 # HELPER FUNCTIONS
 # ============================================================
+
+def find_column(df, keywords):
+    for col in df.columns:
+        col_clean = (
+            str(col)
+            .lower()
+            .replace("’", "'")
+            .replace("é", "e")
+            .replace("è", "e")
+            .replace("ê", "e")
+            .replace("à", "a")
+            .replace("ù", "u")
+            .replace("ç", "c")
+        )
+
+        if all(k.lower() in col_clean for k in keywords):
+            return col
+
+    return None
+
 
 def satisfaction_label(pct):
     if pd.isna(pct):
@@ -52,8 +69,6 @@ def satisfaction_color(pct):
         return "#777777"
     elif pct <= 43.75:
         return "#C62828"
-    elif pct <= 62.50:
-        return "#F57C00"
     elif pct <= 81.25:
         return "#F57C00"
     else:
@@ -116,17 +131,23 @@ def apply_linked_filters(df):
 
     for col in filter_columns:
         if col in filtered_df.columns:
-            available_options = sorted(filtered_df[col].dropna().unique())
+            options = sorted(filtered_df[col].dropna().astype(str).unique())
 
-            selected_options = st.sidebar.multiselect(
+            selected = st.sidebar.multiselect(
                 col,
-                available_options,
-                default=available_options
+                options=options,
+                default=options
             )
 
-            filtered_df = filtered_df[filtered_df[col].isin(selected_options)]
+            filtered_df = filtered_df[
+                filtered_df[col].astype(str).isin(selected)
+            ]
 
     return filtered_df
+
+
+def get_numeric_series(df, col):
+    return pd.to_numeric(df[col], errors="coerce")
 
 
 # ============================================================
@@ -144,41 +165,83 @@ def page_1_kpis(df):
         return
 
     # ------------------------------------------------------------
-    # Adjust these variable names if needed
+    # Automatic column detection
     # ------------------------------------------------------------
 
-    satisfaction_global_col = "Satisfaction globale à l’Université"
-    recommendation_col = "Taux de recommandation de l’USJ"
-    experience_col = "Expérience globale USJ"
+    satisfaction_global_col = find_column(
+        filtered_df,
+        ["satisfaction", "univers"]
+    )
 
-    required_cols = [
-        satisfaction_global_col,
-        recommendation_col,
-        experience_col
-    ]
+    recommendation_col = find_column(
+        filtered_df,
+        ["recommand"]
+    )
 
-    missing_cols = [col for col in required_cols if col not in filtered_df.columns]
+    experience_col = find_column(
+        filtered_df,
+        ["experience", "global"]
+    )
+
+    # ------------------------------------------------------------
+    # Fallback if your real variables are Q1, Q2, Q3
+    # ------------------------------------------------------------
+
+    if satisfaction_global_col is None and "Q1" in filtered_df.columns:
+        satisfaction_global_col = "Q1"
+
+    if recommendation_col is None and "Q2" in filtered_df.columns:
+        recommendation_col = "Q2"
+
+    if experience_col is None and "Q3" in filtered_df.columns:
+        experience_col = "Q3"
+
+    missing_cols = []
+
+    if satisfaction_global_col is None:
+        missing_cols.append("Satisfaction globale à l’Université")
+
+    if recommendation_col is None:
+        missing_cols.append("Taux de recommandation de l’USJ")
+
+    if experience_col is None:
+        missing_cols.append("Expérience globale USJ")
 
     if missing_cols:
-        st.error("Colonnes manquantes dans le fichier :")
+        st.error("Colonnes non trouvées automatiquement :")
         st.write(missing_cols)
+
+        st.subheader("Colonnes disponibles dans votre fichier")
+        st.write(df.columns.tolist())
         return
 
     # ------------------------------------------------------------
-    # Compute KPIs as percentages
+    # Compute KPIs
     # ------------------------------------------------------------
 
-    satisfaction_global_mean = filtered_df[satisfaction_global_col].mean()
+    satisfaction_global_mean = get_numeric_series(
+        filtered_df,
+        satisfaction_global_col
+    ).mean()
+
     satisfaction_global_pct = satisfaction_global_mean / MAX_SCORE * 100
     satisfaction_global_level = satisfaction_label(satisfaction_global_pct)
     satisfaction_global_color = satisfaction_color(satisfaction_global_pct)
 
-    recommendation_mean = filtered_df[recommendation_col].mean()
+    recommendation_mean = get_numeric_series(
+        filtered_df,
+        recommendation_col
+    ).mean()
+
     recommendation_pct = recommendation_mean / MAX_SCORE * 100
     recommendation_level = satisfaction_label(recommendation_pct)
     recommendation_color = satisfaction_color(recommendation_pct)
 
-    experience_mean = filtered_df[experience_col].mean()
+    experience_mean = get_numeric_series(
+        filtered_df,
+        experience_col
+    ).mean()
+
     experience_pct = experience_mean / MAX_SCORE * 100
     experience_level = satisfaction_label(experience_pct)
     experience_color = satisfaction_color(experience_pct)
@@ -212,6 +275,13 @@ def page_1_kpis(df):
             experience_color
         )
 
+    with st.expander("Variables utilisées pour les KPIs"):
+        st.write({
+            "Satisfaction globale": satisfaction_global_col,
+            "Recommandation": recommendation_col,
+            "Expérience globale": experience_col
+        })
+
 
 # ============================================================
 # PAGE 2: DETAILED SATISFACTION ANALYSIS
@@ -229,16 +299,21 @@ def page_2_satisfaction_analysis(df):
 
     satisfaction_cols = [
         col for col in filtered_df.columns
-        if col.startswith("Q5")
+        if str(col).startswith("Q5")
     ]
 
     if len(satisfaction_cols) == 0:
-        st.error("Aucune colonne Q5 trouvée. Vérifiez les noms des variables.")
+        st.error("Aucune colonne Q5 trouvée.")
+        st.subheader("Colonnes disponibles dans votre fichier")
+        st.write(df.columns.tolist())
         return
+
+    for col in satisfaction_cols:
+        filtered_df[col] = pd.to_numeric(filtered_df[col], errors="coerce")
 
     st.markdown(
         """
-        Les scores de satisfaction sont présentés en pourcentage selon la formule suivante :
+        Les scores sont transformés en pourcentage selon la formule suivante :
 
         **Pourcentage de satisfaction = moyenne / 4 × 100**
         """
@@ -302,18 +377,18 @@ def page_2_satisfaction_analysis(df):
     st.plotly_chart(fig_items, use_container_width=True)
 
     # ------------------------------------------------------------
-    # Overall satisfaction
+    # Overall Q5 satisfaction
     # ------------------------------------------------------------
 
-    st.subheader("2. Score global de satisfaction")
+    st.subheader("2. Score global de satisfaction Q5")
 
-    filtered_df["Score global moyen"] = filtered_df[satisfaction_cols].mean(axis=1)
-    filtered_df["Satisfaction globale (%)"] = (
-        filtered_df["Score global moyen"] / MAX_SCORE * 100
+    filtered_df["Score global Q5"] = filtered_df[satisfaction_cols].mean(axis=1)
+    filtered_df["Satisfaction globale Q5 (%)"] = (
+        filtered_df["Score global Q5"] / MAX_SCORE * 100
     )
 
-    overall_mean = filtered_df["Score global moyen"].mean()
-    overall_pct = filtered_df["Satisfaction globale (%)"].mean()
+    overall_mean = filtered_df["Score global Q5"].mean()
+    overall_pct = filtered_df["Satisfaction globale Q5 (%)"].mean()
     overall_level = satisfaction_label(overall_pct)
     overall_color = satisfaction_color(overall_pct)
 
@@ -321,7 +396,7 @@ def page_2_satisfaction_analysis(df):
 
     with col1:
         kpi_card(
-            "Score moyen global",
+            "Score moyen Q5",
             f"{overall_mean:.2f} / 4",
             "Moyenne des items Q5",
             overall_level,
@@ -330,7 +405,7 @@ def page_2_satisfaction_analysis(df):
 
     with col2:
         kpi_card(
-            "Satisfaction globale",
+            "Satisfaction Q5",
             f"{overall_pct:.1f}%",
             "Score transformé en pourcentage",
             overall_level,
@@ -353,7 +428,7 @@ def page_2_satisfaction_analysis(df):
     st.subheader("3. Distribution des niveaux de satisfaction")
 
     filtered_df["Catégorie de satisfaction"] = filtered_df[
-        "Satisfaction globale (%)"
+        "Satisfaction globale Q5 (%)"
     ].apply(satisfaction_label)
 
     dist_df = (
@@ -408,6 +483,10 @@ def page_2_satisfaction_analysis(df):
         if col in filtered_df.columns
     ]
 
+    if len(group_options) == 0:
+        st.warning("Aucune variable de groupe disponible.")
+        return
+
     group_var = st.selectbox(
         "Choisir la variable de comparaison",
         group_options
@@ -415,7 +494,7 @@ def page_2_satisfaction_analysis(df):
 
     group_summary = (
         filtered_df
-        .groupby(group_var)["Satisfaction globale (%)"]
+        .groupby(group_var)["Satisfaction globale Q5 (%)"]
         .agg(["count", "mean", "std"])
         .reset_index()
     )
@@ -450,7 +529,7 @@ def page_2_satisfaction_analysis(df):
         y="Satisfaction moyenne (%)",
         text="Satisfaction moyenne (%)",
         color="Niveau",
-        title=f"Satisfaction globale selon {group_var}",
+        title=f"Satisfaction globale Q5 selon {group_var}",
         color_discrete_map={
             "Très faible satisfaction": "#C62828",
             "Faible satisfaction": "#F57C00",
@@ -485,7 +564,7 @@ def page_2_satisfaction_analysis(df):
     weakest_group = group_summary.iloc[-1]
 
     st.markdown(f"""
-    Le score global de satisfaction est de **{overall_pct:.1f}%**, ce qui correspond à un niveau de **{overall_level}**.
+    Le score global de satisfaction Q5 est de **{overall_pct:.1f}%**, ce qui correspond à un niveau de **{overall_level}**.
 
     L’item le mieux évalué est **{best_item["Item"]}**, avec un score de satisfaction de **{best_item["Satisfaction (%)"]:.1f}%**.
 
