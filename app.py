@@ -118,7 +118,7 @@ def importance_card(title, value, subtitle):
 
 
 def summary_box(text, color=USJ_BLUE, background="#F7F9FC"):
-    st.markdown(
+    st.html(
         f"""
         <div style="
             background-color:{background};
@@ -132,8 +132,7 @@ def summary_box(text, color=USJ_BLUE, background="#F7F9FC"):
         ">
             {text}
         </div>
-        """,
-        unsafe_allow_html=True
+        """
     )
 
 
