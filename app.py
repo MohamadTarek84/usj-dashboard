@@ -428,6 +428,12 @@ st.divider()
 # Filtres liés
 # =====================================================
 
+if st.button("Réinitialiser les filtres"):
+    st.session_state["filter_genre"] = "Tous"
+    st.session_state["filter_faculte"] = "Tous"
+    st.session_state["filter_cursus"] = "Tous"
+    st.session_state["filter_niveau"] = "Tous"
+    st.rerun()
 filter_cols = st.columns(4)
 df_filter_base = df_coded.copy()
 
