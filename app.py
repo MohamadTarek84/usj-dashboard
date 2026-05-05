@@ -2,6 +2,9 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import os
+import plotly.express as px
+
+from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 
 # =====================================================
 # Configuration de la page
@@ -15,7 +18,6 @@ st.set_page_config(
 
 USJ_BLUE = "#001B75"
 USJ_RED = "#C0003B"
-USJ_BEIGE = "#D8CEC2"
 USJ_GREEN = "#2E7D32"
 USJ_ORANGE = "#F57C00"
 
@@ -34,11 +36,9 @@ def load_data():
 
     for file in possible_files:
         if os.path.exists(file):
-            df = pd.read_excel(file)
-            return df
+            return pd.read_excel(file)
 
     st.error("Excel file not found.")
-    st.write("Available files in the app folder:")
     st.write(os.listdir("."))
     st.stop()
 
@@ -52,19 +52,6 @@ def recode_series(series, mapping):
     )
 
 
-def classer_satisfaction(score):
-    if pd.isna(score):
-        return np.nan
-    elif score <= 1.75:
-        return "Très faible satisfaction"
-    elif score <= 2.50:
-        return "Faible satisfaction"
-    elif score <= 3.25:
-        return "Satisfaction modérée"
-    else:
-        return "Forte satisfaction"
-
-
 def kpi_color_percentage(value_pct):
     if pd.isna(value_pct):
         return "#777777"
@@ -76,7 +63,7 @@ def kpi_color_percentage(value_pct):
         return USJ_RED
 
 
-def kpi_card(title, value, subtitle="Score de satisfaction"):
+def kpi_card(title, value, subtitle="Satisfaction globale"):
     value_pct = np.nan if pd.isna(value) else value / 4 * 100
     color = kpi_color_percentage(value_pct)
     display_value = "NA" if pd.isna(value_pct) else f"{value_pct:.1f}%"
@@ -135,28 +122,59 @@ def percent_card(title, value, subtitle="Pourcentage"):
     )
 
 
-def filter_options(data, column):
-    if column not in data.columns:
-        return ["Tous"]
+def importance_card(title, value, subtitle):
+    color = kpi_color_percentage(value)
+    display_value = "NA" if pd.isna(value) else f"{value:.1f}%"
 
+    st.markdown(
+        f"""
+        <div style="
+            background-color:white;
+            border-radius:18px;
+            padding:22px;
+            box-shadow:0 4px 14px rgba(0,0,0,0.08);
+            border-left:7px solid {color};
+            min-height:155px;
+        ">
+            <div style="font-size:15px; color:#444; font-weight:700;">
+                {title}
+            </div>
+            <div style="font-size:36px; color:{color}; font-weight:900; margin-top:8px;">
+                {display_value}
+            </div>
+            <div style="font-size:13px; color:#777; margin-top:4px;">
+                {subtitle}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+def filter_options(data, column):
     values = sorted(data[column].dropna().astype(str).unique())
     return ["Tous"] + values
 
 
 def calculate_recommendation_rate(data, column):
-    if column not in data.columns:
-        return np.nan
-
     valid = data[column].dropna().astype(str).str.strip()
-
     if len(valid) == 0:
         return np.nan
-
     return valid.eq("Oui").sum() / len(valid) * 100
 
 
+def clean_component_name(name):
+    return (
+        name
+        .replace("Score ", "")
+        .replace("score ", "")
+        .strip()
+        .capitalize()
+    )
+
+
 # =====================================================
-# Charger les données
+# Chargement des données
 # =====================================================
 
 df_original = load_data()
@@ -188,7 +206,7 @@ accord_mapping = {
 }
 
 # =====================================================
-# Définition des variables
+# Variables
 # =====================================================
 
 enseignement_items = [
@@ -243,6 +261,20 @@ services_items = [
     "28_k-Aumônerie et pastorale"
 ]
 
+vie_items = [
+    col for col in [
+        "29_a- Activités organisées par la pastorale / l’Aumônerie",
+        "29_b- Activités sociales par campus / Événements et clubs étudiants",
+        "29_c- Vie sur le campus, environnement et ambiance sociales",
+        "29_d- Liberté d'expression et respect des croyances religieuses d’autrui",
+        "29_e- Activités sportives",
+        "29_f- Clubs étudiants",
+        "29_g- Leadership et bénévolat (O7/USJ en mission)",
+        "29_h- Activités du Service de la vie étudiante"
+    ]
+    if col in df_coded.columns
+]
+
 infrastructures_items = [
     "40_a- Accès aux ordinateurs",
     "40_b- Accès aux logiciels",
@@ -259,71 +291,37 @@ infrastructures_items = [
     "40_m- Parking"
 ]
 
-vie_items = [
-    col for col in [
-        "29_a- Activités organisées par la pastorale / l’Aumônerie",
-        "29_b- Activités sociales par campus / Événements et clubs étudiants",
-        "29_c- Vie sur le campus, environnement et ambiance sociales",
-        "29_d- Liberté d'expression et respect des croyances religieuses d’autrui",
-        "29_e- Activités sportives",
-        "29_f- Clubs étudiants",
-        "29_g- Leadership et bénévolat (O7/USJ en mission)",
-        "29_h- Activités du Service de la vie étudiante"
-    ]
-    if col in df_coded.columns
-]
-
 # =====================================================
-# Création des scores
+# Scores internes
 # =====================================================
 
 for col in enseignement_items:
     if col in df_coded.columns:
-        df_coded[col] = pd.to_numeric(
-            recode_series(df_original[col], satisfaction_mapping_f),
-            errors="coerce"
-        )
-
+        df_coded[col] = pd.to_numeric(recode_series(df_original[col], satisfaction_mapping_f), errors="coerce")
 enseignement_existing = [col for col in enseignement_items if col in df_coded.columns]
 df_coded["Score enseignement et apprentissage"] = df_coded[enseignement_existing].mean(axis=1, skipna=True)
 
 for col in accompagnement_items:
     if col in df_coded.columns:
-        df_coded[col] = pd.to_numeric(
-            recode_series(df_original[col], satisfaction_mapping_f),
-            errors="coerce"
-        )
-
+        df_coded[col] = pd.to_numeric(recode_series(df_original[col], satisfaction_mapping_f), errors="coerce")
 accompagnement_existing = [col for col in accompagnement_items if col in df_coded.columns]
 df_coded["Score accompagnement et encadrement"] = df_coded[accompagnement_existing].mean(axis=1, skipna=True)
 
 for col in competences_items:
     if col in df_coded.columns:
-        df_coded[col] = pd.to_numeric(
-            recode_series(df_original[col], accord_mapping),
-            errors="coerce"
-        )
-
+        df_coded[col] = pd.to_numeric(recode_series(df_original[col], accord_mapping), errors="coerce")
 competences_existing = [col for col in competences_items if col in df_coded.columns]
 df_coded["Score développement des compétences"] = df_coded[competences_existing].mean(axis=1, skipna=True)
 
 for col in experience_items:
     if col in df_coded.columns:
-        df_coded[col] = pd.to_numeric(
-            recode_series(df_original[col], satisfaction_mapping_f),
-            errors="coerce"
-        )
-
+        df_coded[col] = pd.to_numeric(recode_series(df_original[col], satisfaction_mapping_f), errors="coerce")
 experience_existing = [col for col in experience_items if col in df_coded.columns]
 df_coded["Score expérience globale USJ"] = df_coded[experience_existing].mean(axis=1, skipna=True)
 
 for col in services_items:
     if col in df_coded.columns:
-        df_coded[col] = pd.to_numeric(
-            recode_series(df_original[col], satisfaction_mapping_f),
-            errors="coerce"
-        )
-
+        df_coded[col] = pd.to_numeric(recode_series(df_original[col], satisfaction_mapping_f), errors="coerce")
 services_existing = [col for col in services_items if col in df_coded.columns]
 df_coded["Score services USJ"] = df_coded[services_existing].mean(axis=1, skipna=True)
 
@@ -337,34 +335,26 @@ vie_mapping = {
 
 for col in vie_items:
     if col in df_coded.columns:
-        df_coded[col] = pd.to_numeric(
-            recode_series(df_original[col], vie_mapping),
-            errors="coerce"
-        )
-
+        df_coded[col] = pd.to_numeric(recode_series(df_original[col], vie_mapping), errors="coerce")
 df_coded["Score vie étudiante et activités"] = df_coded[vie_items].mean(axis=1, skipna=True)
 
 for col in infrastructures_items:
     if col in df_coded.columns:
-        df_coded[col] = pd.to_numeric(
-            recode_series(df_original[col], satisfaction_mapping_f),
-            errors="coerce"
-        )
-
+        df_coded[col] = pd.to_numeric(recode_series(df_original[col], satisfaction_mapping_f), errors="coerce")
 infrastructures_existing = [col for col in infrastructures_items if col in df_coded.columns]
 df_coded["Score infrastructures et équipements"] = df_coded[infrastructures_existing].mean(axis=1, skipna=True)
 
 q42 = "42-Quel est le niveau de votre satisfaction globale à l’Université ?"
+q43 = "43-Recommanderiez-vous l’USJ à un proche ou à un ami ?"
+q26 = "26- satisfait par les frais de scolarité à l’USJ par rapport à la qualité de l’enseignement ?"
+q27 = "27- satisfait par les frais de scolarité à l’USJ par rapport à ceux d’autres universités ?"
+
 df_coded["Score satisfaction globale"] = pd.to_numeric(
     recode_series(df_original[q42], satisfaction_mapping_m),
     errors="coerce"
 )
 
-q43 = "43-Recommanderiez-vous l’USJ à un proche ou à un ami ?"
 df_coded[q43] = df_original[q43].astype(str).str.strip().replace({"nan": np.nan})
-
-q26 = "26- satisfait par les frais de scolarité à l’USJ par rapport à la qualité de l’enseignement ?"
-q27 = "27- satisfait par les frais de scolarité à l’USJ par rapport à ceux d’autres universités ?"
 
 df_coded["Score frais / qualité enseignement"] = pd.to_numeric(
     recode_series(df_original[q26], satisfaction_mapping_m),
@@ -377,7 +367,7 @@ df_coded["Score frais / autres universités"] = pd.to_numeric(
 )
 
 # =====================================================
-# Interface
+# Header
 # =====================================================
 
 st.markdown(
@@ -399,48 +389,31 @@ st.divider()
 # =====================================================
 
 filter_cols = st.columns(4)
-
 df_filter_base = df_coded.copy()
 
 with filter_cols[0]:
-    genre = st.selectbox(
-        "Genre",
-        filter_options(df_filter_base, "Genre"),
-        key="filter_genre"
-    )
+    genre = st.selectbox("Genre", filter_options(df_filter_base, "Genre"), key="filter_genre")
 
 df_after_genre = df_filter_base.copy()
 if genre != "Tous":
     df_after_genre = df_after_genre[df_after_genre["Genre"].astype(str) == genre]
 
 with filter_cols[1]:
-    faculte = st.selectbox(
-        "Faculté",
-        filter_options(df_after_genre, "Faculté_Institut_g"),
-        key="filter_faculte"
-    )
+    faculte = st.selectbox("Faculté", filter_options(df_after_genre, "Faculté_Institut_g"), key="filter_faculte")
 
 df_after_faculte = df_after_genre.copy()
 if faculte != "Tous":
     df_after_faculte = df_after_faculte[df_after_faculte["Faculté_Institut_g"].astype(str) == faculte]
 
 with filter_cols[2]:
-    cursus = st.selectbox(
-        "Cursus",
-        filter_options(df_after_faculte, "Cursus"),
-        key="filter_cursus"
-    )
+    cursus = st.selectbox("Cursus", filter_options(df_after_faculte, "Cursus"), key="filter_cursus")
 
 df_after_cursus = df_after_faculte.copy()
 if cursus != "Tous":
     df_after_cursus = df_after_cursus[df_after_cursus["Cursus"].astype(str) == cursus]
 
 with filter_cols[3]:
-    niveau = st.selectbox(
-        "Niveau",
-        filter_options(df_after_cursus, "Niveau"),
-        key="filter_niveau"
-    )
+    niveau = st.selectbox("Niveau", filter_options(df_after_cursus, "Niveau"), key="filter_niveau")
 
 df_filtered = df_after_cursus.copy()
 if niveau != "Tous":
@@ -456,110 +429,310 @@ st.markdown(
 )
 
 # =====================================================
-# Section 1 - KPIs principaux
+# Navigation
 # =====================================================
 
-st.markdown(
-    f"<h2 style='color:{USJ_BLUE};'>Satisfaction globale et expérience</h2>",
-    unsafe_allow_html=True
+page = st.radio(
+    "Navigation",
+    ["Vue générale des indicateurs", "Facteurs clés d’amélioration"],
+    horizontal=True
 )
 
-c1, c2, c3 = st.columns(3)
-
-with c1:
-    kpi_card(
-        "Satisfaction globale à l’Université",
-        df_filtered["Score satisfaction globale"].mean()
-    )
-
-with c2:
-    taux_recommandation = calculate_recommendation_rate(df_filtered, q43)
-    percent_card("Taux de recommandation de l’USJ", taux_recommandation)
-
-with c3:
-    kpi_card(
-        "Expérience globale USJ",
-        df_filtered["Score expérience globale USJ"].mean()
-    )
-
-c4, c5, c6 = st.columns(3)
-
-with c4:
-    kpi_card(
-        "Enseignement et apprentissage",
-        df_filtered["Score enseignement et apprentissage"].mean()
-    )
-
-with c5:
-    kpi_card(
-        "Accompagnement et encadrement",
-        df_filtered["Score accompagnement et encadrement"].mean()
-    )
-
-with c6:
-    kpi_card(
-        "Développement des compétences",
-        df_filtered["Score développement des compétences"].mean()
-    )
-
-st.markdown("<br>", unsafe_allow_html=True)
-
 # =====================================================
-# Section 2 - Vie étudiante, services et infrastructures
+# Page 1
 # =====================================================
 
-st.markdown(
-    f"<h2 style='color:{USJ_BLUE};'>Vie étudiante, services et environnement</h2>",
-    unsafe_allow_html=True
-)
+if page == "Vue générale des indicateurs":
 
-c7, c8, c9 = st.columns(3)
-
-with c7:
-    kpi_card(
-        "Services de l’USJ",
-        df_filtered["Score services USJ"].mean()
+    st.markdown(
+        f"<h2 style='color:{USJ_BLUE};'>Satisfaction globale et expérience</h2>",
+        unsafe_allow_html=True
     )
 
-with c8:
-    kpi_card(
-        "Vie étudiante et activités",
-        df_filtered["Score vie étudiante et activités"].mean(),
-        "Score de satisfaction, Pas au courant exclu"
+    c1, c2, c3 = st.columns(3)
+
+    with c1:
+        kpi_card("Satisfaction globale à l’Université", df_filtered["Score satisfaction globale"].mean())
+
+    with c2:
+        taux_recommandation = calculate_recommendation_rate(df_filtered, q43)
+        percent_card("Taux de recommandation de l’USJ", taux_recommandation)
+
+    with c3:
+        kpi_card("Expérience globale USJ", df_filtered["Score expérience globale USJ"].mean())
+
+    c4, c5, c6 = st.columns(3)
+
+    with c4:
+        kpi_card("Enseignement et apprentissage", df_filtered["Score enseignement et apprentissage"].mean())
+
+    with c5:
+        kpi_card("Accompagnement et encadrement", df_filtered["Score accompagnement et encadrement"].mean())
+
+    with c6:
+        kpi_card("Développement des compétences", df_filtered["Score développement des compétences"].mean())
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    st.markdown(
+        f"<h2 style='color:{USJ_BLUE};'>Vie étudiante, services et environnement</h2>",
+        unsafe_allow_html=True
     )
 
-with c9:
-    kpi_card(
-        "Infrastructures et équipements",
-        df_filtered["Score infrastructures et équipements"].mean()
+    c7, c8, c9 = st.columns(3)
+
+    with c7:
+        kpi_card("Services de l’USJ", df_filtered["Score services USJ"].mean())
+
+    with c8:
+        kpi_card(
+            "Vie étudiante et activités",
+            df_filtered["Score vie étudiante et activités"].mean(),
+            "Pas au courant exclu"
+        )
+
+    with c9:
+        kpi_card("Infrastructures et équipements", df_filtered["Score infrastructures et équipements"].mean())
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    st.markdown(
+        f"<h2 style='color:{USJ_BLUE};'>Perception financière</h2>",
+        unsafe_allow_html=True
     )
 
-st.markdown("<br>", unsafe_allow_html=True)
+    c10, c11 = st.columns(2)
+
+    with c10:
+        kpi_card("Frais de scolarité / qualité de l’enseignement", df_filtered["Score frais / qualité enseignement"].mean())
+
+    with c11:
+        kpi_card("Frais de scolarité / autres universités", df_filtered["Score frais / autres universités"].mean())
 
 # =====================================================
-# Section 3 - Perception financière
+# Page 2
 # =====================================================
 
-st.markdown(
-    f"<h2 style='color:{USJ_BLUE};'>Perception financière</h2>",
-    unsafe_allow_html=True
-)
+elif page == "Facteurs clés d’amélioration":
 
-c10, c11 = st.columns(2)
-
-with c10:
-    kpi_card(
-        "Frais de scolarité / qualité de l’enseignement",
-        df_filtered["Score frais / qualité enseignement"].mean()
+    st.markdown(
+        f"<h2 style='color:{USJ_BLUE};'>Facteurs clés d’amélioration</h2>",
+        unsafe_allow_html=True
     )
 
-with c11:
-    kpi_card(
-        "Frais de scolarité / autres universités",
-        df_filtered["Score frais / autres universités"].mean()
+    st.markdown(
+        """
+        Cette section identifie les dimensions les plus importantes pour expliquer :
+        **la satisfaction globale à l’Université** et **la recommandation de l’USJ**.
+        Les résultats sont présentés comme des priorités d’action pour les décideurs.
+        """
     )
 
-st.markdown("<br>", unsafe_allow_html=True)
+    feature_columns = [
+        "Score enseignement et apprentissage",
+        "Score accompagnement et encadrement",
+        "Score développement des compétences",
+        "Score expérience globale USJ",
+        "Score services USJ",
+        "Score vie étudiante et activités",
+        "Score infrastructures et équipements",
+        "Score frais / qualité enseignement",
+        "Score frais / autres universités"
+    ]
+
+    feature_columns = [col for col in feature_columns if col in df_filtered.columns]
+
+    display_names = {
+        col: clean_component_name(col)
+        for col in feature_columns
+    }
+
+    # -----------------------------
+    # Satisfaction globale
+    # -----------------------------
+
+    st.markdown(
+        f"<h3 style='color:{USJ_BLUE};'>1. Priorités liées à la satisfaction globale</h3>",
+        unsafe_allow_html=True
+    )
+
+    model_sat = df_filtered[feature_columns + ["Score satisfaction globale"]].dropna()
+
+    if len(model_sat) < 30:
+        st.warning("Pas assez de données valides pour analyser la satisfaction globale.")
+    else:
+        X = model_sat[feature_columns]
+        y = model_sat["Score satisfaction globale"]
+
+        rf_sat = RandomForestRegressor(
+            n_estimators=500,
+            random_state=42,
+            max_depth=5
+        )
+
+        rf_sat.fit(X, y)
+
+        importance_sat = pd.DataFrame({
+            "Dimension": [display_names[col] for col in feature_columns],
+            "Importance": rf_sat.feature_importances_
+        })
+
+        importance_sat["Importance (%)"] = (
+            importance_sat["Importance"] / importance_sat["Importance"].sum() * 100
+        ).round(1)
+
+        importance_sat = importance_sat.sort_values("Importance (%)", ascending=False)
+
+        top_sat = importance_sat.iloc[0]
+
+        c1, c2, c3 = st.columns(3)
+
+        with c1:
+            importance_card(
+                "Priorité principale",
+                top_sat["Importance (%)"],
+                top_sat["Dimension"]
+            )
+
+        with c2:
+            importance_card(
+                "Base d’analyse",
+                len(model_sat) / len(df_filtered) * 100,
+                f"{len(model_sat)} répondants valides"
+            )
+
+        with c3:
+            importance_card(
+                "Dimensions analysées",
+                len(feature_columns) / 10 * 100,
+                f"{len(feature_columns)} dimensions"
+            )
+
+        fig_sat = px.bar(
+            importance_sat,
+            x="Importance (%)",
+            y="Dimension",
+            orientation="h",
+            text="Importance (%)",
+            color="Importance (%)",
+            color_continuous_scale=["#C0003B", "#F57C00", "#2E7D32"],
+            title="Poids relatif des dimensions dans la satisfaction globale"
+        )
+
+        fig_sat.update_layout(
+            yaxis=dict(autorange="reversed"),
+            xaxis_title="Importance relative (%)",
+            yaxis_title="",
+            height=520,
+            coloraxis_showscale=False
+        )
+
+        fig_sat.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
+
+        st.plotly_chart(fig_sat, use_container_width=True)
+
+        st.info(
+            f"La dimension la plus déterminante pour la satisfaction globale est "
+            f"**{top_sat['Dimension']}** avec une importance relative de "
+            f"**{top_sat['Importance (%)']:.1f}%**."
+        )
+
+    st.divider()
+
+    # -----------------------------
+    # Recommandation
+    # -----------------------------
+
+    st.markdown(
+        f"<h3 style='color:{USJ_BLUE};'>2. Priorités liées à la recommandation de l’USJ</h3>",
+        unsafe_allow_html=True
+    )
+
+    model_rec = df_filtered[feature_columns + [q43]].copy()
+    model_rec[q43] = model_rec[q43].astype(str).str.strip()
+    model_rec = model_rec[model_rec[q43].isin(["Oui", "Non"])]
+    model_rec["Recommandation"] = model_rec[q43].map({"Oui": 1, "Non": 0})
+    model_rec = model_rec[feature_columns + ["Recommandation"]].dropna()
+
+    if len(model_rec) < 30 or model_rec["Recommandation"].nunique() < 2:
+        st.warning("Pas assez de données valides pour analyser la recommandation.")
+    else:
+        X = model_rec[feature_columns]
+        y = model_rec["Recommandation"]
+
+        rf_rec = RandomForestClassifier(
+            n_estimators=500,
+            random_state=42,
+            max_depth=5,
+            class_weight="balanced"
+        )
+
+        rf_rec.fit(X, y)
+
+        importance_rec = pd.DataFrame({
+            "Dimension": [display_names[col] for col in feature_columns],
+            "Importance": rf_rec.feature_importances_
+        })
+
+        importance_rec["Importance (%)"] = (
+            importance_rec["Importance"] / importance_rec["Importance"].sum() * 100
+        ).round(1)
+
+        importance_rec = importance_rec.sort_values("Importance (%)", ascending=False)
+
+        top_rec = importance_rec.iloc[0]
+
+        c1, c2, c3 = st.columns(3)
+
+        with c1:
+            importance_card(
+                "Priorité principale",
+                top_rec["Importance (%)"],
+                top_rec["Dimension"]
+            )
+
+        with c2:
+            importance_card(
+                "Taux de recommandation",
+                calculate_recommendation_rate(df_filtered, q43),
+                "Réponses Oui"
+            )
+
+        with c3:
+            importance_card(
+                "Base d’analyse",
+                len(model_rec) / len(df_filtered) * 100,
+                f"{len(model_rec)} répondants valides"
+            )
+
+        fig_rec = px.bar(
+            importance_rec,
+            x="Importance (%)",
+            y="Dimension",
+            orientation="h",
+            text="Importance (%)",
+            color="Importance (%)",
+            color_continuous_scale=["#C0003B", "#F57C00", "#2E7D32"],
+            title="Poids relatif des dimensions dans la recommandation de l’USJ"
+        )
+
+        fig_rec.update_layout(
+            yaxis=dict(autorange="reversed"),
+            xaxis_title="Importance relative (%)",
+            yaxis_title="",
+            height=520,
+            coloraxis_showscale=False
+        )
+
+        fig_rec.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
+
+        st.plotly_chart(fig_rec, use_container_width=True)
+
+        st.info(
+            f"La dimension la plus déterminante pour la recommandation de l’USJ est "
+            f"**{top_rec['Dimension']}** avec une importance relative de "
+            f"**{top_rec['Importance (%)']:.1f}%**."
+        )
 
 # =====================================================
 # Footer
