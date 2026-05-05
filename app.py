@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import os
 
 # =====================================================
 # Configuration de la page
@@ -24,8 +25,22 @@ USJ_ORANGE = "#F57C00"
 
 @st.cache_data
 def load_data():
-    df = pd.read_excel("Exit survey 24-25.xlsx")
-    return df
+    possible_files = [
+        "Exit survey 24-25.xlsx",
+        "Exit Survey 24-25.xlsx",
+        "exit survey 24-25.xlsx",
+        "EXIT SURVEY 24-25.xlsx"
+    ]
+
+    for file in possible_files:
+        if os.path.exists(file):
+            df = pd.read_excel(file)
+            return df
+
+    st.error("Excel file not found.")
+    st.write("Available files in the app folder:")
+    st.write(os.listdir("."))
+    st.stop()
 
 
 def recode_series(series, mapping):
@@ -50,20 +65,21 @@ def classer_satisfaction(score):
         return "Forte satisfaction"
 
 
-def kpi_color(value):
-    if pd.isna(value):
+def kpi_color_percentage(value_pct):
+    if pd.isna(value_pct):
         return "#777777"
-    elif value >= 3.25:
+    elif value_pct >= 81.25:
         return USJ_GREEN
-    elif value >= 2.50:
+    elif value_pct >= 62.50:
         return USJ_ORANGE
     else:
         return USJ_RED
 
 
-def kpi_card(title, value, subtitle="Moyenne /4"):
-    color = kpi_color(value)
-    display_value = "NA" if pd.isna(value) else f"{value:.2f}"
+def kpi_card(title, value, subtitle="Score de satisfaction"):
+    value_pct = np.nan if pd.isna(value) else value / 4 * 100
+    color = kpi_color_percentage(value_pct)
+    display_value = "NA" if pd.isna(value_pct) else f"{value_pct:.1f}%"
 
     st.markdown(
         f"""
@@ -91,6 +107,7 @@ def kpi_card(title, value, subtitle="Moyenne /4"):
 
 
 def percent_card(title, value, subtitle="Pourcentage"):
+    color = kpi_color_percentage(value)
     display_value = "NA" if pd.isna(value) else f"{value:.1f}%"
 
     st.markdown(
@@ -100,13 +117,13 @@ def percent_card(title, value, subtitle="Pourcentage"):
             border-radius:18px;
             padding:22px;
             box-shadow:0 4px 14px rgba(0,0,0,0.08);
-            border-left:7px solid {USJ_BLUE};
+            border-left:7px solid {color};
             min-height:145px;
         ">
             <div style="font-size:15px; color:#444; font-weight:600;">
                 {title}
             </div>
-            <div style="font-size:38px; color:{USJ_BLUE}; font-weight:800; margin-top:8px;">
+            <div style="font-size:38px; color:{color}; font-weight:800; margin-top:8px;">
                 {display_value}
             </div>
             <div style="font-size:13px; color:#777; margin-top:4px;">
@@ -385,9 +402,6 @@ filter_cols = st.columns(4)
 
 df_filter_base = df_coded.copy()
 
-# -----------------------------
-# Genre
-# -----------------------------
 with filter_cols[0]:
     genre = st.selectbox(
         "Genre",
@@ -397,13 +411,8 @@ with filter_cols[0]:
 
 df_after_genre = df_filter_base.copy()
 if genre != "Tous":
-    df_after_genre = df_after_genre[
-        df_after_genre["Genre"].astype(str) == genre
-    ]
+    df_after_genre = df_after_genre[df_after_genre["Genre"].astype(str) == genre]
 
-# -----------------------------
-# Faculté
-# -----------------------------
 with filter_cols[1]:
     faculte = st.selectbox(
         "Faculté",
@@ -413,13 +422,8 @@ with filter_cols[1]:
 
 df_after_faculte = df_after_genre.copy()
 if faculte != "Tous":
-    df_after_faculte = df_after_faculte[
-        df_after_faculte["Faculté_Institut_g"].astype(str) == faculte
-    ]
+    df_after_faculte = df_after_faculte[df_after_faculte["Faculté_Institut_g"].astype(str) == faculte]
 
-# -----------------------------
-# Cursus
-# -----------------------------
 with filter_cols[2]:
     cursus = st.selectbox(
         "Cursus",
@@ -429,13 +433,8 @@ with filter_cols[2]:
 
 df_after_cursus = df_after_faculte.copy()
 if cursus != "Tous":
-    df_after_cursus = df_after_cursus[
-        df_after_cursus["Cursus"].astype(str) == cursus
-    ]
+    df_after_cursus = df_after_cursus[df_after_cursus["Cursus"].astype(str) == cursus]
 
-# -----------------------------
-# Niveau
-# -----------------------------
 with filter_cols[3]:
     niveau = st.selectbox(
         "Niveau",
@@ -445,9 +444,7 @@ with filter_cols[3]:
 
 df_filtered = df_after_cursus.copy()
 if niveau != "Tous":
-    df_filtered = df_filtered[
-        df_filtered["Niveau"].astype(str) == niveau
-    ]
+    df_filtered = df_filtered[df_filtered["Niveau"].astype(str) == niveau]
 
 st.markdown(
     f"""
@@ -528,7 +525,7 @@ with c8:
     kpi_card(
         "Vie étudiante et activités",
         df_filtered["Score vie étudiante et activités"].mean(),
-        "Moyenne /4"
+        "Score de satisfaction, Pas au courant exclu"
     )
 
 with c9:
