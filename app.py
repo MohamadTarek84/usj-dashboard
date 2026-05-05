@@ -311,7 +311,7 @@ services_existing = [col for col in services_items if col in df_coded.columns]
 df_coded["Score services USJ"] = df_coded[services_existing].mean(axis=1, skipna=True)
 
 vie_mapping = {
-    "Pas au courant": 0,
+    "Pas au courant": np.nan,
     "Très insatisfaisante": 1,
     "Insatisfaisante": 2,
     "Satisfaisante": 3,
@@ -528,7 +528,7 @@ with c8:
     kpi_card(
         "Vie étudiante et activités",
         df_filtered["Score vie étudiante et activités"].mean(),
-        "Moyenne /4 incluant Pas au courant = 0"
+        "Moyenne /4"
     )
 
 with c9:
