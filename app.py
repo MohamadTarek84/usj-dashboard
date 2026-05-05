@@ -54,12 +54,12 @@ def recode_series(series, mapping):
 def kpi_color_percentage(value_pct):
     if pd.isna(value_pct):
         return "#777777"
-    elif value_pct >= 81.25:
-        return USJ_GREEN
-    elif value_pct >= 62.50:
-        return USJ_ORANGE
-    else:
+    elif value_pct < 50:
         return USJ_RED
+    elif value_pct <= 75:
+        return USJ_BLUE
+    else:
+        return USJ_GREEN
 
 
 def kpi_card(title, value, subtitle="Score de satisfaction"):
