@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import unicodedata
+from textwrap import dedent
 
 st.set_page_config(
     page_title="USJ Exit Survey Dashboard",
@@ -53,26 +54,42 @@ def to_numeric_score(series):
     if numeric.notna().sum() > 0:
         return numeric
 
-    converted = series.astype(str).apply(
-        lambda x: LIKERT_MAP.get(normalize_text(x), None)
-    )
-
+    converted = series.astype(str).map(lambda x: LIKERT_MAP.get(normalize_text(x)))
     return pd.to_numeric(converted, errors="coerce")
 
 
-def find_column(df, possible_names):
-    normalized_cols = {normalize_text(col): col for col in df.columns}
+def find_column(df, candidates):
+    normalized = {normalize_text(c): c for c in df.columns}
 
-    for name in possible_names:
-        key = normalize_text(name)
-        if key in normalized_cols:
-            return normalized_cols[key]
+    for candidate in candidates:
+        key = normalize_text(candidate)
+        if key in normalized:
+            return normalized[key]
+
+    for col in df.columns:
+        col_clean = normalize_text(col)
+        for candidate in candidates:
+            if normalize_text(candidate) in col_clean:
+                return col
 
     return None
 
 
+def score_to_percentage(df, col):
+    if col is None or col not in df.columns:
+        return None
+
+    scores = to_numeric_score(df[col])
+    mean_score = scores.mean()
+
+    if pd.isna(mean_score):
+        return None
+
+    return mean_score / MAX_SCORE * 100
+
+
 def satisfaction_label(pct):
-    if pd.isna(pct):
+    if pct is None or pd.isna(pct):
         return "Non disponible"
     elif pct <= 43.75:
         return "Très faible satisfaction"
@@ -85,7 +102,7 @@ def satisfaction_label(pct):
 
 
 def satisfaction_color(pct):
-    if pd.isna(pct):
+    if pct is None or pd.isna(pct):
         return "#777777"
     elif pct <= 43.75:
         return "#C62828"
@@ -96,57 +113,27 @@ def satisfaction_color(pct):
 
 
 def kpi_card(title, value, subtitle, level, color):
-    st.markdown(
-        f"""
-        <div style="
-            background-color:#FFFFFF;
-            padding:26px;
-            border-radius:22px;
-            box-shadow:0 8px 25px rgba(0,0,0,0.08);
-            border-left:8px solid {color};
-            min-height:220px;
-        ">
-            <div style="font-size:16px; font-weight:800; color:#111; margin-bottom:18px;">
-                {title}
-            </div>
-
-            <div style="font-size:42px; color:{color}; font-weight:900;">
-                {value}
-            </div>
-
-            <div style="font-size:13px; color:#777; margin-top:2px;">
-                {subtitle}
-            </div>
-
-            <div style="
-                display:inline-block;
-                margin-top:18px;
-                padding:6px 12px;
-                border-radius:20px;
-                background-color:{color}20;
-                color:{color};
-                font-size:13px;
-                font-weight:700;
-            ">
-                {level}
-            </div>
+    html = f"""
+    <div style="background-color:#FFFFFF; padding:26px; border-radius:22px;
+                box-shadow:0 8px 25px rgba(0,0,0,0.08);
+                border-left:8px solid {color}; min-height:220px;">
+        <div style="font-size:16px; font-weight:800; color:#111; margin-bottom:18px;">
+            {title}
         </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-
-def score_to_percentage(df, col):
-    if col is None or col not in df.columns:
-        return pd.NA
-
-    scores = to_numeric_score(df[col])
-    mean_score = scores.mean()
-
-    if pd.isna(mean_score):
-        return pd.NA
-
-    return mean_score / MAX_SCORE * 100
+        <div style="font-size:42px; color:{color}; font-weight:900;">
+            {value}
+        </div>
+        <div style="font-size:13px; color:#777; margin-top:2px;">
+            {subtitle}
+        </div>
+        <div style="display:inline-block; margin-top:18px; padding:6px 12px;
+                    border-radius:20px; background-color:{color}20; color:{color};
+                    font-size:13px; font-weight:700;">
+            {level}
+        </div>
+    </div>
+    """
+    st.markdown(dedent(html).strip(), unsafe_allow_html=True)
 
 
 def apply_filters(df):
@@ -203,7 +190,7 @@ satisfaction_col = find_column(
         "Satisfaction globale à l’Université",
         "Satisfaction globale a l'Universite",
         "Satisfaction globale",
-        "Q1",
+        "Q1"
     ]
 )
 
@@ -214,7 +201,7 @@ recommendation_col = find_column(
         "Taux de recommandation de l'USJ",
         "Recommandation",
         "Recommander",
-        "Q2",
+        "Q2"
     ]
 )
 
@@ -225,9 +212,31 @@ experience_col = find_column(
         "Experience globale USJ",
         "Expérience globale",
         "Experience globale",
-        "Q3",
+        "Q3"
     ]
 )
+
+
+with st.sidebar.expander("Choisir les variables KPI si nécessaire"):
+    all_columns = list(df_original.columns)
+
+    satisfaction_col = st.selectbox(
+        "Variable satisfaction globale",
+        all_columns,
+        index=all_columns.index(satisfaction_col) if satisfaction_col in all_columns else 0
+    )
+
+    recommendation_col = st.selectbox(
+        "Variable recommandation",
+        all_columns,
+        index=all_columns.index(recommendation_col) if recommendation_col in all_columns else 0
+    )
+
+    experience_col = st.selectbox(
+        "Variable expérience globale",
+        all_columns,
+        index=all_columns.index(experience_col) if experience_col in all_columns else 0
+    )
 
 
 satisfaction_pct = score_to_percentage(df, satisfaction_col)
@@ -242,30 +251,33 @@ experience_pct = score_to_percentage(df, experience_col)
 col1, col2, col3 = st.columns(3)
 
 with col1:
+    color = satisfaction_color(satisfaction_pct)
     kpi_card(
         "Satisfaction globale à l’Université",
-        f"{satisfaction_pct:.1f}%" if pd.notna(satisfaction_pct) else "N/A",
+        f"{satisfaction_pct:.1f}%" if satisfaction_pct is not None else "N/A",
         "Score de satisfaction",
         satisfaction_label(satisfaction_pct),
-        satisfaction_color(satisfaction_pct)
+        color
     )
 
 with col2:
+    color = satisfaction_color(recommendation_pct)
     kpi_card(
         "Taux de recommandation de l’USJ",
-        f"{recommendation_pct:.1f}%" if pd.notna(recommendation_pct) else "N/A",
+        f"{recommendation_pct:.1f}%" if recommendation_pct is not None else "N/A",
         "Pourcentage",
         satisfaction_label(recommendation_pct),
-        satisfaction_color(recommendation_pct)
+        color
     )
 
 with col3:
+    color = satisfaction_color(experience_pct)
     kpi_card(
         "Expérience globale USJ",
-        f"{experience_pct:.1f}%" if pd.notna(experience_pct) else "N/A",
+        f"{experience_pct:.1f}%" if experience_pct is not None else "N/A",
         "Score de satisfaction",
         satisfaction_label(experience_pct),
-        satisfaction_color(experience_pct)
+        color
     )
 
 
@@ -275,6 +287,3 @@ with st.expander("Variables utilisées"):
         "Recommandation": recommendation_col,
         "Expérience globale": experience_col
     })
-
-with st.expander("Colonnes disponibles"):
-    st.write(df_original.columns.tolist())
