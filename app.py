@@ -532,7 +532,6 @@ elif page == "Facteurs clés d’amélioration":
         "Score enseignement et apprentissage",
         "Score accompagnement et encadrement",
         "Score développement des compétences",
-        "Score expérience globale USJ",
         "Score services USJ",
         "Score vie étudiante et activités",
         "Score infrastructures et équipements",
