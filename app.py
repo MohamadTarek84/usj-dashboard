@@ -1,490 +1,536 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
+import plotly.express as px
 
-# =====================================================
-# Configuration
-# =====================================================
+# ============================================================
+# PAGE CONFIG
+# ============================================================
 
 st.set_page_config(
-    page_title="USJ Exit Survey 2024-2025",
+    page_title="USJ Exit Survey Dashboard",
     page_icon="📊",
     layout="wide"
 )
 
-USJ_BLUE = "#001B75"
-USJ_RED = "#C0003B"
-USJ_GREEN = "#2E7D32"
-USJ_ORANGE = "#F57C00"
+# ============================================================
+# CONSTANTS
+# ============================================================
 
-# =====================================================
-# Functions
-# =====================================================
+MAX_SCORE = 4
+
+# ============================================================
+# DATA LOADING
+# ============================================================
 
 @st.cache_data
 def load_data():
-    return pd.read_excel("Exit survey 24-25.xlsx")
-
-def recode_series(series, mapping):
-    return (
-        series.astype(str)
-        .str.strip()
-        .replace(mapping)
-        .replace({"nan": np.nan})
-    )
-
-def score_to_percent(value):
-    if pd.isna(value):
-        return np.nan
-    return value / 4 * 100
-
-def kpi_status_percent(value):
-    if pd.isna(value):
-        return "Non disponible", "#777777"
-    elif value >= 81.25:
-        return "Forte satisfaction", USJ_GREEN
-    elif value >= 62.5:
-        return "Satisfaction modérée", USJ_ORANGE
-    else:
-        return "Faible satisfaction", USJ_RED
-
-def recommendation_status(value):
-    if pd.isna(value):
-        return "Non disponible", "#777777"
-    elif value >= 80:
-        return "Très bon niveau", USJ_GREEN
-    elif value >= 60:
-        return "Niveau acceptable", USJ_ORANGE
-    else:
-        return "Niveau faible", USJ_RED
-
-def kpi_card(title, mean_value, subtitle="Score de satisfaction"):
-    percent_value = score_to_percent(mean_value)
-    status, color = kpi_status_percent(percent_value)
-    display_value = "NA" if pd.isna(percent_value) else f"{percent_value:.1f}%"
-
-    st.markdown(
-        f"""
-        <div style="
-            background: linear-gradient(135deg, white 0%, #f8f9fc 100%);
-            border-radius:22px;
-            padding:24px;
-            box-shadow:0 8px 22px rgba(0,0,0,0.10);
-            border-left:9px solid {color};
-            min-height:170px;
-        ">
-            <div style="font-size:15px; color:#333; font-weight:700;">
-                {title}
-            </div>
-
-            <div style="font-size:42px; color:{color}; font-weight:900; margin-top:10px;">
-                {display_value}
-            </div>
-
-            <div style="font-size:13px; color:#777; margin-top:2px;">
-                {subtitle}
-            </div>
-
-            <div style="
-                display:inline-block;
-                margin-top:14px;
-                padding:6px 12px;
-                border-radius:20px;
-                background-color:{color}20;
-                color:{color};
-                font-size:13px;
-                font-weight:700;
-            ">
-                {status}
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-def percent_card(title, value, subtitle="Pourcentage"):
-    status, color = recommendation_status(value)
-    display_value = "NA" if pd.isna(value) else f"{value:.1f}%"
-
-    st.markdown(
-        f"""
-        <div style="
-            background: linear-gradient(135deg, white 0%, #f8f9fc 100%);
-            border-radius:22px;
-            padding:24px;
-            box-shadow:0 8px 22px rgba(0,0,0,0.10);
-            border-left:9px solid {color};
-            min-height:170px;
-        ">
-            <div style="font-size:15px; color:#333; font-weight:700;">
-                {title}
-            </div>
-
-            <div style="font-size:42px; color:{color}; font-weight:900; margin-top:10px;">
-                {display_value}
-            </div>
-
-            <div style="font-size:13px; color:#777; margin-top:2px;">
-                {subtitle}
-            </div>
-
-            <div style="
-                display:inline-block;
-                margin-top:14px;
-                padding:6px 12px;
-                border-radius:20px;
-                background-color:{color}20;
-                color:{color};
-                font-size:13px;
-                font-weight:700;
-            ">
-                {status}
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-def get_options(data, column):
-    values = sorted(data[column].dropna().astype(str).unique())
-    return ["Tous"] + values
-
-def apply_filter(data, column, value):
-    if value == "Tous":
-        return data
-    return data[data[column].astype(str) == value]
-
-# =====================================================
-# Load data
-# =====================================================
+    file_path = "Exit survey 24-25.xlsx"
+    df = pd.read_excel(file_path)
+    return df
 
 df_original = load_data()
-df_coded = df_original.copy()
 
-# =====================================================
-# Mappings
-# =====================================================
+# ============================================================
+# HELPER FUNCTIONS
+# ============================================================
 
-satisfaction_mapping_f = {
-    "Très insatisfaisante": 1,
-    "Insatisfaisante": 2,
-    "Satisfaisante": 3,
-    "Très satisfaisante": 4
-}
+def satisfaction_label(pct):
+    if pd.isna(pct):
+        return "Non disponible"
+    elif pct <= 43.75:
+        return "Très faible satisfaction"
+    elif pct <= 62.50:
+        return "Faible satisfaction"
+    elif pct <= 81.25:
+        return "Satisfaction modérée"
+    else:
+        return "Forte satisfaction"
 
-satisfaction_mapping_m = {
-    "Très insatisfaisant": 1,
-    "Insatisfait": 2,
-    "Satisfait": 3,
-    "Très satisfait": 4
-}
 
-accord_mapping = {
-    "Pas du tout d’accord": 1,
-    "Pas d’accord": 2,
-    "D’accord": 3,
-    "Tout à fait d’accord": 4
-}
+def satisfaction_color(pct):
+    if pd.isna(pct):
+        return "#777777"
+    elif pct <= 43.75:
+        return "#C62828"
+    elif pct <= 62.50:
+        return "#F57C00"
+    elif pct <= 81.25:
+        return "#F57C00"
+    else:
+        return "#2E7D32"
 
-vie_mapping = {
-    "Pas au courant": 0,
-    "Très insatisfaisante": 1,
-    "Insatisfaisante": 2,
-    "Satisfaisante": 3,
-    "Très satisfaisante": 4
-}
 
-# =====================================================
-# Variables
-# =====================================================
+def kpi_card(title, value, subtitle, level, color):
+    st.markdown(
+        f"""
+        <div style="
+            background-color:#FFFFFF;
+            padding:26px;
+            border-radius:22px;
+            box-shadow:0 8px 25px rgba(0,0,0,0.08);
+            border-left:8px solid {color};
+            min-height:230px;
+        ">
+            <div style="font-size:16px; font-weight:800; color:#111; margin-bottom:18px;">
+                {title}
+            </div>
 
-enseignement_items = [
-    "1_a- La qualité de l'enseignement dans les unités d’enseignement obligatoires",
-    "1_b- La qualité de l'enseignement dans les unités d’enseignement optionnelles",
-    "1_c- La qualité de l'enseignement dans les cours de langue",
-    "1_d- Usage de méthodes pédagogiques actives",
-    "1_e- Usage des outils technologiques par les enseignants",
-    "1_f- La pertinence du programme",
-    "1_g- La charge de travail du programme",
-    "1_h- La qualité des expériences labo/labo informatique"
-]
+            <div style="font-size:42px; color:{color}; font-weight:900;">
+                {value}
+            </div>
 
-accompagnement_items = [
-    "2a- Qualité du conseil et de l'orientation académique",
-    "2b- Qualité du conseil et de l'orientation administratif",
-    "2c- Disponibilité & interaction avec les enseignants",
-    "2d- Disponibilité & interaction avec le personnel administratif"
-]
+            <div style="font-size:13px; color:#777; margin-top:2px;">
+                {subtitle}
+            </div>
 
-competences_items = [
-    "5_a- Améliorer les compétences numériques",
-    "5_b- Améliorer les capacités de travail en équipe",
-    "5_c- Travailler avec des personnes d'origines et de cultures variées",
-    "5_d- Développer les capacités d'analyse et de résolution de problèmes",
-    "5_e- Développer une réflexion personnelle",
-    "5_f- Développer les compétences en matière de communication écrite",
-    "5_g- Développer les compétences en matière de communication orale",
-    "5_h- Développer les capacités de planification",
-    "5_i- Développer la capacité d’apprendre tout au long de la vie",
-    "5_j- Acquérir des compétences entrepreneuriales"
-]
+            <div style="
+                display:inline-block;
+                margin-top:18px;
+                padding:6px 12px;
+                border-radius:20px;
+                background-color:{color}20;
+                color:{color};
+                font-size:13px;
+                font-weight:700;
+            ">
+                {level}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
-experience_items = [
-    "41_a- Votre expérience académique à l’USJ",
-    "41_b- Votre expérience de la vie étudiante à l’USJ",
-    "41_c- Vos opportunités de développement personnel",
-    "41_d- Votre acquisition des compétences nécessaires"
-]
 
-services_items = [
-    "28_a-Processus d’admission",
-    "28_b-Service d'aide psychologique",
-    "28_c-Service de l’insertion professionnelle",
-    "28_d-Service étudiant d’information et d’orientation",
-    "28_e-Service social",
-    "28_f-Service de la vie étudiante",
-    "28_g-USJ en mission",
-    "28_h-O7",
-    "28_i-Service du sport",
-    "28_j-Service de soins (Centre de soins dentaires, …)",
-    "28_k-Aumônerie et pastorale"
-]
+def apply_linked_filters(df):
+    st.sidebar.header("Filtres")
 
-infrastructures_items = [
-    "40_a- Accès aux ordinateurs",
-    "40_b- Accès aux logiciels",
-    "40_c- Accès à une connexion Internet/WiFi fiable et rapide sur le campus",
-    "40_d- Aménagement des installations pour les personnes handicapées ou ayant des besoins particuliers",
-    "40_e- Salles de cours",
-    "40_f- Laboratoires et laboratoires informatiques",
-    "40_g- Ressources des bibliothèques",
-    "40_h- Gym et Installations sportives",
-    "40_i- Qualité des aliments et variété du menu de la cafeteria",
-    "40_j- Modernité et propreté des installations et équipements",
-    "40_k- Espace extérieur",
-    "40_l- Dortoirs",
-    "40_m- Parking"
-]
+    filtered_df = df.copy()
 
-vie_items = [
-    col for col in [
-        "29_a- Activités organisées par la pastorale / l’Aumônerie",
-        "29_b- Activités sociales par campus / Événements et clubs étudiants",
-        "29_c- Vie sur le campus, environnement et ambiance sociales",
-        "29_d- Liberté d'expression et respect des croyances religieuses d’autrui",
-        "29_e- Activités sportives",
-        "29_f- Clubs étudiants",
-        "29_g- Leadership et bénévolat (O7/USJ en mission)",
-        "29_h- Activités du Service de la vie étudiante"
-    ]
-    if col in df_coded.columns
-]
-
-# =====================================================
-# Scores
-# =====================================================
-
-def create_score(items, mapping, score_name):
-    existing_items = [col for col in items if col in df_coded.columns]
-    for col in existing_items:
-        df_coded[col] = pd.to_numeric(
-            recode_series(df_original[col], mapping),
-            errors="coerce"
-        )
-    df_coded[score_name] = df_coded[existing_items].mean(axis=1, skipna=True)
-
-create_score(enseignement_items, satisfaction_mapping_f, "Score enseignement et apprentissage")
-create_score(accompagnement_items, satisfaction_mapping_f, "Score accompagnement et encadrement")
-create_score(competences_items, accord_mapping, "Score développement des compétences")
-create_score(experience_items, satisfaction_mapping_f, "Score expérience globale USJ")
-create_score(services_items, satisfaction_mapping_f, "Score services USJ")
-create_score(infrastructures_items, satisfaction_mapping_f, "Score infrastructures et équipements")
-create_score(vie_items, vie_mapping, "Score vie étudiante et activités")
-
-q42 = "42-Quel est le niveau de votre satisfaction globale à l’Université ?"
-df_coded["Score satisfaction globale"] = pd.to_numeric(
-    recode_series(df_original[q42], satisfaction_mapping_m),
-    errors="coerce"
-)
-
-q43 = "43-Recommanderiez-vous l’USJ à un proche ou à un ami ?"
-df_coded[q43] = df_original[q43].astype(str).str.strip().replace({"nan": np.nan})
-
-q26 = "26- satisfait par les frais de scolarité à l’USJ par rapport à la qualité de l’enseignement ?"
-q27 = "27- satisfait par les frais de scolarité à l’USJ par rapport à ceux d’autres universités ?"
-
-df_coded["Score frais / qualité enseignement"] = pd.to_numeric(
-    recode_series(df_original[q26], satisfaction_mapping_m),
-    errors="coerce"
-)
-
-df_coded["Score frais / autres universités"] = pd.to_numeric(
-    recode_series(df_original[q27], satisfaction_mapping_m),
-    errors="coerce"
-)
-
-# =====================================================
-# Header
-# =====================================================
-
-st.markdown(
-    f"""
-    <h1 style="color:{USJ_BLUE}; margin-bottom:0;">
-        Tableau de bord – Exit Survey USJ 2024-2025
-    </h1>
-    <p style="font-size:18px; color:#555; margin-top:4px;">
-        Indicateurs clés de satisfaction
-    </p>
-    """,
-    unsafe_allow_html=True
-)
-
-st.divider()
-
-# =====================================================
-# Linked filters
-# =====================================================
-
-st.markdown(
-    f"<h3 style='color:{USJ_BLUE};'>Filtres</h3>",
-    unsafe_allow_html=True
-)
-
-f1, f2, f3, f4 = st.columns(4)
-
-with f1:
-    genre = st.selectbox("Genre", get_options(df_coded, "Genre"))
-
-df_after_genre = apply_filter(df_coded, "Genre", genre)
-
-with f2:
-    faculte = st.selectbox(
+    filter_columns = [
+        "Institution",
         "Faculté",
-        get_options(df_after_genre, "Faculté_Institut_g")
-    )
-
-df_after_faculte = apply_filter(df_after_genre, "Faculté_Institut_g", faculte)
-
-with f3:
-    cursus = st.selectbox(
+        "Diplôme",
         "Cursus",
-        get_options(df_after_faculte, "Cursus")
+        "Niveau"
+    ]
+
+    for col in filter_columns:
+        if col in filtered_df.columns:
+            available_options = sorted(filtered_df[col].dropna().unique())
+
+            selected_options = st.sidebar.multiselect(
+                col,
+                available_options,
+                default=available_options
+            )
+
+            filtered_df = filtered_df[filtered_df[col].isin(selected_options)]
+
+    return filtered_df
+
+
+# ============================================================
+# PAGE 1: GLOBAL KPIs
+# ============================================================
+
+def page_1_kpis(df):
+
+    st.title("Satisfaction globale et expérience")
+
+    filtered_df = apply_linked_filters(df)
+
+    if filtered_df.empty:
+        st.warning("Aucune donnée disponible pour les filtres sélectionnés.")
+        return
+
+    # ------------------------------------------------------------
+    # Adjust these variable names if needed
+    # ------------------------------------------------------------
+
+    satisfaction_global_col = "Satisfaction globale à l’Université"
+    recommendation_col = "Taux de recommandation de l’USJ"
+    experience_col = "Expérience globale USJ"
+
+    required_cols = [
+        satisfaction_global_col,
+        recommendation_col,
+        experience_col
+    ]
+
+    missing_cols = [col for col in required_cols if col not in filtered_df.columns]
+
+    if missing_cols:
+        st.error("Colonnes manquantes dans le fichier :")
+        st.write(missing_cols)
+        return
+
+    # ------------------------------------------------------------
+    # Compute KPIs as percentages
+    # ------------------------------------------------------------
+
+    satisfaction_global_mean = filtered_df[satisfaction_global_col].mean()
+    satisfaction_global_pct = satisfaction_global_mean / MAX_SCORE * 100
+    satisfaction_global_level = satisfaction_label(satisfaction_global_pct)
+    satisfaction_global_color = satisfaction_color(satisfaction_global_pct)
+
+    recommendation_mean = filtered_df[recommendation_col].mean()
+    recommendation_pct = recommendation_mean / MAX_SCORE * 100
+    recommendation_level = satisfaction_label(recommendation_pct)
+    recommendation_color = satisfaction_color(recommendation_pct)
+
+    experience_mean = filtered_df[experience_col].mean()
+    experience_pct = experience_mean / MAX_SCORE * 100
+    experience_level = satisfaction_label(experience_pct)
+    experience_color = satisfaction_color(experience_pct)
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        kpi_card(
+            "Satisfaction globale à l’Université",
+            f"{satisfaction_global_pct:.1f}%",
+            "Score de satisfaction",
+            satisfaction_global_level,
+            satisfaction_global_color
+        )
+
+    with col2:
+        kpi_card(
+            "Taux de recommandation de l’USJ",
+            f"{recommendation_pct:.1f}%",
+            "Pourcentage",
+            recommendation_level,
+            recommendation_color
+        )
+
+    with col3:
+        kpi_card(
+            "Expérience globale USJ",
+            f"{experience_pct:.1f}%",
+            "Score de satisfaction",
+            experience_level,
+            experience_color
+        )
+
+
+# ============================================================
+# PAGE 2: DETAILED SATISFACTION ANALYSIS
+# ============================================================
+
+def page_2_satisfaction_analysis(df):
+
+    st.title("Analyse détaillée de la satisfaction")
+
+    filtered_df = apply_linked_filters(df)
+
+    if filtered_df.empty:
+        st.warning("Aucune donnée disponible pour les filtres sélectionnés.")
+        return
+
+    satisfaction_cols = [
+        col for col in filtered_df.columns
+        if col.startswith("Q5")
+    ]
+
+    if len(satisfaction_cols) == 0:
+        st.error("Aucune colonne Q5 trouvée. Vérifiez les noms des variables.")
+        return
+
+    st.markdown(
+        """
+        Les scores de satisfaction sont présentés en pourcentage selon la formule suivante :
+
+        **Pourcentage de satisfaction = moyenne / 4 × 100**
+        """
     )
 
-df_after_cursus = apply_filter(df_after_faculte, "Cursus", cursus)
+    # ------------------------------------------------------------
+    # Satisfaction by item
+    # ------------------------------------------------------------
 
-with f4:
-    niveau = st.selectbox(
-        "Niveau",
-        get_options(df_after_cursus, "Niveau")
+    st.subheader("1. Satisfaction par item")
+
+    summary = []
+
+    for col in satisfaction_cols:
+        mean_score = filtered_df[col].mean()
+        pct_score = mean_score / MAX_SCORE * 100
+
+        summary.append({
+            "Item": col,
+            "Moyenne": round(mean_score, 2),
+            "Satisfaction (%)": round(pct_score, 1),
+            "Niveau": satisfaction_label(pct_score),
+            "N valide": filtered_df[col].notna().sum()
+        })
+
+    summary_df = pd.DataFrame(summary).sort_values(
+        by="Satisfaction (%)",
+        ascending=False
     )
 
-df_filtered = apply_filter(df_after_cursus, "Niveau", niveau)
+    st.dataframe(summary_df, use_container_width=True)
 
-st.markdown(
-    f"""
-    <div style="font-size:16px; margin-top:10px; margin-bottom:18px;">
-        <b>Nombre de répondants affichés :</b> {len(df_filtered)}
-    </div>
-    """,
-    unsafe_allow_html=True
-)
-
-# =====================================================
-# Section 1
-# =====================================================
-
-st.markdown(
-    f"<h2 style='color:{USJ_BLUE};'>Satisfaction globale et expérience</h2>",
-    unsafe_allow_html=True
-)
-
-c1, c2, c3 = st.columns(3)
-
-with c1:
-    kpi_card("Satisfaction globale à l’Université", df_filtered["Score satisfaction globale"].mean())
-
-with c2:
-    valid_reco = df_filtered[q43].notna().sum()
-    taux_recommandation = np.nan if valid_reco == 0 else df_filtered[q43].eq("Oui").sum() / valid_reco * 100
-    percent_card("Taux de recommandation de l’USJ", taux_recommandation)
-
-with c3:
-    kpi_card("Expérience globale USJ", df_filtered["Score expérience globale USJ"].mean())
-
-c4, c5, c6 = st.columns(3)
-
-with c4:
-    kpi_card("Enseignement et apprentissage", df_filtered["Score enseignement et apprentissage"].mean())
-
-with c5:
-    kpi_card("Accompagnement et encadrement", df_filtered["Score accompagnement et encadrement"].mean())
-
-with c6:
-    kpi_card("Développement des compétences", df_filtered["Score développement des compétences"].mean())
-
-st.markdown("<br>", unsafe_allow_html=True)
-
-# =====================================================
-# Section 2
-# =====================================================
-
-st.markdown(
-    f"<h2 style='color:{USJ_BLUE};'>Vie étudiante, services et environnement</h2>",
-    unsafe_allow_html=True
-)
-
-c7, c8, c9 = st.columns(3)
-
-with c7:
-    kpi_card("Services de l’USJ", df_filtered["Score services USJ"].mean())
-
-with c8:
-    kpi_card(
-        "Vie étudiante et activités",
-        df_filtered["Score vie étudiante et activités"].mean(),
-        "Score incluant Pas au courant = 0"
+    fig_items = px.bar(
+        summary_df,
+        x="Satisfaction (%)",
+        y="Item",
+        orientation="h",
+        text="Satisfaction (%)",
+        color="Niveau",
+        title="Pourcentage de satisfaction par item",
+        color_discrete_map={
+            "Très faible satisfaction": "#C62828",
+            "Faible satisfaction": "#F57C00",
+            "Satisfaction modérée": "#F57C00",
+            "Forte satisfaction": "#2E7D32"
+        }
     )
 
-with c9:
-    kpi_card("Infrastructures et équipements", df_filtered["Score infrastructures et équipements"].mean())
+    fig_items.update_layout(
+        yaxis=dict(autorange="reversed"),
+        xaxis_title="Satisfaction (%)",
+        yaxis_title="Item",
+        height=600
+    )
 
-st.markdown("<br>", unsafe_allow_html=True)
+    fig_items.update_traces(
+        texttemplate="%{text:.1f}%",
+        textposition="outside"
+    )
 
-# =====================================================
-# Section 3
-# =====================================================
+    st.plotly_chart(fig_items, use_container_width=True)
 
-st.markdown(
-    f"<h2 style='color:{USJ_BLUE};'>Perception financière</h2>",
-    unsafe_allow_html=True
+    # ------------------------------------------------------------
+    # Overall satisfaction
+    # ------------------------------------------------------------
+
+    st.subheader("2. Score global de satisfaction")
+
+    filtered_df["Score global moyen"] = filtered_df[satisfaction_cols].mean(axis=1)
+    filtered_df["Satisfaction globale (%)"] = (
+        filtered_df["Score global moyen"] / MAX_SCORE * 100
+    )
+
+    overall_mean = filtered_df["Score global moyen"].mean()
+    overall_pct = filtered_df["Satisfaction globale (%)"].mean()
+    overall_level = satisfaction_label(overall_pct)
+    overall_color = satisfaction_color(overall_pct)
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        kpi_card(
+            "Score moyen global",
+            f"{overall_mean:.2f} / 4",
+            "Moyenne des items Q5",
+            overall_level,
+            overall_color
+        )
+
+    with col2:
+        kpi_card(
+            "Satisfaction globale",
+            f"{overall_pct:.1f}%",
+            "Score transformé en pourcentage",
+            overall_level,
+            overall_color
+        )
+
+    with col3:
+        kpi_card(
+            "Niveau de satisfaction",
+            overall_level,
+            "Classification automatique",
+            "Basé sur les seuils définis",
+            overall_color
+        )
+
+    # ------------------------------------------------------------
+    # Distribution
+    # ------------------------------------------------------------
+
+    st.subheader("3. Distribution des niveaux de satisfaction")
+
+    filtered_df["Catégorie de satisfaction"] = filtered_df[
+        "Satisfaction globale (%)"
+    ].apply(satisfaction_label)
+
+    dist_df = (
+        filtered_df["Catégorie de satisfaction"]
+        .value_counts()
+        .reset_index()
+    )
+
+    dist_df.columns = ["Catégorie", "Fréquence"]
+    dist_df["Pourcentage"] = (
+        dist_df["Fréquence"] / dist_df["Fréquence"].sum() * 100
+    ).round(1)
+
+    st.dataframe(dist_df, use_container_width=True)
+
+    fig_dist = px.bar(
+        dist_df,
+        x="Catégorie",
+        y="Pourcentage",
+        text="Pourcentage",
+        color="Catégorie",
+        title="Distribution des niveaux de satisfaction",
+        color_discrete_map={
+            "Très faible satisfaction": "#C62828",
+            "Faible satisfaction": "#F57C00",
+            "Satisfaction modérée": "#F57C00",
+            "Forte satisfaction": "#2E7D32"
+        }
+    )
+
+    fig_dist.update_traces(
+        texttemplate="%{text:.1f}%",
+        textposition="outside"
+    )
+
+    fig_dist.update_layout(
+        xaxis_title="Catégorie",
+        yaxis_title="Pourcentage",
+        showlegend=False
+    )
+
+    st.plotly_chart(fig_dist, use_container_width=True)
+
+    # ------------------------------------------------------------
+    # Group comparison
+    # ------------------------------------------------------------
+
+    st.subheader("4. Comparaison par groupe")
+
+    group_options = [
+        col for col in ["Institution", "Faculté", "Diplôme", "Cursus", "Niveau"]
+        if col in filtered_df.columns
+    ]
+
+    group_var = st.selectbox(
+        "Choisir la variable de comparaison",
+        group_options
+    )
+
+    group_summary = (
+        filtered_df
+        .groupby(group_var)["Satisfaction globale (%)"]
+        .agg(["count", "mean", "std"])
+        .reset_index()
+    )
+
+    group_summary.columns = [
+        group_var,
+        "N valide",
+        "Satisfaction moyenne (%)",
+        "Écart-type"
+    ]
+
+    group_summary["Satisfaction moyenne (%)"] = group_summary[
+        "Satisfaction moyenne (%)"
+    ].round(1)
+
+    group_summary["Écart-type"] = group_summary["Écart-type"].round(2)
+
+    group_summary["Niveau"] = group_summary[
+        "Satisfaction moyenne (%)"
+    ].apply(satisfaction_label)
+
+    group_summary = group_summary.sort_values(
+        by="Satisfaction moyenne (%)",
+        ascending=False
+    )
+
+    st.dataframe(group_summary, use_container_width=True)
+
+    fig_group = px.bar(
+        group_summary,
+        x=group_var,
+        y="Satisfaction moyenne (%)",
+        text="Satisfaction moyenne (%)",
+        color="Niveau",
+        title=f"Satisfaction globale selon {group_var}",
+        color_discrete_map={
+            "Très faible satisfaction": "#C62828",
+            "Faible satisfaction": "#F57C00",
+            "Satisfaction modérée": "#F57C00",
+            "Forte satisfaction": "#2E7D32"
+        }
+    )
+
+    fig_group.update_traces(
+        texttemplate="%{text:.1f}%",
+        textposition="outside"
+    )
+
+    fig_group.update_layout(
+        xaxis_title=group_var,
+        yaxis_title="Satisfaction moyenne (%)",
+        xaxis_tickangle=-45
+    )
+
+    st.plotly_chart(fig_group, use_container_width=True)
+
+    # ------------------------------------------------------------
+    # Interpretation
+    # ------------------------------------------------------------
+
+    st.subheader("5. Interprétation automatique")
+
+    best_item = summary_df.iloc[0]
+    weakest_item = summary_df.iloc[-1]
+
+    best_group = group_summary.iloc[0]
+    weakest_group = group_summary.iloc[-1]
+
+    st.markdown(f"""
+    Le score global de satisfaction est de **{overall_pct:.1f}%**, ce qui correspond à un niveau de **{overall_level}**.
+
+    L’item le mieux évalué est **{best_item["Item"]}**, avec un score de satisfaction de **{best_item["Satisfaction (%)"]:.1f}%**.
+
+    L’item le moins bien évalué est **{weakest_item["Item"]}**, avec un score de satisfaction de **{weakest_item["Satisfaction (%)"]:.1f}%**.
+
+    Selon la variable **{group_var}**, le niveau de satisfaction le plus élevé est observé pour **{best_group[group_var]}** avec **{best_group["Satisfaction moyenne (%)"]:.1f}%**, tandis que le niveau le plus faible est observé pour **{weakest_group[group_var]}** avec **{weakest_group["Satisfaction moyenne (%)"]:.1f}%**.
+    """)
+
+    # ------------------------------------------------------------
+    # Export
+    # ------------------------------------------------------------
+
+    st.subheader("6. Export des résultats")
+
+    st.download_button(
+        label="Télécharger le tableau de satisfaction par item",
+        data=summary_df.to_csv(index=False).encode("utf-8-sig"),
+        file_name="page2_satisfaction_par_item.csv",
+        mime="text/csv"
+    )
+
+    st.download_button(
+        label="Télécharger le tableau de satisfaction par groupe",
+        data=group_summary.to_csv(index=False).encode("utf-8-sig"),
+        file_name="page2_satisfaction_par_groupe.csv",
+        mime="text/csv"
+    )
+
+
+# ============================================================
+# NAVIGATION
+# ============================================================
+
+st.sidebar.title("USJ Exit Survey Dashboard")
+
+page = st.sidebar.radio(
+    "Navigation",
+    [
+        "Page 1 - KPIs globaux",
+        "Page 2 - Satisfaction détaillée"
+    ]
 )
 
-c10, c11 = st.columns(2)
+if page == "Page 1 - KPIs globaux":
+    page_1_kpis(df_original)
 
-with c10:
-    kpi_card("Frais de scolarité / qualité de l’enseignement", df_filtered["Score frais / qualité enseignement"].mean())
-
-with c11:
-    kpi_card("Frais de scolarité / autres universités", df_filtered["Score frais / autres universités"].mean())
-
-# =====================================================
-# Footer
-# =====================================================
-
-st.markdown(
-    f"""
-    <div style="
-        margin-top:35px;
-        padding:15px;
-        background-color:{USJ_BLUE};
-        color:white;
-        border-radius:12px;
-        text-align:center;
-        font-size:14px;
-    ">
-        Université Saint-Joseph de Beyrouth – Exit Survey 2024-2025
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+elif page == "Page 2 - Satisfaction détaillée":
+    page_2_satisfaction_analysis(df_original)
