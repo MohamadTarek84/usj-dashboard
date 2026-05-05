@@ -3,7 +3,6 @@ import pandas as pd
 import numpy as np
 import os
 import plotly.express as px
-
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 
 # =====================================================
@@ -70,23 +69,12 @@ def kpi_card(title, value, subtitle="Score de satisfaction"):
 
     st.markdown(
         f"""
-        <div style="
-            background-color:white;
-            border-radius:18px;
-            padding:22px;
-            box-shadow:0 4px 14px rgba(0,0,0,0.08);
-            border-left:7px solid {color};
-            min-height:145px;
-        ">
-            <div style="font-size:15px; color:#444; font-weight:600;">
-                {title}
-            </div>
-            <div style="font-size:38px; color:{color}; font-weight:800; margin-top:8px;">
-                {display_value}
-            </div>
-            <div style="font-size:13px; color:#777; margin-top:4px;">
-                {subtitle}
-            </div>
+        <div style="background-color:white; border-radius:18px; padding:22px;
+                    box-shadow:0 4px 14px rgba(0,0,0,0.08);
+                    border-left:7px solid {color}; min-height:145px;">
+            <div style="font-size:15px; color:#444; font-weight:600;">{title}</div>
+            <div style="font-size:38px; color:{color}; font-weight:800; margin-top:8px;">{display_value}</div>
+            <div style="font-size:13px; color:#777; margin-top:4px;">{subtitle}</div>
         </div>
         """,
         unsafe_allow_html=True
@@ -99,23 +87,12 @@ def percent_card(title, value, subtitle="Pourcentage"):
 
     st.markdown(
         f"""
-        <div style="
-            background-color:white;
-            border-radius:18px;
-            padding:22px;
-            box-shadow:0 4px 14px rgba(0,0,0,0.08);
-            border-left:7px solid {color};
-            min-height:145px;
-        ">
-            <div style="font-size:15px; color:#444; font-weight:600;">
-                {title}
-            </div>
-            <div style="font-size:38px; color:{color}; font-weight:800; margin-top:8px;">
-                {display_value}
-            </div>
-            <div style="font-size:13px; color:#777; margin-top:4px;">
-                {subtitle}
-            </div>
+        <div style="background-color:white; border-radius:18px; padding:22px;
+                    box-shadow:0 4px 14px rgba(0,0,0,0.08);
+                    border-left:7px solid {color}; min-height:145px;">
+            <div style="font-size:15px; color:#444; font-weight:600;">{title}</div>
+            <div style="font-size:38px; color:{color}; font-weight:800; margin-top:8px;">{display_value}</div>
+            <div style="font-size:13px; color:#777; margin-top:4px;">{subtitle}</div>
         </div>
         """,
         unsafe_allow_html=True
@@ -128,23 +105,32 @@ def importance_card(title, value, subtitle):
 
     st.markdown(
         f"""
+        <div style="background-color:white; border-radius:18px; padding:22px;
+                    box-shadow:0 4px 14px rgba(0,0,0,0.08);
+                    border-left:7px solid {color}; min-height:155px;">
+            <div style="font-size:15px; color:#444; font-weight:700;">{title}</div>
+            <div style="font-size:36px; color:{color}; font-weight:900; margin-top:8px;">{display_value}</div>
+            <div style="font-size:13px; color:#777; margin-top:4px;">{subtitle}</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+def summary_box(text, color=USJ_BLUE, background="#F7F9FC"):
+    st.markdown(
+        f"""
         <div style="
-            background-color:white;
-            border-radius:18px;
-            padding:22px;
-            box-shadow:0 4px 14px rgba(0,0,0,0.08);
-            border-left:7px solid {color};
-            min-height:155px;
+            background-color:{background};
+            border-left:6px solid {color};
+            padding:18px;
+            border-radius:14px;
+            margin-top:20px;
+            margin-bottom:20px;
+            font-size:16px;
+            line-height:1.6;
         ">
-            <div style="font-size:15px; color:#444; font-weight:700;">
-                {title}
-            </div>
-            <div style="font-size:36px; color:{color}; font-weight:900; margin-top:8px;">
-                {display_value}
-            </div>
-            <div style="font-size:13px; color:#777; margin-top:4px;">
-                {subtitle}
-            </div>
+            {text}
         </div>
         """,
         unsafe_allow_html=True
@@ -181,28 +167,39 @@ def pct_from_mean(value):
     return value / 4 * 100
 
 
-def summary_box(text, color=USJ_BLUE, background="#F7F9FC"):
-    st.markdown(
-        f"""
-        <div style="
-            background-color:{background};
-            border-left:6px solid {color};
-            padding:18px;
-            border-radius:14px;
-            margin-top:20px;
-            margin-bottom:20px;
-            font-size:16px;
-            line-height:1.6;
-        ">
-            {text}
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+def cronbach_alpha(data):
+    data = data.dropna()
+
+    if data.shape[0] < 5 or data.shape[1] < 2:
+        return np.nan
+
+    item_variances = data.var(axis=0, ddof=1)
+    total_variance = data.sum(axis=1).var(ddof=1)
+    n_items = data.shape[1]
+
+    if total_variance == 0:
+        return np.nan
+
+    return (n_items / (n_items - 1)) * (1 - item_variances.sum() / total_variance)
+
+
+def alpha_interpretation(alpha):
+    if pd.isna(alpha):
+        return "Non calculable"
+    elif alpha >= 0.90:
+        return "Excellente cohérence interne"
+    elif alpha >= 0.80:
+        return "Bonne cohérence interne"
+    elif alpha >= 0.70:
+        return "Cohérence interne acceptable"
+    elif alpha >= 0.60:
+        return "Cohérence interne modérée"
+    else:
+        return "Cohérence interne faible"
 
 
 # =====================================================
-# Chargement des données
+# Chargement
 # =====================================================
 
 df_original = load_data()
@@ -234,7 +231,7 @@ accord_mapping = {
 }
 
 # =====================================================
-# Variables
+# Items
 # =====================================================
 
 enseignement_items = [
@@ -320,56 +317,36 @@ infrastructures_items = [
 ]
 
 # =====================================================
-# Scores internes
+# Création des composantes
 # =====================================================
 
 for col in enseignement_items:
     if col in df_coded.columns:
-        df_coded[col] = pd.to_numeric(
-            recode_series(df_original[col], satisfaction_mapping_f),
-            errors="coerce"
-        )
-
+        df_coded[col] = pd.to_numeric(recode_series(df_original[col], satisfaction_mapping_f), errors="coerce")
 enseignement_existing = [col for col in enseignement_items if col in df_coded.columns]
 df_coded["Score enseignement et apprentissage"] = df_coded[enseignement_existing].mean(axis=1, skipna=True)
 
 for col in accompagnement_items:
     if col in df_coded.columns:
-        df_coded[col] = pd.to_numeric(
-            recode_series(df_original[col], satisfaction_mapping_f),
-            errors="coerce"
-        )
-
+        df_coded[col] = pd.to_numeric(recode_series(df_original[col], satisfaction_mapping_f), errors="coerce")
 accompagnement_existing = [col for col in accompagnement_items if col in df_coded.columns]
 df_coded["Score accompagnement et encadrement"] = df_coded[accompagnement_existing].mean(axis=1, skipna=True)
 
 for col in competences_items:
     if col in df_coded.columns:
-        df_coded[col] = pd.to_numeric(
-            recode_series(df_original[col], accord_mapping),
-            errors="coerce"
-        )
-
+        df_coded[col] = pd.to_numeric(recode_series(df_original[col], accord_mapping), errors="coerce")
 competences_existing = [col for col in competences_items if col in df_coded.columns]
 df_coded["Score développement des compétences"] = df_coded[competences_existing].mean(axis=1, skipna=True)
 
 for col in experience_items:
     if col in df_coded.columns:
-        df_coded[col] = pd.to_numeric(
-            recode_series(df_original[col], satisfaction_mapping_f),
-            errors="coerce"
-        )
-
+        df_coded[col] = pd.to_numeric(recode_series(df_original[col], satisfaction_mapping_f), errors="coerce")
 experience_existing = [col for col in experience_items if col in df_coded.columns]
 df_coded["Score expérience globale USJ"] = df_coded[experience_existing].mean(axis=1, skipna=True)
 
 for col in services_items:
     if col in df_coded.columns:
-        df_coded[col] = pd.to_numeric(
-            recode_series(df_original[col], satisfaction_mapping_f),
-            errors="coerce"
-        )
-
+        df_coded[col] = pd.to_numeric(recode_series(df_original[col], satisfaction_mapping_f), errors="coerce")
 services_existing = [col for col in services_items if col in df_coded.columns]
 df_coded["Score services USJ"] = df_coded[services_existing].mean(axis=1, skipna=True)
 
@@ -383,20 +360,12 @@ vie_mapping = {
 
 for col in vie_items:
     if col in df_coded.columns:
-        df_coded[col] = pd.to_numeric(
-            recode_series(df_original[col], vie_mapping),
-            errors="coerce"
-        )
-
+        df_coded[col] = pd.to_numeric(recode_series(df_original[col], vie_mapping), errors="coerce")
 df_coded["Score vie étudiante et activités"] = df_coded[vie_items].mean(axis=1, skipna=True)
 
 for col in infrastructures_items:
     if col in df_coded.columns:
-        df_coded[col] = pd.to_numeric(
-            recode_series(df_original[col], satisfaction_mapping_f),
-            errors="coerce"
-        )
-
+        df_coded[col] = pd.to_numeric(recode_series(df_original[col], satisfaction_mapping_f), errors="coerce")
 infrastructures_existing = [col for col in infrastructures_items if col in df_coded.columns]
 df_coded["Score infrastructures et équipements"] = df_coded[infrastructures_existing].mean(axis=1, skipna=True)
 
@@ -423,20 +392,27 @@ df_coded["Score frais / autres universités"] = pd.to_numeric(
 )
 
 # =====================================================
-# Header
+# Header + logo
 # =====================================================
 
-st.markdown(
-    f"""
-    <h1 style="color:{USJ_BLUE}; margin-bottom:0;">
-        Tableau de bord – Exit Survey USJ 2024-2025
-    </h1>
-    <p style="font-size:18px; color:#555; margin-top:4px;">
-        Indicateurs clés de satisfaction
-    </p>
-    """,
-    unsafe_allow_html=True
-)
+header_left, header_right = st.columns([5, 1])
+
+with header_left:
+    st.markdown(
+        f"""
+        <h1 style="color:{USJ_BLUE}; margin-bottom:0;">
+            Tableau de bord – Exit Survey USJ 2024-2025
+        </h1>
+        <p style="font-size:18px; color:#555; margin-top:4px;">
+            Indicateurs clés de satisfaction
+        </p>
+        """,
+        unsafe_allow_html=True
+    )
+
+with header_right:
+    if os.path.exists("usj_logo.png"):
+        st.image("usj_logo.png", width=120)
 
 st.divider()
 
@@ -490,7 +466,11 @@ st.markdown(
 
 page = st.radio(
     "Navigation",
-    ["Vue générale des indicateurs", "Facteurs clés d’amélioration"],
+    [
+        "Vue générale des indicateurs",
+        "Facteurs clés d’amélioration",
+        "Méthodologie des composantes"
+    ],
     horizontal=True
 )
 
@@ -500,16 +480,12 @@ page = st.radio(
 
 if page == "Vue générale des indicateurs":
 
-    st.markdown(
-        f"<h2 style='color:{USJ_BLUE};'>Satisfaction globale et expérience</h2>",
-        unsafe_allow_html=True
-    )
+    st.markdown(f"<h2 style='color:{USJ_BLUE};'>Satisfaction globale et expérience</h2>", unsafe_allow_html=True)
 
     c1, c2, c3 = st.columns(3)
 
     satisfaction_pct = pct_from_mean(df_filtered["Score satisfaction globale"].mean())
     recommandation_pct = calculate_recommendation_rate(df_filtered, q43)
-    experience_pct = pct_from_mean(df_filtered["Score expérience globale USJ"].mean())
 
     with c1:
         kpi_card("Satisfaction globale à l’Université", df_filtered["Score satisfaction globale"].mean())
@@ -533,10 +509,7 @@ if page == "Vue générale des indicateurs":
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    st.markdown(
-        f"<h2 style='color:{USJ_BLUE};'>Vie étudiante, services et environnement</h2>",
-        unsafe_allow_html=True
-    )
+    st.markdown(f"<h2 style='color:{USJ_BLUE};'>Vie étudiante, services et environnement</h2>", unsafe_allow_html=True)
 
     c7, c8, c9 = st.columns(3)
 
@@ -555,10 +528,7 @@ if page == "Vue générale des indicateurs":
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    st.markdown(
-        f"<h2 style='color:{USJ_BLUE};'>Perception financière</h2>",
-        unsafe_allow_html=True
-    )
+    st.markdown(f"<h2 style='color:{USJ_BLUE};'>Perception financière</h2>", unsafe_allow_html=True)
 
     c10, c11 = st.columns(2)
 
@@ -568,7 +538,6 @@ if page == "Vue générale des indicateurs":
     with c11:
         kpi_card("Frais de scolarité / autres universités", df_filtered["Score frais / autres universités"].mean())
 
-    # Executive summary
     component_summary = pd.DataFrame({
         "Dimension": [
             "Enseignement et apprentissage",
@@ -619,17 +588,16 @@ if page == "Vue générale des indicateurs":
 
 elif page == "Facteurs clés d’amélioration":
 
-    st.markdown(
-        f"<h2 style='color:{USJ_BLUE};'>Facteurs clés d’amélioration</h2>",
-        unsafe_allow_html=True
-    )
+    st.markdown(f"<h2 style='color:{USJ_BLUE};'>Facteurs clés d’amélioration</h2>", unsafe_allow_html=True)
 
-    st.markdown(
+    summary_box(
         """
         Cette section étudie l’impact des principales dimensions de l’expérience étudiante sur deux variables dépendantes :
-        **la satisfaction globale à l’Université** et **la recommandation de l’USJ**.  
+        <b>la satisfaction globale à l’Université</b> et <b>la recommandation de l’USJ</b>.
         L’objectif est d’identifier les leviers les plus utiles pour guider les décisions d’amélioration.
-        """
+        """,
+        color=USJ_BLUE,
+        background="#F7F9FC"
     )
 
     feature_columns = [
@@ -644,17 +612,9 @@ elif page == "Facteurs clés d’amélioration":
     ]
 
     feature_columns = [col for col in feature_columns if col in df_filtered.columns]
+    display_names = {col: clean_component_name(col) for col in feature_columns}
 
-    display_names = {
-        col: clean_component_name(col)
-        for col in feature_columns
-    }
-
-    # Satisfaction globale
-    st.markdown(
-        f"<h3 style='color:{USJ_BLUE};'>1. Impact sur la satisfaction globale</h3>",
-        unsafe_allow_html=True
-    )
+    st.markdown(f"<h3 style='color:{USJ_BLUE};'>1. Impact sur la satisfaction globale</h3>", unsafe_allow_html=True)
 
     model_sat = df_filtered[feature_columns + ["Score satisfaction globale"]].dropna()
 
@@ -664,12 +624,7 @@ elif page == "Facteurs clés d’amélioration":
         X = model_sat[feature_columns]
         y = model_sat["Score satisfaction globale"]
 
-        rf_sat = RandomForestRegressor(
-            n_estimators=500,
-            random_state=42,
-            max_depth=5
-        )
-
+        rf_sat = RandomForestRegressor(n_estimators=500, random_state=42, max_depth=5)
         rf_sat.fit(X, y)
 
         importance_sat = pd.DataFrame({
@@ -682,7 +637,6 @@ elif page == "Facteurs clés d’amélioration":
         ).round(1)
 
         importance_sat = importance_sat.sort_values("Importance (%)", ascending=False)
-
         top_sat = importance_sat.iloc[0]
         second_sat = importance_sat.iloc[1] if len(importance_sat) > 1 else top_sat
 
@@ -692,18 +646,10 @@ elif page == "Facteurs clés d’amélioration":
             importance_card("Principal levier", top_sat["Importance (%)"], top_sat["Dimension"])
 
         with c2:
-            importance_card(
-                "Base d’analyse",
-                len(model_sat) / len(df_filtered) * 100,
-                f"{len(model_sat)} répondants valides"
-            )
+            importance_card("Base d’analyse", len(model_sat) / len(df_filtered) * 100, f"{len(model_sat)} répondants valides")
 
         with c3:
-            importance_card(
-                "Dimensions analysées",
-                len(feature_columns) / 8 * 100,
-                f"{len(feature_columns)} dimensions"
-            )
+            importance_card("Dimensions analysées", len(feature_columns) / 8 * 100, f"{len(feature_columns)} dimensions")
 
         fig_sat = px.bar(
             importance_sat,
@@ -725,7 +671,6 @@ elif page == "Facteurs clés d’amélioration":
         )
 
         fig_sat.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
-
         st.plotly_chart(fig_sat, use_container_width=True)
 
         summary_box(
@@ -735,8 +680,7 @@ elif page == "Facteurs clés d’amélioration":
             pour expliquer la satisfaction globale, avec une importance relative de
             <b>{top_sat["Importance (%)"]:.1f}%</b>. La deuxième dimension la plus importante est
             <b>{second_sat["Dimension"]}</b>. Ces résultats indiquent que les efforts d’amélioration
-            devraient prioritairement cibler ces dimensions, car elles semblent avoir le poids le plus
-            important dans la perception globale des étudiants.
+            devraient prioritairement cibler ces dimensions.
             """,
             color=USJ_ORANGE,
             background="#FFF8F0"
@@ -744,11 +688,7 @@ elif page == "Facteurs clés d’amélioration":
 
     st.divider()
 
-    # Recommandation
-    st.markdown(
-        f"<h3 style='color:{USJ_BLUE};'>2. Impact sur la recommandation de l’USJ</h3>",
-        unsafe_allow_html=True
-    )
+    st.markdown(f"<h3 style='color:{USJ_BLUE};'>2. Impact sur la recommandation de l’USJ</h3>", unsafe_allow_html=True)
 
     model_rec = df_filtered[feature_columns + [q43]].copy()
     model_rec[q43] = model_rec[q43].astype(str).str.strip()
@@ -781,7 +721,6 @@ elif page == "Facteurs clés d’amélioration":
         ).round(1)
 
         importance_rec = importance_rec.sort_values("Importance (%)", ascending=False)
-
         top_rec = importance_rec.iloc[0]
         second_rec = importance_rec.iloc[1] if len(importance_rec) > 1 else top_rec
 
@@ -791,18 +730,10 @@ elif page == "Facteurs clés d’amélioration":
             importance_card("Principal levier", top_rec["Importance (%)"], top_rec["Dimension"])
 
         with c2:
-            importance_card(
-                "Taux de recommandation",
-                calculate_recommendation_rate(df_filtered, q43),
-                "Réponses Oui"
-            )
+            importance_card("Taux de recommandation", calculate_recommendation_rate(df_filtered, q43), "Réponses Oui")
 
         with c3:
-            importance_card(
-                "Base d’analyse",
-                len(model_rec) / len(df_filtered) * 100,
-                f"{len(model_rec)} répondants valides"
-            )
+            importance_card("Base d’analyse", len(model_rec) / len(df_filtered) * 100, f"{len(model_rec)} répondants valides")
 
         fig_rec = px.bar(
             importance_rec,
@@ -824,7 +755,6 @@ elif page == "Facteurs clés d’amélioration":
         )
 
         fig_rec.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
-
         st.plotly_chart(fig_rec, use_container_width=True)
 
         summary_box(
@@ -834,12 +764,92 @@ elif page == "Facteurs clés d’amélioration":
             pour expliquer la recommandation de l’USJ, avec une importance relative de
             <b>{top_rec["Importance (%)"]:.1f}%</b>. La deuxième dimension la plus importante est
             <b>{second_rec["Dimension"]}</b>. Cette lecture permet d’identifier les leviers qui
-            peuvent renforcer l’image positive de l’Université, l’attachement des étudiants et leur
-            propension à recommander l’USJ à leur entourage.
+            peuvent renforcer l’image positive de l’Université.
             """,
             color=USJ_GREEN,
             background="#F3FAF5"
         )
+
+# =====================================================
+# Page 3
+# =====================================================
+
+elif page == "Méthodologie des composantes":
+
+    st.markdown(f"<h2 style='color:{USJ_BLUE};'>Méthodologie de calcul des composantes</h2>", unsafe_allow_html=True)
+
+    summary_box(
+        """
+        <b>Principe général :</b><br>
+        Chaque composante est calculée comme la moyenne des items qui la constituent.
+        Les réponses sont recodées sur une échelle allant de <b>1 à 4</b>, où 1 représente
+        le niveau le plus faible de satisfaction ou d’accord, et 4 le niveau le plus élevé.
+        Les réponses non valides ou non applicables sont exclues du calcul.
+        """,
+        color=USJ_BLUE,
+        background="#F7F9FC"
+    )
+
+    components = {
+        "Enseignement et apprentissage": enseignement_existing,
+        "Accompagnement et encadrement": accompagnement_existing,
+        "Développement des compétences": competences_existing,
+        "Expérience globale USJ": experience_existing,
+        "Services de l’USJ": services_existing,
+        "Vie étudiante et activités": vie_items,
+        "Infrastructures et équipements": infrastructures_existing
+    }
+
+    alpha_rows = []
+
+    for component_name, items in components.items():
+        valid_items = [col for col in items if col in df_coded.columns]
+
+        if len(valid_items) >= 2:
+            alpha = cronbach_alpha(df_coded[valid_items])
+        else:
+            alpha = np.nan
+
+        alpha_rows.append({
+            "Composante": component_name,
+            "Nombre d’items": len(valid_items),
+            "Alpha de Cronbach": round(alpha, 3) if pd.notna(alpha) else np.nan,
+            "Interprétation": alpha_interpretation(alpha)
+        })
+
+    alpha_df = pd.DataFrame(alpha_rows)
+
+    st.subheader("Fiabilité interne des composantes")
+    st.dataframe(alpha_df, use_container_width=True, hide_index=True)
+
+    st.markdown(f"<h3 style='color:{USJ_BLUE};'>Détail des composantes</h3>", unsafe_allow_html=True)
+
+    for component_name, items in components.items():
+        valid_items = [col for col in items if col in df_coded.columns]
+
+        with st.expander(component_name):
+            st.markdown(
+                f"""
+                <b>Mode de calcul :</b> moyenne des items disponibles.<br>
+                <b>Nombre d’items utilisés :</b> {len(valid_items)}
+                """,
+                unsafe_allow_html=True
+            )
+
+            for item in valid_items:
+                st.markdown(f"- {item}")
+
+    summary_box(
+        """
+        <b>Note méthodologique :</b><br>
+        L’alpha de Cronbach permet d’évaluer la cohérence interne des items composant chaque dimension.
+        Une valeur élevée indique que les items mesurent de manière relativement cohérente une même
+        dimension latente. Toutefois, l’alpha doit être interprété avec prudence et toujours en lien avec
+        la cohérence conceptuelle des items.
+        """,
+        color=USJ_ORANGE,
+        background="#FFF8F0"
+    )
 
 # =====================================================
 # Footer
