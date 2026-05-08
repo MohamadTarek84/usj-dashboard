@@ -21,10 +21,10 @@ USJ_GREEN = "#2E7D32"
 USJ_ORANGE = "#F57C00"
 
 # =====================================================
-# Fonctions utiles
+# Useful functions
 # =====================================================
 
-@st.cache_data
+@st.cache_data(show_spinner=False)
 def load_data():
     possible_files = [
         "Exit survey 24-25.xlsx",
@@ -60,6 +60,67 @@ def kpi_color_percentage(value_pct):
         return USJ_BLUE
     else:
         return USJ_GREEN
+
+
+def pct_from_mean(value):
+    if pd.isna(value):
+        return np.nan
+    return value / 4 * 100
+
+
+def calculate_recommendation_rate(data, column):
+    valid = data[column].dropna().astype(str).str.strip()
+    if len(valid) == 0:
+        return np.nan
+    return valid.eq("Oui").sum() / len(valid) * 100
+
+
+def clean_component_name(name):
+    return (
+        name
+        .replace("Score ", "")
+        .replace("score ", "")
+        .strip()
+        .capitalize()
+    )
+
+
+def filter_options(data, column):
+    if column not in data.columns:
+        return ["Tous"]
+    values = sorted(data[column].dropna().astype(str).unique())
+    return ["Tous"] + values
+
+
+def cronbach_alpha(data):
+    data = data.dropna()
+
+    if data.shape[0] < 5 or data.shape[1] < 2:
+        return np.nan
+
+    item_variances = data.var(axis=0, ddof=1)
+    total_variance = data.sum(axis=1).var(ddof=1)
+    n_items = data.shape[1]
+
+    if total_variance == 0:
+        return np.nan
+
+    return (n_items / (n_items - 1)) * (1 - item_variances.sum() / total_variance)
+
+
+def alpha_interpretation(alpha):
+    if pd.isna(alpha):
+        return "Non calculable"
+    elif alpha >= 0.90:
+        return "Excellente cohérence interne"
+    elif alpha >= 0.80:
+        return "Bonne cohérence interne"
+    elif alpha >= 0.70:
+        return "Cohérence interne acceptable"
+    elif alpha >= 0.60:
+        return "Cohérence interne modérée"
+    else:
+        return "Cohérence interne faible"
 
 
 def kpi_card(title, value, subtitle="Score de satisfaction"):
@@ -136,271 +197,241 @@ def summary_box(text, color=USJ_BLUE, background="#F7F9FC"):
     )
 
 
-def filter_options(data, column):
-    if column not in data.columns:
-        return ["Tous"]
-    values = sorted(data[column].dropna().astype(str).unique())
-    return ["Tous"] + values
+# =====================================================
+# Cached preprocessing
+# =====================================================
 
+@st.cache_data(show_spinner=False)
+def prepare_data():
+    df_original = load_data()
+    df_coded = df_original.copy()
 
-def calculate_recommendation_rate(data, column):
-    valid = data[column].dropna().astype(str).str.strip()
-    if len(valid) == 0:
-        return np.nan
-    return valid.eq("Oui").sum() / len(valid) * 100
+    if "Faculté_Institut_g" in df_coded.columns:
+        df_coded["Faculté_Institut_g"] = df_coded["Faculté_Institut_g"].replace({"ELFS": "ESTS"})
+        df_original["Faculté_Institut_g"] = df_original["Faculté_Institut_g"].replace({"ELFS": "ESTS"})
 
+    satisfaction_mapping_f = {
+        "Très insatisfaisante": 1,
+        "Insatisfaisante": 2,
+        "Satisfaisante": 3,
+        "Très satisfaisante": 4
+    }
 
-def clean_component_name(name):
-    return (
-        name
-        .replace("Score ", "")
-        .replace("score ", "")
-        .strip()
-        .capitalize()
+    satisfaction_mapping_m = {
+        "Très insatisfaisant": 1,
+        "Insatisfait": 2,
+        "Satisfait": 3,
+        "Très satisfait": 4
+    }
+
+    accord_mapping = {
+        "Pas du tout d’accord": 1,
+        "Pas d’accord": 2,
+        "D’accord": 3,
+        "Tout à fait d’accord": 4
+    }
+
+    vie_mapping = {
+        "Pas au courant": np.nan,
+        "Très insatisfaisante": 1,
+        "Insatisfaisante": 2,
+        "Satisfaisante": 3,
+        "Très satisfaisante": 4
+    }
+
+    enseignement_items = [
+        "1_a- La qualité de l'enseignement dans les unités d’enseignement obligatoires",
+        "1_b- La qualité de l'enseignement dans les unités d’enseignement optionnelles",
+        "1_c- La qualité de l'enseignement dans les cours de langue",
+        "1_d- Usage de méthodes pédagogiques actives",
+        "1_e- Usage des outils technologiques par les enseignants",
+        "1_f- La pertinence du programme",
+        "1_g- La charge de travail du programme",
+        "1_h- La qualité des expériences labo/labo informatique"
+    ]
+
+    accompagnement_items = [
+        "2a- Qualité du conseil et de l'orientation académique",
+        "2b- Qualité du conseil et de l'orientation administratif",
+        "2c- Disponibilité & interaction avec les enseignants",
+        "2d- Disponibilité & interaction avec le personnel administratif"
+    ]
+
+    competences_items = [
+        "5_a- Améliorer les compétences numériques",
+        "5_b- Améliorer les capacités de travail en équipe",
+        "5_c- Travailler avec des personnes d'origines et de cultures variées",
+        "5_d- Développer les capacités d'analyse et de résolution de problèmes",
+        "5_e- Développer une réflexion personnelle",
+        "5_f- Développer les compétences en matière de communication écrite",
+        "5_g- Développer les compétences en matière de communication orale",
+        "5_h- Développer les capacités de planification",
+        "5_i- Développer la capacité d’apprendre tout au long de la vie",
+        "5_j- Acquérir des compétences entrepreneuriales"
+    ]
+
+    experience_items = [
+        "41_a- Votre expérience académique à l’USJ",
+        "41_b- Votre expérience de la vie étudiante à l’USJ",
+        "41_c- Vos opportunités de développement personnel",
+        "41_d- Votre acquisition des compétences nécessaires"
+    ]
+
+    services_items = [
+        "28_a-Processus d’admission",
+        "28_b-Service d'aide psychologique",
+        "28_c-Service de l’insertion professionnelle",
+        "28_d-Service étudiant d’information et d’orientation",
+        "28_e-Service social",
+        "28_f-Service de la vie étudiante",
+        "28_g-USJ en mission",
+        "28_h-O7",
+        "28_i-Service du sport",
+        "28_j-Service de soins (Centre de soins dentaires, …)",
+        "28_k-Aumônerie et pastorale"
+    ]
+
+    vie_items = [
+        col for col in [
+            "29_a- Activités organisées par la pastorale / l’Aumônerie",
+            "29_b- Activités sociales par campus / Événements et clubs étudiants",
+            "29_c- Vie sur le campus, environnement et ambiance sociales",
+            "29_d- Liberté d'expression et respect des croyances religieuses d’autrui",
+            "29_e- Activités sportives",
+            "29_f- Clubs étudiants",
+            "29_g- Leadership et bénévolat (O7/USJ en mission)",
+            "29_h- Activités du Service de la vie étudiante"
+        ]
+        if col in df_coded.columns
+    ]
+
+    infrastructures_items = [
+        "40_a- Accès aux ordinateurs",
+        "40_b- Accès aux logiciels",
+        "40_c- Accès à une connexion Internet/WiFi fiable et rapide sur le campus",
+        "40_d- Aménagement des installations pour les personnes handicapées ou ayant des besoins particuliers",
+        "40_e- Salles de cours",
+        "40_f- Laboratoires et laboratoires informatiques",
+        "40_g- Ressources des bibliothèques",
+        "40_h- Gym et Installations sportives",
+        "40_i- Qualité des aliments et variété du menu de la cafeteria",
+        "40_j- Modernité et propreté des installations et équipements",
+        "40_k- Espace extérieur",
+        "40_l- Dortoirs",
+        "40_m- Parking"
+    ]
+
+    def recode_items(items, mapping):
+        existing = [col for col in items if col in df_coded.columns]
+        for col in existing:
+            df_coded[col] = pd.to_numeric(
+                recode_series(df_original[col], mapping),
+                errors="coerce"
+            )
+        return existing
+
+    enseignement_existing = recode_items(enseignement_items, satisfaction_mapping_f)
+    accompagnement_existing = recode_items(accompagnement_items, satisfaction_mapping_f)
+    competences_existing = recode_items(competences_items, accord_mapping)
+    experience_existing = recode_items(experience_items, satisfaction_mapping_f)
+    services_existing = recode_items(services_items, satisfaction_mapping_f)
+    infrastructures_existing = recode_items(infrastructures_items, satisfaction_mapping_f)
+
+    for col in vie_items:
+        df_coded[col] = pd.to_numeric(
+            recode_series(df_original[col], vie_mapping),
+            errors="coerce"
+        )
+
+    df_coded["Score enseignement et apprentissage"] = df_coded[enseignement_existing].mean(axis=1, skipna=True)
+    df_coded["Score accompagnement et encadrement"] = df_coded[accompagnement_existing].mean(axis=1, skipna=True)
+    df_coded["Score développement des compétences"] = df_coded[competences_existing].mean(axis=1, skipna=True)
+    df_coded["Score expérience globale USJ"] = df_coded[experience_existing].mean(axis=1, skipna=True)
+    df_coded["Score services USJ"] = df_coded[services_existing].mean(axis=1, skipna=True)
+    df_coded["Score vie étudiante et activités"] = df_coded[vie_items].mean(axis=1, skipna=True)
+    df_coded["Score infrastructures et équipements"] = df_coded[infrastructures_existing].mean(axis=1, skipna=True)
+
+    q42 = "42-Quel est le niveau de votre satisfaction globale à l’Université ?"
+    q43 = "43-Recommanderiez-vous l’USJ à un proche ou à un ami ?"
+    q26 = "26- satisfait par les frais de scolarité à l’USJ par rapport à la qualité de l’enseignement ?"
+    q27 = "27- satisfait par les frais de scolarité à l’USJ par rapport à ceux d’autres universités ?"
+
+    df_coded["Score satisfaction globale"] = pd.to_numeric(
+        recode_series(df_original[q42], satisfaction_mapping_m),
+        errors="coerce"
     )
 
+    df_coded[q43] = df_original[q43].astype(str).str.strip().replace({"nan": np.nan})
 
-def pct_from_mean(value):
-    if pd.isna(value):
-        return np.nan
-    return value / 4 * 100
+    df_coded["Score frais / qualité enseignement"] = pd.to_numeric(
+        recode_series(df_original[q26], satisfaction_mapping_m),
+        errors="coerce"
+    )
 
+    df_coded["Score frais / autres universités"] = pd.to_numeric(
+        recode_series(df_original[q27], satisfaction_mapping_m),
+        errors="coerce"
+    )
 
-def cronbach_alpha(data):
-    data = data.dropna()
+    components = {
+        "Enseignement et apprentissage": enseignement_existing,
+        "Accompagnement et encadrement": accompagnement_existing,
+        "Développement des compétences": competences_existing,
+        "Expérience globale USJ": experience_existing,
+        "Services de l’USJ": services_existing,
+        "Vie étudiante et activités": vie_items,
+        "Infrastructures et équipements": infrastructures_existing
+    }
 
-    if data.shape[0] < 5 or data.shape[1] < 2:
-        return np.nan
-
-    item_variances = data.var(axis=0, ddof=1)
-    total_variance = data.sum(axis=1).var(ddof=1)
-    n_items = data.shape[1]
-
-    if total_variance == 0:
-        return np.nan
-
-    return (n_items / (n_items - 1)) * (1 - item_variances.sum() / total_variance)
-
-
-def alpha_interpretation(alpha):
-    if pd.isna(alpha):
-        return "Non calculable"
-    elif alpha >= 0.90:
-        return "Excellente cohérence interne"
-    elif alpha >= 0.80:
-        return "Bonne cohérence interne"
-    elif alpha >= 0.70:
-        return "Cohérence interne acceptable"
-    elif alpha >= 0.60:
-        return "Cohérence interne modérée"
-    else:
-        return "Cohérence interne faible"
+    return df_original, df_coded, components, q42, q43, q26, q27
 
 
 # =====================================================
-# Chargement
+# Cached machine learning functions
 # =====================================================
 
-df_original = load_data()
-df_coded = df_original.copy()
+@st.cache_data(show_spinner=False)
+def train_satisfaction_importance(model_sat, feature_columns):
+    X = model_sat[feature_columns]
+    y = model_sat["Score satisfaction globale"]
 
-# Replace old faculty label
-df_coded["Faculté_Institut_g"] = df_coded["Faculté_Institut_g"].replace({
-    "ELFS": "ESTS"
-})
+    rf = RandomForestRegressor(
+        n_estimators=150,
+        random_state=42,
+        max_depth=5,
+        n_jobs=-1
+    )
 
-df_original["Faculté_Institut_g"] = df_original["Faculté_Institut_g"].replace({
-    "ELFS": "ESTS"
-})
+    rf.fit(X, y)
+    return rf.feature_importances_
 
-# =====================================================
-# Recodages
-# =====================================================
 
-satisfaction_mapping_f = {
-    "Très insatisfaisante": 1,
-    "Insatisfaisante": 2,
-    "Satisfaisante": 3,
-    "Très satisfaisante": 4
-}
+@st.cache_data(show_spinner=False)
+def train_recommendation_importance(model_rec, feature_columns):
+    X = model_rec[feature_columns]
+    y = model_rec["Recommandation"]
 
-satisfaction_mapping_m = {
-    "Très insatisfaisant": 1,
-    "Insatisfait": 2,
-    "Satisfait": 3,
-    "Très satisfait": 4
-}
+    rf = RandomForestClassifier(
+        n_estimators=150,
+        random_state=42,
+        max_depth=5,
+        class_weight="balanced",
+        n_jobs=-1
+    )
 
-accord_mapping = {
-    "Pas du tout d’accord": 1,
-    "Pas d’accord": 2,
-    "D’accord": 3,
-    "Tout à fait d’accord": 4
-}
+    rf.fit(X, y)
+    return rf.feature_importances_
+
 
 # =====================================================
-# Items
+# Load prepared data
 # =====================================================
 
-enseignement_items = [
-    "1_a- La qualité de l'enseignement dans les unités d’enseignement obligatoires",
-    "1_b- La qualité de l'enseignement dans les unités d’enseignement optionnelles",
-    "1_c- La qualité de l'enseignement dans les cours de langue",
-    "1_d- Usage de méthodes pédagogiques actives",
-    "1_e- Usage des outils technologiques par les enseignants",
-    "1_f- La pertinence du programme",
-    "1_g- La charge de travail du programme",
-    "1_h- La qualité des expériences labo/labo informatique"
-]
-
-accompagnement_items = [
-    "2a- Qualité du conseil et de l'orientation académique",
-    "2b- Qualité du conseil et de l'orientation administratif",
-    "2c- Disponibilité & interaction avec les enseignants",
-    "2d- Disponibilité & interaction avec le personnel administratif"
-]
-
-competences_items = [
-    "5_a- Améliorer les compétences numériques",
-    "5_b- Améliorer les capacités de travail en équipe",
-    "5_c- Travailler avec des personnes d'origines et de cultures variées",
-    "5_d- Développer les capacités d'analyse et de résolution de problèmes",
-    "5_e- Développer une réflexion personnelle",
-    "5_f- Développer les compétences en matière de communication écrite",
-    "5_g- Développer les compétences en matière de communication orale",
-    "5_h- Développer les capacités de planification",
-    "5_i- Développer la capacité d’apprendre tout au long de la vie",
-    "5_j- Acquérir des compétences entrepreneuriales"
-]
-
-experience_items = [
-    "41_a- Votre expérience académique à l’USJ",
-    "41_b- Votre expérience de la vie étudiante à l’USJ",
-    "41_c- Vos opportunités de développement personnel",
-    "41_d- Votre acquisition des compétences nécessaires"
-]
-
-services_items = [
-    "28_a-Processus d’admission",
-    "28_b-Service d'aide psychologique",
-    "28_c-Service de l’insertion professionnelle",
-    "28_d-Service étudiant d’information et d’orientation",
-    "28_e-Service social",
-    "28_f-Service de la vie étudiante",
-    "28_g-USJ en mission",
-    "28_h-O7",
-    "28_i-Service du sport",
-    "28_j-Service de soins (Centre de soins dentaires, …)",
-    "28_k-Aumônerie et pastorale"
-]
-
-vie_items = [
-    col for col in [
-        "29_a- Activités organisées par la pastorale / l’Aumônerie",
-        "29_b- Activités sociales par campus / Événements et clubs étudiants",
-        "29_c- Vie sur le campus, environnement et ambiance sociales",
-        "29_d- Liberté d'expression et respect des croyances religieuses d’autrui",
-        "29_e- Activités sportives",
-        "29_f- Clubs étudiants",
-        "29_g- Leadership et bénévolat (O7/USJ en mission)",
-        "29_h- Activités du Service de la vie étudiante"
-    ]
-    if col in df_coded.columns
-]
-
-infrastructures_items = [
-    "40_a- Accès aux ordinateurs",
-    "40_b- Accès aux logiciels",
-    "40_c- Accès à une connexion Internet/WiFi fiable et rapide sur le campus",
-    "40_d- Aménagement des installations pour les personnes handicapées ou ayant des besoins particuliers",
-    "40_e- Salles de cours",
-    "40_f- Laboratoires et laboratoires informatiques",
-    "40_g- Ressources des bibliothèques",
-    "40_h- Gym et Installations sportives",
-    "40_i- Qualité des aliments et variété du menu de la cafeteria",
-    "40_j- Modernité et propreté des installations et équipements",
-    "40_k- Espace extérieur",
-    "40_l- Dortoirs",
-    "40_m- Parking"
-]
+with st.spinner("Chargement du tableau de bord..."):
+    df_original, df_coded, components, q42, q43, q26, q27 = prepare_data()
 
 # =====================================================
-# Création des composantes
-# =====================================================
-
-for col in enseignement_items:
-    if col in df_coded.columns:
-        df_coded[col] = pd.to_numeric(recode_series(df_original[col], satisfaction_mapping_f), errors="coerce")
-enseignement_existing = [col for col in enseignement_items if col in df_coded.columns]
-df_coded["Score enseignement et apprentissage"] = df_coded[enseignement_existing].mean(axis=1, skipna=True)
-
-for col in accompagnement_items:
-    if col in df_coded.columns:
-        df_coded[col] = pd.to_numeric(recode_series(df_original[col], satisfaction_mapping_f), errors="coerce")
-accompagnement_existing = [col for col in accompagnement_items if col in df_coded.columns]
-df_coded["Score accompagnement et encadrement"] = df_coded[accompagnement_existing].mean(axis=1, skipna=True)
-
-for col in competences_items:
-    if col in df_coded.columns:
-        df_coded[col] = pd.to_numeric(recode_series(df_original[col], accord_mapping), errors="coerce")
-competences_existing = [col for col in competences_items if col in df_coded.columns]
-df_coded["Score développement des compétences"] = df_coded[competences_existing].mean(axis=1, skipna=True)
-
-for col in experience_items:
-    if col in df_coded.columns:
-        df_coded[col] = pd.to_numeric(recode_series(df_original[col], satisfaction_mapping_f), errors="coerce")
-experience_existing = [col for col in experience_items if col in df_coded.columns]
-df_coded["Score expérience globale USJ"] = df_coded[experience_existing].mean(axis=1, skipna=True)
-
-for col in services_items:
-    if col in df_coded.columns:
-        df_coded[col] = pd.to_numeric(recode_series(df_original[col], satisfaction_mapping_f), errors="coerce")
-services_existing = [col for col in services_items if col in df_coded.columns]
-df_coded["Score services USJ"] = df_coded[services_existing].mean(axis=1, skipna=True)
-
-vie_mapping = {
-    "Pas au courant": np.nan,
-    "Très insatisfaisante": 1,
-    "Insatisfaisante": 2,
-    "Satisfaisante": 3,
-    "Très satisfaisante": 4
-}
-
-for col in vie_items:
-    if col in df_coded.columns:
-        df_coded[col] = pd.to_numeric(recode_series(df_original[col], vie_mapping), errors="coerce")
-df_coded["Score vie étudiante et activités"] = df_coded[vie_items].mean(axis=1, skipna=True)
-
-for col in infrastructures_items:
-    if col in df_coded.columns:
-        df_coded[col] = pd.to_numeric(recode_series(df_original[col], satisfaction_mapping_f), errors="coerce")
-infrastructures_existing = [col for col in infrastructures_items if col in df_coded.columns]
-df_coded["Score infrastructures et équipements"] = df_coded[infrastructures_existing].mean(axis=1, skipna=True)
-
-q42 = "42-Quel est le niveau de votre satisfaction globale à l’Université ?"
-q43 = "43-Recommanderiez-vous l’USJ à un proche ou à un ami ?"
-q26 = "26- satisfait par les frais de scolarité à l’USJ par rapport à la qualité de l’enseignement ?"
-q27 = "27- satisfait par les frais de scolarité à l’USJ par rapport à ceux d’autres universités ?"
-
-df_coded["Score satisfaction globale"] = pd.to_numeric(
-    recode_series(df_original[q42], satisfaction_mapping_m),
-    errors="coerce"
-)
-
-df_coded[q43] = df_original[q43].astype(str).str.strip().replace({"nan": np.nan})
-
-df_coded["Score frais / qualité enseignement"] = pd.to_numeric(
-    recode_series(df_original[q26], satisfaction_mapping_m),
-    errors="coerce"
-)
-
-df_coded["Score frais / autres universités"] = pd.to_numeric(
-    recode_series(df_original[q27], satisfaction_mapping_m),
-    errors="coerce"
-)
-
-# =====================================================
-# Header + logo
+# Header
 # =====================================================
 
 header_left, header_right = st.columns([5, 1])
@@ -420,12 +451,12 @@ with header_left:
 
 with header_right:
     if os.path.exists("usj_logo.png"):
-        st.image("usj_logo.png", width=800)
+        st.image("usj_logo.png", width=160)
 
 st.divider()
 
 # =====================================================
-# Filtres liés
+# Linked filters
 # =====================================================
 
 if st.button("Réinitialiser les filtres"):
@@ -434,6 +465,7 @@ if st.button("Réinitialiser les filtres"):
     st.session_state["filter_cursus"] = "Tous"
     st.session_state["filter_niveau"] = "Tous"
     st.rerun()
+
 filter_cols = st.columns(4)
 df_filter_base = df_coded.copy()
 
@@ -492,8 +524,7 @@ page = st.radio(
 # Page 1
 # =====================================================
 
-if page == "Vue générale des indicateurs":
-
+def page_indicators():
     st.markdown(f"<h2 style='color:{USJ_BLUE};'>Satisfaction globale et expérience</h2>", unsafe_allow_html=True)
 
     c1, c2, c3 = st.columns(3)
@@ -577,7 +608,7 @@ if page == "Vue générale des indicateurs":
         ]
     }).dropna()
 
-    if not component_summary.empty:
+    if not component_summary.empty and not pd.isna(satisfaction_pct) and not pd.isna(recommandation_pct):
         best_dimension = component_summary.sort_values("Pourcentage", ascending=False).iloc[0]
         weakest_dimension = component_summary.sort_values("Pourcentage", ascending=True).iloc[0]
 
@@ -596,12 +627,12 @@ if page == "Vue générale des indicateurs":
             background="#F7F9FC"
         )
 
+
 # =====================================================
 # Page 2
 # =====================================================
 
-elif page == "Facteurs clés d’amélioration":
-
+def page_importance():
     st.markdown(f"<h2 style='color:{USJ_BLUE};'>Facteurs clés d’amélioration</h2>", unsafe_allow_html=True)
 
     summary_box(
@@ -635,15 +666,11 @@ elif page == "Facteurs clés d’amélioration":
     if len(model_sat) < 30:
         st.warning("Pas assez de données valides pour analyser la satisfaction globale.")
     else:
-        X = model_sat[feature_columns]
-        y = model_sat["Score satisfaction globale"]
-
-        rf_sat = RandomForestRegressor(n_estimators=500, random_state=42, max_depth=5)
-        rf_sat.fit(X, y)
+        importances = train_satisfaction_importance(model_sat, feature_columns)
 
         importance_sat = pd.DataFrame({
             "Dimension": [display_names[col] for col in feature_columns],
-            "Importance": rf_sat.feature_importances_
+            "Importance": importances
         })
 
         importance_sat["Importance (%)"] = (
@@ -680,12 +707,12 @@ elif page == "Facteurs clés d’amélioration":
             yaxis=dict(autorange="reversed"),
             xaxis_title="Importance relative (%)",
             yaxis_title="",
-            height=520,
+            height=480,
             coloraxis_showscale=False
         )
 
         fig_sat.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
-        st.plotly_chart(fig_sat, use_container_width=True)
+        st.plotly_chart(fig_sat, use_container_width=True, config={"displayModeBar": False})
 
         summary_box(
             f"""
@@ -713,21 +740,11 @@ elif page == "Facteurs clés d’amélioration":
     if len(model_rec) < 30 or model_rec["Recommandation"].nunique() < 2:
         st.warning("Pas assez de données valides pour analyser la recommandation.")
     else:
-        X = model_rec[feature_columns]
-        y = model_rec["Recommandation"]
-
-        rf_rec = RandomForestClassifier(
-            n_estimators=500,
-            random_state=42,
-            max_depth=5,
-            class_weight="balanced"
-        )
-
-        rf_rec.fit(X, y)
+        importances = train_recommendation_importance(model_rec, feature_columns)
 
         importance_rec = pd.DataFrame({
             "Dimension": [display_names[col] for col in feature_columns],
-            "Importance": rf_rec.feature_importances_
+            "Importance": importances
         })
 
         importance_rec["Importance (%)"] = (
@@ -764,12 +781,12 @@ elif page == "Facteurs clés d’amélioration":
             yaxis=dict(autorange="reversed"),
             xaxis_title="Importance relative (%)",
             yaxis_title="",
-            height=520,
+            height=480,
             coloraxis_showscale=False
         )
 
         fig_rec.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
-        st.plotly_chart(fig_rec, use_container_width=True)
+        st.plotly_chart(fig_rec, use_container_width=True, config={"displayModeBar": False})
 
         summary_box(
             f"""
@@ -784,12 +801,12 @@ elif page == "Facteurs clés d’amélioration":
             background="#F3FAF5"
         )
 
+
 # =====================================================
 # Page 3
 # =====================================================
 
-elif page == "Méthodologie des composantes":
-
+def page_methodology():
     st.markdown(f"<h2 style='color:{USJ_BLUE};'>Méthodologie de calcul des composantes</h2>", unsafe_allow_html=True)
 
     summary_box(
@@ -803,16 +820,6 @@ elif page == "Méthodologie des composantes":
         color=USJ_BLUE,
         background="#F7F9FC"
     )
-
-    components = {
-        "Enseignement et apprentissage": enseignement_existing,
-        "Accompagnement et encadrement": accompagnement_existing,
-        "Développement des compétences": competences_existing,
-        "Expérience globale USJ": experience_existing,
-        "Services de l’USJ": services_existing,
-        "Vie étudiante et activités": vie_items,
-        "Infrastructures et équipements": infrastructures_existing
-    }
 
     alpha_rows = []
 
@@ -864,6 +871,21 @@ elif page == "Méthodologie des composantes":
         color=USJ_ORANGE,
         background="#FFF8F0"
     )
+
+
+# =====================================================
+# Display selected page
+# =====================================================
+
+if page == "Vue générale des indicateurs":
+    page_indicators()
+
+elif page == "Facteurs clés d’amélioration":
+    page_importance()
+
+elif page == "Méthodologie des composantes":
+    page_methodology()
+
 
 # =====================================================
 # Footer
