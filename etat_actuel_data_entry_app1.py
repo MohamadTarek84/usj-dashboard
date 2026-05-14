@@ -503,7 +503,7 @@ def render_external_analysis():
     external_themes = [
         "Exigences ministérielles et Environnement réglementaire",
         "Marché du travail et Associations professionnelles",
-        "Institutions paires : Concurrence et Benchmarking",
+        "Institutions paires : Concurrence et Benchmarking (si des informations précises sont disponibles prière de les fournir avec un document à part si nécessaire)",
         "L’Intelligence artificielle",
         "Attractivité vis-à-vis des élèves des écoles",
         "Réputation et Image",
@@ -514,9 +514,26 @@ def render_external_analysis():
     external_analysis = {}
 
     for theme in external_themes:
+
+        if theme.startswith("Institutions paires"):
+            title_html = f"""
+            <span style="font-weight:700;">
+                • Institutions paires : Concurrence et Benchmarking
+            </span>
+            <span style="font-weight:400;">
+                (si des informations précises sont disponibles prière de les fournir avec un document à part si nécessaire)
+            </span>
+            """
+        else:
+            title_html = f"""
+            <span style="font-weight:700;">
+                • {theme}
+            </span>
+            """
+
         html_block(f"""
-<div style="background:{USJ_LIGHT_BLUE}; border-left:5px solid {USJ_RED}; padding:10px 14px 10px 28px; border-radius:6px; margin-top:20px; margin-bottom:8px; font-weight:700; color:{USJ_RED}; font-size:17px;">
-    <span style="font-size:22px; margin-right:10px; color:{USJ_RED};">•</span>{theme}
+<div style="background:{USJ_LIGHT_BLUE}; border-left:5px solid {USJ_RED}; padding:10px 14px 10px 28px; border-radius:6px; margin-top:20px; margin-bottom:8px; color:{USJ_RED}; font-size:17px;">
+    {title_html}
 </div>
 """)
 
