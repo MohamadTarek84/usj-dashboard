@@ -121,25 +121,25 @@ html, body, [class*="css"], [class*="st-"], .stApp {{
 }}
 
 /*
-#MainMenu {
+#MainMenu {{
     visibility: hidden;
-}
+}}
 
-footer {
+footer {{
     visibility: hidden;
-}
+}}
 
-header {
+header {{
     visibility: hidden;
-}
+}}
 
-[data-testid="stToolbar"] {
+[data-testid="stToolbar"] {{
     display: none;
-}
+}}
 
-[data-testid="stDecoration"] {
+[data-testid="stDecoration"] {{
     display: none;
-}
+}}
 */
 
 h1, h2, h3, h4, h5, h6 {{
@@ -147,6 +147,8 @@ h1, h2, h3, h4, h5, h6 {{
     color: {USJ_BLUE} !important;
     font-weight: 700 !important;
 }}
+</style>
+""")
 
 p, div, span, label, button, input, textarea, select {{
     font-family: Candara, Calibri, Arial, sans-serif !important;
