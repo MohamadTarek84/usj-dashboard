@@ -220,7 +220,7 @@ def render_fixed_introduction():
     image_html = ""
     if intro_image_src:
         image_html = f"""
-        <div style="text-align:center; margin:25px 0;">
+        <div style="text-align:center; margin:18px 0;">
             <img src="{intro_image_src}" style="max-width:100%; height:auto; border-radius:8px;">
         </div>
         """
@@ -232,37 +232,35 @@ def render_fixed_introduction():
         """
 
     html_block(f"""
-<div style="background-color:#ffffff; padding:34px; border-radius:12px; border-left:7px solid {USJ_BLUE}; border-top:2px solid {USJ_GOLD}; border-bottom:2px solid {USJ_RED}; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:25px;">
+<div style="background-color:#ffffff; padding:24px 34px; border-radius:12px; border-left:7px solid {USJ_BLUE}; border-top:2px solid {USJ_GOLD}; border-bottom:2px solid {USJ_RED}; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:25px;">
 
-    <h3 style="color:{USJ_BLUE}; margin-top:0; margin-bottom:22px;">Introduction</h3>
-
-    <p style="text-align:justify; font-size:18px; line-height:1.9; color:{USJ_BLUE};">
+    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
     L’enseignement supérieur est aujourd’hui confronté à des transformations rapides, à des contraintes économiques croissantes et à une intensification de la concurrence, tant nationale qu’internationale. Les évolutions technologiques, les attentes accrues des étudiants et des parties prenantes, ainsi que les exigences renforcées en matière de qualité et de performance, imposent une réflexion stratégique à la fois rigoureuse et collective. Les universités sont ainsi appelées à réinterroger en profondeur leurs modèles académiques, organisationnels et opérationnels.
     </p>
 
-    <p style="text-align:justify; font-size:18px; line-height:1.9; color:{USJ_BLUE};">
+    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
     Le Plan stratégique USJ 2032 s’inscrit dans cette dynamique. Il constitue une feuille de route institutionnelle visant à traduire la mission, la vision et les valeurs de l’USJ en priorités stratégiques claires, en objectifs cohérents et en initiatives concrètes, capables de renforcer durablement son positionnement, sa résilience ainsi que son impact académique et sociétal.
     </p>
 
-    <p style="text-align:justify; font-size:18px; line-height:1.9; color:{USJ_BLUE};">
+    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
     L’élaboration de ce plan stratégique se décline en plusieurs étapes (voir le schéma ci-dessous), dont la première est consacrée à l’analyse de données relatives à l’état actuel de l’Université. L’ensemble des acteurs de l’Université, ainsi que les parties prenantes, sont invités à y contribuer. Ce rapport a pour objectif de vous accompagner dans la formulation de constats partagés, des pratiques existantes et des expériences vécues, afin d’identifier les forces à consolider, les fragilités à traiter, les opportunités de développement et les risques à maîtriser à l’échelle de l’Université<sup>1</sup>.
     </p>
 
     {image_html}
 
-    <p style="font-size:14.5px; line-height:1.7; color:{USJ_TEXT}; margin-top:10px; margin-bottom:28px;">
+    <p style="font-size:14px; line-height:1.45; color:{USJ_TEXT}; margin-top:8px; margin-bottom:20px;">
     <sup>1</sup> D’autres outils sont aussi mis à votre disposition pour recueillir l’opinion des parties prenantes, en particulier des questionnaires adressés aux employeurs, aux diplômés, ou aux étudiants. Ils sont joints à ce courrier. Leur utilisation est facultative.
     </p>
 
-    <p style="text-align:justify; font-size:18px; line-height:1.9; color:{USJ_BLUE};">
+    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
     Ce rapport vise ainsi à produire deux résultats principaux. Le premier consiste en une analyse SWOT (Strengths, Weaknesses, Opportunities, Threats) de l’Université, fondée sur la réalité vécue au sein de votre institution. Sur la base de cette analyse, vous serez amenés à proposer des priorités stratégiques ainsi que des initiatives (ou projets), toujours à l’échelle de l’Université, constituant ainsi le second résultat attendu.
     </p>
 
-    <p style="font-size:18px; line-height:1.9; color:{USJ_BLUE}; margin-bottom:5px;">
+    <p style="font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:5px;">
     Le document comprend 6 parties :
     </p>
 
-    <ol style="font-size:18px; line-height:1.9; color:{USJ_BLUE}; margin-top:5px;">
+    <ol style="font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-top:5px;">
         <li>Introduction</li>
         <li>Identification des parties prenantes à consulter pour écrire le rapport</li>
         <li>Analyse interne : cette analyse mène à produire les éléments Forces et Faiblesses de l’analyse SWOT</li>
@@ -271,11 +269,11 @@ def render_fixed_introduction():
         <li>Propositions de Priorités stratégiques et Initiatives</li>
     </ol>
 
-    <p style="font-size:18px; line-height:1.9; color:{USJ_BLUE}; margin-bottom:5px;">
+    <p style="font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:5px;">
     Pour toute information supplémentaire ou support, contacter :
     </p>
 
-    <p style="font-size:17px; line-height:1.8; color:{USJ_BLUE}; margin-bottom:0;">
+    <p style="font-size:16px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:0;">
     M. Hadi Sawaya – Coordinateur de l’Unité Assurance Qualité : hadi.sawaya@usj.edu.lb<br>
     Mme Irma Majdalani – Expert qualité – Unité Assurance qualité : irma.majdalani@usj.edu.lb<br>
     Mme Nadine Riachi Haddad – Secrétaire général : secg@usj.edu.lb<br>
