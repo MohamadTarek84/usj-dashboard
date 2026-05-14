@@ -507,9 +507,21 @@ def main():
 
             st.divider()
 
-            section_header("II - Identification des parties prenantes")
-            render_stakeholder_intro()
-            stakeholder_rows = render_stakeholder_table()
+section_header("II - Identification des parties prenantes")
+render_stakeholder_intro()
+stakeholder_rows = render_stakeholder_table()
+
+html_block(f"""
+<div style="
+    font-size:14px;
+    line-height:1.45;
+    color:{USJ_TEXT};
+    margin-top:8px;
+    margin-bottom:20px;
+">
+    <sup>2</sup> Exemple de parties prenantes en Annexe A.
+</div>
+""")
 
             st.divider()
 
