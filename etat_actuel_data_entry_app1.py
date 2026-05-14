@@ -335,47 +335,57 @@ def render_stakeholder_table():
     stakeholder_rows = []
 
     html_block(f"""
-    <div style="
-        display:grid;
-        grid-template-columns: 1.4fr 1.6fr 1.6fr 1.8fr;
-        gap:0;
-        margin-top:20px;
-        border:1.5px solid {USJ_BLUE};
-        border-radius:8px;
-        overflow:hidden;
-        font-family:Candara, Calibri, Arial, sans-serif;
-    ">
-        <div style="background:{USJ_BLUE}; color:white; padding:12px; font-weight:700;">Parties prenantes consultées</div>
-        <div style="background:{USJ_BLUE}; color:white; padding:12px; font-weight:700;">Nom</div>
-        <div style="background:{USJ_BLUE}; color:white; padding:12px; font-weight:700;">Poste</div>
-        <div style="background:{USJ_BLUE}; color:white; padding:12px; font-weight:700;">Organisme d’affiliation</div>
-    </div>
-    """)
+<div style="
+    display:grid;
+    grid-template-columns: 1.4fr 1.6fr 1.6fr 1.8fr;
+    gap:0;
+    margin-top:20px;
+    border:1.5px solid {USJ_BLUE};
+    border-radius:8px;
+    overflow:hidden;
+    font-family:Candara, Calibri, Arial, sans-serif;
+">
+    <div style="background:{USJ_BLUE}; color:white; padding:12px; font-weight:700;">Parties prenantes consultées</div>
+    <div style="background:{USJ_BLUE}; color:white; padding:12px; font-weight:700;">Nom</div>
+    <div style="background:{USJ_BLUE}; color:white; padding:12px; font-weight:700;">Poste</div>
+    <div style="background:{USJ_BLUE}; color:white; padding:12px; font-weight:700;">Organisme d’affiliation</div>
+</div>
+""")
 
     for category in stakeholder_categories:
         col0, col1, col2, col3 = st.columns([1.4, 1.6, 1.6, 1.8])
 
         with col0:
             html_block(f"""
-            <div style="
-                background:{USJ_LIGHT_BLUE};
-                border-left:5px solid {USJ_BLUE};
-                padding:13px 10px;
-                min-height:46px;
-                font-weight:700;
-                color:{USJ_BLUE};
-                border-radius:6px;
-                margin-top:26px;
-            ">
-                {category}
-            </div>
-            """)
+<div style="
+    background:{USJ_LIGHT_BLUE};
+    border-left:5px solid {USJ_BLUE};
+    padding:8px 10px;
+    height:38px;
+    display:flex;
+    align-items:center;
+    font-weight:700;
+    color:{USJ_BLUE};
+    border-radius:6px;
+    margin-top:0px;
+">
+    {category}
+</div>
+""")
 
         with col1:
-            nom = st.text_input("Nom", key=f"{category}_nom", label_visibility="collapsed")
+            nom = st.text_input(
+                "Nom",
+                key=f"{category}_nom",
+                label_visibility="collapsed"
+            )
 
         with col2:
-            poste = st.text_input("Poste", key=f"{category}_poste", label_visibility="collapsed")
+            poste = st.text_input(
+                "Poste",
+                key=f"{category}_poste",
+                label_visibility="collapsed"
+            )
 
         with col3:
             organisme = st.text_input(
@@ -400,25 +410,35 @@ def render_stakeholder_table():
         with col0:
             label = "Autres" if i == 1 else f"Autres {i}"
             html_block(f"""
-            <div style="
-                background:#FFF7E6;
-                border-left:5px solid {USJ_RED};
-                padding:13px 10px;
-                min-height:46px;
-                font-weight:700;
-                color:{USJ_RED};
-                border-radius:6px;
-                margin-top:26px;
-            ">
-                {label}
-            </div>
-            """)
+<div style="
+    background:#FFF7E6;
+    border-left:5px solid {USJ_RED};
+    padding:8px 10px;
+    height:38px;
+    display:flex;
+    align-items:center;
+    font-weight:700;
+    color:{USJ_RED};
+    border-radius:6px;
+    margin-top:0px;
+">
+    {label}
+</div>
+""")
 
         with col1:
-            autre_nom = st.text_input("Nom", key=f"autre_nom_{i}", label_visibility="collapsed")
+            autre_nom = st.text_input(
+                "Nom",
+                key=f"autre_nom_{i}",
+                label_visibility="collapsed"
+            )
 
         with col2:
-            autre_poste = st.text_input("Poste", key=f"autre_poste_{i}", label_visibility="collapsed")
+            autre_poste = st.text_input(
+                "Poste",
+                key=f"autre_poste_{i}",
+                label_visibility="collapsed"
+            )
 
         with col3:
             autre_org = st.text_input(
@@ -442,7 +462,6 @@ def render_stakeholder_table():
         st.rerun()
 
     return stakeholder_rows
-
 
 def main():
     st.set_page_config(page_title=APP_TITLE, page_icon="📋", layout="wide")
