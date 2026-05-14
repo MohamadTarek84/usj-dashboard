@@ -471,6 +471,64 @@ def render_internal_analysis():
 
     return internal_analysis
 
+def render_external_intro():
+    html_block(f"""
+<div style="background-color:#ffffff; padding:24px 34px; border-radius:12px; border-left:7px solid {USJ_BLUE}; border-top:2px solid {USJ_GOLD}; border-bottom:2px solid {USJ_RED}; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:25px;">
+
+    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
+    L’analyse de l’environnement externe constitue une étape essentielle du processus de planification stratégique. Elle vise à situer l’USJ dans son écosystème institutionnel, académique, économique et réglementaire, afin d’identifier les facteurs externes susceptibles d’influencer ses orientations, ses performances et sa soutenabilité à moyen et à long terme.
+    </p>
+
+    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:4px;">
+    Cette analyse permet d’identifier les Opportunités et les Menaces<sup>4</sup> auxquelles l’Université est confrontée, en examinant les tendances clés, les enjeux critiques, les exigences réglementaires et les normes du secteur, ainsi que les pratiques et références observées auprès d’institutions ou d’organisations comparables (benchmarking).
+    </p>
+
+    <p style="font-size:14px; line-height:1.45; color:{USJ_TEXT}; margin-top:0; margin-bottom:18px;">
+    <sup>4</sup> Exemples d’Opportunités et de Menaces en Annexe C.
+    </p>
+
+    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
+    Au-delà des opinions recueillies auprès de certaines parties prenantes, cette analyse repose également sur l’exploitation de données issues de sources externes variées. Chaque institution est ainsi invitée à s’appuyer sur des recherches documentaires, des ressources provenant d’associations professionnelles ou de rapports sectoriels, ainsi que sur des entretiens menés avec des institutions ou organisations pertinentes.
+    </p>
+
+    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:0;">
+    Nous vous remercions de bien vouloir compléter les tableaux ci-dessous en traitant, dans la mesure du possible, les thèmes proposés, dans une perspective globale à l’échelle de l’Université. Il convient de garder à l’esprit qu’il s’agit d’analyser l’état actuel afin d’identifier les Menaces et les Opportunités pour l’Université.
+    </p>
+
+</div>
+""")
+
+
+def render_external_analysis():
+    external_themes = [
+        "Exigences ministérielles et Environnement réglementaire",
+        "Marché du travail et Associations professionnelles",
+        "Institutions paires : Concurrence et Benchmarking",
+        "L’Intelligence artificielle",
+        "Attractivité vis-à-vis des élèves des écoles",
+        "Réputation et Image",
+        "Autres Menaces ou Opportunités éventuelles",
+        "Suggestions de meilleures pratiques ou de programmes innovants",
+    ]
+
+    external_analysis = {}
+
+    for theme in external_themes:
+        html_block(f"""
+<div style="background:{USJ_LIGHT_BLUE}; border-left:5px solid {USJ_RED}; padding:10px 14px 10px 28px; border-radius:6px; margin-top:20px; margin-bottom:8px; font-weight:700; color:{USJ_RED}; font-size:17px;">
+    <span style="font-size:22px; margin-right:10px; color:{USJ_RED};">•</span>{theme}
+</div>
+""")
+
+        external_analysis[theme] = st.text_area(
+            label=theme,
+            key=f"external_{theme}",
+            height=300,
+            placeholder="Merci de saisir votre réponse ici",
+            label_visibility="collapsed"
+        )
+
+    return external_analysis
 
 def main():
     st.set_page_config(page_title=APP_TITLE, page_icon="📋", layout="wide")
