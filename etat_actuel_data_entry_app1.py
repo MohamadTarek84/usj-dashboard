@@ -685,7 +685,7 @@ def render_priorities_table():
 </div>
 """)
 
-    for i in range(1, 4):
+    for i in range(1, 7):
         col1, col2 = st.columns([1.2, 1.8])
 
         with col1:
