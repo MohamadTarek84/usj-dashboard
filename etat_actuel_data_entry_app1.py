@@ -154,6 +154,18 @@ def main():
         layout="wide"
     )
 
+        st.markdown("""
+    <style>
+    html, body, [class*="css"], [class*="st-"], .stApp {
+        font-family: Candara, Calibri, Arial, sans-serif !important;
+    }
+
+    h1, h2, h3, h4, h5, h6, p, div, span, label, button, input, textarea, select {
+        font-family: Candara, Calibri, Arial, sans-serif !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
     init_db()
 
     st.session_state.setdefault("n_stakeholders", 5)
