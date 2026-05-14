@@ -765,7 +765,7 @@ def main():
     )
 
     if mode == "Saisir une réponse":
-        with st.form("etat_actuel_form", clear_on_submit=False):
+        with st.form("etat_actuel_form", clear_on_submit=False, enter_to_submit=False):
 
             st.markdown("## Informations générales")
 
