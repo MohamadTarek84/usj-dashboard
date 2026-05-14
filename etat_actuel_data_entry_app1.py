@@ -285,14 +285,124 @@ def render_fixed_introduction():
 """)
 
 
+def render_stakeholder_intro():
+    html_block(f"""
+<div style="background-color:#ffffff; padding:24px 34px; border-radius:12px; border-left:7px solid {USJ_BLUE}; border-top:2px solid {USJ_GOLD}; border-bottom:2px solid {USJ_RED}; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:25px;">
+
+    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
+    Le rapport d’analyse des données existantes est le fruit d’une consultation menée auprès de l’ensemble des parties prenantes de l’institution. L’identification et la prise en compte de leurs attentes constituent un levier essentiel pour la réussite du processus de planification stratégique. En raison de la diversité de leurs rôles, de leurs intérêts et de leur degré d’influence, les parties prenantes apportent des perspectives complémentaires, qui enrichissent l’analyse stratégique et favorisent l’adhésion aux orientations retenues. L’analyse de leurs attentes vise à mieux comprendre leurs besoins, leurs priorités et leur niveau d’influence, afin d’éclairer les choix stratégiques de l’USJ. Cette démarche participative est essentielle pour garantir une vision partagée, réaliste et représentative de la diversité de la communauté universitaire.
+    </p>
+
+    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
+    Il est proposé aux institutions de consulter notamment les parties prenantes suivantes : le conseil de l’institution, le conseil d’orientation stratégique, les employeurs, les étudiants, les enseignants, le PSG, les anciens, ainsi que toute autre partie jugée pertinente et engagée dans l’institution<sup>2</sup>.
+    </p>
+
+    <p style="font-size:14px; line-height:1.45; color:{USJ_TEXT}; margin-top:8px; margin-bottom:18px;">
+    <sup>2</sup> Exemple de parties prenantes en Annexe A.
+    </p>
+
+    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
+    L’institution est libre d’organiser, selon les modalités qu’elle juge les plus appropriées, une ou plusieurs réunions avec les parties prenantes, ou, dans certains cas, de recourir à des questionnaires (voir la note de bas de page de l’introduction).
+    </p>
+
+    <p style="font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:0;">
+    Le tableau ci-dessous doit être dûment complété.
+    </p>
+
+</div>
+""")
+
+
+def stakeholder_category_header(category, color):
+    html_block(f"""
+<div style="background-color:{USJ_LIGHT_BLUE}; padding:10px 15px; border-left:5px solid {color}; border-radius:6px; margin-top:18px; margin-bottom:10px; font-weight:600; color:{color}; font-size:17px;">
+    {category}
+</div>
+""")
+
+
+def render_stakeholder_table():
+    stakeholder_categories = [
+        "Responsables institution",
+        "Enseignants cadrés",
+        "Enseignants non-cadrés",
+        "PSG",
+        "Étudiants",
+        "Anciens",
+        "Employeurs / Conseil d’orientation stratégique",
+    ]
+
+    stakeholder_rows = []
+
+    for category in stakeholder_categories:
+        stakeholder_category_header(category, USJ_BLUE)
+
+        for i in range(1, 4):
+            col1, col2, col3 = st.columns([2, 2, 2])
+
+            with col1:
+                nom = st.text_input("Nom", key=f"{category}_nom_{i}")
+
+            with col2:
+                poste = st.text_input("Poste", key=f"{category}_poste_{i}")
+
+            with col3:
+                organisme = st.text_input(
+                    "Organisme d’affiliation",
+                    key=f"{category}_organisme_{i}"
+                )
+
+            if any([nom.strip(), poste.strip(), organisme.strip()]):
+                stakeholder_rows.append({
+                    "categorie": category,
+                    "nom": nom,
+                    "poste": poste,
+                    "organisme_affiliation": organisme,
+                })
+
+    stakeholder_category_header("Autres", USJ_RED)
+
+    st.session_state.setdefault("n_autres_rows", 2)
+
+    for i in range(1, st.session_state.n_autres_rows + 1):
+        col1, col2, col3 = st.columns([2, 2, 2])
+
+        with col1:
+            autre_nom = st.text_input("Nom", key=f"autre_nom_{i}")
+
+        with col2:
+            autre_poste = st.text_input("Poste", key=f"autre_poste_{i}")
+
+        with col3:
+            autre_org = st.text_input(
+                "Organisme d’affiliation",
+                key=f"autre_org_{i}"
+            )
+
+        if any([autre_nom.strip(), autre_poste.strip(), autre_org.strip()]):
+            stakeholder_rows.append({
+                "categorie": "Autres",
+                "nom": autre_nom,
+                "poste": autre_poste,
+                "organisme_affiliation": autre_org,
+            })
+
+    add_autre = st.form_submit_button("Ajouter une autre ligne dans Autres")
+
+    if add_autre:
+        st.session_state.n_autres_rows += 1
+        st.rerun()
+
+    return stakeholder_rows
+
+
 def main():
     st.set_page_config(page_title=APP_TITLE, page_icon="📋", layout="wide")
 
     apply_usj_style()
     init_db()
 
-    st.session_state.setdefault("n_stakeholders", 5)
-    st.session_state.setdefault("n_peer_rows", 5)
+    st.session_state.setdefault("n_autres_rows", 2)
     st.session_state.setdefault("n_strategic_priorities", 3)
 
     render_first_page_header()
@@ -335,39 +445,8 @@ def main():
             st.divider()
 
             section_header("II - Identification des parties prenantes")
-            st.write("Indiquez les parties prenantes consultées.")
-
-            stakeholder_rows = []
-
-            for i in range(1, st.session_state.n_stakeholders + 1):
-                st.markdown(f"### Partie prenante {i}")
-
-                col1, col2, col3 = st.columns(3)
-
-                with col1:
-                    stakeholder_name = st.text_input("Nom", key=f"stakeholder_name_{i}")
-
-                with col2:
-                    stakeholder_position = st.text_input("Poste", key=f"stakeholder_position_{i}")
-
-                with col3:
-                    stakeholder_affiliation = st.text_input(
-                        "Organisme d’affiliation",
-                        key=f"stakeholder_affiliation_{i}",
-                    )
-
-                if any(x.strip() for x in [stakeholder_name, stakeholder_position, stakeholder_affiliation]):
-                    stakeholder_rows.append({
-                        "nom": stakeholder_name,
-                        "poste": stakeholder_position,
-                        "organisme_affiliation": stakeholder_affiliation,
-                    })
-
-            add_stakeholder = st.form_submit_button("Ajouter une autre partie prenante")
-
-            if add_stakeholder:
-                st.session_state.n_stakeholders += 1
-                st.rerun()
+            render_stakeholder_intro()
+            stakeholder_rows = render_stakeholder_table()
 
             st.divider()
 
@@ -449,7 +528,10 @@ def main():
                     faiblesse = st.text_area(f"Faiblesse {i}", key=f"faiblesse_{i}", height=80)
 
                 if force.strip() or faiblesse.strip():
-                    swot_internal_rows.append({"force": force, "faiblesse": faiblesse})
+                    swot_internal_rows.append({
+                        "force": force,
+                        "faiblesse": faiblesse,
+                    })
 
             st.markdown("### Facteurs externes")
 
@@ -459,13 +541,24 @@ def main():
                 col1, col2 = st.columns(2)
 
                 with col1:
-                    opportunite = st.text_area(f"Opportunité {i}", key=f"opportunite_{i}", height=80)
+                    opportunite = st.text_area(
+                        f"Opportunité {i}",
+                        key=f"opportunite_{i}",
+                        height=80
+                    )
 
                 with col2:
-                    menace = st.text_area(f"Menace {i}", key=f"menace_{i}", height=80)
+                    menace = st.text_area(
+                        f"Menace {i}",
+                        key=f"menace_{i}",
+                        height=80
+                    )
 
                 if opportunite.strip() or menace.strip():
-                    swot_external_rows.append({"opportunite": opportunite, "menace": menace})
+                    swot_external_rows.append({
+                        "opportunite": opportunite,
+                        "menace": menace,
+                    })
 
             st.divider()
 
