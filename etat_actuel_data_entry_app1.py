@@ -34,13 +34,10 @@ def html_block(content):
 def image_to_base64(image_path):
     if not image_path.exists():
         return None
-
     suffix = image_path.suffix.lower().replace(".", "")
     mime_type = "png" if suffix == "png" else suffix
-
     with open(image_path, "rb") as img_file:
         encoded = base64.b64encode(img_file.read()).decode()
-
     return f"data:image/{mime_type};base64,{encoded}"
 
 
@@ -140,6 +137,11 @@ p, div, span, label, button, input, textarea, select {{
     color: {USJ_TEXT} !important;
 }}
 
+.stTextArea textarea {{
+    resize: vertical !important;
+    overflow-y: auto !important;
+}}
+
 .stTextArea textarea:focus, .stTextInput input:focus {{
     border: 2px solid {USJ_RED} !important;
     box-shadow: 0 0 0 1px {USJ_GOLD} !important;
@@ -165,9 +167,7 @@ section[data-testid="stSidebar"] {{
     font-weight: 600 !important;
 }}
 
-.stButton button:hover, .stDownloadButton button:hover, div[data-testid="stFormSubmitButton"] button:hover {{
-    background-color: {USJ_RED} !important;
-    border: 1px solid {USJ_RED} !important;
+.stButton button p, .stDownloadButton button p, div[data-testid="stFormSubmitButton"] button p {{
     color: white !important;
 }}
 </style>
@@ -181,15 +181,8 @@ def section_header(title, description=None):
 </div>
 """)
 
-    if description:
-        html_block(f"""
-<div style="background-color:#ffffff; border-left:5px solid {USJ_RED}; padding:14px 18px; border-radius:8px; color:{USJ_TEXT}; font-size:16px; line-height:1.6; margin-bottom:15px;">
-    {description}
-</div>
-""")
 
-
-def text_area(label, key, height=120, placeholder=None):
+def text_area(label, key, height=300, placeholder=None):
     return st.text_area(label, key=key, height=height, placeholder=placeholder)
 
 
@@ -224,16 +217,9 @@ def render_fixed_introduction():
             <img src="{intro_image_src}" style="max-width:100%; height:auto; border-radius:8px;">
         </div>
         """
-    else:
-        image_html = """
-        <div style="background-color:#FFF7E6; padding:14px 18px; border-radius:8px; color:#8B1538; margin:20px 0;">
-            Intro_schema.png non trouvé. Placez Intro_schema.png dans le même dossier que le script.
-        </div>
-        """
 
     html_block(f"""
 <div style="background-color:#ffffff; padding:24px 34px; border-radius:12px; border-left:7px solid {USJ_BLUE}; border-top:2px solid {USJ_GOLD}; border-bottom:2px solid {USJ_RED}; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:25px;">
-
     <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
     L’enseignement supérieur est aujourd’hui confronté à des transformations rapides, à des contraintes économiques croissantes et à une intensification de la concurrence, tant nationale qu’internationale. Les évolutions technologiques, les attentes accrues des étudiants et des parties prenantes, ainsi que les exigences renforcées en matière de qualité et de performance, imposent une réflexion stratégique à la fois rigoureuse et collective. Les universités sont ainsi appelées à réinterroger en profondeur leurs modèles académiques, organisationnels et opérationnels.
     </p>
@@ -280,7 +266,6 @@ def render_fixed_introduction():
     Mme Ursula El Hage – Directeur du Service de l’insertion professionnelle : ursula.hage@usj.edu.lb<br>
     Mme Lina Koleilat Ghalayini – Chef de projets – Unité Assurance qualité : lina.koleilat@usj.edu.lb
     </p>
-
 </div>
 """)
 
@@ -288,51 +273,23 @@ def render_fixed_introduction():
 def render_stakeholder_intro():
     html_block(f"""
 <div style="background-color:#ffffff; padding:24px 34px; border-radius:12px; border-left:7px solid {USJ_BLUE}; border-top:2px solid {USJ_GOLD}; border-bottom:2px solid {USJ_RED}; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:25px;">
-
     <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
     Le rapport d’analyse des données existantes est le fruit d’une consultation menée auprès de l’ensemble des parties prenantes de l’institution. L’identification et la prise en compte de leurs attentes constituent un levier essentiel pour la réussite du processus de planification stratégique. En raison de la diversité de leurs rôles, de leurs intérêts et de leur degré d’influence, les parties prenantes apportent des perspectives complémentaires, qui enrichissent l’analyse stratégique et favorisent l’adhésion aux orientations retenues. L’analyse de leurs attentes vise à mieux comprendre leurs besoins, leurs priorités et leur niveau d’influence, afin d’éclairer les choix stratégiques de l’USJ. Cette démarche participative est essentielle pour garantir une vision partagée, réaliste et représentative de la diversité de la communauté universitaire.
     </p>
-
     <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
     Il est proposé aux institutions de consulter notamment les parties prenantes suivantes : le conseil de l’institution, le conseil d’orientation stratégique, les employeurs, les étudiants, les enseignants, le PSG, les anciens, ainsi que toute autre partie jugée pertinente et engagée dans l’institution<sup>2</sup>.
     </p>
-
-    <p style="font-size:14px; line-height:1.45; color:{USJ_TEXT}; margin-top:8px; margin-bottom:18px;">
-    <sup>2</sup> Exemple de parties prenantes en Annexe A.
-    </p>
-
     <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
     L’institution est libre d’organiser, selon les modalités qu’elle juge les plus appropriées, une ou plusieurs réunions avec les parties prenantes, ou, dans certains cas, de recourir à des questionnaires (voir la note de bas de page de l’introduction).
     </p>
-
     <p style="font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:0;">
     Le tableau ci-dessous doit être dûment complété.
     </p>
-
-</div>
-""")
-
-
-def stakeholder_category_header(category, color):
-    html_block(f"""
-<div style="background-color:{USJ_LIGHT_BLUE}; padding:10px 15px; border-left:5px solid {color}; border-radius:6px; margin-top:18px; margin-bottom:10px; font-weight:600; color:{color}; font-size:17px;">
-    {category}
 </div>
 """)
 
 
 def render_stakeholder_table():
-    html_block("""
-<style>
-div[data-testid="stFormSubmitButton"] button {
-    color: white !important;
-}
-div[data-testid="stFormSubmitButton"] button p {
-    color: white !important;
-}
-</style>
-""")
-
     stakeholder_categories = [
         "Responsables institution",
         "Enseignants cadrés",
@@ -345,41 +302,12 @@ div[data-testid="stFormSubmitButton"] button p {
 
     stakeholder_rows = []
 
-    html_block(f"""
-<div style="
-    display:grid;
-    grid-template-columns: 1.4fr 1.6fr 1.6fr 1.8fr;
-    gap:0;
-    margin-top:20px;
-    border:1.5px solid {USJ_BLUE};
-    border-radius:8px;
-    overflow:hidden;
-    font-family:Candara, Calibri, Arial, sans-serif;
-">
-    <div style="background:{USJ_BLUE}; color:white; padding:12px; font-weight:700;">Parties prenantes consultées</div>
-    <div style="background:{USJ_BLUE}; color:white; padding:12px; font-weight:700;">Nom</div>
-    <div style="background:{USJ_BLUE}; color:white; padding:12px; font-weight:700;">Poste</div>
-    <div style="background:{USJ_BLUE}; color:white; padding:12px; font-weight:700;">Organisme d’affiliation</div>
-</div>
-""")
-
     for category in stakeholder_categories:
         col0, col1, col2, col3 = st.columns([1.4, 1.6, 1.6, 1.8])
 
         with col0:
             html_block(f"""
-<div style="
-    background:{USJ_LIGHT_BLUE};
-    border-left:5px solid {USJ_BLUE};
-    padding:8px 10px;
-    height:38px;
-    display:flex;
-    align-items:center;
-    font-weight:700;
-    color:{USJ_BLUE};
-    border-radius:6px;
-    margin-top:0px;
-">
+<div style="background:{USJ_LIGHT_BLUE}; border-left:5px solid {USJ_BLUE}; padding:8px 10px; height:38px; display:flex; align-items:center; font-weight:700; color:{USJ_BLUE}; border-radius:6px;">
     {category}
 </div>
 """)
@@ -391,11 +319,7 @@ div[data-testid="stFormSubmitButton"] button p {
             poste = st.text_input("Poste", key=f"{category}_poste", label_visibility="collapsed")
 
         with col3:
-            organisme = st.text_input(
-                "Organisme d’affiliation",
-                key=f"{category}_organisme",
-                label_visibility="collapsed"
-            )
+            organisme = st.text_input("Organisme d’affiliation", key=f"{category}_organisme", label_visibility="collapsed")
 
         if any([nom.strip(), poste.strip(), organisme.strip()]):
             stakeholder_rows.append({
@@ -405,27 +329,14 @@ div[data-testid="stFormSubmitButton"] button p {
                 "organisme_affiliation": organisme,
             })
 
-    if "autres_initialized" not in st.session_state:
-        st.session_state.n_autres_rows = 1
-        st.session_state.autres_initialized = True
+    st.session_state.setdefault("n_autres_rows", 1)
 
     for i in range(1, st.session_state.n_autres_rows + 1):
         col0, col1, col2, col3 = st.columns([1.4, 1.6, 1.6, 1.8])
 
         with col0:
             html_block(f"""
-<div style="
-    background:#FFF7E6;
-    border-left:5px solid {USJ_RED};
-    padding:8px 10px;
-    height:38px;
-    display:flex;
-    align-items:center;
-    font-weight:700;
-    color:{USJ_RED};
-    border-radius:6px;
-    margin-top:0px;
-">
+<div style="background:#FFF7E6; border-left:5px solid {USJ_RED}; padding:8px 10px; height:38px; display:flex; align-items:center; font-weight:700; color:{USJ_RED}; border-radius:6px;">
     Autres
 </div>
 """)
@@ -437,11 +348,7 @@ div[data-testid="stFormSubmitButton"] button p {
             autre_poste = st.text_input("Poste", key=f"autre_poste_{i}", label_visibility="collapsed")
 
         with col3:
-            autre_org = st.text_input(
-                "Organisme d’affiliation",
-                key=f"autre_org_{i}",
-                label_visibility="collapsed"
-            )
+            autre_org = st.text_input("Organisme d’affiliation", key=f"autre_org_{i}", label_visibility="collapsed")
 
         if any([autre_nom.strip(), autre_poste.strip(), autre_org.strip()]):
             stakeholder_rows.append({
@@ -459,14 +366,71 @@ div[data-testid="stFormSubmitButton"] button p {
 
     return stakeholder_rows
 
+
+def render_internal_intro():
+    html_block(f"""
+<div style="background-color:#ffffff; padding:24px 34px; border-radius:12px; border-left:7px solid {USJ_BLUE}; border-top:2px solid {USJ_GOLD}; border-bottom:2px solid {USJ_RED}; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:25px;">
+    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
+    L’analyse interne vise à apprécier dans quelle mesure l’USJ dispose des ressources nécessaires pour soutenir sa mission et mettre en œuvre ses orientations stratégiques. Elle porte également sur l’évaluation des modes d’organisation et des pratiques de gestion qui influencent directement la performance et l’efficacité de l’Université.
+    </p>
+    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
+    Cette analyse permet d’identifier les forces et les faiblesses<sup>3</sup>. Elle constitue un élément central du diagnostic institutionnel et contribue à éclairer les choix stratégiques, en assurant la cohérence entre les ambitions, les moyens disponibles et les capacités opérationnelles à l’échelle de l’USJ.
+    </p>
+    <p style="font-size:14px; line-height:1.45; color:{USJ_TEXT}; margin-top:8px; margin-bottom:18px;">
+    <sup>3</sup> Exemples de Forces et Faiblesses en Annexe B.
+    </p>
+    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:0;">
+    Nous vous remercions de bien vouloir compléter les tableaux ci-dessous en vous appuyant sur les données disponibles et sur l’avis de votre institution et de ses parties prenantes, en traitant au moins six des thèmes proposés, dans une perspective globale à l’échelle de l’Université. Il convient de garder à l’esprit qu’il s’agit d’analyser l’état actuel afin de détecter les points forts et les points faibles de l’Université.
+    </p>
+</div>
+""")
+
+
+def render_internal_analysis():
+    internal_themes = [
+        "Soutenabilité financière",
+        "Gouvernance et Leadership",
+        "Stratégie académique",
+        "Recherche et Innovation",
+        "Environnement digital",
+        "Succès des étudiants",
+        "Ressources humaines",
+        "Stratégie internationale",
+        "Mission sociétale",
+        "Espace et infrastructures",
+        "Environnement de travail",
+        "Diversité et inclusion",
+        "Développement Durable",
+        "Autre",
+    ]
+
+    internal_analysis = {}
+
+    for theme in internal_themes:
+        html_block(f"""
+<div style="background:{USJ_LIGHT_BLUE}; border-left:5px solid {USJ_BLUE}; padding:10px 14px; border-radius:6px; margin-top:20px; margin-bottom:8px; font-weight:700; color:{USJ_BLUE}; font-size:17px;">
+    {theme}
+</div>
+""")
+
+        internal_analysis[theme] = st.text_area(
+            label=theme,
+            key=f"internal_{theme}",
+            height=300,
+            placeholder=f"Saisir les constats relatifs à : {theme}",
+            label_visibility="collapsed"
+        )
+
+    return internal_analysis
+
+
 def main():
     st.set_page_config(page_title=APP_TITLE, page_icon="📋", layout="wide")
 
     apply_usj_style()
     init_db()
 
-    st.session_state.setdefault("n_autres_rows", 2)
-    st.session_state.setdefault("n_strategic_priorities", 3)
+    st.session_state.setdefault("n_autres_rows", 1)
 
     render_first_page_header()
 
@@ -505,179 +469,16 @@ def main():
             stakeholder_rows = render_stakeholder_table()
 
             html_block(f"""
-<div style="
-    font-size:14px;
-    line-height:1.45;
-    color:{USJ_TEXT};
-    margin-top:8px;
-    margin-bottom:20px;
-">
+<div style="font-size:14px; line-height:1.45; color:{USJ_TEXT}; margin-top:8px; margin-bottom:20px;">
     <sup>2</sup> Exemple de parties prenantes en Annexe A.
 </div>
 """)
 
             st.divider()
 
-            section_header(
-                "III - Analyse interne de l’État actuel de l’Université",
-                "Cette section permet d’identifier les forces et les faiblesses à l’échelle de l’Université."
-            )
-
-            internal_themes = [
-                "Soutenabilité financière",
-                "Gouvernance et Leadership",
-                "Stratégie académique",
-                "Recherche et Innovation",
-                "Environnement digital",
-                "Succès des étudiants",
-                "Ressources humaines",
-                "Stratégie internationale",
-                "Mission sociétale",
-                "Espace et infrastructures",
-                "Environnement de travail",
-                "Diversité et inclusion",
-                "Développement Durable",
-                "Autre",
-            ]
-
-            internal_analysis = {}
-
-            for theme in internal_themes:
-                internal_analysis[theme] = text_area(
-                    theme,
-                    key=f"internal_{theme}",
-                    height=120,
-                    placeholder=f"Saisir les constats relatifs à : {theme}"
-                )
-
-            st.divider()
-
-            section_header(
-                "IV - Analyse externe de l’environnement actuel de l’Université",
-                "Cette section permet d’identifier les opportunités et les menaces issues de l’environnement externe."
-            )
-
-            external_themes = [
-                "Exigences ministérielles et Environnement réglementaire",
-                "Marché du travail et Associations professionnelles",
-                "Institutions paires : Concurrence et Benchmarking",
-                "L’Intelligence artificielle",
-                "Attractivité vis-à-vis des élèves des écoles",
-                "Réputation et Image",
-                "Autres Menaces ou Opportunités éventuelles",
-                "Suggestions de meilleures pratiques ou de programmes innovants",
-            ]
-
-            external_analysis = {}
-
-            for theme in external_themes:
-                external_analysis[theme] = text_area(
-                    theme,
-                    key=f"external_{theme}",
-                    height=120,
-                    placeholder=f"Saisir les constats relatifs à : {theme}"
-                )
-
-            st.divider()
-
-            section_header("V - Analyse SWOT - Niveau USJ")
-
-            st.markdown("### Facteurs internes")
-
-            swot_internal_rows = []
-
-            for i in range(1, 6):
-                col1, col2 = st.columns(2)
-
-                with col1:
-                    force = st.text_area(f"Force {i}", key=f"force_{i}", height=80)
-
-                with col2:
-                    faiblesse = st.text_area(f"Faiblesse {i}", key=f"faiblesse_{i}", height=80)
-
-                if force.strip() or faiblesse.strip():
-                    swot_internal_rows.append({
-                        "force": force,
-                        "faiblesse": faiblesse,
-                    })
-
-            st.markdown("### Facteurs externes")
-
-            swot_external_rows = []
-
-            for i in range(1, 6):
-                col1, col2 = st.columns(2)
-
-                with col1:
-                    opportunite = st.text_area(
-                        f"Opportunité {i}",
-                        key=f"opportunite_{i}",
-                        height=80
-                    )
-
-                with col2:
-                    menace = st.text_area(
-                        f"Menace {i}",
-                        key=f"menace_{i}",
-                        height=80
-                    )
-
-                if opportunite.strip() or menace.strip():
-                    swot_external_rows.append({
-                        "opportunite": opportunite,
-                        "menace": menace,
-                    })
-
-            st.divider()
-
-            section_header("VI - Priorités stratégiques et initiatives proposées - Niveau USJ")
-
-            strategic_priorities = []
-
-            for i in range(1, st.session_state.n_strategic_priorities + 1):
-                st.markdown(f"### Priorité stratégique {i}")
-
-                priority = st.text_area(
-                    f"Priorité stratégique {i}",
-                    key=f"priority_{i}",
-                    height=80,
-                    placeholder="Formuler la priorité stratégique..."
-                )
-
-                initiatives = st.text_area(
-                    f"Initiatives liées à la priorité {i}",
-                    key=f"initiatives_{i}",
-                    height=120,
-                    placeholder="Indiquer 1 à 3 initiatives, idéalement formulées avec un verbe d’action..."
-                )
-
-                if priority.strip() or initiatives.strip():
-                    strategic_priorities.append({
-                        "priorite_strategique": priority,
-                        "initiatives": initiatives,
-                    })
-
-            st.divider()
-
-            section_header("Pour finir")
-
-            usj_reconnue = text_area(
-                "Nous souhaitons que l’USJ soit reconnue pour ...",
-                key="usj_reconnue",
-                height=90,
-            )
-
-            etudiants_disent = text_area(
-                "Nous souhaitons que nos étudiants disent que l’USJ ...",
-                key="etudiants_disent",
-                height=90,
-            )
-
-            excellent_lieu = text_area(
-                "L’USJ est un excellent lieu de travail si ...",
-                key="excellent_lieu",
-                height=90,
-            )
+            section_header("III - Analyse interne de l’État actuel de l’Université")
+            render_internal_intro()
+            internal_analysis = render_internal_analysis()
 
             submitted = st.form_submit_button("Enregistrer la réponse")
 
@@ -696,21 +497,6 @@ def main():
                         "rows": stakeholder_rows,
                     },
                     "internal_analysis": internal_analysis,
-                    "external_analysis": external_analysis,
-                    "swot_internal": {
-                        "rows": swot_internal_rows,
-                    },
-                    "swot_external": {
-                        "rows": swot_external_rows,
-                    },
-                    "strategic_priorities": {
-                        "rows": strategic_priorities,
-                    },
-                    "final_statements": {
-                        "usj_reconnue_pour": usj_reconnue,
-                        "etudiants_disent_que_usj": etudiants_disent,
-                        "excellent_lieu_de_travail_si": excellent_lieu,
-                    },
                 }
 
                 save_response(metadata, data)
