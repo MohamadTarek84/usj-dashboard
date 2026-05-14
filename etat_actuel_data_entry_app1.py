@@ -3,6 +3,7 @@
 
 import sqlite3
 import json
+import base64
 from datetime import datetime
 from pathlib import Path
 
@@ -28,6 +29,19 @@ def html_block(content):
         st.html(content)
     else:
         st.markdown(content, unsafe_allow_html=True)
+
+
+def image_to_base64(image_path):
+    if not image_path.exists():
+        return None
+
+    suffix = image_path.suffix.lower().replace(".", "")
+    mime_type = "png" if suffix == "png" else suffix
+
+    with open(image_path, "rb") as img_file:
+        encoded = base64.b64encode(img_file.read()).decode()
+
+    return f"data:image/{mime_type};base64,{encoded}"
 
 
 def init_db():
@@ -201,9 +215,26 @@ def render_first_page_header():
 
 
 def render_fixed_introduction():
+    intro_image_src = image_to_base64(INTRO_IMAGE_PATH)
+
+    image_html = ""
+    if intro_image_src:
+        image_html = f"""
+        <div style="text-align:center; margin:25px 0;">
+            <img src="{intro_image_src}" style="max-width:100%; height:auto; border-radius:8px;">
+        </div>
+        """
+    else:
+        image_html = """
+        <div style="background-color:#FFF7E6; padding:14px 18px; border-radius:8px; color:#8B1538; margin:20px 0;">
+            Intro_schema.png non trouvé. Placez Intro_schema.png dans le même dossier que le script.
+        </div>
+        """
+
     html_block(f"""
-<div style="background-color:#ffffff; padding:30px; border-radius:12px; border-left:7px solid {USJ_BLUE}; border-top:2px solid {USJ_GOLD}; border-bottom:2px solid {USJ_RED}; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:25px;">
-    <h3 style="color:{USJ_BLUE}; margin-top:0;">Introduction</h3>
+<div style="background-color:#ffffff; padding:34px; border-radius:12px; border-left:7px solid {USJ_BLUE}; border-top:2px solid {USJ_GOLD}; border-bottom:2px solid {USJ_RED}; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:25px;">
+
+    <h3 style="color:{USJ_BLUE}; margin-top:0; margin-bottom:22px;">Introduction</h3>
 
     <p style="text-align:justify; font-size:18px; line-height:1.9; color:{USJ_BLUE};">
     L’enseignement supérieur est aujourd’hui confronté à des transformations rapides, à des contraintes économiques croissantes et à une intensification de la concurrence, tant nationale qu’internationale. Les évolutions technologiques, les attentes accrues des étudiants et des parties prenantes, ainsi que les exigences renforcées en matière de qualité et de performance, imposent une réflexion stratégique à la fois rigoureuse et collective. Les universités sont ainsi appelées à réinterroger en profondeur leurs modèles académiques, organisationnels et opérationnels.
@@ -216,31 +247,22 @@ def render_fixed_introduction():
     <p style="text-align:justify; font-size:18px; line-height:1.9; color:{USJ_BLUE};">
     L’élaboration de ce plan stratégique se décline en plusieurs étapes (voir le schéma ci-dessous), dont la première est consacrée à l’analyse de données relatives à l’état actuel de l’Université. L’ensemble des acteurs de l’Université, ainsi que les parties prenantes, sont invités à y contribuer. Ce rapport a pour objectif de vous accompagner dans la formulation de constats partagés, des pratiques existantes et des expériences vécues, afin d’identifier les forces à consolider, les fragilités à traiter, les opportunités de développement et les risques à maîtriser à l’échelle de l’Université<sup>1</sup>.
     </p>
-</div>
-""")
 
-    if INTRO_IMAGE_PATH.exists():
-        st.image(str(INTRO_IMAGE_PATH), use_container_width=True)
-    else:
-        st.warning("Intro_schema.png non trouvé. Placez Intro_schema.png dans le même dossier que le script.")
+    {image_html}
 
-    html_block(f"""
-<div style="background-color:#F8FBFF; padding:18px 22px; border-radius:10px; border-left:5px solid {USJ_GOLD}; border-right:2px solid {USJ_BLUE_2}; margin-top:20px; margin-bottom:25px;">
-    <p style="font-size:15px; line-height:1.7; color:{USJ_TEXT}; margin:0;">
+    <p style="font-size:14.5px; line-height:1.7; color:{USJ_TEXT}; margin-top:10px; margin-bottom:28px;">
     <sup>1</sup> D’autres outils sont aussi mis à votre disposition pour recueillir l’opinion des parties prenantes, en particulier des questionnaires adressés aux employeurs, aux diplômés, ou aux étudiants. Ils sont joints à ce courrier. Leur utilisation est facultative.
     </p>
-</div>
-""")
 
-    html_block(f"""
-<div style="background-color:#ffffff; padding:30px; border-radius:12px; border-left:7px solid {USJ_BLUE}; border-top:2px solid {USJ_GOLD}; border-bottom:2px solid {USJ_RED}; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:25px;">
     <p style="text-align:justify; font-size:18px; line-height:1.9; color:{USJ_BLUE};">
     Ce rapport vise ainsi à produire deux résultats principaux. Le premier consiste en une analyse SWOT (Strengths, Weaknesses, Opportunities, Threats) de l’Université, fondée sur la réalité vécue au sein de votre institution. Sur la base de cette analyse, vous serez amenés à proposer des priorités stratégiques ainsi que des initiatives (ou projets), toujours à l’échelle de l’Université, constituant ainsi le second résultat attendu.
     </p>
 
-    <p style="font-size:18px; line-height:1.9; color:{USJ_BLUE};">Le document comprend 6 parties :</p>
+    <p style="font-size:18px; line-height:1.9; color:{USJ_BLUE}; margin-bottom:5px;">
+    Le document comprend 6 parties :
+    </p>
 
-    <ol style="font-size:18px; line-height:1.9; color:{USJ_BLUE};">
+    <ol style="font-size:18px; line-height:1.9; color:{USJ_BLUE}; margin-top:5px;">
         <li>Introduction</li>
         <li>Identification des parties prenantes à consulter pour écrire le rapport</li>
         <li>Analyse interne : cette analyse mène à produire les éléments Forces et Faiblesses de l’analyse SWOT</li>
@@ -249,15 +271,18 @@ def render_fixed_introduction():
         <li>Propositions de Priorités stratégiques et Initiatives</li>
     </ol>
 
-    <p style="font-size:18px; line-height:1.9; color:{USJ_BLUE};">Pour toute information supplémentaire ou support, contacter :</p>
+    <p style="font-size:18px; line-height:1.9; color:{USJ_BLUE}; margin-bottom:5px;">
+    Pour toute information supplémentaire ou support, contacter :
+    </p>
 
-    <p style="font-size:17px; line-height:1.8; color:{USJ_BLUE};">
+    <p style="font-size:17px; line-height:1.8; color:{USJ_BLUE}; margin-bottom:0;">
     M. Hadi Sawaya – Coordinateur de l’Unité Assurance Qualité : hadi.sawaya@usj.edu.lb<br>
     Mme Irma Majdalani – Expert qualité – Unité Assurance qualité : irma.majdalani@usj.edu.lb<br>
     Mme Nadine Riachi Haddad – Secrétaire général : secg@usj.edu.lb<br>
     Mme Ursula El Hage – Directeur du Service de l’insertion professionnelle : ursula.hage@usj.edu.lb<br>
     Mme Lina Koleilat Ghalayini – Chef de projets – Unité Assurance qualité : lina.koleilat@usj.edu.lb
     </p>
+
 </div>
 """)
 
