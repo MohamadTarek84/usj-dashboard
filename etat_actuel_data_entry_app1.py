@@ -313,6 +313,36 @@ def render_stakeholder_table():
 
     stakeholder_rows = []
 
+    col0, col1, col2, col3 = st.columns([1.4, 1.6, 1.6, 1.8])
+
+    with col0:
+        html_block(f"""
+<div style="background:{USJ_BLUE}; color:white; padding:10px 12px; height:40px; display:flex; align-items:center; font-weight:700; border-radius:6px;">
+    Parties prenantes consultées
+</div>
+""")
+
+    with col1:
+        html_block(f"""
+<div style="background:{USJ_BLUE}; color:white; padding:10px 12px; height:40px; display:flex; align-items:center; font-weight:700; border-radius:6px;">
+    Nom
+</div>
+""")
+
+    with col2:
+        html_block(f"""
+<div style="background:{USJ_BLUE}; color:white; padding:10px 12px; height:40px; display:flex; align-items:center; font-weight:700; border-radius:6px;">
+    Poste
+</div>
+""")
+
+    with col3:
+        html_block(f"""
+<div style="background:{USJ_BLUE}; color:white; padding:10px 12px; height:40px; display:flex; align-items:center; font-weight:700; border-radius:6px;">
+    Organisme d’affiliation
+</div>
+""")
+
     for category in stakeholder_categories:
         col0, col1, col2, col3 = st.columns([1.4, 1.6, 1.6, 1.8])
 
@@ -330,7 +360,11 @@ def render_stakeholder_table():
             poste = st.text_input("Poste", key=f"{category}_poste", label_visibility="collapsed")
 
         with col3:
-            organisme = st.text_input("Organisme d’affiliation", key=f"{category}_organisme", label_visibility="collapsed")
+            organisme = st.text_input(
+                "Organisme d’affiliation",
+                key=f"{category}_organisme",
+                label_visibility="collapsed"
+            )
 
         if any([nom.strip(), poste.strip(), organisme.strip()]):
             stakeholder_rows.append({
@@ -359,7 +393,11 @@ def render_stakeholder_table():
             autre_poste = st.text_input("Poste", key=f"autre_poste_{i}", label_visibility="collapsed")
 
         with col3:
-            autre_org = st.text_input("Organisme d’affiliation", key=f"autre_org_{i}", label_visibility="collapsed")
+            autre_org = st.text_input(
+                "Organisme d’affiliation",
+                key=f"autre_org_{i}",
+                label_visibility="collapsed"
+            )
 
         if any([autre_nom.strip(), autre_poste.strip(), autre_org.strip()]):
             stakeholder_rows.append({
@@ -376,7 +414,6 @@ def render_stakeholder_table():
         st.rerun()
 
     return stakeholder_rows
-
 
 def render_internal_intro():
     html_block(f"""
