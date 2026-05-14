@@ -582,11 +582,17 @@ def main():
 
             st.divider()
 
-            section_header("III - Analyse interne de l’État actuel de l’Université")
-            render_internal_intro()
-            internal_analysis = render_internal_analysis()
+section_header("III - Analyse interne de l’État actuel de l’Université")
+render_internal_intro()
+internal_analysis = render_internal_analysis()
 
-            submitted = st.form_submit_button("Enregistrer la réponse")
+st.divider()
+
+section_header("IV - Analyse externe de l’environnement actuel de l’Université")
+render_external_intro()
+external_analysis = render_external_analysis()
+
+submitted = st.form_submit_button("Enregistrer la réponse")
 
             if submitted:
                 metadata = {
@@ -596,14 +602,15 @@ def main():
                     "response_date": str(response_date),
                 }
 
-                data = {
-                    "metadata": metadata,
-                    "introduction": {},
-                    "stakeholders": {
-                        "rows": stakeholder_rows,
-                    },
-                    "internal_analysis": internal_analysis,
-                }
+data = {
+    "metadata": metadata,
+    "introduction": {},
+    "stakeholders": {
+        "rows": stakeholder_rows,
+    },
+    "internal_analysis": internal_analysis,
+    "external_analysis": external_analysis,
+}
 
                 save_response(metadata, data)
                 st.success("Réponse enregistrée avec succès.")
