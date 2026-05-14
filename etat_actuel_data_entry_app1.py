@@ -131,14 +131,24 @@ def render_document_structure():
 
     st.markdown(
         """
-        <div style="line-height:2; font-size:17px;">
-            <b>I - Introduction</b><br>
-            <b>II - Identification des parties prenantes</b><br>
-            <b>III - Analyse interne de l’État actuel de l’Université</b><br>
-            <b>IV - Analyse externe de l’environnement actuel de l’Université</b><br>
-            <b>V - Analyse SWOT – Niveau USJ</b><br>
-            <b>VI - Priorités stratégiques et initiatives proposées – Niveau USJ</b><br>
-            <b>VII - Annexes</b><br>
+        <div style="
+            background-color:#ffffff;
+            padding:25px 30px;
+            border-radius:12px;
+            border-left:6px solid #8B1538;
+            box-shadow:0 2px 10px rgba(0,0,0,0.08);
+            margin-bottom:25px;
+            font-family:Candara, Calibri, Arial, sans-serif;
+        ">
+            <div style="line-height:2.1; font-size:18px; color:#2E2E2E;">
+                <b>I - Introduction</b><br>
+                <b>II - Identification des parties prenantes</b><br>
+                <b>III - Analyse interne de l’État actuel de l’Université</b><br>
+                <b>IV - Analyse externe de l’environnement actuel de l’Université</b><br>
+                <b>V - Analyse SWOT – Niveau USJ</b><br>
+                <b>VI - Priorités stratégiques et initiatives proposées – Niveau USJ</b><br>
+                <b>VII - Annexes</b><br>
+            </div>
         </div>
         """,
         unsafe_allow_html=True,
