@@ -3,6 +3,7 @@
 
 import sqlite3
 import json
+import zipfile
 from datetime import datetime
 from pathlib import Path
 
@@ -13,6 +14,8 @@ import streamlit as st
 APP_TITLE = "PLAN STRATÉGIQUE USJ 2032"
 DB_PATH = Path("etat_actuel_responses.db")
 LOGO_PATH = Path("LogoUAQ.png")
+INTRO_DOCX_PATH = Path("Introduction.docx")
+INTRO_IMAGE_PATH = Path("intro_schema.png")
 
 USJ_BLUE = "#001F5B"
 USJ_BLUE_2 = "#1F3C88"
@@ -22,13 +25,32 @@ USJ_LIGHT_BLUE = "#EAF2F8"
 USJ_TEXT = "#1B2A41"
 
 
-INTRO_FIXED_TEXT = """
-L’enseignement supérieur est aujourd’hui confronté à des transformations rapides, à des contraintes économiques croissantes et à une intensification de la concurrence, tant nationale qu’internationale. Les évolutions technologiques, les attentes accrues des étudiants et des parties prenantes, ainsi que les exigences renforcées en matière de qualité et de performance, imposent une réflexion stratégique à la fois rigoureuse et collective. Les universités sont ainsi appelées à réinterroger en profondeur leurs modèles académiques, organisationnels et opérationnels.
+def extract_intro_image():
+    if INTRO_IMAGE_PATH.exists():
+        return INTRO_IMAGE_PATH
 
-Le Plan stratégique USJ 2032 s’inscrit dans cette dynamique. Il constitue une feuille de route institutionnelle visant à traduire la mission, la vision et les valeurs de l’USJ en priorités stratégiques claires, en objectifs cohérents et en initiatives concrètes, capables de renforcer durablement son positionnement, sa résilience ainsi que son impact académique et sociétal.
+    if not INTRO_DOCX_PATH.exists():
+        return None
 
-L’élaboration de ce plan stratégique se décline en plusieurs étapes, dont la première est consacrée à l’analyse de données relatives à l’état actuel de l’Université. L’ensemble des acteurs de l’Université, ainsi que les parties prenantes, sont invités à y contribuer. Ce rapport a pour objectif de vous accompagner dans la formulation de constats partagés, des pratiques existantes et des expériences vécues, afin d’identifier les forces à consolider, les fragilités à traiter, les opportunités de développement et les risques à maîtriser à l’échelle de l’Université.
-"""
+    try:
+        with zipfile.ZipFile(INTRO_DOCX_PATH, "r") as docx:
+            media_files = [
+                item for item in docx.namelist()
+                if item.startswith("word/media/")
+            ]
+
+            if not media_files:
+                return None
+
+            image_file = media_files[0]
+
+            with docx.open(image_file) as source:
+                INTRO_IMAGE_PATH.write_bytes(source.read())
+
+        return INTRO_IMAGE_PATH
+
+    except Exception:
+        return None
 
 
 def init_db():
@@ -231,13 +253,11 @@ def render_first_page_header():
     st.markdown("---")
 
 
-def render_document_structure():
-    st.markdown("## Structure du document")
-
+def render_fixed_introduction():
     st.markdown(f"""
     <div style="
         background-color:#ffffff;
-        padding:25px 30px;
+        padding:30px;
         border-radius:12px;
         border-left:7px solid {USJ_BLUE};
         border-top:2px solid {USJ_GOLD};
@@ -246,23 +266,45 @@ def render_document_structure():
         margin-bottom:25px;
         font-family:Candara, Calibri, Arial, sans-serif;
     ">
-        <div style="line-height:2.1; font-size:18px; color:{USJ_BLUE};">
-            <b>I - Introduction</b><br>
-            <b>II - Identification des parties prenantes</b><br>
-            <b>III - Analyse interne de l’État actuel de l’Université</b><br>
-            <b>IV - Analyse externe de l’environnement actuel de l’Université</b><br>
-            <b>V - Analyse SWOT - Niveau USJ</b><br>
-            <b>VI - Priorités stratégiques et initiatives proposées - Niveau USJ</b><br>
-            <b>VII - Annexes</b><br>
-        </div>
+        <h3 style="color:{USJ_BLUE}; margin-top:0;">Introduction</h3>
+
+        <p style="text-align:justify; font-size:18px; line-height:1.9; color:{USJ_BLUE};">
+            L’enseignement supérieur est aujourd’hui confronté à des transformations rapides, à des contraintes économiques croissantes et à une intensification de la concurrence, tant nationale qu’internationale. Les évolutions technologiques, les attentes accrues des étudiants et des parties prenantes, ainsi que les exigences renforcées en matière de qualité et de performance, imposent une réflexion stratégique à la fois rigoureuse et collective. Les universités sont ainsi appelées à réinterroger en profondeur leurs modèles académiques, organisationnels et opérationnels.
+        </p>
+
+        <p style="text-align:justify; font-size:18px; line-height:1.9; color:{USJ_BLUE};">
+            Le Plan stratégique USJ 2032 s’inscrit dans cette dynamique. Il constitue une feuille de route institutionnelle visant à traduire la mission, la vision et les valeurs de l’USJ en priorités stratégiques claires, en objectifs cohérents et en initiatives concrètes, capables de renforcer durablement son positionnement, sa résilience ainsi que son impact académique et sociétal.
+        </p>
+
+        <p style="text-align:justify; font-size:18px; line-height:1.9; color:{USJ_BLUE};">
+            L’élaboration de ce plan stratégique se décline en plusieurs étapes (voir le schéma ci-dessous), dont la première est consacrée à l’analyse de données relatives à l’état actuel de l’Université. L’ensemble des acteurs de l’Université, ainsi que les parties prenantes, sont invités à y contribuer. Ce rapport a pour objectif de vous accompagner dans la formulation de constats partagés, des pratiques existantes et des expériences vécues, afin d’identifier les forces à consolider, les fragilités à traiter, les opportunités de développement et les risques à maîtriser à l’échelle de l’Université<sup>1</sup>.
+        </p>
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown("---")
+    intro_image = extract_intro_image()
 
+    if intro_image is not None and intro_image.exists():
+        st.image(str(intro_image), use_container_width=True)
+    else:
+        st.warning("Schéma d’introduction non trouvé. Ajoutez Introduction.docx ou intro_schema.png dans le dépôt GitHub.")
 
-def render_fixed_introduction():
-    formatted_text = INTRO_FIXED_TEXT.strip().replace("\n\n", "<br><br>")
+    st.markdown(f"""
+    <div style="
+        background-color:#F8FBFF;
+        padding:18px 22px;
+        border-radius:10px;
+        border-left:5px solid {USJ_GOLD};
+        border-right:2px solid {USJ_BLUE_2};
+        margin-top:20px;
+        margin-bottom:25px;
+        font-family:Candara, Calibri, Arial, sans-serif;
+    ">
+        <p style="font-size:15px; line-height:1.7; color:{USJ_TEXT}; margin:0;">
+            <sup>1</sup> D’autres outils sont aussi mis à votre disposition pour recueillir l’opinion des parties prenantes, en particulier des questionnaires adressés aux employeurs, aux diplômés, ou aux étudiants. Ils sont joints à ce courrier. Leur utilisation est facultative.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
 
     st.markdown(f"""
     <div style="
@@ -276,14 +318,33 @@ def render_fixed_introduction():
         margin-bottom:25px;
         font-family:Candara, Calibri, Arial, sans-serif;
     ">
-        <p style="
-            text-align:justify;
-            font-size:18px;
-            line-height:1.9;
-            color:{USJ_BLUE};
-            margin:0;
-        ">
-            {formatted_text}
+        <p style="text-align:justify; font-size:18px; line-height:1.9; color:{USJ_BLUE};">
+            Ce rapport vise ainsi à produire deux résultats principaux. Le premier consiste en une analyse SWOT (Strengths, Weaknesses, Opportunities, Threats) de l’Université, fondée sur la réalité vécue au sein de votre institution. Sur la base de cette analyse, vous serez amenés à proposer des priorités stratégiques ainsi que des initiatives (ou projets), toujours à l’échelle de l’Université, constituant ainsi le second résultat attendu.
+        </p>
+
+        <p style="font-size:18px; line-height:1.9; color:{USJ_BLUE};">
+            Le document comprend 6 parties :
+        </p>
+
+        <ol style="font-size:18px; line-height:1.9; color:{USJ_BLUE};">
+            <li>Introduction</li>
+            <li>Identification des patries prenantes à consulter pour écrire le rapport</li>
+            <li>Analyse interne : cette analyse mène à produire les éléments Forces et Faiblesses de l’analyse SWOT</li>
+            <li>Analyse externe : cette analyse mène à produire les éléments Opportunités et Menaces de l’analyse SWOT</li>
+            <li>Analyse SWOT</li>
+            <li>Propositions de Priorités stratégiques et Initiatives</li>
+        </ol>
+
+        <p style="font-size:18px; line-height:1.9; color:{USJ_BLUE};">
+            Pour toute information supplémentaire ou support, contacter :
+        </p>
+
+        <p style="font-size:17px; line-height:1.8; color:{USJ_BLUE};">
+            M. Hadi Sawaya – Coordinateur de l’Unité Assurance Qualité : hadi.sawaya@usj.edu.lb<br>
+            Mme Irma Majdalani – Expert qualité – Unité Assurance qualité : irma.majdalani@usj.edu.lb<br>
+            Mme Nadine Riachi Haddad – Secrétaire général : secg@usj.edu.lb<br>
+            Mme Ursula El Hage – Directeur du Service de l’insertion professionnelle : ursula.hage@usj.edu.lb<br>
+            Mme Lina Koleilat Ghalayini – Chef de projets – Unité Assurance qualité : lina.koleilat@usj.edu.lb
         </p>
     </div>
     """, unsafe_allow_html=True)
@@ -329,8 +390,6 @@ def main():
             email = st.text_input("Email du responsable")
 
             st.markdown("---")
-
-            render_document_structure()
 
             section_header("I - Introduction")
             render_fixed_introduction()
@@ -569,7 +628,6 @@ def main():
                 data = {
                     "metadata": metadata,
                     "introduction": {
-                        "texte_institutionnel": INTRO_FIXED_TEXT,
                         "commentaires_complementaires": introduction,
                     },
                     "stakeholders": {
