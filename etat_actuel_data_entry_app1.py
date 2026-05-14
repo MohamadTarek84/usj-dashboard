@@ -456,8 +456,8 @@ def render_internal_analysis():
 
     for theme in internal_themes:
         html_block(f"""
-<div style="background:{USJ_LIGHT_BLUE}; border-left:5px solid {USJ_BLUE}; padding:10px 14px; border-radius:6px; margin-top:20px; margin-bottom:8px; font-weight:700; color:{USJ_BLUE}; font-size:17px;">
-    {theme}
+<div style="background:{USJ_LIGHT_BLUE}; border-left:5px solid {USJ_RED}; padding:10px 14px 10px 28px; border-radius:6px; margin-top:20px; margin-bottom:8px; font-weight:700; color:{USJ_RED}; font-size:17px;">
+    <span style="font-size:22px; margin-right:10px; color:{USJ_RED};">•</span>{theme}
 </div>
 """)
 
