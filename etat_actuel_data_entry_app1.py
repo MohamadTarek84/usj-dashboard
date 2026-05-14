@@ -713,6 +713,42 @@ def render_priorities_table():
 
     return priorities_rows
 
+def render_pour_finir():
+    html_block(f"""
+<div style="background-color:#ffffff; padding:24px 34px; border-radius:12px; border-left:7px solid {USJ_RED}; border-top:2px solid {USJ_GOLD}; border-bottom:2px solid {USJ_RED}; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:25px;">
+
+    <p style="font-size:18px; line-height:1.55; color:{USJ_RED}; font-weight:700; margin-bottom:16px;">
+    POUR FINIR. <span style="font-weight:400;">Nous vous remercions de compléter les phrases suivantes.</span>
+    </p>
+
+</div>
+""")
+
+    pour_finir = {}
+
+    phrases = [
+        "Nous souhaitons que l’USJ soit reconnue pour …",
+        "Nous souhaitons que nos étudiants disent que l’USJ …",
+        "L’USJ un excellent lieu de travail si …",
+    ]
+
+    for i, phrase in enumerate(phrases, start=1):
+        html_block(f"""
+<div style="background:{USJ_LIGHT_BLUE}; border-left:5px solid {USJ_RED}; padding:10px 14px 10px 28px; border-radius:6px; margin-top:20px; margin-bottom:8px; color:{USJ_RED}; font-size:17px; font-weight:700;">
+    {phrase}
+</div>
+""")
+
+        pour_finir[phrase] = st.text_area(
+            label=phrase,
+            key=f"pour_finir_{i}",
+            height=180,
+            placeholder="Merci de saisir votre réponse ici",
+            label_visibility="collapsed"
+        )
+
+    return pour_finir
+
 def main():
     st.set_page_config(page_title=APP_TITLE, page_icon="📋", layout="wide")
 
@@ -787,6 +823,10 @@ def main():
             render_priorities_intro()
             priorities_initiatives = render_priorities_table()
 
+            st.divider()
+
+            pour_finir = render_pour_finir()
+
             submitted = st.form_submit_button("Enregistrer la réponse")
 
             if submitted:
@@ -807,6 +847,7 @@ def main():
                     "external_analysis": external_analysis,
                     "swot_analysis": swot_analysis,
                     "priorities_initiatives": priorities_initiatives,
+                    "pour_finir": pour_finir,
                 }
 
                 save_response(metadata, data)
