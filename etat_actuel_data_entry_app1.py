@@ -781,6 +781,12 @@ def main():
             render_swot_intro()
             swot_analysis = render_swot_analysis()
 
+            st.divider()
+
+            section_header("VI - Priorités stratégiques et initiatives proposées – Niveau USJ")
+            render_priorities_intro()
+            priorities_initiatives = render_priorities_table()
+
             submitted = st.form_submit_button("Enregistrer la réponse")
 
             if submitted:
@@ -800,6 +806,7 @@ def main():
                     "internal_analysis": internal_analysis,
                     "external_analysis": external_analysis,
                     "swot_analysis": swot_analysis,
+                    "priorities_initiatives": priorities_initiatives,
                 }
 
                 save_response(metadata, data)
