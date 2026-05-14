@@ -498,13 +498,6 @@ def main():
             section_header("I - Introduction")
             render_fixed_introduction()
 
-            introduction = text_area(
-                "Commentaires ou éléments complémentaires",
-                key="introduction",
-                height=180,
-                placeholder="Ajouter, si nécessaire, des éléments introductifs complémentaires..."
-            )
-
             st.divider()
 
             section_header("II - Identification des parties prenantes")
@@ -698,9 +691,7 @@ def main():
 
                 data = {
                     "metadata": metadata,
-                    "introduction": {
-                        "commentaires_complementaires": introduction,
-                    },
+                    "introduction": {},
                     "stakeholders": {
                         "rows": stakeholder_rows,
                     },
