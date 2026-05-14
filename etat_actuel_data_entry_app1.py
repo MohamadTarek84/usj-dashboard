@@ -154,7 +154,7 @@ def main():
         layout="wide"
     )
 
-        st.markdown("""
+    st.markdown("""
     <style>
     html, body, [class*="css"], [class*="st-"], .stApp {
         font-family: Candara, Calibri, Arial, sans-serif !important;
