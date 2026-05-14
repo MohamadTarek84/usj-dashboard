@@ -120,25 +120,27 @@ html, body, [class*="css"], [class*="st-"], .stApp {{
     color: {USJ_TEXT};
 }}
 
-#MainMenu {{
+/*
+#MainMenu {
     visibility: hidden;
-}}
+}
 
-footer {{
+footer {
     visibility: hidden;
-}}
+}
 
-header {{
+header {
     visibility: hidden;
-}}
+}
 
-[data-testid="stToolbar"] {{
+[data-testid="stToolbar"] {
     display: none;
-}}
+}
 
-[data-testid="stDecoration"] {{
+[data-testid="stDecoration"] {
     display: none;
-}}
+}
+*/
 
 h1, h2, h3, h4, h5, h6 {{
     font-family: Candara, Calibri, Arial, sans-serif !important;
