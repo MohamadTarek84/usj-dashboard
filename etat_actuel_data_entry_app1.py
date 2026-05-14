@@ -182,9 +182,13 @@ def section_header(title, description=None):
 """)
 
 
-def text_area(label, key, height=300, placeholder=None):
-    return st.text_area(label, key=key, height=height, placeholder=placeholder)
-
+def text_area(label, key, height=500, placeholder=None):
+    return st.text_area(
+        label,
+        key=key,
+        height=height,
+        placeholder=placeholder
+    )
 
 def render_first_page_header():
     col_left, col_right = st.columns([2.2, 1])
