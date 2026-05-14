@@ -428,7 +428,7 @@ def render_internal_analysis():
             label=theme,
             key=f"internal_{theme}",
             height=300,
-            placeholder=f"Saisir les constats relatifs à : {theme}",
+            placeholder="Merci de saisir votre réponse ici",
             label_visibility="collapsed"
         )
 
