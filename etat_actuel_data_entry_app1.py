@@ -120,6 +120,26 @@ html, body, [class*="css"], [class*="st-"], .stApp {{
     color: {USJ_TEXT};
 }}
 
+#MainMenu {{
+    visibility: hidden;
+}}
+
+footer {{
+    visibility: hidden;
+}}
+
+header {{
+    visibility: hidden;
+}}
+
+[data-testid="stToolbar"] {{
+    display: none;
+}}
+
+[data-testid="stDecoration"] {{
+    display: none;
+}}
+
 h1, h2, h3, h4, h5, h6 {{
     font-family: Candara, Calibri, Arial, sans-serif !important;
     color: {USJ_BLUE} !important;
@@ -159,7 +179,9 @@ section[data-testid="stSidebar"] {{
     border-right: 4px solid {USJ_BLUE};
 }}
 
-.stButton button, .stDownloadButton button, div[data-testid="stFormSubmitButton"] button {{
+.stButton button,
+.stDownloadButton button,
+div[data-testid="stFormSubmitButton"] button {{
     background-color: {USJ_BLUE} !important;
     color: white !important;
     border-radius: 8px !important;
@@ -167,7 +189,9 @@ section[data-testid="stSidebar"] {{
     font-weight: 600 !important;
 }}
 
-.stButton button p, .stDownloadButton button p, div[data-testid="stFormSubmitButton"] button p {{
+.stButton button p,
+.stDownloadButton button p,
+div[data-testid="stFormSubmitButton"] button p {{
     color: white !important;
 }}
 </style>
