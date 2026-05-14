@@ -644,6 +644,74 @@ def render_swot_analysis():
 
     return swot_data
 
+def render_priorities_intro():
+    html_block(f"""
+<div style="background-color:#ffffff; padding:24px 34px; border-radius:12px; border-left:7px solid {USJ_BLUE}; border-top:2px solid {USJ_GOLD}; border-bottom:2px solid {USJ_RED}; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:25px;">
+    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
+    Cette section a pour objectif de proposer, à l’échelle de l’USJ, des priorités stratégiques et des initiatives (projets), en cohérence avec les constats issus de l’analyse des environnements interne et externe et de l’analyse SWOT. Les propositions attendues doivent refléter les enjeux majeurs identifiés, les capacités institutionnelles existantes et les orientations à privilégier pour les prochaines années.
+    </p>
+
+    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
+    Les priorités stratégiques sont les enjeux sur lesquels l’Université doit porter ses efforts pour remédier aux faiblesses, capitaliser sur les forces, tirer avantage des opportunités et faire face aux menaces identifiées par l’analyse SWOT.
+    </p>
+
+    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
+    L'initiative correspond plus concrètement, à un projet spécifique qui permet la mise en œuvre de la priorité correspondante. Elle peut être au niveau de l’Université ou bien au niveau de votre institution. Afin de clarifier les attentes et de faciliter le pilotage, chaque initiative doit impérativement être formulée par un verbe d'action.
+    </p>
+
+    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:0;">
+    Nous vous remercions de bien vouloir compléter le tableau ci-dessous en indiquant au maximum trois priorités stratégiques et 1 à 3 initiatives par priorité. Les initiatives peuvent être au niveau de l’Université et/ou au niveau de l’institution. Vos réponses seront déduites de l’analyse SWOT. Vous pouvez hiérarchiser les priorités en les numérotant de 1 à 3.
+    </p>
+</div>
+""")
+
+
+def render_priorities_table():
+    priorities_rows = []
+
+    col1, col2 = st.columns([1.2, 1.8])
+
+    with col1:
+        html_block(f"""
+<div style="background:{USJ_BLUE}; color:white; padding:10px 12px; min-height:42px; display:flex; align-items:center; justify-content:center; font-weight:700; border-radius:6px;">
+    Priorités stratégiques au niveau de l’USJ
+</div>
+""")
+
+    with col2:
+        html_block(f"""
+<div style="background:{USJ_BLUE}; color:white; padding:10px 12px; min-height:42px; display:flex; align-items:center; justify-content:center; font-weight:700; border-radius:6px;">
+    Initiatives
+</div>
+""")
+
+    for i in range(1, 4):
+        col1, col2 = st.columns([1.2, 1.8])
+
+        with col1:
+            priority_value = st.text_area(
+                label=f"Priorité stratégique {i}",
+                key=f"priority_{i}",
+                height=140,
+                placeholder="Merci de saisir votre réponse ici",
+                label_visibility="collapsed"
+            )
+
+        with col2:
+            initiative_value = st.text_area(
+                label=f"Initiatives {i}",
+                key=f"initiative_{i}",
+                height=140,
+                placeholder="Merci de saisir votre réponse ici",
+                label_visibility="collapsed"
+            )
+
+        priorities_rows.append({
+            "priorite_strategique": priority_value,
+            "initiatives": initiative_value,
+        })
+
+    return priorities_rows
 
 def main():
     st.set_page_config(page_title=APP_TITLE, page_icon="📋", layout="wide")
