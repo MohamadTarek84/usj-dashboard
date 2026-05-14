@@ -507,11 +507,11 @@ def main():
 
             st.divider()
 
-section_header("II - Identification des parties prenantes")
-render_stakeholder_intro()
-stakeholder_rows = render_stakeholder_table()
+            section_header("II - Identification des parties prenantes")
+            render_stakeholder_intro()
+            stakeholder_rows = render_stakeholder_table()
 
-html_block(f"""
+            html_block(f"""
 <div style="
     font-size:14px;
     line-height:1.45;
