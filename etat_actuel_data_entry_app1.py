@@ -14,6 +14,22 @@ APP_TITLE = "PLAN STRATÉGIQUE USJ 2032"
 DB_PATH = Path("etat_actuel_responses.db")
 LOGO_PATH = Path("LogoUAQ.png")
 
+USJ_BLUE = "#001F5B"
+USJ_BLUE_2 = "#1F3C88"
+USJ_RED = "#8B1538"
+USJ_GOLD = "#C9A227"
+USJ_LIGHT_BLUE = "#EAF2F8"
+USJ_TEXT = "#1B2A41"
+
+
+INTRO_FIXED_TEXT = """
+L’enseignement supérieur est aujourd’hui confronté à des transformations rapides, à des contraintes économiques croissantes et à une intensification de la concurrence, tant nationale qu’internationale. Les évolutions technologiques, les attentes accrues des étudiants et des parties prenantes, ainsi que les exigences renforcées en matière de qualité et de performance, imposent une réflexion stratégique à la fois rigoureuse et collective. Les universités sont ainsi appelées à réinterroger en profondeur leurs modèles académiques, organisationnels et opérationnels.
+
+Le Plan stratégique USJ 2032 s’inscrit dans cette dynamique. Il constitue une feuille de route institutionnelle visant à traduire la mission, la vision et les valeurs de l’USJ en priorités stratégiques claires, en objectifs cohérents et en initiatives concrètes, capables de renforcer durablement son positionnement, sa résilience ainsi que son impact académique et sociétal.
+
+L’élaboration de ce plan stratégique se décline en plusieurs étapes, dont la première est consacrée à l’analyse de données relatives à l’état actuel de l’Université. L’ensemble des acteurs de l’Université, ainsi que les parties prenantes, sont invités à y contribuer. Ce rapport a pour objectif de vous accompagner dans la formulation de constats partagés, des pratiques existantes et des expériences vécues, afin d’identifier les forces à consolider, les fragilités à traiter, les opportunités de développement et les risques à maîtriser à l’échelle de l’Université.
+"""
+
 
 def init_db():
     conn = sqlite3.connect(DB_PATH)
@@ -86,10 +102,102 @@ def flatten_response(row):
     return base
 
 
+def apply_usj_style():
+    st.markdown(f"""
+    <style>
+    html, body, [class*="css"], [class*="st-"], .stApp {{
+        font-family: Candara, Calibri, Arial, sans-serif !important;
+        color: {USJ_TEXT};
+    }}
+
+    h1, h2, h3, h4, h5, h6 {{
+        font-family: Candara, Calibri, Arial, sans-serif !important;
+        color: {USJ_BLUE} !important;
+        font-weight: 700 !important;
+    }}
+
+    p, div, span, label, button, input, textarea, select {{
+        font-family: Candara, Calibri, Arial, sans-serif !important;
+    }}
+
+    .stTextInput input, .stTextArea textarea, .stDateInput input {{
+        border: 1.5px solid {USJ_BLUE_2} !important;
+        border-radius: 8px !important;
+        background-color: #F8FBFF !important;
+        color: {USJ_TEXT} !important;
+    }}
+
+    .stTextArea textarea:focus, .stTextInput input:focus {{
+        border: 2px solid {USJ_RED} !important;
+        box-shadow: 0 0 0 1px {USJ_GOLD} !important;
+    }}
+
+    div[data-testid="stForm"] {{
+        border: 1px solid {USJ_BLUE_2};
+        border-radius: 14px;
+        padding: 20px;
+        background-color: #FFFFFF;
+    }}
+
+    section[data-testid="stSidebar"] {{
+        background-color: {USJ_LIGHT_BLUE};
+        border-right: 4px solid {USJ_BLUE};
+    }}
+
+    .stButton button, .stDownloadButton button, div[data-testid="stFormSubmitButton"] button {{
+        background-color: {USJ_BLUE} !important;
+        color: white !important;
+        border-radius: 8px !important;
+        border: 1px solid {USJ_BLUE} !important;
+        font-weight: 600 !important;
+    }}
+
+    .stButton button:hover, .stDownloadButton button:hover, div[data-testid="stFormSubmitButton"] button:hover {{
+        background-color: {USJ_RED} !important;
+        border: 1px solid {USJ_RED} !important;
+        color: white !important;
+    }}
+
+    hr {{
+        border: none;
+        border-top: 2px solid {USJ_BLUE_2};
+        margin-top: 25px;
+        margin-bottom: 25px;
+    }}
+    </style>
+    """, unsafe_allow_html=True)
+
+
 def section_header(title, description=None):
-    st.markdown(f"## {title}")
+    st.markdown(f"""
+    <div style="
+        border-left:6px solid {USJ_BLUE};
+        border-bottom:2px solid {USJ_GOLD};
+        padding:10px 14px;
+        margin-top:20px;
+        margin-bottom:18px;
+        background-color:{USJ_LIGHT_BLUE};
+        border-radius:8px;
+    ">
+        <h2 style="margin:0; color:{USJ_BLUE};">{title}</h2>
+    </div>
+    """, unsafe_allow_html=True)
+
     if description:
-        st.info(description)
+        st.markdown(f"""
+        <div style="
+            background-color:#ffffff;
+            border-left:5px solid {USJ_RED};
+            padding:14px 18px;
+            border-radius:8px;
+            color:{USJ_TEXT};
+            font-size:16px;
+            line-height:1.6;
+            margin-bottom:15px;
+        ">
+            {description}
+        </div>
+        """, unsafe_allow_html=True)
 
 
 def text_area(label, key, height=120, placeholder=None):
@@ -100,22 +208,19 @@ def render_first_page_header():
     col_left, col_right = st.columns([2.2, 1])
 
     with col_left:
-        st.markdown(
-            """
-            <div style="padding-top:20px;">
-                <h1 style="font-size:42px; margin-bottom:0px; color:#001f5b;">
-                    PLAN STRATÉGIQUE USJ 2032
-                </h1>
-                <h3 style="color:#1f3c88; margin-top:8px; margin-bottom:0px;">
-                    Analyse de l’état actuel et propositions
-                </h3>
-                <h5 style="margin-top:4px; color:#333333;">
-                    (pré-planification stratégique USJ)
-                </h5>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+        st.markdown(f"""
+        <div style="padding-top:20px;">
+            <h1 style="font-size:42px; margin-bottom:0px; color:{USJ_BLUE};">
+                PLAN STRATÉGIQUE USJ 2032
+            </h1>
+            <h3 style="color:{USJ_BLUE_2}; margin-top:8px; margin-bottom:0px;">
+                Analyse de l’état actuel et propositions
+            </h3>
+            <h5 style="margin-top:4px; color:{USJ_TEXT};">
+                (pré-planification stratégique USJ)
+            </h5>
+        </div>
+        """, unsafe_allow_html=True)
 
     with col_right:
         if LOGO_PATH.exists():
@@ -129,32 +234,59 @@ def render_first_page_header():
 def render_document_structure():
     st.markdown("## Structure du document")
 
-    st.markdown(
-        """
-        <div style="
-            background-color:#ffffff;
-            padding:25px 30px;
-            border-radius:12px;
-            border-left:6px solid #8B1538;
-            box-shadow:0 2px 10px rgba(0,0,0,0.08);
-            margin-bottom:25px;
-            font-family:Candara, Calibri, Arial, sans-serif;
-        ">
-            <div style="line-height:2.1; font-size:18px; color:#2E2E2E;">
-                <b>I - Introduction</b><br>
-                <b>II - Identification des parties prenantes</b><br>
-                <b>III - Analyse interne de l’État actuel de l’Université</b><br>
-                <b>IV - Analyse externe de l’environnement actuel de l’Université</b><br>
-                <b>V - Analyse SWOT – Niveau USJ</b><br>
-                <b>VI - Priorités stratégiques et initiatives proposées – Niveau USJ</b><br>
-                <b>VII - Annexes</b><br>
-            </div>
+    st.markdown(f"""
+    <div style="
+        background-color:#ffffff;
+        padding:25px 30px;
+        border-radius:12px;
+        border-left:7px solid {USJ_BLUE};
+        border-top:2px solid {USJ_GOLD};
+        border-bottom:2px solid {USJ_RED};
+        box-shadow:0 2px 10px rgba(0,0,0,0.08);
+        margin-bottom:25px;
+        font-family:Candara, Calibri, Arial, sans-serif;
+    ">
+        <div style="line-height:2.1; font-size:18px; color:{USJ_BLUE};">
+            <b>I - Introduction</b><br>
+            <b>II - Identification des parties prenantes</b><br>
+            <b>III - Analyse interne de l’État actuel de l’Université</b><br>
+            <b>IV - Analyse externe de l’environnement actuel de l’Université</b><br>
+            <b>V - Analyse SWOT - Niveau USJ</b><br>
+            <b>VI - Priorités stratégiques et initiatives proposées - Niveau USJ</b><br>
+            <b>VII - Annexes</b><br>
         </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    </div>
+    """, unsafe_allow_html=True)
 
     st.markdown("---")
+
+
+def render_fixed_introduction():
+    formatted_text = INTRO_FIXED_TEXT.strip().replace("\n\n", "<br><br>")
+
+    st.markdown(f"""
+    <div style="
+        background-color:#ffffff;
+        padding:30px;
+        border-radius:12px;
+        border-left:7px solid {USJ_BLUE};
+        border-top:2px solid {USJ_GOLD};
+        border-bottom:2px solid {USJ_RED};
+        box-shadow:0 2px 10px rgba(0,0,0,0.08);
+        margin-bottom:25px;
+        font-family:Candara, Calibri, Arial, sans-serif;
+    ">
+        <p style="
+            text-align:justify;
+            font-size:18px;
+            line-height:1.9;
+            color:{USJ_BLUE};
+            margin:0;
+        ">
+            {formatted_text}
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
 
 
 def main():
@@ -164,18 +296,7 @@ def main():
         layout="wide"
     )
 
-    st.markdown("""
-    <style>
-    html, body, [class*="css"], [class*="st-"], .stApp {
-        font-family: Candara, Calibri, Arial, sans-serif !important;
-    }
-
-    h1, h2, h3, h4, h5, h6, p, div, span, label, button, input, textarea, select {
-        font-family: Candara, Calibri, Arial, sans-serif !important;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
+    apply_usj_style()
     init_db()
 
     st.session_state.setdefault("n_stakeholders", 5)
@@ -212,12 +333,13 @@ def main():
             render_document_structure()
 
             section_header("I - Introduction")
+            render_fixed_introduction()
 
             introduction = text_area(
-                "Introduction générale",
+                "Commentaires ou éléments complémentaires",
                 key="introduction",
-                height=220,
-                placeholder="Saisir les éléments introductifs ou les constats généraux..."
+                height=180,
+                placeholder="Ajouter, si nécessaire, des éléments introductifs complémentaires..."
             )
 
             st.divider()
@@ -327,7 +449,7 @@ def main():
 
             st.divider()
 
-            section_header("V - Analyse SWOT – Niveau USJ")
+            section_header("V - Analyse SWOT - Niveau USJ")
 
             st.markdown("### Facteurs internes")
 
@@ -385,7 +507,7 @@ def main():
 
             st.divider()
 
-            section_header("VI - Priorités stratégiques et initiatives proposées – Niveau USJ")
+            section_header("VI - Priorités stratégiques et initiatives proposées - Niveau USJ")
 
             strategic_priorities = []
 
@@ -447,7 +569,8 @@ def main():
                 data = {
                     "metadata": metadata,
                     "introduction": {
-                        "introduction": introduction,
+                        "texte_institutionnel": INTRO_FIXED_TEXT,
+                        "commentaires_complementaires": introduction,
                     },
                     "stakeholders": {
                         "rows": stakeholder_rows,
