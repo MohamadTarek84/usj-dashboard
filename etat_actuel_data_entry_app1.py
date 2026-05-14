@@ -547,6 +547,104 @@ def render_external_analysis():
 
     return external_analysis
 
+def render_swot_intro():
+    html_block(f"""
+<div style="background-color:#ffffff; padding:24px 34px; border-radius:12px; border-left:7px solid {USJ_BLUE}; border-top:2px solid {USJ_GOLD}; border-bottom:2px solid {USJ_RED}; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:25px;">
+    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
+    L'Analyse SWOT est un levier de planification stratégique qui permet de synthétiser les constats majeurs afin d’améliorer les processus de planification et d'optimiser la prise de décision au niveau de l’Université.
+    </p>
+</div>
+""")
+
+
+def render_swot_table(section_key, left_title, right_title):
+    rows = []
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        html_block(f"""
+<div style="background:{USJ_BLUE}; color:white; padding:10px 12px; min-height:42px; display:flex; align-items:center; justify-content:center; font-weight:700; border-radius:6px;">
+    {left_title}
+</div>
+""")
+
+    with col2:
+        html_block(f"""
+<div style="background:{USJ_BLUE}; color:white; padding:10px 12px; min-height:42px; display:flex; align-items:center; justify-content:center; font-weight:700; border-radius:6px;">
+    {right_title}
+</div>
+""")
+
+    for i in range(1, 6):
+        col1, col2 = st.columns(2)
+
+        with col1:
+            left_value = st.text_area(
+                label=f"{left_title} {i}",
+                key=f"{section_key}_{left_title}_{i}",
+                height=120,
+                placeholder="Merci de saisir votre réponse ici",
+                label_visibility="collapsed"
+            )
+
+        with col2:
+            right_value = st.text_area(
+                label=f"{right_title} {i}",
+                key=f"{section_key}_{right_title}_{i}",
+                height=120,
+                placeholder="Merci de saisir votre réponse ici",
+                label_visibility="collapsed"
+            )
+
+        rows.append({
+            left_title: left_value,
+            right_title: right_value,
+        })
+
+    return rows
+
+
+def render_swot_analysis():
+    swot_data = {}
+
+    html_block(f"""
+<div style="background:#ffffff; padding:18px 24px; border-radius:10px; border-left:5px solid {USJ_RED}; margin-top:15px; margin-bottom:15px;">
+    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:6px;">
+    <strong>Facteurs internes :</strong> Identification des forces et des faiblesses propres à l'Université.
+    </p>
+    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:0;">
+    Nous vous remercions de bien vouloir compléter le tableau ci-dessous en indiquant au maximum cinq forces et cinq faiblesses. Vos réponses seront déduites de l’analyse de l’état actuel interne (section III principalement).
+    </p>
+</div>
+""")
+
+    swot_data["facteurs_internes"] = render_swot_table(
+        section_key="swot_internal",
+        left_title="Forces",
+        right_title="Faiblesses"
+    )
+
+    html_block(f"""
+<div style="background:#ffffff; padding:18px 24px; border-radius:10px; border-left:5px solid {USJ_RED}; margin-top:28px; margin-bottom:15px;">
+    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:6px;">
+    <strong>Facteurs externes :</strong> Identification des opportunités de développement et des menaces émanant de l'environnement extérieur.
+    </p>
+    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:0;">
+    Nous vous remercions de bien vouloir compléter le tableau ci-dessous en indiquant au maximum cinq opportunités et cinq menaces. Vos réponses seront déduites de l’analyse de l’état actuel externe (section IV principalement).
+    </p>
+</div>
+""")
+
+    swot_data["facteurs_externes"] = render_swot_table(
+        section_key="swot_external",
+        left_title="Opportunités",
+        right_title="Menaces"
+    )
+
+    return swot_data
+
+
 def main():
     st.set_page_config(page_title=APP_TITLE, page_icon="📋", layout="wide")
 
@@ -609,6 +707,12 @@ def main():
             render_external_intro()
             external_analysis = render_external_analysis()
 
+            st.divider()
+
+            section_header("V - Analyse SWOT – Niveau USJ")
+            render_swot_intro()
+            swot_analysis = render_swot_analysis()
+
             submitted = st.form_submit_button("Enregistrer la réponse")
 
             if submitted:
@@ -627,6 +731,7 @@ def main():
                     },
                     "internal_analysis": internal_analysis,
                     "external_analysis": external_analysis,
+                    "swot_analysis": swot_analysis,
                 }
 
                 save_response(metadata, data)
