@@ -334,60 +334,108 @@ def render_stakeholder_table():
 
     stakeholder_rows = []
 
+    html_block(f"""
+    <div style="
+        display:grid;
+        grid-template-columns: 1.4fr 1.6fr 1.6fr 1.8fr;
+        gap:0;
+        margin-top:20px;
+        border:1.5px solid {USJ_BLUE};
+        border-radius:8px;
+        overflow:hidden;
+        font-family:Candara, Calibri, Arial, sans-serif;
+    ">
+        <div style="background:{USJ_BLUE}; color:white; padding:12px; font-weight:700;">Parties prenantes consultées</div>
+        <div style="background:{USJ_BLUE}; color:white; padding:12px; font-weight:700;">Nom</div>
+        <div style="background:{USJ_BLUE}; color:white; padding:12px; font-weight:700;">Poste</div>
+        <div style="background:{USJ_BLUE}; color:white; padding:12px; font-weight:700;">Organisme d’affiliation</div>
+    </div>
+    """)
+
     for category in stakeholder_categories:
-        stakeholder_category_header(category, USJ_BLUE)
+        col0, col1, col2, col3 = st.columns([1.4, 1.6, 1.6, 1.8])
 
-        for i in range(1, 4):
-            col1, col2, col3 = st.columns([2, 2, 2])
-
-            with col1:
-                nom = st.text_input("Nom", key=f"{category}_nom_{i}")
-
-            with col2:
-                poste = st.text_input("Poste", key=f"{category}_poste_{i}")
-
-            with col3:
-                organisme = st.text_input(
-                    "Organisme d’affiliation",
-                    key=f"{category}_organisme_{i}"
-                )
-
-            if any([nom.strip(), poste.strip(), organisme.strip()]):
-                stakeholder_rows.append({
-                    "categorie": category,
-                    "nom": nom,
-                    "poste": poste,
-                    "organisme_affiliation": organisme,
-                })
-
-    stakeholder_category_header("Autres", USJ_RED)
-
-    st.session_state.setdefault("n_autres_rows", 2)
-
-    for i in range(1, st.session_state.n_autres_rows + 1):
-        col1, col2, col3 = st.columns([2, 2, 2])
+        with col0:
+            html_block(f"""
+            <div style="
+                background:{USJ_LIGHT_BLUE};
+                border-left:5px solid {USJ_BLUE};
+                padding:13px 10px;
+                min-height:46px;
+                font-weight:700;
+                color:{USJ_BLUE};
+                border-radius:6px;
+                margin-top:26px;
+            ">
+                {category}
+            </div>
+            """)
 
         with col1:
-            autre_nom = st.text_input("Nom", key=f"autre_nom_{i}")
+            nom = st.text_input("Nom", key=f"{category}_nom", label_visibility="collapsed")
 
         with col2:
-            autre_poste = st.text_input("Poste", key=f"autre_poste_{i}")
+            poste = st.text_input("Poste", key=f"{category}_poste", label_visibility="collapsed")
+
+        with col3:
+            organisme = st.text_input(
+                "Organisme d’affiliation",
+                key=f"{category}_organisme",
+                label_visibility="collapsed"
+            )
+
+        if any([nom.strip(), poste.strip(), organisme.strip()]):
+            stakeholder_rows.append({
+                "categorie": category,
+                "nom": nom,
+                "poste": poste,
+                "organisme_affiliation": organisme,
+            })
+
+    st.session_state.setdefault("n_autres_rows", 1)
+
+    for i in range(1, st.session_state.n_autres_rows + 1):
+        col0, col1, col2, col3 = st.columns([1.4, 1.6, 1.6, 1.8])
+
+        with col0:
+            label = "Autres" if i == 1 else f"Autres {i}"
+            html_block(f"""
+            <div style="
+                background:#FFF7E6;
+                border-left:5px solid {USJ_RED};
+                padding:13px 10px;
+                min-height:46px;
+                font-weight:700;
+                color:{USJ_RED};
+                border-radius:6px;
+                margin-top:26px;
+            ">
+                {label}
+            </div>
+            """)
+
+        with col1:
+            autre_nom = st.text_input("Nom", key=f"autre_nom_{i}", label_visibility="collapsed")
+
+        with col2:
+            autre_poste = st.text_input("Poste", key=f"autre_poste_{i}", label_visibility="collapsed")
 
         with col3:
             autre_org = st.text_input(
                 "Organisme d’affiliation",
-                key=f"autre_org_{i}"
+                key=f"autre_org_{i}",
+                label_visibility="collapsed"
             )
 
         if any([autre_nom.strip(), autre_poste.strip(), autre_org.strip()]):
             stakeholder_rows.append({
-                "categorie": "Autres",
+                "categorie": label,
                 "nom": autre_nom,
                 "poste": autre_poste,
                 "organisme_affiliation": autre_org,
             })
 
-    add_autre = st.form_submit_button("Ajouter une autre ligne dans Autres")
+    add_autre = st.form_submit_button("Ajouter une ligne Autres")
 
     if add_autre:
         st.session_state.n_autres_rows += 1
