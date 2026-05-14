@@ -374,18 +374,10 @@ def render_stakeholder_table():
 """)
 
         with col1:
-            nom = st.text_input(
-                "Nom",
-                key=f"{category}_nom",
-                label_visibility="collapsed"
-            )
+            nom = st.text_input("Nom", key=f"{category}_nom", label_visibility="collapsed")
 
         with col2:
-            poste = st.text_input(
-                "Poste",
-                key=f"{category}_poste",
-                label_visibility="collapsed"
-            )
+            poste = st.text_input("Poste", key=f"{category}_poste", label_visibility="collapsed")
 
         with col3:
             organisme = st.text_input(
@@ -408,7 +400,6 @@ def render_stakeholder_table():
         col0, col1, col2, col3 = st.columns([1.4, 1.6, 1.6, 1.8])
 
         with col0:
-            label = "Autres" if i == 1 else f"Autres {i}"
             html_block(f"""
 <div style="
     background:#FFF7E6;
@@ -422,23 +413,15 @@ def render_stakeholder_table():
     border-radius:6px;
     margin-top:0px;
 ">
-    {label}
+    Autres
 </div>
 """)
 
         with col1:
-            autre_nom = st.text_input(
-                "Nom",
-                key=f"autre_nom_{i}",
-                label_visibility="collapsed"
-            )
+            autre_nom = st.text_input("Nom", key=f"autre_nom_{i}", label_visibility="collapsed")
 
         with col2:
-            autre_poste = st.text_input(
-                "Poste",
-                key=f"autre_poste_{i}",
-                label_visibility="collapsed"
-            )
+            autre_poste = st.text_input("Poste", key=f"autre_poste_{i}", label_visibility="collapsed")
 
         with col3:
             autre_org = st.text_input(
@@ -449,7 +432,7 @@ def render_stakeholder_table():
 
         if any([autre_nom.strip(), autre_poste.strip(), autre_org.strip()]):
             stakeholder_rows.append({
-                "categorie": label,
+                "categorie": "Autres",
                 "nom": autre_nom,
                 "poste": autre_poste,
                 "organisme_affiliation": autre_org,
