@@ -5,7 +5,6 @@ import sqlite3
 import json
 from datetime import datetime
 from pathlib import Path
-from textwrap import dedent
 
 import pandas as pd
 import streamlit as st
@@ -25,7 +24,10 @@ USJ_TEXT = "#1B2A41"
 
 
 def html_block(content):
-    st.markdown(dedent(content).strip(), unsafe_allow_html=True)
+    if hasattr(st, "html"):
+        st.html(content)
+    else:
+        st.markdown(content, unsafe_allow_html=True)
 
 
 def init_db():
@@ -101,100 +103,76 @@ def flatten_response(row):
 
 def apply_usj_style():
     html_block(f"""
-    <style>
-    html, body, [class*="css"], [class*="st-"], .stApp {{
-        font-family: Candara, Calibri, Arial, sans-serif !important;
-        color: {USJ_TEXT};
-    }}
+<style>
+html, body, [class*="css"], [class*="st-"], .stApp {{
+    font-family: Candara, Calibri, Arial, sans-serif !important;
+    color: {USJ_TEXT};
+}}
 
-    h1, h2, h3, h4, h5, h6 {{
-        font-family: Candara, Calibri, Arial, sans-serif !important;
-        color: {USJ_BLUE} !important;
-        font-weight: 700 !important;
-    }}
+h1, h2, h3, h4, h5, h6 {{
+    font-family: Candara, Calibri, Arial, sans-serif !important;
+    color: {USJ_BLUE} !important;
+    font-weight: 700 !important;
+}}
 
-    p, div, span, label, button, input, textarea, select {{
-        font-family: Candara, Calibri, Arial, sans-serif !important;
-    }}
+p, div, span, label, button, input, textarea, select {{
+    font-family: Candara, Calibri, Arial, sans-serif !important;
+}}
 
-    .stTextInput input, .stTextArea textarea, .stDateInput input {{
-        border: 1.5px solid {USJ_BLUE_2} !important;
-        border-radius: 8px !important;
-        background-color: #F8FBFF !important;
-        color: {USJ_TEXT} !important;
-    }}
+.stTextInput input, .stTextArea textarea, .stDateInput input {{
+    border: 1.5px solid {USJ_BLUE_2} !important;
+    border-radius: 8px !important;
+    background-color: #F8FBFF !important;
+    color: {USJ_TEXT} !important;
+}}
 
-    .stTextArea textarea:focus, .stTextInput input:focus {{
-        border: 2px solid {USJ_RED} !important;
-        box-shadow: 0 0 0 1px {USJ_GOLD} !important;
-    }}
+.stTextArea textarea:focus, .stTextInput input:focus {{
+    border: 2px solid {USJ_RED} !important;
+    box-shadow: 0 0 0 1px {USJ_GOLD} !important;
+}}
 
-    div[data-testid="stForm"] {{
-        border: 1px solid {USJ_BLUE_2};
-        border-radius: 14px;
-        padding: 20px;
-        background-color: #FFFFFF;
-    }}
+div[data-testid="stForm"] {{
+    border: 1px solid {USJ_BLUE_2};
+    border-radius: 14px;
+    padding: 20px;
+    background-color: #FFFFFF;
+}}
 
-    section[data-testid="stSidebar"] {{
-        background-color: {USJ_LIGHT_BLUE};
-        border-right: 4px solid {USJ_BLUE};
-    }}
+section[data-testid="stSidebar"] {{
+    background-color: {USJ_LIGHT_BLUE};
+    border-right: 4px solid {USJ_BLUE};
+}}
 
-    .stButton button, .stDownloadButton button, div[data-testid="stFormSubmitButton"] button {{
-        background-color: {USJ_BLUE} !important;
-        color: white !important;
-        border-radius: 8px !important;
-        border: 1px solid {USJ_BLUE} !important;
-        font-weight: 600 !important;
-    }}
+.stButton button, .stDownloadButton button, div[data-testid="stFormSubmitButton"] button {{
+    background-color: {USJ_BLUE} !important;
+    color: white !important;
+    border-radius: 8px !important;
+    border: 1px solid {USJ_BLUE} !important;
+    font-weight: 600 !important;
+}}
 
-    .stButton button:hover, .stDownloadButton button:hover, div[data-testid="stFormSubmitButton"] button:hover {{
-        background-color: {USJ_RED} !important;
-        border: 1px solid {USJ_RED} !important;
-        color: white !important;
-    }}
-
-    hr {{
-        border: none;
-        border-top: 2px solid {USJ_BLUE_2};
-        margin-top: 25px;
-        margin-bottom: 25px;
-    }}
-    </style>
-    """)
+.stButton button:hover, .stDownloadButton button:hover, div[data-testid="stFormSubmitButton"] button:hover {{
+    background-color: {USJ_RED} !important;
+    border: 1px solid {USJ_RED} !important;
+    color: white !important;
+}}
+</style>
+""")
 
 
 def section_header(title, description=None):
     html_block(f"""
-    <div style="
-        border-left:6px solid {USJ_BLUE};
-        border-bottom:2px solid {USJ_GOLD};
-        padding:10px 14px;
-        margin-top:20px;
-        margin-bottom:18px;
-        background-color:{USJ_LIGHT_BLUE};
-        border-radius:8px;
-    ">
-        <h2 style="margin:0; color:{USJ_BLUE};">{title}</h2>
-    </div>
-    """)
+<div style="border-left:6px solid {USJ_BLUE}; border-bottom:2px solid {USJ_GOLD}; padding:10px 14px; margin-top:20px; margin-bottom:18px; background-color:{USJ_LIGHT_BLUE}; border-radius:8px;">
+    <h2 style="margin:0; color:{USJ_BLUE};">{title}</h2>
+</div>
+""")
 
     if description:
         html_block(f"""
-        <div style="
-            background-color:#ffffff;
-            border-left:5px solid {USJ_RED};
-            padding:14px 18px;
-            border-radius:8px;
-            color:{USJ_TEXT};
-            font-size:16px;
-            line-height:1.6;
-            margin-bottom:15px;
-        ">
-            {description}
-        </div>
-        """)
+<div style="background-color:#ffffff; border-left:5px solid {USJ_RED}; padding:14px 18px; border-radius:8px; color:{USJ_TEXT}; font-size:16px; line-height:1.6; margin-bottom:15px;">
+    {description}
+</div>
+""")
 
 
 def text_area(label, key, height=120, placeholder=None):
@@ -206,18 +184,12 @@ def render_first_page_header():
 
     with col_left:
         html_block(f"""
-        <div style="padding-top:20px;">
-            <h1 style="font-size:42px; margin-bottom:0px; color:{USJ_BLUE};">
-                PLAN STRATÉGIQUE USJ 2032
-            </h1>
-            <h3 style="color:{USJ_BLUE_2}; margin-top:8px; margin-bottom:0px;">
-                Analyse de l’état actuel et propositions
-            </h3>
-            <h5 style="margin-top:4px; color:{USJ_TEXT};">
-                (pré-planification stratégique USJ)
-            </h5>
-        </div>
-        """)
+<div style="padding-top:20px;">
+    <h1 style="font-size:42px; margin-bottom:0px; color:{USJ_BLUE};">PLAN STRATÉGIQUE USJ 2032</h1>
+    <h3 style="color:{USJ_BLUE_2}; margin-top:8px; margin-bottom:0px;">Analyse de l’état actuel et propositions</h3>
+    <h5 style="margin-top:4px; color:{USJ_TEXT};">(pré-planification stratégique USJ)</h5>
+</div>
+""")
 
     with col_right:
         if LOGO_PATH.exists():
@@ -230,32 +202,22 @@ def render_first_page_header():
 
 def render_fixed_introduction():
     html_block(f"""
-    <div style="
-        background-color:#ffffff;
-        padding:30px;
-        border-radius:12px;
-        border-left:7px solid {USJ_BLUE};
-        border-top:2px solid {USJ_GOLD};
-        border-bottom:2px solid {USJ_RED};
-        box-shadow:0 2px 10px rgba(0,0,0,0.08);
-        margin-bottom:25px;
-        font-family:Candara, Calibri, Arial, sans-serif;
-    ">
-        <h3 style="color:{USJ_BLUE}; margin-top:0;">Introduction</h3>
+<div style="background-color:#ffffff; padding:30px; border-radius:12px; border-left:7px solid {USJ_BLUE}; border-top:2px solid {USJ_GOLD}; border-bottom:2px solid {USJ_RED}; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:25px;">
+    <h3 style="color:{USJ_BLUE}; margin-top:0;">Introduction</h3>
 
-        <p style="text-align:justify; font-size:18px; line-height:1.9; color:{USJ_BLUE};">
-            L’enseignement supérieur est aujourd’hui confronté à des transformations rapides, à des contraintes économiques croissantes et à une intensification de la concurrence, tant nationale qu’internationale. Les évolutions technologiques, les attentes accrues des étudiants et des parties prenantes, ainsi que les exigences renforcées en matière de qualité et de performance, imposent une réflexion stratégique à la fois rigoureuse et collective. Les universités sont ainsi appelées à réinterroger en profondeur leurs modèles académiques, organisationnels et opérationnels.
-        </p>
+    <p style="text-align:justify; font-size:18px; line-height:1.9; color:{USJ_BLUE};">
+    L’enseignement supérieur est aujourd’hui confronté à des transformations rapides, à des contraintes économiques croissantes et à une intensification de la concurrence, tant nationale qu’internationale. Les évolutions technologiques, les attentes accrues des étudiants et des parties prenantes, ainsi que les exigences renforcées en matière de qualité et de performance, imposent une réflexion stratégique à la fois rigoureuse et collective. Les universités sont ainsi appelées à réinterroger en profondeur leurs modèles académiques, organisationnels et opérationnels.
+    </p>
 
-        <p style="text-align:justify; font-size:18px; line-height:1.9; color:{USJ_BLUE};">
-            Le Plan stratégique USJ 2032 s’inscrit dans cette dynamique. Il constitue une feuille de route institutionnelle visant à traduire la mission, la vision et les valeurs de l’USJ en priorités stratégiques claires, en objectifs cohérents et en initiatives concrètes, capables de renforcer durablement son positionnement, sa résilience ainsi que son impact académique et sociétal.
-        </p>
+    <p style="text-align:justify; font-size:18px; line-height:1.9; color:{USJ_BLUE};">
+    Le Plan stratégique USJ 2032 s’inscrit dans cette dynamique. Il constitue une feuille de route institutionnelle visant à traduire la mission, la vision et les valeurs de l’USJ en priorités stratégiques claires, en objectifs cohérents et en initiatives concrètes, capables de renforcer durablement son positionnement, sa résilience ainsi que son impact académique et sociétal.
+    </p>
 
-        <p style="text-align:justify; font-size:18px; line-height:1.9; color:{USJ_BLUE};">
-            L’élaboration de ce plan stratégique se décline en plusieurs étapes (voir le schéma ci-dessous), dont la première est consacrée à l’analyse de données relatives à l’état actuel de l’Université. L’ensemble des acteurs de l’Université, ainsi que les parties prenantes, sont invités à y contribuer. Ce rapport a pour objectif de vous accompagner dans la formulation de constats partagés, des pratiques existantes et des expériences vécues, afin d’identifier les forces à consolider, les fragilités à traiter, les opportunités de développement et les risques à maîtriser à l’échelle de l’Université<sup>1</sup>.
-        </p>
-    </div>
-    """)
+    <p style="text-align:justify; font-size:18px; line-height:1.9; color:{USJ_BLUE};">
+    L’élaboration de ce plan stratégique se décline en plusieurs étapes (voir le schéma ci-dessous), dont la première est consacrée à l’analyse de données relatives à l’état actuel de l’Université. L’ensemble des acteurs de l’Université, ainsi que les parties prenantes, sont invités à y contribuer. Ce rapport a pour objectif de vous accompagner dans la formulation de constats partagés, des pratiques existantes et des expériences vécues, afin d’identifier les forces à consolider, les fragilités à traiter, les opportunités de développement et les risques à maîtriser à l’échelle de l’Université<sup>1</sup>.
+    </p>
+</div>
+""")
 
     if INTRO_IMAGE_PATH.exists():
         st.image(str(INTRO_IMAGE_PATH), use_container_width=True)
@@ -263,72 +225,45 @@ def render_fixed_introduction():
         st.warning("Intro_schema.png non trouvé. Placez Intro_schema.png dans le même dossier que le script.")
 
     html_block(f"""
-    <div style="
-        background-color:#F8FBFF;
-        padding:18px 22px;
-        border-radius:10px;
-        border-left:5px solid {USJ_GOLD};
-        border-right:2px solid {USJ_BLUE_2};
-        margin-top:20px;
-        margin-bottom:25px;
-        font-family:Candara, Calibri, Arial, sans-serif;
-    ">
-        <p style="font-size:15px; line-height:1.7; color:{USJ_TEXT}; margin:0;">
-            <sup>1</sup> D’autres outils sont aussi mis à votre disposition pour recueillir l’opinion des parties prenantes, en particulier des questionnaires adressés aux employeurs, aux diplômés, ou aux étudiants. Ils sont joints à ce courrier. Leur utilisation est facultative.
-        </p>
-    </div>
-    """)
+<div style="background-color:#F8FBFF; padding:18px 22px; border-radius:10px; border-left:5px solid {USJ_GOLD}; border-right:2px solid {USJ_BLUE_2}; margin-top:20px; margin-bottom:25px;">
+    <p style="font-size:15px; line-height:1.7; color:{USJ_TEXT}; margin:0;">
+    <sup>1</sup> D’autres outils sont aussi mis à votre disposition pour recueillir l’opinion des parties prenantes, en particulier des questionnaires adressés aux employeurs, aux diplômés, ou aux étudiants. Ils sont joints à ce courrier. Leur utilisation est facultative.
+    </p>
+</div>
+""")
 
     html_block(f"""
-    <div style="
-        background-color:#ffffff;
-        padding:30px;
-        border-radius:12px;
-        border-left:7px solid {USJ_BLUE};
-        border-top:2px solid {USJ_GOLD};
-        border-bottom:2px solid {USJ_RED};
-        box-shadow:0 2px 10px rgba(0,0,0,0.08);
-        margin-bottom:25px;
-        font-family:Candara, Calibri, Arial, sans-serif;
-    ">
-        <p style="text-align:justify; font-size:18px; line-height:1.9; color:{USJ_BLUE};">
-            Ce rapport vise ainsi à produire deux résultats principaux. Le premier consiste en une analyse SWOT (Strengths, Weaknesses, Opportunities, Threats) de l’Université, fondée sur la réalité vécue au sein de votre institution. Sur la base de cette analyse, vous serez amenés à proposer des priorités stratégiques ainsi que des initiatives (ou projets), toujours à l’échelle de l’Université, constituant ainsi le second résultat attendu.
-        </p>
+<div style="background-color:#ffffff; padding:30px; border-radius:12px; border-left:7px solid {USJ_BLUE}; border-top:2px solid {USJ_GOLD}; border-bottom:2px solid {USJ_RED}; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:25px;">
+    <p style="text-align:justify; font-size:18px; line-height:1.9; color:{USJ_BLUE};">
+    Ce rapport vise ainsi à produire deux résultats principaux. Le premier consiste en une analyse SWOT (Strengths, Weaknesses, Opportunities, Threats) de l’Université, fondée sur la réalité vécue au sein de votre institution. Sur la base de cette analyse, vous serez amenés à proposer des priorités stratégiques ainsi que des initiatives (ou projets), toujours à l’échelle de l’Université, constituant ainsi le second résultat attendu.
+    </p>
 
-        <p style="font-size:18px; line-height:1.9; color:{USJ_BLUE};">
-            Le document comprend 6 parties :
-        </p>
+    <p style="font-size:18px; line-height:1.9; color:{USJ_BLUE};">Le document comprend 6 parties :</p>
 
-        <ol style="font-size:18px; line-height:1.9; color:{USJ_BLUE};">
-            <li>Introduction</li>
-            <li>Identification des parties prenantes à consulter pour écrire le rapport</li>
-            <li>Analyse interne : cette analyse mène à produire les éléments Forces et Faiblesses de l’analyse SWOT</li>
-            <li>Analyse externe : cette analyse mène à produire les éléments Opportunités et Menaces de l’analyse SWOT</li>
-            <li>Analyse SWOT</li>
-            <li>Propositions de Priorités stratégiques et Initiatives</li>
-        </ol>
+    <ol style="font-size:18px; line-height:1.9; color:{USJ_BLUE};">
+        <li>Introduction</li>
+        <li>Identification des parties prenantes à consulter pour écrire le rapport</li>
+        <li>Analyse interne : cette analyse mène à produire les éléments Forces et Faiblesses de l’analyse SWOT</li>
+        <li>Analyse externe : cette analyse mène à produire les éléments Opportunités et Menaces de l’analyse SWOT</li>
+        <li>Analyse SWOT</li>
+        <li>Propositions de Priorités stratégiques et Initiatives</li>
+    </ol>
 
-        <p style="font-size:18px; line-height:1.9; color:{USJ_BLUE};">
-            Pour toute information supplémentaire ou support, contacter :
-        </p>
+    <p style="font-size:18px; line-height:1.9; color:{USJ_BLUE};">Pour toute information supplémentaire ou support, contacter :</p>
 
-        <p style="font-size:17px; line-height:1.8; color:{USJ_BLUE};">
-            M. Hadi Sawaya – Coordinateur de l’Unité Assurance Qualité : hadi.sawaya@usj.edu.lb<br>
-            Mme Irma Majdalani – Expert qualité – Unité Assurance qualité : irma.majdalani@usj.edu.lb<br>
-            Mme Nadine Riachi Haddad – Secrétaire général : secg@usj.edu.lb<br>
-            Mme Ursula El Hage – Directeur du Service de l’insertion professionnelle : ursula.hage@usj.edu.lb<br>
-            Mme Lina Koleilat Ghalayini – Chef de projets – Unité Assurance qualité : lina.koleilat@usj.edu.lb
-        </p>
-    </div>
-    """)
+    <p style="font-size:17px; line-height:1.8; color:{USJ_BLUE};">
+    M. Hadi Sawaya – Coordinateur de l’Unité Assurance Qualité : hadi.sawaya@usj.edu.lb<br>
+    Mme Irma Majdalani – Expert qualité – Unité Assurance qualité : irma.majdalani@usj.edu.lb<br>
+    Mme Nadine Riachi Haddad – Secrétaire général : secg@usj.edu.lb<br>
+    Mme Ursula El Hage – Directeur du Service de l’insertion professionnelle : ursula.hage@usj.edu.lb<br>
+    Mme Lina Koleilat Ghalayini – Chef de projets – Unité Assurance qualité : lina.koleilat@usj.edu.lb
+    </p>
+</div>
+""")
 
 
 def main():
-    st.set_page_config(
-        page_title=APP_TITLE,
-        page_icon="📋",
-        layout="wide"
-    )
+    st.set_page_config(page_title=APP_TITLE, page_icon="📋", layout="wide")
 
     apply_usj_style()
     init_db()
@@ -491,10 +426,7 @@ def main():
                     faiblesse = st.text_area(f"Faiblesse {i}", key=f"faiblesse_{i}", height=80)
 
                 if force.strip() or faiblesse.strip():
-                    swot_internal_rows.append({
-                        "force": force,
-                        "faiblesse": faiblesse,
-                    })
+                    swot_internal_rows.append({"force": force, "faiblesse": faiblesse})
 
             st.markdown("### Facteurs externes")
 
@@ -510,10 +442,7 @@ def main():
                     menace = st.text_area(f"Menace {i}", key=f"menace_{i}", height=80)
 
                 if opportunite.strip() or menace.strip():
-                    swot_external_rows.append({
-                        "opportunite": opportunite,
-                        "menace": menace,
-                    })
+                    swot_external_rows.append({"opportunite": opportunite, "menace": menace})
 
             st.divider()
 
