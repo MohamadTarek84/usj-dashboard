@@ -322,6 +322,17 @@ def stakeholder_category_header(category, color):
 
 
 def render_stakeholder_table():
+    html_block("""
+<style>
+div[data-testid="stFormSubmitButton"] button {
+    color: white !important;
+}
+div[data-testid="stFormSubmitButton"] button p {
+    color: white !important;
+}
+</style>
+""")
+
     stakeholder_categories = [
         "Responsables institution",
         "Enseignants cadrés",
@@ -394,7 +405,9 @@ def render_stakeholder_table():
                 "organisme_affiliation": organisme,
             })
 
-    st.session_state.setdefault("n_autres_rows", 1)
+    if "autres_initialized" not in st.session_state:
+        st.session_state.n_autres_rows = 1
+        st.session_state.autres_initialized = True
 
     for i in range(1, st.session_state.n_autres_rows + 1):
         col0, col1, col2, col3 = st.columns([1.4, 1.6, 1.6, 1.8])
