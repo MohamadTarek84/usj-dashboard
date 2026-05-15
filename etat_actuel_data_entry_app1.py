@@ -315,9 +315,15 @@ def render_stakeholder_intro():
     Le rapport d’analyse des données existantes est le fruit d’une consultation menée auprès de l’ensemble des parties prenantes de l’institution. L’identification et la prise en compte de leurs attentes constituent un levier essentiel pour la réussite du processus de planification stratégique. En raison de la diversité de leurs rôles, de leurs intérêts et de leur degré d’influence, les parties prenantes apportent des perspectives complémentaires, qui enrichissent l’analyse stratégique et favorisent l’adhésion aux orientations retenues. L’analyse de leurs attentes vise à mieux comprendre leurs besoins, leurs priorités et leur niveau d’influence, afin d’éclairer les choix stratégiques de l’USJ. Cette démarche participative est essentielle pour garantir une vision partagée, réaliste et représentative de la diversité de la communauté universitaire.
     </p>
 
-<p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:4px;">
-Il est proposé aux institutions de consulter notamment les parties prenantes suivantes : le conseil de l’institution, le conseil d’orientation stratégique, les employeurs, les étudiants, les enseignants, le PSG, les anciens, ainsi que toute autre partie jugée pertinente et engagée dans l’institution (Exemple de parties prenantes en <span class="annexe-hover">Annexe A</span>).</p>
-
+    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:4px;">
+    Il est proposé aux institutions de consulter notamment les parties prenantes suivantes : le conseil de l’institution, le conseil d’orientation stratégique, les employeurs, les étudiants, les enseignants, le PSG, les anciens, ainsi que toute autre partie jugée pertinente et engagée dans l’institution (Exemple de parties prenantes en 
+    <span style="position:relative; color:#0000FF; text-decoration:underline; font-weight:700; cursor:help;">
+        Annexe A
+        <span style="display:none; position:absolute; z-index:9999; left:0; top:25px; background:white; padding:8px; border:1px solid #5A5A5A; box-shadow:0 4px 16px rgba(0,0,0,0.20);">
+            <img src="Annexe_A.png" style="width:700px; height:auto;">
+        </span>
+    </span>).
+    </p>
 
     <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
     L’institution est libre d’organiser, selon les modalités qu’elle juge les plus appropriées, une ou plusieurs réunions avec les parties prenantes, ou, dans certains cas, de recourir à des questionnaires (voir la note de bas de page de l’introduction).
