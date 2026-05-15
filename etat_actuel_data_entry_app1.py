@@ -45,6 +45,7 @@ def image_to_base64(image_path):
 def init_db():
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
+
     cur.execute("""
         CREATE TABLE IF NOT EXISTS responses (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -52,32 +53,83 @@ def init_db():
             respondent_name TEXT,
             respondent_unit TEXT,
             respondent_email TEXT,
+            statut TEXT DEFAULT 'Brouillon',
+            draft_key TEXT,
             data_json TEXT NOT NULL
         )
     """)
+
+    existing_cols = [row[1] for row in cur.execute("PRAGMA table_info(responses)").fetchall()]
+
+    if "statut" not in existing_cols:
+        cur.execute("ALTER TABLE responses ADD COLUMN statut TEXT DEFAULT 'Brouillon'")
+
+    if "draft_key" not in existing_cols:
+        cur.execute("ALTER TABLE responses ADD COLUMN draft_key TEXT")
+
     conn.commit()
     conn.close()
 
 
 def save_response(metadata, data):
+    institution = metadata.get("institution", "").strip()
+    responsable = metadata.get("responsable", "").strip()
+    email = metadata.get("email", "").strip()
+    statut = metadata.get("statut", "Brouillon")
+
+    draft_key = f"{institution.lower()}__{responsable.lower()}"
+
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
-    cur.execute("""
-        INSERT INTO responses (
-            submitted_at,
-            respondent_name,
-            respondent_unit,
-            respondent_email,
-            data_json
-        )
-        VALUES (?, ?, ?, ?, ?)
-    """, (
-        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        metadata.get("responsable", ""),
-        metadata.get("institution", ""),
-        metadata.get("email", ""),
-        json.dumps(data, ensure_ascii=False),
-    ))
+
+    existing = cur.execute("""
+        SELECT id FROM responses
+        WHERE draft_key = ?
+        ORDER BY id DESC
+        LIMIT 1
+    """, (draft_key,)).fetchone()
+
+    if existing:
+        cur.execute("""
+            UPDATE responses
+            SET submitted_at = ?,
+                respondent_name = ?,
+                respondent_unit = ?,
+                respondent_email = ?,
+                statut = ?,
+                data_json = ?
+            WHERE id = ?
+        """, (
+            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            responsable,
+            institution,
+            email,
+            statut,
+            json.dumps(data, ensure_ascii=False),
+            existing[0],
+        ))
+    else:
+        cur.execute("""
+            INSERT INTO responses (
+                submitted_at,
+                respondent_name,
+                respondent_unit,
+                respondent_email,
+                statut,
+                draft_key,
+                data_json
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (
+            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            responsable,
+            institution,
+            email,
+            statut,
+            draft_key,
+            json.dumps(data, ensure_ascii=False),
+        ))
+
     conn.commit()
     conn.close()
 
@@ -88,7 +140,72 @@ def load_responses():
     conn.close()
     return df
 
+def load_existing_draft(institution, responsable):
+    institution = institution.strip()
+    responsable = responsable.strip()
 
+    if not institution or not responsable:
+        return None
+
+    draft_key = f"{institution.lower()}__{responsable.lower()}"
+
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+
+    row = cur.execute("""
+        SELECT data_json, statut
+        FROM responses
+        WHERE draft_key = ?
+        ORDER BY id DESC
+        LIMIT 1
+    """, (draft_key,)).fetchone()
+
+    conn.close()
+
+    if row is None:
+        return None
+
+    data = json.loads(row[0])
+    data["loaded_statut"] = row[1]
+    return data
+
+def preload_draft_into_session(data):
+    if not data:
+        return
+
+    metadata = data.get("metadata", {})
+    st.session_state["institution"] = metadata.get("institution", "")
+    st.session_state["responsable"] = metadata.get("responsable", "")
+
+    for theme, value in data.get("internal_analysis", {}).items():
+        st.session_state[f"internal_{theme}"] = value
+
+    for theme, value in data.get("external_analysis", {}).items():
+        st.session_state[f"external_{theme}"] = value
+
+    for section_key, rows in data.get("swot_analysis", {}).items():
+        for i, row in enumerate(rows, start=1):
+            for col_name, value in row.items():
+                if section_key == "facteurs_internes":
+                    prefix = "swot_internal"
+                else:
+                    prefix = "swot_external"
+                st.session_state[f"{prefix}_{col_name}_{i}"] = value
+
+    for i, row in enumerate(data.get("priorities_initiatives", []), start=1):
+        st.session_state[f"priority_{i}"] = row.get("priorite_strategique", "")
+        st.session_state[f"initiative_{i}"] = row.get("initiatives", "")
+
+    pour_finir = data.get("pour_finir", {})
+    phrases = [
+        "Nous souhaitons que l’USJ soit reconnue pour …",
+        "Nous souhaitons que nos étudiants disent que l’USJ …",
+        "L’USJ un excellent lieu de travail si …",
+    ]
+
+    for i, phrase in enumerate(phrases, start=1):
+        st.session_state[f"pour_finir_{i}"] = pour_finir.get(phrase, "")
+        
 def flatten_response(row):
     base = {
         "id": row["id"],
