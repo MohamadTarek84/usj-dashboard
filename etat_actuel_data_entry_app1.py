@@ -231,12 +231,12 @@ hr {{
 """)
 
 
-def section_header(title, description=None, anchor=None):
-    anchor_html = f'<div id="{anchor}"></div>' if anchor else ""
+def section_header(title):
     html_block(f"""
-{anchor_html}
-<div style="border-left:6px solid {USJ_BLUE}; padding:10px 14px; margin-top:20px; margin-bottom:18px; background-color:{USJ_LIGHT_BLUE}; border-radius:8px;">
-    <h2 style="margin:0; color:{USJ_BLUE};">{title}</h2>
+<div style="background-color:{USJ_LIGHT_BLUE}; border-left:7px solid {USJ_BLUE}; padding:12px 18px; margin-top:14px; margin-bottom:18px; border-radius:10px;">
+    <h2 style="font-size:26px; color:{USJ_BLUE}; margin:0; font-weight:700;">
+        {title}
+    </h2>
 </div>
 """)
 
