@@ -338,22 +338,15 @@ div[data-testid="stDateInput"] input {{
 
 .annexe-a-popup {{
     display: none;
-    position: fixed;
+    position: absolute;
     z-index: 99999;
     left: 50%;
-    top: 90px;
+    top: 30px;
     transform: translateX(-50%);
     background: white;
     padding: 8px;
     border: 1px solid #595959;
     box-shadow: 0 4px 16px rgba(0,0,0,0.20);
-    max-width: 95vw;
-}}
-
-.annexe-a-popup img {{
-    width: 900px !important;
-    max-width: 92vw !important;
-    height: auto !important;
 }}
 
 .annexe-a-hover:hover .annexe-a-popup {{
@@ -364,13 +357,11 @@ div[data-testid="stTextArea"] {{
     border: 0.75px solid #595959 !important;
     border-radius: 0px !important;
     background-color: #E3DED9 !important;
-    margin-bottom: -22px !important;
 }}
 
 div[data-testid="stTextArea"] > div {{
     border: none !important;
     box-shadow: none !important;
-    margin-bottom: 0px !important;
 }}
 
 div[data-testid="stTextArea"] textarea {{
@@ -378,22 +369,12 @@ div[data-testid="stTextArea"] textarea {{
     border-radius: 0px !important;
     background-color: #E3DED9 !important;
     box-shadow: none !important;
-    margin-bottom: 0px !important;
 }}
 
 div[data-testid="stTextArea"] textarea:focus {{
     border: 2px solid #595959 !important;
     box-shadow: none !important;
     outline: none !important;
-}}
-
-div[data-testid="column"] {{
-    padding-left: 1px !important;
-    padding-right: 1px !important;
-}}
-
-div[data-testid="stVerticalBlock"] > div {{
-    gap: 0rem !important;
 }}
 h1, h2, h3, h4, h5, h6 {{
     font-family: Candara, Calibri, Arial, sans-serif !important;
@@ -899,7 +880,7 @@ def render_swot_table(section_key, left_title, right_title):
             left_value = st.text_area(
                 label=f"{left_title} {i}",
                 key=f"{section_key}_{left_title}_{i}",
-                height=120,
+                height=95,
                 placeholder="Merci de saisir votre réponse ici",
                 label_visibility="collapsed"
             )
@@ -908,7 +889,7 @@ def render_swot_table(section_key, left_title, right_title):
             right_value = st.text_area(
                 label=f"{right_title} {i}",
                 key=f"{section_key}_{right_title}_{i}",
-                height=120,
+                height=95,
                 placeholder="Merci de saisir votre réponse ici",
                 label_visibility="collapsed"
             )
@@ -1077,8 +1058,8 @@ def render_pour_finir():
 
         with col1:
             html_block(f"""
-<div style="font-size:17px; line-height:1.35; color:{USJ_BLUE}; font-weight:700; margin-top:6px; white-space:nowrap; ">
-    • {phrase}
+<div style="font-size:17px; line-height:1.35; color:{USJ_BLUE}; font-weight:700; margin-top:6px; white-space:nowrap;">
+    &bull; {phrase}
 </div>
 """)
 
@@ -1091,7 +1072,7 @@ def render_pour_finir():
             )
 
     return pour_finir
-    
+
 def main():
     st.set_page_config(page_title=APP_TITLE, page_icon="📋", layout="wide")
 
@@ -1195,7 +1176,7 @@ def main():
 
             st.markdown(
                 """
-                <div id="section-iii" style="position:relative; top:-120px; height:0px;"></div>
+                <div id="section-iii" style="position:relative; top:-150px; height:0px;"></div>
                 """,
                 unsafe_allow_html=True
             )
@@ -1275,7 +1256,7 @@ def main():
                         st.success(f"Vos réponses ont été enregistrées. Utilisez ce code pour reprendre plus tard : {draft_code}")
 
                     if submit_final:
-                        st.success("Merci.\nVos réponses ont été enregistrées.")
+                        st.success("Merci.\\nVos réponses ont été enregistrées.")
 
                 except ValueError as e:
                     st.error(str(e))
