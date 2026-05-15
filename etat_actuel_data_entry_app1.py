@@ -1107,8 +1107,7 @@ def main():
 
         st.stop()
 
-
-        mode = "Saisir une réponse"
+    mode = "Saisir une réponse"
 
     if mode == "Saisir une réponse":
         with st.form("etat_actuel_form", clear_on_submit=False, enter_to_submit=False):
