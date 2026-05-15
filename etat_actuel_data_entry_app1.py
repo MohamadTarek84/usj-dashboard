@@ -121,6 +121,15 @@ html, body, [class*="css"], [class*="st-"], .stApp {{
     color: {USJ_TEXT};
 }}
 
+label {{
+    font-weight: 700 !important;
+    color: #000000 !important;
+}}
+
+input {{
+    color: #000000 !important;
+}}
+
 .annexe-a-hover {{
     position: relative;
     color: #0000FF;
