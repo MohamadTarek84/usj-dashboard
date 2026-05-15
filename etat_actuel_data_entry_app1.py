@@ -552,7 +552,7 @@ def render_external_analysis():
             <span style="font-weight:700;">
                 • Institutions paires : Concurrence et Benchmarking
             </span>
-            <span style="font-weight:400;">
+            <span style="font-weight:400; font-style:italic;">
                 (si des informations précises sont disponibles prière de les fournir avec un document à part si nécessaire)
             </span>
             """
