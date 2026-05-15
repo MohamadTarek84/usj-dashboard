@@ -131,7 +131,7 @@ p, div, span, label, button, input, textarea, select {{
 }}
 
 .stTextInput input, .stTextArea textarea, .stDateInput input {{
-    border: 1.5px solid {USJ_BLUE_2} !important;
+    border: 1.5px solid #E3DED9 !important;
     border-radius: 8px !important;
     background-color: #F8FBFF !important;
     color: {USJ_TEXT} !important;
@@ -143,8 +143,8 @@ p, div, span, label, button, input, textarea, select {{
 }}
 
 .stTextArea textarea:focus, .stTextInput input:focus {{
-    border: 2px solid {USJ_RED} !important;
-    box-shadow: 0 0 0 1px {USJ_GOLD} !important;
+    border: 2px solid #E3DED9 !important;
+    box-shadow: none !important;
 }}
 
 div[data-testid="stForm"] {{
