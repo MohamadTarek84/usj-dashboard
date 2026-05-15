@@ -765,11 +765,11 @@ def render_pour_finir():
     ]
 
     for i, phrase in enumerate(phrases, start=1):
-        col1, col2 = st.columns([1.2, 3])
+        col1, col2 = st.columns([0.9, 3.5])
 
         with col1:
             html_block(f"""
-<div style="font-size:18px; line-height:1.55; color:{USJ_BLUE}; font-weight:700; margin-top:8px;">
+<div style="font-size:18px; line-height:1.55; color:{USJ_BLUE}; font-weight:700; margin-top:4px;">
     • {phrase} …
 </div>
 """)
