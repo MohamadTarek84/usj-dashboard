@@ -315,12 +315,9 @@ def render_stakeholder_intro():
     </p>
 
     <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:4px;">
-    Il est proposé aux institutions de consulter notamment les parties prenantes suivantes : le conseil de l’institution, le conseil d’orientation stratégique, les employeurs, les étudiants, les enseignants, le PSG, les anciens, ainsi que toute autre partie jugée pertinente et engagée dans l’institution<sup>2</sup>.
+    Il est proposé aux institutions de consulter notamment les parties prenantes suivantes : le conseil de l’institution, le conseil d’orientation stratégique, les employeurs, les étudiants, les enseignants, le PSG, les anciens, ainsi que toute autre partie jugée pertinente et engagée dans l’institution (Exemple de parties prenantes en Annexe A).
     </p>
 
-    <p style="font-size:13.5px; line-height:1.35; color:{USJ_TEXT}; margin-top:0; margin-bottom:16px;">
-    <sup>2</sup> Exemple de parties prenantes en Annexe A.
-    </p>
 
     <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
     L’institution est libre d’organiser, selon les modalités qu’elle juge les plus appropriées, une ou plusieurs réunions avec les parties prenantes, ou, dans certains cas, de recourir à des questionnaires (voir la note de bas de page de l’introduction).
