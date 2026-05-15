@@ -120,6 +120,19 @@ html, body, [class*="css"], [class*="st-"], .stApp {{
     color: {USJ_TEXT};
 }}
 
+div[data-testid="stTextArea"] textarea {{
+    border: 1.5px solid #000000 !important;
+    border-radius: 0px !important;
+    background-color: #E3DED9 !important;
+    box-shadow: none !important;
+}}
+
+div[data-testid="stTextArea"] textarea:focus {{
+    border: 2px solid #000000 !important;
+    box-shadow: none !important;
+    outline: none !important;
+}}
+
 h1, h2, h3, h4, h5, h6 {{
     font-family: Candara, Calibri, Arial, sans-serif !important;
     color: {USJ_BLUE} !important;
