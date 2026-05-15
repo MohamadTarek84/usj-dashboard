@@ -1071,7 +1071,7 @@ def render_pour_finir():
     ]
 
     for i, phrase in enumerate(phrases, start=1):
-        col1, col2 = st.columns([1.35, 2.6], gap="small")
+        col1, col2 = st.columns([1.05, 3.2], gap="small")
 
         with col1:
             html_block(f"""
