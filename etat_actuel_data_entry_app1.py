@@ -459,7 +459,8 @@ def render_internal_intro():
     <sup>3</sup> Exemples de Forces et Faiblesses en Annexe B.
     </p>
     <p style="text-align:justify; font-size:17px; line-height:1.55; color:#7F7F7F; font-weight:700; font-style:italic; margin-bottom:0;">
-    Nous vous remercions de bien vouloir compléter les tableaux ci-dessous en vous appuyant sur les données disponibles et sur l’avis de votre institution et de ses parties prenantes, en traitant <span style="text-decoration:underline;">au moins six des thèmes proposés</span>, dans une perspective globale à l’échelle de l’Université. Il convient de garder à l’esprit qu’il s’agit d’analyser l’état actuel afin de détecter les points forts et les points faibles de l’Université.
+    Nous vous remercions de bien vouloir compléter les tableaux ci-dessous en traitant, dans la mesure du possible, les thèmes proposés, dans une perspective globale à l’échelle de l’Université.<br>
+    Il convient de garder à l’esprit qu’il s’agit d’analyser l’état actuel afin d’identifier les Menaces et les Opportunités pour l’Université.
     </p>
 </div>
 """)
