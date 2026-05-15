@@ -238,11 +238,11 @@ def render_fixed_introduction():
     </p>
 
     <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
-    Le Plan stratégique USJ 2032 s’inscrit dans cette dynamique. Il constitue une feuille de route institutionnelle visant à traduire la mission, la vision et les valeurs de l’USJ en priorités stratégiques claires, en objectifs cohérents et en initiatives concrètes, capables de renforcer durablement son positionnement, sa résilience ainsi que son impact académique et sociétal.
+    <strong>Le Plan stratégique USJ 2032</strong> s’inscrit dans cette dynamique. Il constitue une feuille de route institutionnelle visant à traduire la mission, la vision et les valeurs de l’USJ en priorités stratégiques claires, en objectifs cohérents et en initiatives concrètes, capables de renforcer durablement son positionnement, sa résilience ainsi que son impact académique et sociétal.
     </p>
 
     <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
-    L’élaboration de ce plan stratégique se décline en plusieurs étapes (voir le schéma ci-dessous), dont la première est consacrée à l’analyse de données relatives à l’état actuel de l’Université. L’ensemble des acteurs de l’Université, ainsi que les parties prenantes, sont invités à y contribuer. Ce rapport a pour objectif de vous accompagner dans la formulation de constats partagés, des pratiques existantes et des expériences vécues, afin d’identifier les forces à consolider, les fragilités à traiter, les opportunités de développement et les risques à maîtriser à l’échelle de l’Université<sup>1</sup>.
+    L’élaboration de ce plan stratégique se décline en plusieurs étapes (voir le schéma ci-dessous), dont la première est consacrée à <strong>l’analyse de données relatives à l’état actuel de l’Université</strong>. L’ensemble des acteurs de l’Université, ainsi que les parties prenantes, sont invités à y contribuer. Ce rapport a pour objectif de vous accompagner dans la formulation de constats partagés, des pratiques existantes et des expériences vécues, afin d’identifier <strong>les forces à consolider, les fragilités à traiter, les opportunités de développement et les risques à maîtriser à l’échelle de l’Université</strong><sup>1</sup>.
     </p>
 
     {image_html}
@@ -271,6 +271,7 @@ def render_fixed_introduction():
     <p style="font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:5px;">
     Pour toute information supplémentaire ou support, contacter :
     </p>
+""")
 
     <p style="font-size:16px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:0;">
     M. Hadi Sawaya – Coordinateur de l’Unité Assurance Qualité : hadi.sawaya@usj.edu.lb<br>
