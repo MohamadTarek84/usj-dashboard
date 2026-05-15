@@ -645,8 +645,8 @@ def render_swot_analysis():
     <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:6px;">
     <strong>1. Facteurs internes :</strong> Identification des <strong>forces</strong> et des <strong>faiblesses</strong> propres à l'Université.
     </p>
-    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:0;">
-    Nous vous remercions de bien vouloir compléter le tableau ci-dessous en indiquant au maximum cinq forces et cinq faiblesses. Vos réponses seront déduites de l’analyse de l’état actuel interne (section III principalement).
+    <p style="text-align:left; font-size:17px; line-height:1.55; color:#7F7F7F; font-weight:700; font-style:italic; margin-bottom:0;">
+    Nous vous remercions de bien vouloir compléter le tableau ci-dessous en indiquant au maximum <span style="text-decoration:underline; font-weight:700; font-style:italic;">cinq forces et cinq faiblesses</span>. Vos réponses seront déduites de l’analyse de l’état actuel interne (<span style="text-decoration:underline; color:#0000FF;">section III</span> principalement).
     </p>
 </div>
 """)
