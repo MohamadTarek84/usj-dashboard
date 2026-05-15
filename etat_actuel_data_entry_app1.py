@@ -900,8 +900,6 @@ def main():
             render_stakeholder_intro()
             stakeholder_rows = render_stakeholder_table()
 
-
-
             st.divider()
 
             st.markdown('<a id="section-iii"></a>', unsafe_allow_html=True)
@@ -932,14 +930,30 @@ def main():
 
             pour_finir = render_pour_finir()
 
-            submitted = st.form_submit_button("Enregistrer la réponse")
+            st.markdown("<br>", unsafe_allow_html=True)
 
-            if submitted:
+            col_save, col_submit = st.columns([1, 1])
+
+            with col_save:
+                save_draft = st.form_submit_button(
+                    "Enregistrer et continuer plus tard"
+                )
+
+            with col_submit:
+                submit_final = st.form_submit_button(
+                    "Envoyer"
+                )
+
+            if save_draft or submit_final:
+
+                statut = "Brouillon" if save_draft else "Soumis"
+
                 metadata = {
                     "institution": institution,
                     "responsable": responsable,
                     "email": "",
                     "response_date": str(response_date),
+                    "statut": statut,
                 }
 
                 data = {
@@ -956,7 +970,16 @@ def main():
                 }
 
                 save_response(metadata, data)
-                st.success("Réponse enregistrée avec succès.")
+
+                if save_draft:
+                    st.success(
+                        "Vos réponses ont été enregistrées. Vous pourrez les compléter ultérieurement."
+                    )
+
+                if submit_final:
+                    st.success(
+                        "Vos réponses ont été envoyées avec succès."
+                    )
 
     else:
         st.markdown("## Consulter / exporter les réponses")
