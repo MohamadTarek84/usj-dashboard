@@ -247,7 +247,7 @@ hr {{
 
 def section_header(title):
     html_block(f"""
-<div style="background-color:{USJ_LIGHT_BLUE}; border-left:7px solid {USJ_BLUE}; padding:12px 18px; margin-top:14px; margin-bottom:18px; border-radius:10px;">
+<div style="background-color:#ffffff; padding:20px 34px 12px 34px; border-radius:12px; border-left:none; border-top:none; border-bottom:none; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:12px;">
     <h2 style="font-size:26px; color:{USJ_BLUE}; margin:0; font-weight:700;">
         {title}
     </h2>
