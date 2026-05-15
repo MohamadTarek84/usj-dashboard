@@ -153,7 +153,7 @@ div[data-testid="stDateInput"] input {{
     transform: translateX(-50%);
     background: white;
     padding: 8px;
-    border: 1px solid #5A5A5A;
+    border: 1px solid #595959;
     box-shadow: 0 4px 16px rgba(0,0,0,0.20);
 }}
 
