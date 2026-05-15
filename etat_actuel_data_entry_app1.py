@@ -748,17 +748,23 @@ def render_priorities_table():
     return priorities_rows
 
 def render_pour_finir():
-    html_block(f"""
-<div style="background-color:#ffffff; padding:24px 34px; border-radius:12px; border-left:7px solid {USJ_RED}; border-top:none; border-bottom:none; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:25px;">
+    pour_finir = {}
 
-    <p style="font-size:18px; line-height:1.55; color:{USJ_RED}; font-weight:700; margin-bottom:16px;">
-    POUR FINIR. <span style="font-weight:400;">Nous vous remercions de compléter les phrases suivantes.</span>
+    html_block(f"""
+<div style="background-color:#ffffff; padding:10px 0 18px 0; margin-bottom:20px;">
+
+    <p style="font-size:18px; line-height:1.55; color:{USJ_RED}; font-weight:700; font-style:italic; margin-bottom:14px;">
+    POUR FINIR. Nous vous remercions de compléter les phrases suivantes.
     </p>
+
+    <ul style="font-size:18px; line-height:1.85; color:{USJ_BLUE}; font-weight:700; margin-top:0; margin-bottom:20px;">
+        <li>Nous souhaitons que l’USJ soit reconnue pour …</li>
+        <li>Nous souhaitons que nos étudiants disent que l’USJ …</li>
+        <li>L’USJ un excellent lieu de travail si …</li>
+    </ul>
 
 </div>
 """)
-
-    pour_finir = {}
 
     phrases = [
         "Nous souhaitons que l’USJ soit reconnue pour …",
@@ -767,18 +773,11 @@ def render_pour_finir():
     ]
 
     for i, phrase in enumerate(phrases, start=1):
-        html_block(f"""
-<div style="background:{USJ_LIGHT_BLUE}; border-left:5px solid {USJ_RED}; padding:10px 14px 10px 28px; border-radius:6px; margin-top:20px; margin-bottom:8px; color:{USJ_RED}; font-size:17px; font-weight:700;">
-    {phrase}
-</div>
-""")
-
         pour_finir[phrase] = st.text_area(
             label=phrase,
             key=f"pour_finir_{i}",
             height=180,
-            placeholder="Merci de saisir votre réponse ici",
-            label_visibility="collapsed"
+            placeholder="Merci de saisir votre réponse ici"
         )
 
     return pour_finir
