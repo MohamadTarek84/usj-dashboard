@@ -843,7 +843,7 @@ def render_external_analysis():
         )
 
     return external_analysis
-
+    
 def render_swot_intro():
     html_block(f"""
 <div style="background-color:#ffffff; padding:24px 34px; border-radius:12px; border-left:7px solid {USJ_BLUE}; border-top:none; border-bottom:none; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:25px;">
