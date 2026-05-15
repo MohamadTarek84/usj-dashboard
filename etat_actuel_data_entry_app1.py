@@ -254,7 +254,7 @@ def render_first_page_header():
 
     with col_left:
         html_block(f"""
-<div style="padding-top:45px;">
+<div style="padding-top:0px;">
     <h1 style="font-size:42px; margin-bottom:18px; color:{USJ_BLUE}; line-height:1.1;">
         PLAN STRATÉGIQUE USJ 2032
     </h1>
