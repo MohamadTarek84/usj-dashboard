@@ -170,6 +170,15 @@ section[data-testid="stSidebar"] {{
 .stButton button p, .stDownloadButton button p, div[data-testid="stFormSubmitButton"] button p {{
     color: white !important;
 }}
+
+hr {{
+    border: none !important;
+    height: 3px !important;
+    background-color: #D0D6E0 !important;
+    margin-top: 26px !important;
+    margin-bottom: 26px !important;
+}}
+
 </style>
 """)
 
