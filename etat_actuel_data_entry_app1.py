@@ -769,21 +769,21 @@ def main():
 
             st.markdown("## Informations générales")
 
-col1, col2, col3 = st.columns(3)
+            col1, col2, col3 = st.columns(3)
 
-with col1:
-    institution = st.text_input("Institution")
+            with col1:
+                institution = st.text_input("Institution")
 
-with col2:
-    responsable = st.text_input("Responsable")
+            with col2:
+                responsable = st.text_input("Responsable")
 
-with col3:
-    st.text_input(
-        "Date",
-        value=datetime.now().strftime("%Y-%m-%d"),
-        disabled=True
-    )
-    response_date = datetime.now().date()
+            with col3:
+                st.text_input(
+                    "Date",
+                    value=datetime.now().strftime("%Y-%m-%d"),
+                    disabled=True
+                )
+                response_date = datetime.now().date()
 
             st.markdown("---")
 
