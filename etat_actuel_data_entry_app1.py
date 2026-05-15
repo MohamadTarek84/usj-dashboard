@@ -867,9 +867,7 @@ def main():
             render_stakeholder_intro()
             stakeholder_rows = render_stakeholder_table()
 
-            html_block(f"""
 
-""")
 
             st.divider()
 
