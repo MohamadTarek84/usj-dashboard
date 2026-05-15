@@ -121,6 +121,30 @@ html, body, [class*="css"], [class*="st-"], .stApp {{
     color: {USJ_TEXT};
 }}
 
+.annexe-a-hover {{
+    position: relative;
+    color: #0000FF;
+    text-decoration: underline;
+    font-weight: 700;
+    cursor: help;
+}}
+
+.annexe-a-popup {{
+    display: none;
+    position: absolute;
+    z-index: 99999;
+    left: 0;
+    top: 26px;
+    background: white;
+    padding: 8px;
+    border: 1px solid #5A5A5A;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.20);
+}}
+
+.annexe-a-hover:hover .annexe-a-popup {{
+    display: block;
+}}
+
 div[data-testid="stTextArea"] {{
     border: 0.75px solid #5A5A5A !important;
     border-radius: 0px !important;
@@ -309,20 +333,28 @@ def render_fixed_introduction():
 
 
 def render_stakeholder_intro():
+    annexe_a_src = image_to_base64(ANNEXE_A_PATH)
+
+    annexe_hover_html = "Annexe A"
+    if annexe_a_src:
+        annexe_hover_html = f"""
+        <span class="annexe-a-hover">
+            Annexe A
+            <span class="annexe-a-popup">
+                <img src="{annexe_a_src}" style="width:720px; height:auto;">
+            </span>
+        </span>
+        """
+
     html_block(f"""
 <div style="background-color:#ffffff; padding:24px 34px; border-radius:12px; border-left:7px solid {USJ_BLUE}; border-top:none; border-bottom:none; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:25px;">
+
     <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
     Le rapport d’analyse des données existantes est le fruit d’une consultation menée auprès de l’ensemble des parties prenantes de l’institution. L’identification et la prise en compte de leurs attentes constituent un levier essentiel pour la réussite du processus de planification stratégique. En raison de la diversité de leurs rôles, de leurs intérêts et de leur degré d’influence, les parties prenantes apportent des perspectives complémentaires, qui enrichissent l’analyse stratégique et favorisent l’adhésion aux orientations retenues. L’analyse de leurs attentes vise à mieux comprendre leurs besoins, leurs priorités et leur niveau d’influence, afin d’éclairer les choix stratégiques de l’USJ. Cette démarche participative est essentielle pour garantir une vision partagée, réaliste et représentative de la diversité de la communauté universitaire.
     </p>
 
     <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:4px;">
-    Il est proposé aux institutions de consulter notamment les parties prenantes suivantes : le conseil de l’institution, le conseil d’orientation stratégique, les employeurs, les étudiants, les enseignants, le PSG, les anciens, ainsi que toute autre partie jugée pertinente et engagée dans l’institution (Exemple de parties prenantes en 
-    <span style="position:relative; color:#0000FF; text-decoration:underline; font-weight:700; cursor:help;">
-        Annexe A
-        <span style="display:none; position:absolute; z-index:9999; left:0; top:25px; background:white; padding:8px; border:1px solid #5A5A5A; box-shadow:0 4px 16px rgba(0,0,0,0.20);">
-            <img src="Annexe_A.png" style="width:700px; height:auto;">
-        </span>
-    </span>).
+    Il est proposé aux institutions de consulter notamment les parties prenantes suivantes : le conseil de l’institution, le conseil d’orientation stratégique, les employeurs, les étudiants, les enseignants, le PSG, les anciens, ainsi que toute autre partie jugée pertinente et engagée dans l’institution (Exemple de parties prenantes en {annexe_hover_html}).
     </p>
 
     <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
