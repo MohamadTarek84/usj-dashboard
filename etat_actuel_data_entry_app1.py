@@ -121,7 +121,7 @@ html, body, [class*="css"], [class*="st-"], .stApp {{
 }}
 
 div[data-testid="stTextArea"] {{
-    border: 1px solid #000000 !important;
+    border: 2px solid #5A5A5A !important;
     border-radius: 0px !important;
     background-color: #E3DED9 !important;
 }}
