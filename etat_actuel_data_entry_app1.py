@@ -400,10 +400,11 @@ p, div, span, label, button, input, textarea, select {{
 }}
 
 div[data-testid="stForm"] {{
-    border: 1px solid {USJ_BLUE_2};
-    border-radius: 14px;
-    padding: 20px;
+    border: none !important;
+    border-radius: 0px !important;
+    padding: 0px !important;
     background-color: #FFFFFF;
+    box-shadow: none !important;
 }}
 
 section[data-testid="stSidebar"] {{
