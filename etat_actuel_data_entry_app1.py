@@ -383,6 +383,19 @@ div[data-testid="stTextArea"] textarea:focus {{
     box-shadow: none !important;
     outline: none !important;
 }}
+
+div[data-testid="stTextArea"] {{
+    margin-bottom: 2px !important;
+}}
+
+div[data-testid="stTextArea"] textarea {{
+    margin-bottom: 0px !important;
+}}
+
+div[data-testid="column"] {{
+    padding-left: 4px !important;
+    padding-right: 4px !important;
+}}
 h1, h2, h3, h4, h5, h6 {{
     font-family: Candara, Calibri, Arial, sans-serif !important;
     color: {USJ_BLUE} !important;
