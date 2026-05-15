@@ -1275,7 +1275,7 @@ def main():
                         st.success(f"Vos réponses ont été enregistrées. Utilisez ce code pour reprendre plus tard : {draft_code}")
 
                     if submit_final:
-                        st.success(f"Vos réponses ont été envoyées avec succès. Code de référence : {draft_code}")
+                        st.success("Merci.\nVos réponses ont été enregistrées.")
 
                 except ValueError as e:
                     st.error(str(e))
