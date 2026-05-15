@@ -338,15 +338,22 @@ div[data-testid="stDateInput"] input {{
 
 .annexe-a-popup {{
     display: none;
-    position: absolute;
+    position: fixed;
     z-index: 99999;
     left: 50%;
-    top: 30px;
+    top: 90px;
     transform: translateX(-50%);
     background: white;
     padding: 8px;
     border: 1px solid #595959;
     box-shadow: 0 4px 16px rgba(0,0,0,0.20);
+    max-width: 95vw;
+}}
+
+.annexe-a-popup img {{
+    width: 900px !important;
+    max-width: 92vw !important;
+    height: auto !important;
 }}
 
 .annexe-a-hover:hover .annexe-a-popup {{
