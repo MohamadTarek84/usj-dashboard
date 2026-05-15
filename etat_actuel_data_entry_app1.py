@@ -254,10 +254,14 @@ def render_first_page_header():
 
     with col_left:
         html_block(f"""
-<div style="padding-top:20px;">
-    <h1 style="font-size:42px; margin-bottom:0px; color:{USJ_BLUE};">PLAN STRATÉGIQUE USJ 2032</h1>
-    <h3 style="color:{USJ_BLUE_2}; margin-top:8px; margin-bottom:0px;">Analyse de l’état actuel et propositions</h3>
-    <h5 style="margin-top:4px; color:{USJ_TEXT};">(pré-planification stratégique USJ)</h5>
+<div style="padding-top:45px;">
+    <h1 style="font-size:42px; margin-bottom:18px; color:{USJ_BLUE}; line-height:1.1;">
+        PLAN STRATÉGIQUE USJ 2032
+    </h1>
+
+    <p style="font-size:18px; font-weight:700; color:{USJ_BLUE_2}; margin-top:0px; margin-bottom:0px; line-height:1.4;">
+        Analyse de l’état actuel et propositions <span style="font-size:18px; font-weight:700; color:{USJ_BLUE_2};">(pré-planification stratégique USJ)</span>
+    </p>
 </div>
 """)
 
