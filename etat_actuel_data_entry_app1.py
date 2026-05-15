@@ -436,8 +436,8 @@ def render_internal_intro():
     <p style="font-size:14px; line-height:1.45; color:{USJ_TEXT}; margin-top:8px; margin-bottom:18px;">
     <sup>3</sup> Exemples de Forces et Faiblesses en Annexe B.
     </p>
-    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:0;">
-    Nous vous remercions de bien vouloir compléter les tableaux ci-dessous en vous appuyant sur les données disponibles et sur l’avis de votre institution et de ses parties prenantes, en traitant au moins six des thèmes proposés, dans une perspective globale à l’échelle de l’Université. Il convient de garder à l’esprit qu’il s’agit d’analyser l’état actuel afin de détecter les points forts et les points faibles de l’Université.
+    <p style="text-align:justify; font-size:17px; line-height:1.55; color:#7F7F7F; font-weight:700; font-style:italic; margin-bottom:0;">
+    Nous vous remercions de bien vouloir compléter les tableaux ci-dessous en vous appuyant sur les données disponibles et sur l’avis de votre institution et de ses parties prenantes, en traitant <span style="text-decoration:underline;">au moins six des thèmes proposés</span>, dans une perspective globale à l’échelle de l’Université. Il convient de garder à l’esprit qu’il s’agit d’analyser l’état actuel afin de détecter les points forts et les points faibles de l’Université.
     </p>
 </div>
 """)
