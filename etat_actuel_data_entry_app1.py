@@ -642,16 +642,16 @@ def render_swot_table(section_key, left_title, right_title):
 def render_swot_analysis():
     swot_data = {}
 
-    html_block(f"""
+    st.markdown(f"""
 <div style="background:#ffffff; padding:18px 24px; border-radius:10px; border-left:5px solid {USJ_RED}; margin-top:15px; margin-bottom:15px;">
     <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:6px;">
     <strong>1. Facteurs internes :</strong> Identification des <strong>forces</strong> et des <strong>faiblesses</strong> propres à l'Université.
     </p>
     <p style="text-align:left; font-size:17px; line-height:1.55; color:#7F7F7F; font-weight:700; font-style:italic; margin-bottom:0;">
-    Nous vous remercions de bien vouloir compléter le tableau ci-dessous en indiquant au maximum <span style="text-decoration:underline; font-weight:700; font-style:italic;">cinq forces et cinq faiblesses</span>. Vos réponses seront déduites de l’analyse de l’état actuel interne (<a href="javascript:void(0);" onclick="document.getElementById('section-iii').scrollIntoView({{behavior:'smooth'}});" style="text-decoration:underline; color:#0000FF; font-weight:700; font-style:italic;">section III</a> principalement).
+    Nous vous remercions de bien vouloir compléter le tableau ci-dessous en indiquant au maximum <span style="text-decoration:underline; font-weight:700; font-style:italic;">cinq forces et cinq faiblesses</span>. Vos réponses seront déduites de l’analyse de l’état actuel interne (<a href="#section-iii" style="text-decoration:underline; color:#0000FF; font-weight:700; font-style:italic;">section III</a> principalement).
     </p>
 </div>
-""")
+""", unsafe_allow_html=True)
 
     swot_data["facteurs_internes"] = render_swot_table(
         section_key="swot_internal",
