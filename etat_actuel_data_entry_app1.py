@@ -4,7 +4,6 @@
 import sqlite3
 import json
 import base64
-import uuid
 from datetime import datetime
 from pathlib import Path
 
@@ -77,15 +76,13 @@ def save_response(metadata, data):
     responsable = metadata.get("responsable", "").strip()
     email = metadata.get("email", "").strip()
     statut = metadata.get("statut", "Brouillon")
-
     draft_code = metadata.get("draft_code", "").strip().upper()
 
     if not draft_code:
-        draft_code = "USJ-" + uuid.uuid4().hex[:8].upper()
+        raise ValueError("Un code de reprise est obligatoire pour enregistrer la réponse.")
 
-    metadata["draft_code"] = draft_code
-    data["metadata"] = metadata
     data["draft_code"] = draft_code
+    data["metadata"]["draft_code"] = draft_code
 
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
@@ -152,7 +149,7 @@ def load_responses():
 
 
 def load_existing_draft_by_code(draft_code):
-    draft_code = str(draft_code).strip().upper()
+    draft_code = draft_code.strip().upper()
 
     if not draft_code:
         return None
@@ -256,9 +253,13 @@ def flatten_response(row):
         "responsable": row["respondent_name"],
         "institution": row["respondent_unit"],
         "email": row["respondent_email"],
-        "statut": row["statut"] if "statut" in row.index else "",
-        "draft_code": row["draft_code"] if "draft_code" in row.index else "",
     }
+
+    if "statut" in row.index:
+        base["statut"] = row["statut"]
+
+    if "draft_code" in row.index:
+        base["draft_code"] = row["draft_code"]
 
     data = json.loads(row["data_json"])
 
@@ -1022,167 +1023,225 @@ def main():
     init_db()
 
     st.session_state.setdefault("n_autres_rows", 1)
+    st.session_state.setdefault("access_granted", False)
     st.session_state.setdefault("current_draft_code", "")
-
-    draft_code_from_url = st.query_params.get("draft_code", "")
-    if draft_code_from_url:
-        draft_code_from_url = str(draft_code_from_url).strip().upper()
-
-    if draft_code_from_url and st.session_state.get("loaded_draft_code") != draft_code_from_url:
-        draft = load_existing_draft_by_code(draft_code_from_url)
-
-        if draft:
-            preload_draft_into_session(draft)
-            st.session_state["loaded_draft_code"] = draft_code_from_url
-            st.session_state["current_draft_code"] = draft_code_from_url
-            st.rerun()
-        else:
-            st.warning("Aucune réponse enregistrée n’a été trouvée avec ce lien de reprise.")
 
     render_first_page_header()
 
+    if not st.session_state["access_granted"]:
+        html_block(f"""
+<div style="background-color:#ffffff; padding:24px 34px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:25px;">
+    <h2 style="font-size:28px; color:{USJ_BLUE}; margin-top:0; margin-bottom:10px;">Accès au formulaire</h2>
+    <p style="font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:0;">
+        Veuillez saisir votre code personnel de reprise. Si vous accédez au formulaire pour la première fois, choisissez un code personnel et conservez-le afin de pouvoir reprendre vos réponses ultérieurement.
+    </p>
+</div>
+""")
+
+        col_code, col_button = st.columns([2, 1])
+
+        with col_code:
+            login_code = st.text_input(
+                "Code personnel de reprise",
+                placeholder="Exemple : USJ-FS-2026 ou votre propre code",
+                key="login_draft_code"
+            )
+
+        with col_button:
+            st.markdown("<br>", unsafe_allow_html=True)
+            enter_form = st.button("Accéder au formulaire")
+
+        if enter_form:
+            cleaned_code = login_code.strip().upper()
+
+            if not cleaned_code:
+                st.warning("Veuillez saisir un code personnel de reprise avant d’accéder au formulaire.")
+                return
+
+            draft = load_existing_draft_by_code(cleaned_code)
+
+            if draft:
+                preload_draft_into_session(draft)
+                st.session_state["current_draft_code"] = cleaned_code
+                st.session_state["access_granted"] = True
+                st.success("Vos réponses enregistrées ont été chargées.")
+                st.rerun()
+            else:
+                st.session_state["current_draft_code"] = cleaned_code
+                st.session_state["access_granted"] = True
+                st.info("Nouveau code créé. Vous pouvez commencer à remplir le formulaire.")
+                st.rerun()
+
+        st.stop()
+
     st.sidebar.markdown("### Navigation")
     st.sidebar.info("Mode répondant")
+    st.sidebar.markdown(f"**Code actif :** `{st.session_state.get('current_draft_code', '')}`")
 
-    st.markdown("### Reprendre une réponse enregistrée")
+    admin_password = st.sidebar.text_input(
+        "Accès administrateur",
+        type="password",
+        placeholder="Mot de passe"
+    )
 
-    col_code, col_load = st.columns([2, 1])
+    if admin_password == "admin123":
+        mode = st.sidebar.radio(
+            "Espace administrateur",
+            ["Saisir une réponse", "Consulter / exporter les réponses"],
+        )
+    else:
+        mode = "Saisir une réponse"
 
-    with col_code:
-        draft_code_input = st.text_input(
-            "Code de reprise",
-            placeholder="Exemple : USJ-XXXXXXXX",
-            key="draft_code_input"
+    if mode == "Saisir une réponse":
+        with st.form("etat_actuel_form", clear_on_submit=False, enter_to_submit=False):
+
+            st.markdown("## Informations générales")
+            st.info(f"Code de reprise actif : {st.session_state.get('current_draft_code', '')}")
+
+            col1, col2, col3 = st.columns(3)
+
+            with col1:
+                institution = st.text_input("Institution", key="institution")
+
+            with col2:
+                responsable = st.text_input("Responsable", key="responsable")
+
+            with col3:
+                st.text_input(
+                    "Date",
+                    value=datetime.now().strftime("%Y-%m-%d"),
+                    disabled=True
+                )
+                response_date = datetime.now().date()
+
+            st.markdown("---")
+
+            section_header("I - Introduction")
+            render_fixed_introduction()
+
+            st.divider()
+
+            section_header("II - Identification des parties prenantes")
+            render_stakeholder_intro()
+            stakeholder_rows = render_stakeholder_table()
+
+            st.divider()
+
+            st.markdown('<a id="section-iii"></a>', unsafe_allow_html=True)
+            section_header("III - Analyse interne de l’État actuel de l’Université")
+            render_internal_intro()
+            internal_analysis = render_internal_analysis()
+
+            st.divider()
+
+            st.markdown('<div id="section-iv"></div>', unsafe_allow_html=True)
+            section_header("IV - Analyse externe de l’environnement actuel de l’Université")
+            render_external_intro()
+            external_analysis = render_external_analysis()
+
+            st.divider()
+
+            section_header("V - Analyse SWOT – Niveau USJ")
+            render_swot_intro()
+            swot_analysis = render_swot_analysis()
+
+            st.divider()
+
+            section_header("VI - Priorités stratégiques et initiatives proposées – Niveau USJ")
+            render_priorities_intro()
+            priorities_initiatives = render_priorities_table()
+
+            st.divider()
+
+            pour_finir = render_pour_finir()
+
+            st.markdown("<br>", unsafe_allow_html=True)
+
+            col_save, col_submit = st.columns([1, 1])
+
+            with col_save:
+                save_draft = st.form_submit_button("Enregistrer et continuer plus tard")
+
+            with col_submit:
+                submit_final = st.form_submit_button("Envoyer")
+
+            if save_draft or submit_final:
+
+                statut = "Brouillon" if save_draft else "Soumis"
+
+                metadata = {
+                    "institution": institution,
+                    "responsable": responsable,
+                    "email": "",
+                    "response_date": str(response_date),
+                    "statut": statut,
+                    "draft_code": st.session_state.get("current_draft_code", ""),
+                }
+
+                data = {
+                    "metadata": metadata,
+                    "introduction": {},
+                    "stakeholders": {
+                        "rows": stakeholder_rows,
+                    },
+                    "internal_analysis": internal_analysis,
+                    "external_analysis": external_analysis,
+                    "swot_analysis": swot_analysis,
+                    "priorities_initiatives": priorities_initiatives,
+                    "pour_finir": pour_finir,
+                }
+
+                try:
+                    draft_code = save_response(metadata, data)
+                    st.session_state["current_draft_code"] = draft_code
+
+                    if save_draft:
+                        st.success(f"Vos réponses ont été enregistrées. Utilisez ce code pour reprendre plus tard : {draft_code}")
+
+                    if submit_final:
+                        st.success(f"Vos réponses ont été envoyées avec succès. Code de référence : {draft_code}")
+
+                except ValueError as e:
+                    st.error(str(e))
+
+    else:
+        st.markdown("## Consulter / exporter les réponses")
+
+        df = load_responses()
+
+        if df.empty:
+            st.warning("Aucune réponse enregistrée pour le moment.")
+            return
+
+        st.metric("Nombre total de réponses", len(df))
+
+        st.markdown("### Réponses enregistrées")
+        st.dataframe(df, use_container_width=True)
+
+        flat_df = pd.DataFrame([flatten_response(row) for _, row in df.iterrows()])
+
+        csv_data = flat_df.to_csv(index=False).encode("utf-8-sig")
+
+        st.download_button(
+            label="Télécharger les réponses en CSV",
+            data=csv_data,
+            file_name="etat_actuel_responses.csv",
+            mime="text/csv",
         )
 
-    with col_load:
-        st.markdown("<br>", unsafe_allow_html=True)
-        load_draft = st.button("Charger mes réponses")
+        excel_path = Path("etat_actuel_responses.xlsx")
+        flat_df.to_excel(excel_path, index=False)
 
-    if load_draft:
-        draft = load_existing_draft_by_code(draft_code_input)
-
-        if draft:
-            preload_draft_into_session(draft)
-            st.session_state["loaded_draft_code"] = draft.get("draft_code", "")
-            st.session_state["current_draft_code"] = draft.get("draft_code", "")
-            st.query_params["draft_code"] = draft.get("draft_code", "")
-            st.success("Vos réponses enregistrées ont été chargées.")
-            st.rerun()
-        else:
-            st.warning("Aucune réponse enregistrée n’a été trouvée avec ce code.")
-
-    with st.form("etat_actuel_form", clear_on_submit=False, enter_to_submit=False):
-
-        st.markdown("## Informations générales")
-
-        col1, col2, col3 = st.columns(3)
-
-        with col1:
-            institution = st.text_input("Institution", key="institution")
-
-        with col2:
-            responsable = st.text_input("Responsable", key="responsable")
-
-        with col3:
-            st.text_input(
-                "Date",
-                value=datetime.now().strftime("%Y-%m-%d"),
-                disabled=True
+        with open(excel_path, "rb") as f:
+            st.download_button(
+                label="Télécharger les réponses en Excel",
+                data=f,
+                file_name="etat_actuel_responses.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             )
-            response_date = datetime.now().date()
 
-        st.markdown("---")
-
-        section_header("I - Introduction")
-        render_fixed_introduction()
-
-        st.divider()
-
-        section_header("II - Identification des parties prenantes")
-        render_stakeholder_intro()
-        stakeholder_rows = render_stakeholder_table()
-
-        st.divider()
-
-        st.markdown('<a id="section-iii"></a>', unsafe_allow_html=True)
-        section_header("III - Analyse interne de l’État actuel de l’Université")
-        render_internal_intro()
-        internal_analysis = render_internal_analysis()
-
-        st.divider()
-
-        st.markdown('<div id="section-iv"></div>', unsafe_allow_html=True)
-        section_header("IV - Analyse externe de l’environnement actuel de l’Université")
-        render_external_intro()
-        external_analysis = render_external_analysis()
-
-        st.divider()
-
-        section_header("V - Analyse SWOT – Niveau USJ")
-        render_swot_intro()
-        swot_analysis = render_swot_analysis()
-
-        st.divider()
-
-        section_header("VI - Priorités stratégiques et initiatives proposées – Niveau USJ")
-        render_priorities_intro()
-        priorities_initiatives = render_priorities_table()
-
-        st.divider()
-
-        pour_finir = render_pour_finir()
-
-        st.markdown("<br>", unsafe_allow_html=True)
-
-        col_save, col_submit = st.columns([1, 1])
-
-        with col_save:
-            save_draft = st.form_submit_button("Enregistrer et continuer plus tard")
-
-        with col_submit:
-            submit_final = st.form_submit_button("Envoyer")
-
-        if save_draft or submit_final:
-            statut = "Brouillon" if save_draft else "Soumis"
-
-            metadata = {
-                "institution": institution,
-                "responsable": responsable,
-                "email": "",
-                "response_date": str(response_date),
-                "statut": statut,
-                "draft_code": st.session_state.get("current_draft_code", ""),
-            }
-
-            data = {
-                "metadata": metadata,
-                "introduction": {},
-                "stakeholders": {
-                    "rows": stakeholder_rows,
-                },
-                "internal_analysis": internal_analysis,
-                "external_analysis": external_analysis,
-                "swot_analysis": swot_analysis,
-                "priorities_initiatives": priorities_initiatives,
-                "pour_finir": pour_finir,
-            }
-
-            draft_code = save_response(metadata, data)
-            st.session_state["current_draft_code"] = draft_code
-            st.session_state["loaded_draft_code"] = draft_code
-            st.query_params["draft_code"] = draft_code
-
-            resume_url = f"?draft_code={draft_code}"
-
-            if save_draft:
-                st.success("Vos réponses ont été enregistrées.")
-                st.info(f"Code de reprise : {draft_code}")
-                st.warning(f"Lien de reprise : {resume_url}")
-
-            if submit_final:
-                st.success("Vos réponses ont été envoyées avec succès.")
-                st.info(f"Code de référence : {draft_code}")
+        st.markdown("### Données complètes")
+        st.dataframe(flat_df, use_container_width=True)
 
 
 if __name__ == "__main__":
