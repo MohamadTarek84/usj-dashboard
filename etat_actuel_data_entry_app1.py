@@ -115,31 +115,26 @@ def flatten_response(row):
 
 def apply_usj_style():
     html_block(f"""
-div[data-testid="stTextInput"] label p {{
-    font-weight: 700 !important;
-    color: #000000 !important;
-}}
-
-div[data-testid="stTextInput"] input {{
-    color: #000000 !important;
-    -webkit-text-fill-color: #000000 !important;
-    opacity: 1 !important;
-}}
 <style>
 html, body, [class*="css"], [class*="st-"], .stApp {{
     font-family: Candara, Calibri, Arial, sans-serif !important;
     color: {USJ_TEXT};
 }}
 
-label {{
+div[data-testid="stTextInput"] label,
+div[data-testid="stTextInput"] label *,
+div[data-testid="stDateInput"] label,
+div[data-testid="stDateInput"] label * {{
     font-weight: 700 !important;
     color: #000000 !important;
 }}
 
-input {{
+div[data-testid="stTextInput"] input,
+div[data-testid="stDateInput"] input {{
     color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
+    opacity: 1 !important;
 }}
-
 .annexe-a-hover {{
     position: relative;
     color: #0000FF;
