@@ -135,6 +135,7 @@ div[data-testid="stDateInput"] input {{
     -webkit-text-fill-color: #000000 !important;
     opacity: 1 !important;
 }}
+
 .annexe-a-hover {{
     position: relative;
     color: #0000FF;
@@ -161,7 +162,7 @@ div[data-testid="stDateInput"] input {{
 }}
 
 div[data-testid="stTextArea"] {{
-    border: 0.75px solid #5A5A5A !important;
+    border: 0.75px solid #595959 !important;
     border-radius: 0px !important;
     background-color: #E3DED9 !important;
 }}
@@ -172,18 +173,17 @@ div[data-testid="stTextArea"] > div {{
 }}
 
 div[data-testid="stTextArea"] textarea {{
-    border: 1.5px solid #000000 !important;
+    border: 1.5px solid #595959 !important;
     border-radius: 0px !important;
     background-color: #E3DED9 !important;
     box-shadow: none !important;
 }}
 
 div[data-testid="stTextArea"] textarea:focus {{
-    border: 2px solid #000000 !important;
+    border: 2px solid #595959 !important;
     box-shadow: none !important;
     outline: none !important;
 }}
-
 h1, h2, h3, h4, h5, h6 {{
     font-family: Candara, Calibri, Arial, sans-serif !important;
     color: {USJ_BLUE} !important;
