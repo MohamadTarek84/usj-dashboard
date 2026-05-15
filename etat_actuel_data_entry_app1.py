@@ -130,11 +130,9 @@ p, div, span, label, button, input, textarea, select {{
     font-family: Candara, Calibri, Arial, sans-serif !important;
 }}
 
-.stTextInput input, .stTextArea textarea, .stDateInput input {{
-    border: 1.5px solid #E3DED9 !important;
-    border-radius: 8px !important;
-    background-color: #F8FBFF !important;
-    color: {USJ_TEXT} !important;
+.stTextArea textarea:focus, .stTextInput input:focus {{
+    border: 2px solid #000000 !important;
+    box-shadow: none !important;
 }}
 
 .stTextArea textarea {{
