@@ -364,6 +364,7 @@ div[data-testid="stTextArea"] {{
     border: 0.75px solid #595959 !important;
     border-radius: 0px !important;
     background-color: #E3DED9 !important;
+    margin-bottom: -8px !important;
 }}
 
 div[data-testid="stTextArea"] > div {{
@@ -376,6 +377,7 @@ div[data-testid="stTextArea"] textarea {{
     border-radius: 0px !important;
     background-color: #E3DED9 !important;
     box-shadow: none !important;
+    margin-bottom: 0px !important;
 }}
 
 div[data-testid="stTextArea"] textarea:focus {{
@@ -384,17 +386,13 @@ div[data-testid="stTextArea"] textarea:focus {{
     outline: none !important;
 }}
 
-div[data-testid="stTextArea"] {{
-    margin-bottom: 2px !important;
-}}
-
-div[data-testid="stTextArea"] textarea {{
-    margin-bottom: 0px !important;
-}}
-
 div[data-testid="column"] {{
-    padding-left: 4px !important;
-    padding-right: 4px !important;
+    padding-left: 2px !important;
+    padding-right: 2px !important;
+}}
+
+div[data-testid="stVerticalBlock"] > div {{
+    gap: 0.15rem !important;
 }}
 h1, h2, h3, h4, h5, h6 {{
     font-family: Candara, Calibri, Arial, sans-serif !important;
