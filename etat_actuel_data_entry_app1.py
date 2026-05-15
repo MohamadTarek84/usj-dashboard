@@ -320,15 +320,21 @@ def render_fixed_introduction():
     Le document comprend 6 parties :
     </p>
 
-    <ol style="font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-top:5px;">
-        <li>Introduction</li>
-        <li>Identification des parties prenantes à consulter pour écrire le rapport</li>
-        <li>Analyse interne : cette analyse mène à produire les éléments Forces et Faiblesses de l’analyse SWOT</li>
-        <li>Analyse externe : cette analyse mène à produire les éléments Opportunités et Menaces de l’analyse SWOT</li>
-        <li>Analyse SWOT</li>
-        <li>Propositions de Priorités stratégiques et Initiatives</li>
-    </ol>
+<div style="font-size:17px; line-height:1.75; color:{USJ_BLUE}; margin-top:5px;">
 
+    I. Introduction<br>
+
+    II. Identification des parties prenantes à consulter pour écrire le rapport<br>
+
+    III. Analyse interne : cette analyse mène à produire les éléments Forces et Faiblesses de l’analyse SWOT<br>
+
+    IV. Analyse externe : cette analyse mène à produire les éléments Opportunités et Menaces de l’analyse SWOT<br>
+
+    V. Analyse SWOT<br>
+
+    VI. Propositions de Priorités stratégiques et Initiatives
+
+</div>
     <p style="font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:5px;">
     Pour toute information supplémentaire ou support, contacter :
     </p>
