@@ -863,10 +863,22 @@ def main():
 
     render_first_page_header()
 
-    mode = st.sidebar.radio(
-        "Navigation",
-        ["Saisir une réponse", "Consulter / exporter les réponses"],
+    st.sidebar.markdown("### Navigation")
+    st.sidebar.info("Mode répondant")
+
+    admin_password = st.sidebar.text_input(
+        "Accès administrateur",
+        type="password",
+        placeholder="Mot de passe"
     )
+
+    if admin_password == "admin123":
+        mode = st.sidebar.radio(
+            "Espace administrateur",
+            ["Saisir une réponse", "Consulter / exporter les réponses"],
+        )
+    else:
+        mode = "Saisir une réponse"
 
     if mode == "Saisir une réponse":
         with st.form("etat_actuel_form", clear_on_submit=False, enter_to_submit=False):
@@ -935,14 +947,10 @@ def main():
             col_save, col_submit = st.columns([1, 1])
 
             with col_save:
-                save_draft = st.form_submit_button(
-                    "Enregistrer et continuer plus tard"
-                )
+                save_draft = st.form_submit_button("Enregistrer et continuer plus tard")
 
             with col_submit:
-                submit_final = st.form_submit_button(
-                    "Envoyer"
-                )
+                submit_final = st.form_submit_button("Envoyer")
 
             if save_draft or submit_final:
 
@@ -972,14 +980,10 @@ def main():
                 save_response(metadata, data)
 
                 if save_draft:
-                    st.success(
-                        "Vos réponses ont été enregistrées. Vous pourrez les compléter ultérieurement."
-                    )
+                    st.success("Vos réponses ont été enregistrées. Vous pouvez continuer à les modifier tant que la session reste ouverte.")
 
                 if submit_final:
-                    st.success(
-                        "Vos réponses ont été envoyées avec succès."
-                    )
+                    st.success("Vos réponses ont été envoyées avec succès.")
 
     else:
         st.markdown("## Consulter / exporter les réponses")
@@ -993,10 +997,7 @@ def main():
         st.metric("Nombre total de réponses", len(df))
 
         st.markdown("### Réponses enregistrées")
-        st.dataframe(
-            df[["id", "submitted_at", "respondent_name", "respondent_unit", "respondent_email"]],
-            use_container_width=True,
-        )
+        st.dataframe(df, use_container_width=True)
 
         flat_df = pd.DataFrame([flatten_response(row) for _, row in df.iterrows()])
 
