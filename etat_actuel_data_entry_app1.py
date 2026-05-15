@@ -633,8 +633,10 @@ def render_external_analysis():
             """
 
         html_block(f"""
-<div style="background:{USJ_LIGHT_BLUE}; border-left:5px solid {USJ_RED}; padding:10px 14px 10px 28px; border-radius:6px; margin-top:20px; margin-bottom:8px; color:{USJ_RED}; font-size:17px;">
-    {title_html}
+<div style="padding:2px 0px; margin-top:10px; margin-bottom:4px;">
+    <p style="font-size:17px; line-height:1.25; color:{USJ_RED}; font-weight:700; margin:0;">
+        {title_html}
+    </p>
 </div>
 """)
 
