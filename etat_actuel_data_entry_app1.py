@@ -302,7 +302,7 @@ def render_stakeholder_intro():
     L’institution est libre d’organiser, selon les modalités qu’elle juge les plus appropriées, une ou plusieurs réunions avec les parties prenantes, ou, dans certains cas, de recourir à des questionnaires (voir la note de bas de page de l’introduction).
     </p>
 
-    <p style="font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:0;">
+    <p style="font-size:17px; line-height:1.55; color:#7F7F7F; font-weight:700; font-style:italic;">
     Le tableau ci-dessous doit être dûment complété.
     </p>
 </div>
