@@ -448,7 +448,7 @@ def render_stakeholder_table():
 
         with col0:
             html_block(f"""
-<div style="background:{USJ_LIGHT_BLUE}; border-left:5px solid {USJ_BLUE}; padding:8px 10px; height:38px; display:flex; align-items:center; font-weight:700; color:{USJ_BLUE}; border-radius:6px;">
+<div style="background:{USJ_LIGHT_BLUE}; border-left:none; padding:8px 10px; height:38px; display:flex; align-items:center; font-weight:700; color:{USJ_BLUE}; border-radius:6px;">
     {category}
 </div>
 """)
@@ -473,7 +473,6 @@ def render_stakeholder_table():
                 "poste": poste,
                 "organisme_affiliation": organisme,
             })
-
     st.session_state.setdefault("n_autres_rows", 1)
 
     for i in range(1, st.session_state.n_autres_rows + 1):
