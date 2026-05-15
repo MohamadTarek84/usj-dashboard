@@ -923,6 +923,19 @@ def render_swot_analysis():
         </span>
         """
 
+    annexe_c_src = image_to_base64(ANNEXE_C_PATH)
+
+    annexe_c_hover_html = "Annexe C"
+    if annexe_c_src:
+        annexe_c_hover_html = f"""
+        <span class="annexe-a-hover">
+            Annexe C
+            <span class="annexe-a-popup">
+                <img src="{annexe_c_src}" style="width:900px; height:auto;">
+            </span>
+        </span>
+        """
+
     st.markdown(f"""
 <div style="background:#ffffff; padding:18px 24px; border-radius:10px; border-left:none; margin-top:15px; margin-bottom:15px;">
     <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:6px;">
@@ -943,7 +956,7 @@ def render_swot_analysis():
     html_block(f"""
 <div style="background:#ffffff; padding:18px 24px; border-radius:10px; border-left:none; margin-top:28px; margin-bottom:15px;">
     <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:6px;">
-    <strong>2. Facteurs externes :</strong> Identification des opportunités de développement et des menaces émanant de l'environnement extérieur.
+    <strong>2. Facteurs externes :</strong> Identification des opportunités de développement et des menaces émanant de l'environnement extérieur (Exemples d’Opportunités et de Menaces en {annexe_c_hover_html}).
     </p>
     <p style="text-align:left; font-size:17px; line-height:1.55; color:#7F7F7F; font-weight:700; font-style:italic; margin-bottom:0;">
     Nous vous remercions de bien vouloir compléter le tableau ci-dessous en indiquant au maximum <span style="text-decoration:underline; font-weight:700; font-style:italic;">cinq opportunités et cinq menaces</span>. Vos réponses seront déduites de l’analyse de l’état actuel externe (<a href="#section-iv" style="text-decoration:underline; color:#0000FF; font-weight:700; font-style:italic;">section IV</a> principalement).
