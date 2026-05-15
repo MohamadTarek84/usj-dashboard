@@ -323,11 +323,11 @@ def render_fixed_introduction():
     </p>
 
     <p style="font-size:16px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:0;">
-    M. Hadi Sawaya – Coordinateur de l’Unité Assurance Qualité : <a href="mailto:hadi.sawaya@usj.edu.lb" style="color:{USJ_BLUE}; text-decoration:underline;">hadi.sawaya@usj.edu.lb</a><br>
-    Mme Irma Majdalani – Expert qualité – Unité Assurance qualité : <a href="mailto:irma.majdalani@usj.edu.lb" style="color:{USJ_BLUE}; text-decoration:underline;">irma.majdalani@usj.edu.lb</a><br>
-    Mme Nadine Riachi Haddad – Secrétaire général : <a href="mailto:secg@usj.edu.lb" style="color:{USJ_BLUE}; text-decoration:underline;">secg@usj.edu.lb</a><br>
-    Mme Ursula El Hage – Directeur du Service de l’insertion professionnelle : <a href="mailto:ursula.hage@usj.edu.lb" style="color:{USJ_BLUE}; text-decoration:underline;">ursula.hage@usj.edu.lb</a><br>
-    Mme Lina Koleilat Ghalayini – Chef de projets – Unité Assurance qualité : <a href="mailto:lina.koleilat@usj.edu.lb" style="color:{USJ_BLUE}; text-decoration:underline;">lina.koleilat@usj.edu.lb</a>
+    M. Hadi Sawaya – Coordinateur de l’Unité Assurance Qualité : <a href="mailto:hadi.sawaya@usj.edu.lb" target="_blank" style="color:{USJ_BLUE}; text-decoration:underline;">hadi.sawaya@usj.edu.lb</a><br>
+    Mme Irma Majdalani – Expert qualité – Unité Assurance qualité : <a href="mailto:irma.majdalani@usj.edu.lb" target="_blank" style="color:{USJ_BLUE}; text-decoration:underline;">irma.majdalani@usj.edu.lb</a><br>
+    Mme Nadine Riachi Haddad – Secrétaire général : <a href="mailto:secg@usj.edu.lb" target="_blank" style="color:{USJ_BLUE}; text-decoration:underline;">secg@usj.edu.lb</a><br>
+    Mme Ursula El Hage – Directeur du Service de l’insertion professionnelle : <a href="mailto:ursula.hage@usj.edu.lb" target="_blank" style="color:{USJ_BLUE}; text-decoration:underline;">ursula.hage@usj.edu.lb</a><br>
+    Mme Lina Koleilat Ghalayini – Chef de projets – Unité Assurance qualité : <a href="mailto:lina.koleilat@usj.edu.lb" target="_blank" style="color:{USJ_BLUE}; text-decoration:underline;">lina.koleilat@usj.edu.lb</a>
     </p>
 </div>
 """)
