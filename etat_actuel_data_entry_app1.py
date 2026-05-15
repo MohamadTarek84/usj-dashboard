@@ -185,7 +185,7 @@ hr {{
 
 def section_header(title, description=None):
     html_block(f"""
-<div style="border-left:6px solid {USJ_BLUE}; border-bottom:2px solid {USJ_GOLD}; padding:10px 14px; margin-top:20px; margin-bottom:18px; background-color:{USJ_LIGHT_BLUE}; border-radius:8px;">
+<div style="border-left:6px solid {USJ_BLUE}; padding:10px 14px; margin-top:20px; margin-bottom:18px; background-color:{USJ_LIGHT_BLUE}; border-radius:8px;">
     <h2 style="margin:0; color:{USJ_BLUE};">{title}</h2>
 </div>
 """)
