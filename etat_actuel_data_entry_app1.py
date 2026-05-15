@@ -664,8 +664,8 @@ def render_swot_analysis():
     <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:6px;">
     <strong>2. Facteurs externes :</strong> Identification des opportunités de développement et des menaces émanant de l'environnement extérieur.
     </p>
-    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:0;">
-    Nous vous remercions de bien vouloir compléter le tableau ci-dessous en indiquant au maximum cinq opportunités et cinq menaces. Vos réponses seront déduites de l’analyse de l’état actuel externe (section IV principalement).
+    <p style="text-align:left; font-size:17px; line-height:1.55; color:#7F7F7F; font-weight:700; font-style:italic; margin-bottom:0;">
+    Nous vous remercions de bien vouloir compléter le tableau ci-dessous en indiquant au maximum <span style="text-decoration:underline; font-weight:700; font-style:italic;">cinq opportunités et cinq menaces</span>. Vos réponses seront déduites de l’analyse de l’état actuel externe (<a href="#section-iv" style="text-decoration:underline; color:#0000FF; font-weight:700; font-style:italic;">section IV</a> principalement).
     </p>
 </div>
 """)
@@ -845,6 +845,7 @@ def main():
 
             st.divider()
 
+            st.markdown('<div id="section-iv"></div>', unsafe_allow_html=True)
             section_header("IV - Analyse externe de l’environnement actuel de l’Université")
             render_external_intro()
             external_analysis = render_external_analysis()
