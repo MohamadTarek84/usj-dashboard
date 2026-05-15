@@ -341,12 +341,19 @@ div[data-testid="stDateInput"] input {{
     position: absolute;
     z-index: 99999;
     left: 50%;
-    top: 30px;
+    top: 28px;
     transform: translateX(-50%);
     background: white;
     padding: 8px;
     border: 1px solid #595959;
     box-shadow: 0 4px 16px rgba(0,0,0,0.20);
+    max-width: 95vw;
+}}
+
+.annexe-a-popup img {{
+    width: 900px !important;
+    max-width: 92vw !important;
+    height: auto !important;
 }}
 
 .annexe-a-hover:hover .annexe-a-popup {{
@@ -1054,7 +1061,7 @@ def render_pour_finir():
     ]
 
     for i, phrase in enumerate(phrases, start=1):
-        col1, col2 = st.columns([1.05, 3.2], gap="small")
+        col1, col2 = st.columns([1.7, 2.6], gap="small")
 
         with col1:
             html_block(f"""
@@ -1256,7 +1263,7 @@ def main():
                         st.success(f"Vos réponses ont été enregistrées. Utilisez ce code pour reprendre plus tard : {draft_code}")
 
                     if submit_final:
-                        st.success("Merci.\\nVos réponses ont été enregistrées.")
+                        st.success("Merci.\nVos réponses ont été enregistrées.")
 
                 except ValueError as e:
                     st.error(str(e))
