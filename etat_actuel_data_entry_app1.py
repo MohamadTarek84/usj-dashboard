@@ -232,7 +232,7 @@ def render_fixed_introduction():
         """
 
     html_block(f"""
-<div style="background-color:#ffffff; padding:24px 34px; border-radius:12px; border-left:7px solid {USJ_BLUE}; border-top:none; border-bottom:2px solid {USJ_RED}; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:25px;">
+<div style="background-color:#ffffff; padding:24px 34px; border-radius:12px; border-left:7px solid {USJ_BLUE}; border-top:none; border-bottom:none; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:25px;">
     <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
     L’enseignement supérieur est aujourd’hui confronté à des transformations rapides, à des contraintes économiques croissantes et à une intensification de la concurrence, tant nationale qu’internationale. Les évolutions technologiques, les attentes accrues des étudiants et des parties prenantes, ainsi que les exigences renforcées en matière de qualité et de performance, imposent une réflexion stratégique à la fois rigoureuse et collective. Les universités sont ainsi appelées à réinterroger en profondeur leurs modèles académiques, organisationnels et opérationnels.
     </p>
@@ -285,7 +285,7 @@ def render_fixed_introduction():
 
 def render_stakeholder_intro():
     html_block(f"""
-<div style="background-color:#ffffff; padding:24px 34px; border-radius:12px; border-left:7px solid {USJ_BLUE}; border-top:none; border-bottom:2px solid {USJ_RED}; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:25px;">
+<div style="background-color:#ffffff; padding:24px 34px; border-radius:12px; border-left:7px solid {USJ_BLUE}; border-top:none; border-bottom:none; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:25px;">
     <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
     Le rapport d’analyse des données existantes est le fruit d’une consultation menée auprès de l’ensemble des parties prenantes de l’institution. L’identification et la prise en compte de leurs attentes constituent un levier essentiel pour la réussite du processus de planification stratégique. En raison de la diversité de leurs rôles, de leurs intérêts et de leur degré d’influence, les parties prenantes apportent des perspectives complémentaires, qui enrichissent l’analyse stratégique et favorisent l’adhésion aux orientations retenues. L’analyse de leurs attentes vise à mieux comprendre leurs besoins, leurs priorités et leur niveau d’influence, afin d’éclairer les choix stratégiques de l’USJ. Cette démarche participative est essentielle pour garantir une vision partagée, réaliste et représentative de la diversité de la communauté universitaire.
     </p>
@@ -426,7 +426,7 @@ def render_stakeholder_table():
 
 def render_internal_intro():
     html_block(f"""
-<div style="background-color:#ffffff; padding:24px 34px; border-radius:12px; border-left:7px solid {USJ_BLUE}; border-top:none; border-bottom:2px solid {USJ_RED}; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:25px;">
+<div style="background-color:#ffffff; padding:24px 34px; border-radius:12px; border-left:7px solid {USJ_BLUE}; border-top:none; border-bottom:none; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:25px;">
     <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
     L’analyse interne vise à apprécier dans quelle mesure l’USJ dispose des ressources nécessaires pour soutenir sa mission et mettre en œuvre ses orientations stratégiques. Elle porte également sur l’évaluation des modes d’organisation et des pratiques de gestion qui influencent directement la performance et l’efficacité de l’Université.
     </p>
@@ -482,7 +482,7 @@ def render_internal_analysis():
 
 def render_external_intro():
     html_block(f"""
-<div style="background-color:#ffffff; padding:24px 34px; border-radius:12px; border-left:7px solid {USJ_BLUE}; border-top:none; border-bottom:2px solid {USJ_RED}; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:25px;">
+<div style="background-color:#ffffff; padding:24px 34px; border-radius:12px; border-left:7px solid {USJ_BLUE}; border-top:none; border-bottom:none; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:25px;">
 
     <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
     L’analyse de l’environnement externe constitue une étape essentielle du processus de planification stratégique. Elle vise à situer l’USJ dans son écosystème institutionnel, académique, économique et réglementaire, afin d’identifier les facteurs externes susceptibles d’influencer ses orientations, ses performances et sa soutenabilité à moyen et à long terme.
@@ -558,7 +558,7 @@ def render_external_analysis():
 
 def render_swot_intro():
     html_block(f"""
-<div style="background-color:#ffffff; padding:24px 34px; border-radius:12px; border-left:7px solid {USJ_BLUE}; border-top:none; border-bottom:2px solid {USJ_RED}; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:25px;">
+<div style="background-color:#ffffff; padding:24px 34px; border-radius:12px; border-left:7px solid {USJ_BLUE}; border-top:none; border-bottom:none; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:25px;">
     <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
     L'Analyse SWOT est un levier de planification stratégique qui permet de synthétiser les constats majeurs afin d’améliorer les processus de planification et d'optimiser la prise de décision au niveau de l’Université.
     </p>
@@ -655,7 +655,7 @@ def render_swot_analysis():
 
 def render_priorities_intro():
     html_block(f"""
-<div style="background-color:#ffffff; padding:24px 34px; border-radius:12px; border-left:7px solid {USJ_BLUE}; border-top:none; border-bottom:2px solid {USJ_RED}; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:25px;">
+<div style="background-color:#ffffff; padding:24px 34px; border-radius:12px; border-left:7px solid {USJ_BLUE}; border-top:none; border-bottom:none; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:25px;">
     <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
     Cette section a pour objectif de proposer, à l’échelle de l’USJ, des priorités stratégiques et des initiatives (projets), en cohérence avec les constats issus de l’analyse des environnements interne et externe et de l’analyse SWOT. Les propositions attendues doivent refléter les enjeux majeurs identifiés, les capacités institutionnelles existantes et les orientations à privilégier pour les prochaines années.
     </p>
@@ -724,7 +724,7 @@ def render_priorities_table():
 
 def render_pour_finir():
     html_block(f"""
-<div style="background-color:#ffffff; padding:24px 34px; border-radius:12px; border-left:7px solid {USJ_RED}; border-top:none; border-bottom:2px solid {USJ_RED}; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:25px;">
+<div style="background-color:#ffffff; padding:24px 34px; border-radius:12px; border-left:7px solid {USJ_RED}; border-top:none; border-bottom:none; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:25px;">
 
     <p style="font-size:18px; line-height:1.55; color:{USJ_RED}; font-weight:700; margin-bottom:16px;">
     POUR FINIR. <span style="font-weight:400;">Nous vous remercions de compléter les phrases suivantes.</span>
