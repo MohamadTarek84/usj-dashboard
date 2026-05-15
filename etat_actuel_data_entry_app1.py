@@ -271,6 +271,17 @@ def render_first_page_header():
         else:
             st.warning("LogoUAQ.png non trouvé. Placez le logo dans le même dossier que le script.")
 
+    st.markdown(
+        """
+        <style>
+        [data-testid="stImage"] {
+            margin-bottom: -30px !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
     st.markdown("---")
 
 
