@@ -813,7 +813,7 @@ def render_external_analysis():
         if theme.startswith("Institutions paires"):
             title_html = f"""
             <span style="font-weight:700;">
-                • Institutions paires : Concurrence et Benchmarking
+                &bull; Institutions paires : Concurrence et Benchmarking
             </span>
             <span style="font-weight:400; font-style:italic;">
                 (si des informations précises sont disponibles prière de les fournir avec un document à part si nécessaire)
@@ -822,7 +822,7 @@ def render_external_analysis():
         else:
             title_html = f"""
             <span style="font-weight:700;">
-                • {theme}
+                &bull; {theme}
             </span>
             """
 
