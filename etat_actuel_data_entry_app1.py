@@ -905,13 +905,13 @@ def render_swot_analysis():
 
     annexe_b_src = image_to_base64(ANNEXE_B_PATH)
 
-    annexe_b_hover_html = "Exemples de Forces et Faiblesses en Annexe B"
+    annexe_b_hover_html = "Annexe B"
     if annexe_b_src:
         annexe_b_hover_html = f"""
         <span class="annexe-a-hover">
-            Exemples de Forces et Faiblesses en Annexe B
+            Annexe B
             <span class="annexe-a-popup">
-                <img src="{annexe_b_src}" style="width:720px; height:auto;">
+                <img src="{annexe_b_src}" style="width:900px; height:auto;">
             </span>
         </span>
         """
@@ -919,7 +919,7 @@ def render_swot_analysis():
     st.markdown(f"""
 <div style="background:#ffffff; padding:18px 24px; border-radius:10px; border-left:none; margin-top:15px; margin-bottom:15px;">
     <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:6px;">
-    <strong>1. Facteurs internes :</strong> Identification des <strong>forces</strong> et des <strong>faiblesses</strong> propres à l'Université ({annexe_b_hover_html}).
+    <strong>1. Facteurs internes :</strong> Identification des <strong>forces</strong> et des <strong>faiblesses</strong> propres à l'Université (Exemples de Forces et Faiblesses en {annexe_b_hover_html}).
     </p>
     <p style="text-align:left; font-size:17px; line-height:1.55; color:#7F7F7F; font-weight:700; font-style:italic; margin-bottom:0;">
     Nous vous remercions de bien vouloir compléter le tableau ci-dessous en indiquant au maximum <span style="text-decoration:underline; font-weight:700; font-style:italic;">cinq forces et cinq faiblesses</span>. Vos réponses seront déduites de l’analyse de l’état actuel interne (<a href="#section-iii" style="text-decoration:underline; color:#0000FF; font-weight:700; font-style:italic;">section III</a> principalement).
