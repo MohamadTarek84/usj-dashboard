@@ -120,6 +120,17 @@ html, body, [class*="css"], [class*="st-"], .stApp {{
     color: {USJ_TEXT};
 }}
 
+div[data-testid="stTextArea"] {{
+    border: 1.5px solid #000000 !important;
+    border-radius: 0px !important;
+    background-color: #E3DED9 !important;
+}}
+
+div[data-testid="stTextArea"] > div {{
+    border: none !important;
+    box-shadow: none !important;
+}}
+
 div[data-testid="stTextArea"] textarea {{
     border: 1.5px solid #000000 !important;
     border-radius: 0px !important;
