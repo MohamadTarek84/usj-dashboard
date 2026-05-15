@@ -707,7 +707,7 @@ def render_stakeholder_table():
 
 def render_internal_intro():
     html_block(f"""
-<div style="background-color:#ffffff; padding:24px 34px; border-radius:12px; border-left:7px solid {USJ_BLUE}; border-top:none; border-bottom:none; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:25px;">
+<div style="background-color:#ffffff; padding:24px 34px; border-radius:12px; border-left:none; border-top:none; border-bottom:none; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:25px;">
     <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
     L’analyse interne vise à apprécier dans quelle mesure l’USJ dispose des ressources nécessaires pour soutenir sa mission et mettre en œuvre ses orientations stratégiques. Elle porte également sur l’évaluation des modes d’organisation et des pratiques de gestion qui influencent directement la performance et l’efficacité de l’Université. Cette analyse permettra d’identifier dans une étape ultérieure les forces et les faiblesses de l’Université. Elle constitue un élément central du diagnostic institutionnel et contribue à éclairer les choix stratégiques, en assurant la cohérence entre les ambitions, les moyens disponibles et les capacités opérationnelles à l’échelle de l’USJ.
     </p>
@@ -790,9 +790,6 @@ def render_external_intro():
 </div>
 """)
 
-</div>
-""")
-
 
 def render_external_analysis():
     external_themes = [
@@ -843,7 +840,7 @@ def render_external_analysis():
         )
 
     return external_analysis
-    
+
 def render_swot_intro():
     html_block(f"""
 <div style="background-color:#ffffff; padding:24px 34px; border-radius:12px; border-left:none; border-top:none; border-bottom:none; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:25px;">
@@ -852,6 +849,53 @@ def render_swot_intro():
     </p>
 </div>
 """)
+
+def render_swot_table(section_key, left_title, right_title):
+    rows = []
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        html_block(f"""
+<div style="background:{USJ_BLUE}; color:white; padding:10px 12px; min-height:42px; display:flex; align-items:center; justify-content:center; font-weight:700; border-radius:6px;">
+    {left_title}
+</div>
+""")
+
+    with col2:
+        html_block(f"""
+<div style="background:{USJ_BLUE}; color:white; padding:10px 12px; min-height:42px; display:flex; align-items:center; justify-content:center; font-weight:700; border-radius:6px;">
+    {right_title}
+</div>
+""")
+
+    for i in range(1, 6):
+        col1, col2 = st.columns(2)
+
+        with col1:
+            left_value = st.text_area(
+                label=f"{left_title} {i}",
+                key=f"{section_key}_{left_title}_{i}",
+                height=120,
+                placeholder="Merci de saisir votre réponse ici",
+                label_visibility="collapsed"
+            )
+
+        with col2:
+            right_value = st.text_area(
+                label=f"{right_title} {i}",
+                key=f"{section_key}_{right_title}_{i}",
+                height=120,
+                placeholder="Merci de saisir votre réponse ici",
+                label_visibility="collapsed"
+            )
+
+        rows.append({
+            left_title: left_value,
+            right_title: right_value,
+        })
+
+    return rows
 
 
 def render_swot_analysis():
@@ -895,7 +939,7 @@ def render_swot_analysis():
 
 def render_priorities_intro():
     html_block(f"""
-<div style="background-color:#ffffff; padding:24px 34px; border-radius:12px; border-left:7px solid {USJ_BLUE}; border-top:none; border-bottom:none; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:25px;">
+<div style="background-color:#ffffff; padding:24px 34px; border-radius:12px; border-left:none; border-top:none; border-bottom:none; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:25px;">
     <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
     Cette section a pour objectif de proposer, à l’échelle de l’USJ, <strong>des priorités stratégiques et des initiatives (projets)</strong>, en cohérence avec les constats issus de l’analyse des environnements interne et externe et de l’analyse SWOT. Les propositions attendues doivent refléter les enjeux majeurs identifiés, les capacités institutionnelles existantes et les orientations à privilégier pour les prochaines années.
     </p>
