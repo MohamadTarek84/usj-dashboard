@@ -133,8 +133,9 @@ html, body, [class*="css"], [class*="st-"], .stApp {{
     display: none;
     position: absolute;
     z-index: 99999;
-    left: 0;
-    top: 26px;
+    left: 50%;
+    top: 30px;
+    transform: translateX(-50%);
     background: white;
     padding: 8px;
     border: 1px solid #5A5A5A;
