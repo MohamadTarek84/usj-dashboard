@@ -438,7 +438,9 @@ section[data-testid="stSidebar"] {{
     color: white !important;
     border-radius: 8px !important;
     border: 1px solid {USJ_BLUE} !important;
-    font-weight: 600 !important;
+    font-weight: 800 !important;
+    font-size: 18px !important;
+    padding: 10px 22px !important;
 }}
 
 .stButton button p, .stDownloadButton button p, div[data-testid="stFormSubmitButton"] button p {{
@@ -1231,7 +1233,7 @@ def main():
 
             st.markdown("<br>", unsafe_allow_html=True)
 
-            col_save, col_submit = st.columns([1, 1])
+            col_left, col_save, col_submit, col_right = st.columns([1.4, 1.2, 0.8, 1.4])
 
             with col_save:
                 save_draft = st.form_submit_button("Enregistrer et continuer plus tard")
