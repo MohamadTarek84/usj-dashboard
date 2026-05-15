@@ -364,12 +364,13 @@ div[data-testid="stTextArea"] {{
     border: 0.75px solid #595959 !important;
     border-radius: 0px !important;
     background-color: #E3DED9 !important;
-    margin-bottom: -8px !important;
+    margin-bottom: -22px !important;
 }}
 
 div[data-testid="stTextArea"] > div {{
     border: none !important;
     box-shadow: none !important;
+    margin-bottom: 0px !important;
 }}
 
 div[data-testid="stTextArea"] textarea {{
@@ -387,12 +388,12 @@ div[data-testid="stTextArea"] textarea:focus {{
 }}
 
 div[data-testid="column"] {{
-    padding-left: 2px !important;
-    padding-right: 2px !important;
+    padding-left: 1px !important;
+    padding-right: 1px !important;
 }}
 
 div[data-testid="stVerticalBlock"] > div {{
-    gap: 0.15rem !important;
+    gap: 0rem !important;
 }}
 h1, h2, h3, h4, h5, h6 {{
     font-family: Candara, Calibri, Arial, sans-serif !important;
@@ -896,7 +897,7 @@ def render_swot_table(section_key, left_title, right_title):
             left_value = st.text_area(
                 label=f"{left_title} {i}",
                 key=f"{section_key}_{left_title}_{i}",
-                height=120,
+                height=95,
                 placeholder="Merci de saisir votre réponse ici",
                 label_visibility="collapsed"
             )
