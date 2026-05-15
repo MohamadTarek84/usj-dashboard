@@ -1107,22 +1107,7 @@ def main():
 
         st.stop()
 
-    st.sidebar.markdown("### Navigation")
-    st.sidebar.info("Mode répondant")
-    st.sidebar.markdown(f"**Code actif :** `{st.session_state.get('current_draft_code', '')}`")
 
-    admin_password = st.sidebar.text_input(
-        "Accès administrateur",
-        type="password",
-        placeholder="Mot de passe"
-    )
-
-    if admin_password == "admin123":
-        mode = st.sidebar.radio(
-            "Espace administrateur",
-            ["Saisir une réponse", "Consulter / exporter les réponses"],
-        )
-    else:
         mode = "Saisir une réponse"
 
     if mode == "Saisir une réponse":
