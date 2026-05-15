@@ -1144,14 +1144,24 @@ def main():
 
             st.divider()
 
-            st.markdown('<a id="section-iii"></a>', unsafe_allow_html=True)
+            st.markdown(
+                """
+                <div id="section-iii" style="position:relative; top:-120px; height:0px;"></div>
+                """,
+                unsafe_allow_html=True
+            )
             section_header("III - Analyse interne de l’État actuel de l’Université")
             render_internal_intro()
             internal_analysis = render_internal_analysis()
 
             st.divider()
 
-            st.markdown('<div id="section-iv"></div>', unsafe_allow_html=True)
+            st.markdown(
+                """
+                <div id="section-iv" style="position:relative; top:-120px; height:0px;"></div>
+                """,
+                unsafe_allow_html=True
+            )
             section_header("IV - Analyse externe de l’environnement actuel de l’Université")
             render_external_intro()
             external_analysis = render_external_analysis()
