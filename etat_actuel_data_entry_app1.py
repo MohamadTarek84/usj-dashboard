@@ -24,6 +24,33 @@ USJ_GOLD = "#C9A227"
 USJ_LIGHT_BLUE = "#EAF2F8"
 USJ_TEXT = "#1B2A41"
 
+AUTHORIZED_TEST_CODES = {
+    "USJ-HS-2032": {
+        "responsable": "Hadi Sawaya",
+        "institution": "",
+    },
+    "USJ-IM-2032": {
+        "responsable": "Irma Majdalani",
+        "institution": "",
+    },
+    "USJ-NRH-2032": {
+        "responsable": "Nadine Riachi Haddad",
+        "institution": "",
+    },
+    "USJ-UEH-2032": {
+        "responsable": "Ursula El Hage",
+        "institution": "",
+    },
+    "USJ-LKG-2032": {
+        "responsable": "Lina Koleilat Ghalayini",
+        "institution": "",
+    },
+    "USJ-TH-2032": {
+        "responsable": "Tarek Halabi",
+        "institution": "",
+    },
+}
+
 
 def html_block(content):
     if hasattr(st, "html"):
@@ -1058,6 +1085,10 @@ def main():
                 st.warning("Veuillez saisir un code personnel de reprise avant d’accéder au formulaire.")
                 return
 
+            if cleaned_code not in AUTHORIZED_TEST_CODES:
+                st.error("Code non reconnu. Veuillez utiliser le code personnel qui vous a été communiqué.")
+                return
+
             draft = load_existing_draft_by_code(cleaned_code)
 
             if draft:
@@ -1069,7 +1100,9 @@ def main():
             else:
                 st.session_state["current_draft_code"] = cleaned_code
                 st.session_state["access_granted"] = True
-                st.info("Nouveau code créé. Vous pouvez commencer à remplir le formulaire.")
+                st.session_state["responsable"] = AUTHORIZED_TEST_CODES[cleaned_code]["responsable"]
+                st.session_state["institution"] = AUTHORIZED_TEST_CODES[cleaned_code]["institution"]
+                st.info("Nouveau formulaire ouvert. Vous pouvez commencer à remplir vos réponses.")
                 st.rerun()
 
         st.stop()
