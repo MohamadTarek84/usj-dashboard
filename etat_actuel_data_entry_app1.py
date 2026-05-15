@@ -838,7 +838,8 @@ def main():
 
             st.divider()
 
-            section_header("III - Analyse interne de l’État actuel de l’Université", anchor="section-iii")
+            st.markdown('<a id="section-iii"></a>', unsafe_allow_html=True)
+            section_header("III - Analyse interne de l’État actuel de l’Université")
             render_internal_intro()
             internal_analysis = render_internal_analysis()
 
