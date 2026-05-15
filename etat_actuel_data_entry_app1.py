@@ -4,6 +4,7 @@
 import sqlite3
 import json
 import base64
+import uuid
 from datetime import datetime
 from pathlib import Path
 
@@ -54,7 +55,7 @@ def init_db():
             respondent_unit TEXT,
             respondent_email TEXT,
             statut TEXT DEFAULT 'Brouillon',
-            draft_key TEXT,
+            draft_code TEXT,
             data_json TEXT NOT NULL
         )
     """)
@@ -64,12 +65,11 @@ def init_db():
     if "statut" not in existing_cols:
         cur.execute("ALTER TABLE responses ADD COLUMN statut TEXT DEFAULT 'Brouillon'")
 
-    if "draft_key" not in existing_cols:
-        cur.execute("ALTER TABLE responses ADD COLUMN draft_key TEXT")
+    if "draft_code" not in existing_cols:
+        cur.execute("ALTER TABLE responses ADD COLUMN draft_code TEXT")
 
     conn.commit()
     conn.close()
-
 
 def save_response(metadata, data):
     institution = metadata.get("institution", "").strip()
@@ -77,17 +77,22 @@ def save_response(metadata, data):
     email = metadata.get("email", "").strip()
     statut = metadata.get("statut", "Brouillon")
 
-    draft_key = f"{institution.lower()}__{responsable.lower()}"
+    draft_code = metadata.get("draft_code", "").strip()
+
+    if not draft_code:
+        draft_code = "USJ-" + uuid.uuid4().hex[:8].upper()
+
+    data["draft_code"] = draft_code
 
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
 
     existing = cur.execute("""
         SELECT id FROM responses
-        WHERE draft_key = ?
+        WHERE draft_code = ?
         ORDER BY id DESC
         LIMIT 1
-    """, (draft_key,)).fetchone()
+    """, (draft_code,)).fetchone()
 
     if existing:
         cur.execute("""
@@ -116,7 +121,7 @@ def save_response(metadata, data):
                 respondent_unit,
                 respondent_email,
                 statut,
-                draft_key,
+                draft_code,
                 data_json
             )
             VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -126,13 +131,14 @@ def save_response(metadata, data):
             institution,
             email,
             statut,
-            draft_key,
+            draft_code,
             json.dumps(data, ensure_ascii=False),
         ))
 
     conn.commit()
     conn.close()
 
+    return draft_code
 
 def load_responses():
     conn = sqlite3.connect(DB_PATH)
@@ -140,14 +146,12 @@ def load_responses():
     conn.close()
     return df
 
-def load_existing_draft(institution, responsable):
-    institution = institution.strip()
-    responsable = responsable.strip()
 
-    if not institution or not responsable:
+def load_existing_draft_by_code(draft_code):
+    draft_code = draft_code.strip().upper()
+
+    if not draft_code:
         return None
-
-    draft_key = f"{institution.lower()}__{responsable.lower()}"
 
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
@@ -155,10 +159,10 @@ def load_existing_draft(institution, responsable):
     row = cur.execute("""
         SELECT data_json, statut
         FROM responses
-        WHERE draft_key = ?
+        WHERE draft_code = ?
         ORDER BY id DESC
         LIMIT 1
-    """, (draft_key,)).fetchone()
+    """, (draft_code,)).fetchone()
 
     conn.close()
 
@@ -167,15 +171,52 @@ def load_existing_draft(institution, responsable):
 
     data = json.loads(row[0])
     data["loaded_statut"] = row[1]
+    data["draft_code"] = draft_code
+
     return data
+
 
 def preload_draft_into_session(data):
     if not data:
         return
 
+    st.session_state["current_draft_code"] = data.get("draft_code", "")
+
     metadata = data.get("metadata", {})
     st.session_state["institution"] = metadata.get("institution", "")
     st.session_state["responsable"] = metadata.get("responsable", "")
+
+    stakeholder_rows = data.get("stakeholders", {}).get("rows", [])
+
+    fixed_categories = [
+        "Responsables institution",
+        "Enseignants cadrés",
+        "Enseignants non-cadrés",
+        "PSG",
+        "Étudiants",
+        "Anciens",
+        "Employeurs / Conseil d’orientation stratégique",
+    ]
+
+    autres_rows = []
+
+    for row in stakeholder_rows:
+        category = row.get("categorie", "")
+
+        if category in fixed_categories:
+            st.session_state[f"{category}_nom"] = row.get("nom", "")
+            st.session_state[f"{category}_poste"] = row.get("poste", "")
+            st.session_state[f"{category}_organisme"] = row.get("organisme_affiliation", "")
+
+        elif category == "Autres":
+            autres_rows.append(row)
+
+    st.session_state["n_autres_rows"] = max(1, len(autres_rows))
+
+    for i, row in enumerate(autres_rows, start=1):
+        st.session_state[f"autre_nom_{i}"] = row.get("nom", "")
+        st.session_state[f"autre_poste_{i}"] = row.get("poste", "")
+        st.session_state[f"autre_org_{i}"] = row.get("organisme_affiliation", "")
 
     for theme, value in data.get("internal_analysis", {}).items():
         st.session_state[f"internal_{theme}"] = value
@@ -184,28 +225,28 @@ def preload_draft_into_session(data):
         st.session_state[f"external_{theme}"] = value
 
     for section_key, rows in data.get("swot_analysis", {}).items():
+        prefix = "swot_internal" if section_key == "facteurs_internes" else "swot_external"
+
         for i, row in enumerate(rows, start=1):
             for col_name, value in row.items():
-                if section_key == "facteurs_internes":
-                    prefix = "swot_internal"
-                else:
-                    prefix = "swot_external"
                 st.session_state[f"{prefix}_{col_name}_{i}"] = value
 
     for i, row in enumerate(data.get("priorities_initiatives", []), start=1):
         st.session_state[f"priority_{i}"] = row.get("priorite_strategique", "")
         st.session_state[f"initiative_{i}"] = row.get("initiatives", "")
 
-    pour_finir = data.get("pour_finir", {})
     phrases = [
         "Nous souhaitons que l’USJ soit reconnue pour …",
         "Nous souhaitons que nos étudiants disent que l’USJ …",
         "L’USJ un excellent lieu de travail si …",
     ]
 
+    pour_finir = data.get("pour_finir", {})
+
     for i, phrase in enumerate(phrases, start=1):
         st.session_state[f"pour_finir_{i}"] = pour_finir.get(phrase, "")
-        
+
+
 def flatten_response(row):
     base = {
         "id": row["id"],
@@ -213,6 +254,8 @@ def flatten_response(row):
         "responsable": row["respondent_name"],
         "institution": row["respondent_unit"],
         "email": row["respondent_email"],
+        "statut": row["statut"] if "statut" in row else "",
+        "draft_code": row["draft_code"] if "draft_code" in row else "",
     }
 
     data = json.loads(row["data_json"])
