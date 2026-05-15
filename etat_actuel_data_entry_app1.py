@@ -752,33 +752,35 @@ def render_pour_finir():
 
     html_block(f"""
 <div style="background-color:#ffffff; padding:10px 0 18px 0; margin-bottom:20px;">
-
     <p style="font-size:18px; line-height:1.55; color:{USJ_RED}; font-weight:700; font-style:italic; margin-bottom:14px;">
     POUR FINIR. Nous vous remercions de compléter les phrases suivantes.
     </p>
-
-    <ul style="font-size:18px; line-height:1.85; color:{USJ_BLUE}; font-weight:700; margin-top:0; margin-bottom:20px;">
-        <li>Nous souhaitons que l’USJ soit reconnue pour …</li>
-        <li>Nous souhaitons que nos étudiants disent que l’USJ …</li>
-        <li>L’USJ un excellent lieu de travail si …</li>
-    </ul>
-
 </div>
 """)
 
     phrases = [
-        "Nous souhaitons que l’USJ soit reconnue pour …",
-        "Nous souhaitons que nos étudiants disent que l’USJ …",
-        "L’USJ un excellent lieu de travail si …",
+        "Nous souhaitons que l’USJ soit reconnue pour",
+        "Nous souhaitons que nos étudiants disent que l’USJ",
+        "L’USJ un excellent lieu de travail si",
     ]
 
     for i, phrase in enumerate(phrases, start=1):
-        pour_finir[phrase] = st.text_area(
-            label=phrase,
-            key=f"pour_finir_{i}",
-            height=180,
-            placeholder="Merci de saisir votre réponse ici"
-        )
+        col1, col2 = st.columns([1.2, 3])
+
+        with col1:
+            html_block(f"""
+<div style="font-size:18px; line-height:1.55; color:{USJ_BLUE}; font-weight:700; margin-top:8px;">
+    • {phrase} …
+</div>
+""")
+
+        with col2:
+            pour_finir[phrase] = st.text_input(
+                label=phrase,
+                key=f"pour_finir_{i}",
+                label_visibility="collapsed",
+                placeholder="Compléter ici"
+            )
 
     return pour_finir
 
