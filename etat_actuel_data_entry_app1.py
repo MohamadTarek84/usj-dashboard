@@ -315,46 +315,7 @@ def render_stakeholder_intro():
     </p>
 
 <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:4px;">
-Il est proposé aux institutions de consulter notamment les parties prenantes suivantes : le conseil de l’institution, le conseil d’orientation stratégique, les employeurs, les étudiants, les enseignants, le PSG, les anciens, ainsi que toute autre partie jugée pertinente et engagée dans l’institution (Exemple de parties prenantes en <span class="annexe-tooltip">Annexe A
-    <span class="annexe-tooltip-box">
-        <strong>Annexe A : Exemple – Parties prenantes</strong><br><br>
-        <table>
-            <tr>
-                <th>Internes</th>
-                <th>Externes</th>
-            </tr>
-            <tr>
-                <td>
-                    <strong>Membres :</strong><br>
-                    Élèves - candidats<br>
-                    Étudiants<br>
-                    Parents<br>
-                    Enseignants cadrés et non cadrés<br>
-                    Personnel administratif<br>
-                    Communauté jésuite<br>
-                    Alumni<br><br>
-                    <strong>Administration :</strong><br>
-                    Chefs de département, coordinateurs<br>
-                    Directeurs, doyens<br>
-                    Administration centrale de l'Université<br>
-                    Conseils et commissions
-                </td>
-                <td>
-                    <strong>Gouvernement et entités :</strong><br>
-                    Ministères et autres<br>
-                    Sources de financement externes<br>
-                    Entrepreneurs et consultants<br>
-                    Vendeurs et fournisseurs<br>
-                    Associations professionnelles et ordres<br>
-                    Collaborateurs, consortiums et alliances<br>
-                    Autres universités<br>
-                    Accréditeurs<br>
-                    Presse et médias
-                </td>
-            </tr>
-        </table>
-    </span>
-</span>).
+Il est proposé aux institutions de consulter notamment les parties prenantes suivantes : le conseil de l’institution, le conseil d’orientation stratégique, les employeurs, les étudiants, les enseignants, le PSG, les anciens, ainsi que toute autre partie jugée pertinente et engagée dans l’institution (Exemple de parties prenantes en Annexe A).
 </p>
 
 
