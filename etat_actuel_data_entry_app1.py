@@ -252,7 +252,7 @@ def render_fixed_introduction():
     </p>
 
     <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
-    Ce rapport vise ainsi à produire deux résultats principaux. Le premier consiste en une analyse SWOT (Strengths, Weaknesses, Opportunities, Threats) de l’Université, fondée sur la réalité vécue au sein de votre institution. Sur la base de cette analyse, vous serez amenés à proposer des priorités stratégiques ainsi que des initiatives (ou projets), toujours à l’échelle de l’Université, constituant ainsi le second résultat attendu.
+    Ce rapport vise ainsi à produire <strong>deux résultats principaux</strong>. Le premier consiste en une <strong>analyse SWOT</strong> (Strengths, Weaknesses, Opportunities, Threats) <strong>de l’Université</strong>, fondée sur la réalité vécue au sein de votre institution. Sur la base de cette analyse, vous serez amenés à proposer <strong>des priorités stratégiques ainsi que des initiatives (ou projets), toujours à l’échelle de l’Université</strong>, constituant ainsi le second résultat attendu.
     </p>
 
     <p style="font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:5px;">
