@@ -480,7 +480,7 @@ def render_stakeholder_table():
 
         with col0:
             html_block(f"""
-<div style="background:#FFF7E6; border-left:5px solid {USJ_RED}; padding:8px 10px; height:38px; display:flex; align-items:center; font-weight:700; color:{USJ_RED}; border-radius:6px;">
+<div style="background:#FFF7E6; border-left:none; padding:8px 10px; height:38px; display:flex; align-items:center; font-weight:700; color:{USJ_RED}; border-radius:6px;">
     Autres
 </div>
 """)
