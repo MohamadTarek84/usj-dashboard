@@ -314,9 +314,48 @@ def render_stakeholder_intro():
     Le rapport d’analyse des données existantes est le fruit d’une consultation menée auprès de l’ensemble des parties prenantes de l’institution. L’identification et la prise en compte de leurs attentes constituent un levier essentiel pour la réussite du processus de planification stratégique. En raison de la diversité de leurs rôles, de leurs intérêts et de leur degré d’influence, les parties prenantes apportent des perspectives complémentaires, qui enrichissent l’analyse stratégique et favorisent l’adhésion aux orientations retenues. L’analyse de leurs attentes vise à mieux comprendre leurs besoins, leurs priorités et leur niveau d’influence, afin d’éclairer les choix stratégiques de l’USJ. Cette démarche participative est essentielle pour garantir une vision partagée, réaliste et représentative de la diversité de la communauté universitaire.
     </p>
 
-    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:4px;">
-    Il est proposé aux institutions de consulter notamment les parties prenantes suivantes : le conseil de l’institution, le conseil d’orientation stratégique, les employeurs, les étudiants, les enseignants, le PSG, les anciens, ainsi que toute autre partie jugée pertinente et engagée dans l’institution (Exemple de parties prenantes en Annexe A).
-    </p>
+<p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:4px;">
+Il est proposé aux institutions de consulter notamment les parties prenantes suivantes : le conseil de l’institution, le conseil d’orientation stratégique, les employeurs, les étudiants, les enseignants, le PSG, les anciens, ainsi que toute autre partie jugée pertinente et engagée dans l’institution (Exemple de parties prenantes en <span class="annexe-tooltip">Annexe A
+    <span class="annexe-tooltip-box">
+        <strong>Annexe A : Exemple – Parties prenantes</strong><br><br>
+        <table>
+            <tr>
+                <th>Internes</th>
+                <th>Externes</th>
+            </tr>
+            <tr>
+                <td>
+                    <strong>Membres :</strong><br>
+                    Élèves - candidats<br>
+                    Étudiants<br>
+                    Parents<br>
+                    Enseignants cadrés et non cadrés<br>
+                    Personnel administratif<br>
+                    Communauté jésuite<br>
+                    Alumni<br><br>
+                    <strong>Administration :</strong><br>
+                    Chefs de département, coordinateurs<br>
+                    Directeurs, doyens<br>
+                    Administration centrale de l'Université<br>
+                    Conseils et commissions
+                </td>
+                <td>
+                    <strong>Gouvernement et entités :</strong><br>
+                    Ministères et autres<br>
+                    Sources de financement externes<br>
+                    Entrepreneurs et consultants<br>
+                    Vendeurs et fournisseurs<br>
+                    Associations professionnelles et ordres<br>
+                    Collaborateurs, consortiums et alliances<br>
+                    Autres universités<br>
+                    Accréditeurs<br>
+                    Presse et médias
+                </td>
+            </tr>
+        </table>
+    </span>
+</span>).
+</p>
 
 
     <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
