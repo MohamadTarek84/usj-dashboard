@@ -1158,7 +1158,7 @@ def main():
 
             st.markdown(
                 """
-                <div id="section-iv" style="position:relative; top:-120px; height:0px;"></div>
+                <div id="section-iv" style="position:relative; top:-150px; height:0px;"></div>
                 """,
                 unsafe_allow_html=True
             )
