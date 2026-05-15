@@ -223,8 +223,8 @@ hr {{
     border: none !important;
     height: 3px !important;
     background-color: #D0D6E0 !important;
-    margin-top: 26px !important;
-    margin-bottom: 26px !important;
+    margin-top: 8px !important;
+    margin-bottom: 12px !important;
 }}
 
 </style>
