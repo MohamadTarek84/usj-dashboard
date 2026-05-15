@@ -15,6 +15,7 @@ APP_TITLE = "PLAN STRATÉGIQUE USJ 2032"
 DB_PATH = Path("etat_actuel_responses.db")
 LOGO_PATH = Path("LogoUAQ.png")
 INTRO_IMAGE_PATH = Path("Intro_schema.png")
+ANNEXE_A_PATH = Path("Annexe_A.png")
 
 USJ_BLUE = "#001F5B"
 USJ_BLUE_2 = "#1F3C88"
@@ -315,8 +316,7 @@ def render_stakeholder_intro():
     </p>
 
 <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:4px;">
-Il est proposé aux institutions de consulter notamment les parties prenantes suivantes : le conseil de l’institution, le conseil d’orientation stratégique, les employeurs, les étudiants, les enseignants, le PSG, les anciens, ainsi que toute autre partie jugée pertinente et engagée dans l’institution (Exemple de parties prenantes en Annexe A).
-</p>
+Il est proposé aux institutions de consulter notamment les parties prenantes suivantes : le conseil de l’institution, le conseil d’orientation stratégique, les employeurs, les étudiants, les enseignants, le PSG, les anciens, ainsi que toute autre partie jugée pertinente et engagée dans l’institution (Exemple de parties prenantes en <span class="annexe-hover">Annexe A</span>).</p>
 
 
     <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
