@@ -836,7 +836,7 @@ with col3:
                 metadata = {
                     "institution": institution,
                     "responsable": responsable,
-                    "email": email,
+                    "email": "",
                     "response_date": str(response_date),
                 }
 
