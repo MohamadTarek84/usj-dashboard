@@ -1071,7 +1071,7 @@ def render_pour_finir():
     ]
 
     for i, phrase in enumerate(phrases, start=1):
-        col1, col2, col3 = st.columns([1.55, 1.6, 1.3])
+        col1, col2 = st.columns([1.05, 2.6])
 
         with col1:
             html_block(f"""
@@ -1085,11 +1085,11 @@ def render_pour_finir():
                 label=phrase,
                 key=f"pour_finir_{i}",
                 label_visibility="collapsed",
-                placeholder="Compléter ici"
+                placeholder=""
             )
 
     return pour_finir
-
+    
 def main():
     st.set_page_config(page_title=APP_TITLE, page_icon="📋", layout="wide")
 
