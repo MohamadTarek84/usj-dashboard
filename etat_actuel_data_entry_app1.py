@@ -897,7 +897,7 @@ def render_swot_table(section_key, left_title, right_title):
             left_value = st.text_area(
                 label=f"{left_title} {i}",
                 key=f"{section_key}_{left_title}_{i}",
-                height=95,
+                height=120,
                 placeholder="Merci de saisir votre réponse ici",
                 label_visibility="collapsed"
             )
