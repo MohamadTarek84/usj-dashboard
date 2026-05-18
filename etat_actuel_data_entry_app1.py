@@ -348,7 +348,7 @@ div[data-testid="stDateInput"] input::placeholder {{
 /* Keep Institution, Responsable, and Date disabled fields in old style */
 div[data-testid="stTextInput"] input:disabled,
 div[data-testid="stDateInput"] input:disabled {{
-    background-color: #FFFFFF !important;
+    background-color: #EAF2F8 !important;
     border: 1px solid #D0D6E0 !important;
     border-radius: 6px !important;
     color: #000000 !important;
