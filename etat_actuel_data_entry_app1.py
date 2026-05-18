@@ -570,11 +570,11 @@ def render_fixed_introduction():
 def render_stakeholder_intro():
     annexe_a_src = image_to_base64(ANNEXE_A_PATH)
 
-    annexe_hover_html = "Annexe A"
+    annexe_hover_html = "Annexe&nbsp;A"
     if annexe_a_src:
         annexe_hover_html = f"""
         <span class="annexe-a-hover">
-            Annexe A
+            Annexe&nbsp;A
             <span class="annexe-a-popup">
                 <img src="{annexe_a_src}" style="width:720px; height:auto;">
             </span>
@@ -584,24 +584,23 @@ def render_stakeholder_intro():
     html_block(f"""
 <div style="background-color:#ffffff; padding:20px 34px 12px 34px; border-radius:12px; border-left:none; border-top:none; border-bottom:none; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:12px;">
 
-    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
+    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:16px;">
     Le rapport d’analyse des données existantes est le fruit d’une consultation menée auprès de l’ensemble des parties prenantes de l’institution. L’identification et la prise en compte de leurs attentes constituent un levier essentiel pour la réussite du processus de planification stratégique. En raison de la diversité de leurs rôles, de leurs intérêts et de leur degré d’influence, les parties prenantes apportent des perspectives complémentaires, qui enrichissent l’analyse stratégique et favorisent l’adhésion aux orientations retenues. L’analyse de leurs attentes vise à mieux comprendre leurs besoins, leurs priorités et leur niveau d’influence, afin d’éclairer les choix stratégiques de l’USJ. Cette démarche participative est essentielle pour garantir une vision partagée, réaliste et représentative de la diversité de la communauté universitaire.
     </p>
 
-    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:4px;">
+    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:16px;">
     Il est proposé aux institutions de consulter notamment les parties prenantes suivantes : le conseil de l’institution, le conseil d’orientation stratégique, les employeurs, les étudiants, les enseignants, le PSG, les anciens, ainsi que toute autre partie jugée pertinente et engagée dans l’institution (Exemple de parties prenantes en {annexe_hover_html}).
     </p>
 
-    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:4px;">
-    L’institution est libre d’organiser, selon les modalités qu’elle juge les plus appropriées, une ou plusieurs réunions avec les parties prenantes, ou, dans certains cas, de recourir à des questionnaires (voir la note de bas de page de l’introduction).
+    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:16px;">
+    L’institution est libre d’organiser, selon les modalités qu’elle juge les plus appropriées, une ou plusieurs réunions avec les parties prenantes, ou, dans certains cas, de recourir à des questionnaires.
     </p>
 
-    <p style="font-size:17px; line-height:1.55; color:#7F7F7F; font-weight:700; font-style:italic; margin-bottom:0px;">
+    <p style="font-size:17px; line-height:1.55; color:#7F7F7F; font-weight:700; font-style:italic; margin-bottom:16px;">
     Le tableau ci-dessous doit être dûment complété.
     </p>
 </div>
 """)
-
 
 def render_stakeholder_table():
     stakeholder_categories = [
