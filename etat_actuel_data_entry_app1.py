@@ -709,7 +709,7 @@ def render_stakeholder_table():
 
 def render_internal_intro():
     html_block(f"""
-<div style="background-color:#ffffff; padding:24px 34px; border-radius:12px; border-left:none; border-top:none; border-bottom:none; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:25px;">
+<div style="background-color:#ffffff; padding:24px 34px 10px 34px; border-radius:12px; border-left:none; border-top:none; border-bottom:none; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:6px;">
     <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
     L’analyse interne vise à apprécier dans quelle mesure l’USJ dispose des ressources nécessaires pour soutenir sa mission et mettre en œuvre ses orientations stratégiques. Elle porte également sur l’évaluation des modes d’organisation et des pratiques de gestion qui influencent directement la performance et l’efficacité de l’Université. Cette analyse permettra d’identifier dans une étape ultérieure les forces et les faiblesses de l’Université. Elle constitue un élément central du diagnostic institutionnel et contribue à éclairer les choix stratégiques, en assurant la cohérence entre les ambitions, les moyens disponibles et les capacités opérationnelles à l’échelle de l’USJ.
     </p>
@@ -718,10 +718,9 @@ def render_internal_intro():
     Dans cette première étape, vous êtes appelés donc à analyser et évaluer, d’après votre expérience, l’état actuel des volets suivants (6 au minimum) au niveau de l’Université.
     </p>
 
-    <p style="text-align:justify; font-size:17px; line-height:1.55; color:#7F7F7F; font-weight:700; font-style:italic; margin-bottom:0px;">
+    <p style="text-align:justify; font-size:17px; line-height:1.55; color:#7F7F7F; font-weight:700; font-style:italic; margin-bottom:2px;">
     Nous vous remercions de bien vouloir compléter les tableaux ci-dessous en vous appuyant sur les données disponibles et sur l’avis de votre institution et de ses parties prenantes, en traitant <span style="text-decoration:underline;">au moins six</span> des thèmes proposés, dans une perspective globale à l’échelle de l’Université.
     </p>
-    
 </div>
 """)
 
@@ -748,7 +747,7 @@ def render_internal_analysis():
 
     for theme in internal_themes:
         html_block(f"""
-<div style="padding:2px 0px; margin-top:10px; margin-bottom:4px;">
+<div style="padding:2px 0px; margin-top:2px; margin-bottom:4px;">
     <p style="font-size:17px; line-height:1.25; color:{USJ_RED}; font-weight:700; margin:0;">
         • {theme}
     </p>
