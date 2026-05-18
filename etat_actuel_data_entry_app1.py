@@ -1376,13 +1376,13 @@ def main():
 
             st.markdown("<br>", unsafe_allow_html=True)
 
-            col_left, col_save, col_submit, col_right = st.columns([1.4, 1.2, 0.8, 1.4])
+            col_left, col_save, col_submit, col_right = st.columns([1.0, 1.3, 1.8, 1.0])
 
             with col_save:
                 save_draft = st.button("Enregistrer et continuer plus tard", key="save_draft_button")
 
             with col_submit:
-                submit_final = st.button("Envoyer la version finale uniquement", key="submit_final_button")
+                submit_final = st.button("Envoyer la version finale\u00A0uniquement", key="submit_final_button")
 
         if save_draft or submit_final:
 
