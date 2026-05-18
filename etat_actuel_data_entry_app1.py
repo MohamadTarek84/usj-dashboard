@@ -926,7 +926,7 @@ def render_swot_table(section_key, left_title, right_title):
                 label=f"{left_title} {i}",
                 key=f"{section_key}_{left_title}_{i}",
                 height=95,
-                max_words=300
+                max_words=30
             )
 
         with col2:
@@ -934,7 +934,7 @@ def render_swot_table(section_key, left_title, right_title):
                 label=f"{right_title} {i}",
                 key=f"{section_key}_{right_title}_{i}",
                 height=95,
-                max_words=300
+                max_words=30
             )
 
         rows.append({
@@ -1401,7 +1401,7 @@ def main():
                 find_word_limit_errors(
                     swot_analysis,
                     "Section V - Analyse SWOT",
-                    max_words=300
+                    max_words=30
                 )
             )
 
