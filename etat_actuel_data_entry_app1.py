@@ -634,10 +634,21 @@ def render_stakeholder_table():
                 "Parties prenantes consultées",
                 options=stakeholder_options,
                 index=None,
-                placeholder="",
+                placeholder="Choisir une catégorie",
                 key=f"stakeholder_category_{i}",
                 label_visibility="collapsed"
             )
+
+            if categorie == "Autres":
+                categorie_autre = st.text_input(
+                    "Préciser la catégorie",
+                    key=f"stakeholder_category_autre_{i}",
+                    label_visibility="collapsed",
+                    placeholder="Préciser"
+                )
+                categorie_finale = categorie_autre.strip()
+            else:
+                categorie_finale = categorie or ""
 
         with col1:
             nom = st.text_input(
@@ -667,13 +678,13 @@ def render_stakeholder_table():
             )
 
         if any([
-            (categorie or "").strip(),
+            categorie_finale.strip(),
             nom.strip(),
             poste.strip(),
             organisme.strip()
         ]):
             stakeholder_rows.append({
-                "categorie": categorie or "",
+                "categorie": categorie_finale,
                 "nom": nom,
                 "poste": poste,
                 "organisme_affiliation": organisme,
@@ -686,7 +697,7 @@ def render_stakeholder_table():
         st.rerun()
 
     return stakeholder_rows
-
+    
 def render_internal_intro():
     html_block(f"""
 <div style="background-color:#ffffff; padding:24px 34px 10px 34px; border-radius:12px; border-left:none; border-top:none; border-bottom:none; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:6px;">
