@@ -1104,7 +1104,7 @@ def render_pour_finir():
     html_block(f"""
 <div style="background-color:#ffffff; padding:4px 0 2px 0; margin-bottom:2px;">
     <p style="font-size:18px; line-height:1.25; color:{USJ_RED}; font-weight:700; font-style:italic; margin-bottom:2px;">
-    POUR FINIR. Nous vous remercions de compléter les phrases suivantes.
+    POUR FINIR. Nous vous remercions de compléter les phrases suivantes :
     </p>
 </div>
 """)
