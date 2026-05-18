@@ -715,24 +715,34 @@ def count_words(text):
 
 
 def word_limited_text_area(label, key, height=300, max_words=500):
+
+    current_value = st.session_state.get(key, "")
+
     value = st.text_area(
         label=label,
         key=key,
         height=height,
+        value=current_value,
         placeholder=f"Merci de saisir votre réponse ici (au maximum {max_words} mots)",
         label_visibility="collapsed"
     )
 
-    word_count = count_words(value)
+    words = value.split()
 
-    if word_count > max_words:
-        st.error(
-            f"Vous avez saisi {word_count} mots. "
-            f"La limite autorisée est de {max_words} mots. "
-            "Merci de réduire votre réponse avant l’enregistrement."
+    if len(words) > max_words:
+
+        trimmed_text = " ".join(words[:max_words])
+
+        st.session_state[key] = trimmed_text
+
+        st.warning(
+            f"Le nombre maximal de {max_words} mots a été atteint. "
+            "Le texte supplémentaire a été supprimé automatiquement."
         )
-    elif word_count > 0:
-        st.caption(f"{word_count}/{max_words} mots")
+
+        value = trimmed_text
+
+    st.caption(f"{len(value.split())}/{max_words} mots")
 
     return value
 
