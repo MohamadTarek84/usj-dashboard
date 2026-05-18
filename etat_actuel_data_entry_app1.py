@@ -456,7 +456,7 @@ div[data-testid="stFormSubmitButton"] button {{
     background-color: #0070C0 !important;
     color: white !important;
     border-radius: 8px !important;
-    border: 1px solid #001F5B !important;
+    border: 1px solid #0070C0 !important;
     font-weight: 800 !important;
     font-size: 18px !important;
     padding: 10px 22px !important;
