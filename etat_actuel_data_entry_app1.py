@@ -1096,45 +1096,27 @@ def render_pour_finir():
     ]
 
     for i, phrase in enumerate(phrases, start=1):
-        col_label, col_box1, col_box2, col_box3 = st.columns([1.3, 1.4, 1.4, 1.4], gap="small")
-
-        with col_label:
-            html_block(f"""
-<div style="font-size:17px; line-height:1.2; color:{USJ_BLUE}; font-weight:700; margin-top:10px; white-space:nowrap;">
+        html_block(f"""
+<div style="font-size:17px; line-height:1.2; color:{USJ_BLUE}; font-weight:700; margin-top:12px; margin-bottom:6px;">
     &bull; {phrase}
 </div>
 """)
 
-        values = []
+        col1, col2, col3 = st.columns(3, gap="small")
 
-        with col_box1:
-            values.append(st.text_input(
-                label=f"{phrase} 1",
-                key=f"pour_finir_{i}_1",
-                label_visibility="collapsed",
-                placeholder=""
-            ))
+        with col1:
+            r1 = st.text_input(f"{phrase} 1", key=f"pour_finir_{i}_1", label_visibility="collapsed")
 
-        with col_box2:
-            values.append(st.text_input(
-                label=f"{phrase} 2",
-                key=f"pour_finir_{i}_2",
-                label_visibility="collapsed",
-                placeholder=""
-            ))
+        with col2:
+            r2 = st.text_input(f"{phrase} 2", key=f"pour_finir_{i}_2", label_visibility="collapsed")
 
-        with col_box3:
-            values.append(st.text_input(
-                label=f"{phrase} 3",
-                key=f"pour_finir_{i}_3",
-                label_visibility="collapsed",
-                placeholder=""
-            ))
+        with col3:
+            r3 = st.text_input(f"{phrase} 3", key=f"pour_finir_{i}_3", label_visibility="collapsed")
 
         pour_finir[phrase] = {
-            "reponse_1": values[0],
-            "reponse_2": values[1],
-            "reponse_3": values[2],
+            "reponse_1": r1,
+            "reponse_2": r2,
+            "reponse_3": r3,
         }
 
     return pour_finir
