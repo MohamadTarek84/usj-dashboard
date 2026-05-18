@@ -224,7 +224,8 @@ def preload_draft_into_session(data):
         "PSG",
         "Étudiants",
         "Anciens",
-        "Employeurs / Conseil d’orientation stratégique",
+        "Employeurs"
+        "Conseil d’orientation stratégique",
     ]
 
     autres_rows = []
@@ -607,7 +608,8 @@ def render_stakeholder_table():
         "PSG",
         "Étudiants",
         "Anciens",
-        "Employeurs / Conseil d’orientation stratégique",
+        "Employeurs"
+        "Conseil d’orientation stratégique",
     ]
 
     stakeholder_rows = []
