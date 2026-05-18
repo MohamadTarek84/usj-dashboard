@@ -1097,21 +1097,14 @@ def render_pour_finir():
 
     for i, phrase in enumerate(phrases, start=1):
         html_block(f"""
-<div style="font-size:17px; line-height:1.2; color:{USJ_BLUE}; font-weight:700; margin-top:12px; margin-bottom:6px;">
+<div style="font-size:17px; line-height:1.2; color:{USJ_BLUE}; font-weight:700; margin-top:14px; margin-bottom:6px;">
     &bull; {phrase}
 </div>
 """)
 
-        col1, col2, col3 = st.columns(3, gap="small")
-
-        with col1:
-            r1 = st.text_input(f"{phrase} 1", key=f"pour_finir_{i}_1", label_visibility="collapsed")
-
-        with col2:
-            r2 = st.text_input(f"{phrase} 2", key=f"pour_finir_{i}_2", label_visibility="collapsed")
-
-        with col3:
-            r3 = st.text_input(f"{phrase} 3", key=f"pour_finir_{i}_3", label_visibility="collapsed")
+        r1 = st.text_input(f"{phrase} 1", key=f"pour_finir_{i}_1", label_visibility="collapsed")
+        r2 = st.text_input(f"{phrase} 2", key=f"pour_finir_{i}_2", label_visibility="collapsed")
+        r3 = st.text_input(f"{phrase} 3", key=f"pour_finir_{i}_3", label_visibility="collapsed")
 
         pour_finir[phrase] = {
             "reponse_1": r1,
