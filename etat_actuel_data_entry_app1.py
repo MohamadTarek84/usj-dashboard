@@ -608,7 +608,7 @@ def render_stakeholder_table():
         "PSG",
         "Étudiants",
         "Anciens",
-        "Employeurs"
+        "Employeurs",
         "Conseil d’orientation stratégique",
     ]
 
