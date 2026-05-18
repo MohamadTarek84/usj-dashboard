@@ -1093,21 +1093,12 @@ def main():
     render_first_page_header()
 
     if not st.session_state["access_granted"]:
-        html_block(f"""
-<div style="background-color:#ffffff; padding:24px 34px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:25px;">
-    <h2 style="font-size:28px; color:{USJ_BLUE}; margin-top:0; margin-bottom:10px;">Accès au formulaire</h2>
-    <p style="font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:0;">
-        Veuillez saisir votre code personnel de reprise. Si vous accédez au formulaire pour la première fois, choisissez un code personnel et conservez-le afin de pouvoir reprendre vos réponses ultérieurement.
-    </p>
-</div>
-""")
-
         col_code, col_button = st.columns([2, 1])
 
         with col_code:
             login_code = st.text_input(
                 "Code personnel de reprise",
-                placeholder="Exemple : USJ-FS-2026 ou votre propre code",
+                placeholder="Exemple : USJ-FS-2026",
                 key="login_draft_code"
             )
 
