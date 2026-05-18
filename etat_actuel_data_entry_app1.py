@@ -6,6 +6,7 @@ import json
 import base64
 from datetime import datetime
 from pathlib import Path
+from io import BytesIO
 
 import pandas as pd
 import streamlit as st
@@ -1089,8 +1090,89 @@ def main():
     st.session_state.setdefault("n_autres_rows", 1)
     st.session_state.setdefault("access_granted", False)
     st.session_state.setdefault("current_draft_code", "")
+    st.session_state.setdefault("admin_mode", False)
 
     render_first_page_header()
+
+    # =========================
+    # HIDDEN ADMIN DOWNLOAD MODE
+    # Only USJ-ADMIN-2032 can access this section.
+    # Other respondent codes continue to access the normal form.
+    # =========================
+    ADMIN_CODE = "USJ-ADMIN-2032"
+
+    if st.session_state.get("current_draft_code", "").strip().upper() == ADMIN_CODE:
+        st.session_state["access_granted"] = True
+        st.session_state["admin_mode"] = True
+
+    if st.session_state.get("admin_mode", False):
+        st.markdown("## Admin download")
+
+        st.write("DB path:", DB_PATH.resolve())
+        st.write("DB exists:", DB_PATH.exists())
+
+        if not DB_PATH.exists():
+            st.error("Database not found in this app environment.")
+            st.stop()
+
+        df = load_responses()
+
+        if df.empty:
+            st.warning("Database exists, but no responses are saved.")
+            st.stop()
+
+        st.success(f"{len(df)} response(s) found.")
+
+        st.markdown("### Raw responses table")
+        st.dataframe(df, use_container_width=True)
+
+        try:
+            flat_df = pd.DataFrame([flatten_response(row) for _, row in df.iterrows()])
+        except Exception as e:
+            st.warning(f"Could not flatten JSON responses. Raw data is still available. Details: {e}")
+            flat_df = df.copy()
+
+        st.markdown("### Flattened responses table")
+        st.dataframe(flat_df, use_container_width=True)
+
+        raw_csv = df.to_csv(index=False).encode("utf-8-sig")
+        st.download_button(
+            label="Download raw CSV",
+            data=raw_csv,
+            file_name="etat_actuel_responses_raw.csv",
+            mime="text/csv",
+        )
+
+        flat_csv = flat_df.to_csv(index=False).encode("utf-8-sig")
+        st.download_button(
+            label="Download flattened CSV",
+            data=flat_csv,
+            file_name="etat_actuel_responses_flattened.csv",
+            mime="text/csv",
+        )
+
+        excel_buffer = BytesIO()
+        with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
+            df.to_excel(writer, index=False, sheet_name="Raw responses")
+            flat_df.to_excel(writer, index=False, sheet_name="Flattened responses")
+
+        st.download_button(
+            label="Download Excel",
+            data=excel_buffer.getvalue(),
+            file_name="etat_actuel_responses.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+
+        with open(DB_PATH, "rb") as f:
+            st.download_button(
+                label="Download SQLite DB",
+                data=f,
+                file_name="etat_actuel_responses.db",
+                mime="application/octet-stream",
+            )
+
+        st.stop()
+
 
     if not st.session_state["access_granted"]:
         col_code, col_button = st.columns([2, 1])
@@ -1112,6 +1194,13 @@ def main():
             if not cleaned_code:
                 st.warning("Veuillez saisir un code personnel de reprise avant d’accéder au formulaire.")
                 return
+
+
+            if cleaned_code == "USJ-ADMIN-2032":
+                st.session_state["access_granted"] = True
+                st.session_state["admin_mode"] = True
+                st.session_state["current_draft_code"] = cleaned_code
+                st.rerun()
 
             if cleaned_code not in AUTHORIZED_TEST_CODES:
                 st.error("Code non reconnu. Veuillez utiliser le code personnel qui vous a été communiqué.")
