@@ -209,16 +209,12 @@ def preload_draft_into_session(data):
     if not data:
         return
 
-    # load_existing_draft_by_code() already returns the saved JSON as a Python dict.
-    # Therefore, data is already the full saved response, not a wrapper containing data_json.
     st.session_state["current_draft_code"] = data.get("draft_code", "")
 
     metadata = data.get("metadata", {})
     st.session_state["institution"] = metadata.get("institution", "")
     st.session_state["responsable"] = metadata.get("responsable", "")
 
-    # Reload stakeholder table answers from the same structure used in the save block:
-    # data["stakeholders"]["rows"]
     stakeholder_rows = data.get("stakeholders", {}).get("rows", [])
 
     stakeholder_options = [
@@ -272,7 +268,17 @@ def preload_draft_into_session(data):
     pour_finir = data.get("pour_finir", {})
 
     for i, phrase in enumerate(phrases, start=1):
-        st.session_state[f"pour_finir_{i}"] = pour_finir.get(phrase, "")
+        saved_phrase = pour_finir.get(phrase, {})
+
+        if isinstance(saved_phrase, dict):
+            st.session_state[f"pour_finir_{i}_1"] = saved_phrase.get("reponse_1", "")
+            st.session_state[f"pour_finir_{i}_2"] = saved_phrase.get("reponse_2", "")
+            st.session_state[f"pour_finir_{i}_3"] = saved_phrase.get("reponse_3", "")
+        else:
+            st.session_state[f"pour_finir_{i}_1"] = saved_phrase
+            st.session_state[f"pour_finir_{i}_2"] = ""
+            st.session_state[f"pour_finir_{i}_3"] = ""
+
 
 def flatten_response(row):
     base = {
@@ -295,6 +301,8 @@ def flatten_response(row):
         if isinstance(values, dict):
             for key, value in values.items():
                 if isinstance(value, list):
+                    base[f"{section}_{key}"] = json.dumps(value, ensure_ascii=False)
+                elif isinstance(value, dict):
                     base[f"{section}_{key}"] = json.dumps(value, ensure_ascii=False)
                 else:
                     base[f"{section}_{key}"] = value
