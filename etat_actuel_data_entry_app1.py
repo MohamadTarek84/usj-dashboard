@@ -1240,7 +1240,7 @@ def main():
 
                 institution = st.text_input(
                     "Institution",
-                    key="institution",
+                    value=st.session_state.get("institution", ""),
                     disabled=True
                 )
 
