@@ -449,22 +449,22 @@ section[data-testid="stSidebar"] {{
     border-right: 4px solid {USJ_BLUE};
 }}
 
-/* All regular buttons: save / add row / quick save */
-.stButton button, 
-.stDownloadButton button, 
+/* Normal buttons: old USJ blue */
+.stButton button,
+.stDownloadButton button,
 div[data-testid="stFormSubmitButton"] button {{
-    background-color: #0070C0 !important;
+    background-color: #001F5B !important;
     color: white !important;
     border-radius: 8px !important;
-    border: 1px solid #0070C0 !important;
+    border: 1px solid #001F5B !important;
     font-weight: 800 !important;
     font-size: 18px !important;
     padding: 10px 22px !important;
     white-space: nowrap !important;
 }}
 
-.stButton button p, 
-.stDownloadButton button p, 
+.stButton button p,
+.stDownloadButton button p,
 div[data-testid="stFormSubmitButton"] button p {{
     color: white !important;
     white-space: nowrap !important;
@@ -508,7 +508,6 @@ hr {{
 
 </style>
 """)
-
 
 def section_header(title):
     html_block(f"""
