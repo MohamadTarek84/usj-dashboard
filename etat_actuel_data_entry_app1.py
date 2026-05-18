@@ -1292,7 +1292,7 @@ def main():
     st.session_state.setdefault("admin_mode", False)
     st.session_state.setdefault("read_only_submitted", False)
 
-        render_first_page_header()
+    render_first_page_header()
 
     ADMIN_CODE = "USJ-ADMIN-2032"
 
