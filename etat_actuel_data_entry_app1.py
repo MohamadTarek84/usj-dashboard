@@ -1321,7 +1321,7 @@ def main():
             with col_submit:
                 submit_final = st.form_submit_button("Envoyer")
 
-            if save_draft or submit_final:
+                       if save_draft or submit_final:
 
                 statut = "Brouillon" if save_draft else "Soumis"
 
@@ -1348,18 +1348,29 @@ def main():
                 }
 
                 try:
+                    if submit_final:
+                        existing = load_existing_draft_by_code(
+                            st.session_state.get("current_draft_code", "")
+                        )
+
+                        if existing and existing.get("loaded_statut") == "Soumis":
+                            st.error("Vous avez déjà soumis ce formulaire. Une seule soumission est autorisée.")
+                            st.stop()
+
                     draft_code = save_response(metadata, data)
                     st.session_state["current_draft_code"] = draft_code
 
                     if save_draft:
-                        st.success(f"Vos réponses ont été enregistrées. Utilisez ce code pour reprendre plus tard : {draft_code}")
+                        st.success(
+                            f"Vos réponses ont été enregistrées. Utilisez ce code pour reprendre plus tard : {draft_code}"
+                        )
 
                     if submit_final:
                         st.success("Merci.\nVos réponses ont été enregistrées.")
 
                 except ValueError as e:
                     st.error(str(e))
-
+                    
     else:
         st.markdown("## Consulter / exporter les réponses")
 
