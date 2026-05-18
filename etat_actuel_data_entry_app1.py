@@ -646,15 +646,25 @@ def render_stakeholder_table():
             categorie = st.selectbox(
                 "Parties prenantes consultées",
                 options=stakeholder_options,
+                index=None,
+                placeholder="Choisir une catégorie",
                 key=f"stakeholder_category_{i}",
                 label_visibility="collapsed"
             )
 
         with col1:
-            nom = st.text_input("Nom", key=f"stakeholder_nom_{i}", label_visibility="collapsed")
+            nom = st.text_input(
+                "Nom",
+                key=f"stakeholder_nom_{i}",
+                label_visibility="collapsed"
+            )
 
         with col2:
-            poste = st.text_input("Poste", key=f"stakeholder_poste_{i}", label_visibility="collapsed")
+            poste = st.text_input(
+                "Poste",
+                key=f"stakeholder_poste_{i}",
+                label_visibility="collapsed"
+            )
 
         with col3:
             organisme = st.text_input(
@@ -663,9 +673,9 @@ def render_stakeholder_table():
                 label_visibility="collapsed"
             )
 
-        if any([categorie.strip(), nom.strip(), poste.strip(), organisme.strip()]):
+        if any([(categorie or "").strip(), nom.strip(), poste.strip(), organisme.strip()]):
             stakeholder_rows.append({
-                "categorie": categorie,
+                "categorie": categorie or "",
                 "nom": nom,
                 "poste": poste,
                 "organisme_affiliation": organisme,
