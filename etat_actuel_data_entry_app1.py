@@ -852,6 +852,54 @@ def render_swot_intro():
 """)
 
 
+def render_swot_table(section_key, left_title, right_title):
+    rows = []
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        html_block(f"""
+<div style="background:{USJ_BLUE}; color:white; padding:10px 12px; min-height:42px; display:flex; align-items:center; justify-content:center; font-weight:700; border-radius:6px;">
+    {left_title}
+</div>
+""")
+
+    with col2:
+        html_block(f"""
+<div style="background:{USJ_BLUE}; color:white; padding:10px 12px; min-height:42px; display:flex; align-items:center; justify-content:center; font-weight:700; border-radius:6px;">
+    {right_title}
+</div>
+""")
+
+    for i in range(1, 6):
+        col1, col2 = st.columns(2)
+
+        with col1:
+            left_value = st.text_area(
+                label=f"{left_title} {i}",
+                key=f"{section_key}_{left_title}_{i}",
+                height=95,
+                placeholder="Merci de saisir votre réponse ici",
+                label_visibility="collapsed"
+            )
+
+        with col2:
+            right_value = st.text_area(
+                label=f"{right_title} {i}",
+                key=f"{section_key}_{right_title}_{i}",
+                height=95,
+                placeholder="Merci de saisir votre réponse ici",
+                label_visibility="collapsed"
+            )
+
+        rows.append({
+            left_title: left_value,
+            right_title: right_value,
+        })
+
+    return rows
+
+
 def render_swot_analysis():
     swot_data = {}
 
@@ -859,13 +907,13 @@ def render_swot_analysis():
 
     annexe_b_hover_html = "Annexe&nbsp;B"
     if annexe_b_src:
-        annexe_b_hover_html = f'<span class="annexe-a-hover">Annexe&nbsp;B<span class="annexe-a-popup"><img src="{annexe_b_src}" style="width:900px; height:auto;"></span></span>'
+        annexe_b_hover_html = f'<span class="annexe-a-hover">Annexe&nbsp;B<span class="annexe-a-popup"><img src="{annexe_b_src}" style="width:900px; height:auto; text-decoration:none; border-bottom:none;"></span></span>'
 
     annexe_c_src = image_to_base64(ANNEXE_C_PATH)
 
     annexe_c_hover_html = "Annexe&nbsp;C"
     if annexe_c_src:
-        annexe_c_hover_html = f'<span class="annexe-a-hover">Annexe&nbsp;C<span class="annexe-a-popup"><img src="{annexe_c_src}" style="width:900px; height:auto;"></span></span>'
+        annexe_c_hover_html = f'<span class="annexe-a-hover">Annexe&nbsp;C<span class="annexe-a-popup"><img src="{annexe_c_src}" style="width:900px; height:auto; text-decoration:none; border-bottom:none;"></span></span>'
 
     st.markdown(f"""
 <div style="background:#ffffff; padding:8px 24px 8px 24px; border-radius:10px; border-left:none; margin-top:6px; margin-bottom:8px;">
@@ -885,7 +933,7 @@ def render_swot_analysis():
     )
 
     html_block(f"""
-<div style="background:#ffffff; padding:8px 24px 8px 24px; border-radius:10px; border-left:none; margin-top:14px; margin-bottom:8px;">
+<div style="background:#ffffff; padding:8px 24px 8px 24px; border-radius:10px; border-left:none; margin-top:10px; margin-bottom:6px;">
     <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:6px;">
     <strong>2. Facteurs externes :</strong> Identification des <strong>opportunités</strong> de développement et des <strong>menaces</strong> émanant de l'environnement extérieur (Exemples d’Opportunités et de Menaces en {annexe_c_hover_html}).
     </p>
@@ -902,7 +950,6 @@ def render_swot_analysis():
     )
 
     return swot_data
-
 def render_priorities_intro():
     html_block(f"""
 <div style="background-color:#ffffff; padding:24px 34px; border-radius:12px; border-left:none; border-top:none; border-bottom:none; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:25px;">
