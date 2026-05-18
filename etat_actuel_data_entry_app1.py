@@ -1082,22 +1082,46 @@ def render_pour_finir():
     ]
 
     for i, phrase in enumerate(phrases, start=1):
-        col1, col2 = st.columns([1.0, 3.0], gap="small")
+        col_label, col_box1, col_box2, col_box3 = st.columns([1.3, 1.4, 1.4, 1.4], gap="small")
 
-        with col1:
+        with col_label:
             html_block(f"""
-<div style="font-size:17px; line-height:1.2; color:{USJ_BLUE}; font-weight:700; margin-top:4px; white-space:nowrap;">
+<div style="font-size:17px; line-height:1.2; color:{USJ_BLUE}; font-weight:700; margin-top:10px; white-space:nowrap;">
     &bull; {phrase}
 </div>
 """)
 
-        with col2:
-            pour_finir[phrase] = st.text_input(
-                label=phrase,
-                key=f"pour_finir_{i}",
+        values = []
+
+        with col_box1:
+            values.append(st.text_input(
+                label=f"{phrase} 1",
+                key=f"pour_finir_{i}_1",
                 label_visibility="collapsed",
                 placeholder=""
-            )
+            ))
+
+        with col_box2:
+            values.append(st.text_input(
+                label=f"{phrase} 2",
+                key=f"pour_finir_{i}_2",
+                label_visibility="collapsed",
+                placeholder=""
+            ))
+
+        with col_box3:
+            values.append(st.text_input(
+                label=f"{phrase} 3",
+                key=f"pour_finir_{i}_3",
+                label_visibility="collapsed",
+                placeholder=""
+            ))
+
+        pour_finir[phrase] = {
+            "reponse_1": values[0],
+            "reponse_2": values[1],
+            "reponse_3": values[2],
+        }
 
     return pour_finir
 
