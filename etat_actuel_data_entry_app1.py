@@ -609,37 +609,24 @@ def render_stakeholder_table():
 
     col0, col1, col2, col3 = st.columns([1.4, 1.6, 1.6, 1.8])
 
-    with col0:
-        html_block(f"""
-<div style="background:{USJ_BLUE}; color:white; padding:10px 12px; height:40px; display:flex; align-items:center; font-weight:700; border-radius:6px;">
-    Parties prenantes consultées
-</div>
-""")
+    headers = [
+        "Parties prenantes consultées",
+        "Nom",
+        "Poste",
+        "Organisme d’affiliation",
+    ]
 
-    with col1:
-        html_block(f"""
+    for col, header in zip([col0, col1, col2, col3], headers):
+        with col:
+            html_block(f"""
 <div style="background:{USJ_BLUE}; color:white; padding:10px 12px; height:40px; display:flex; align-items:center; font-weight:700; border-radius:6px;">
-    Nom
-</div>
-""")
-
-    with col2:
-        html_block(f"""
-<div style="background:{USJ_BLUE}; color:white; padding:10px 12px; height:40px; display:flex; align-items:center; font-weight:700; border-radius:6px;">
-    Poste
-</div>
-""")
-
-    with col3:
-        html_block(f"""
-<div style="background:{USJ_BLUE}; color:white; padding:10px 12px; height:40px; display:flex; align-items:center; font-weight:700; border-radius:6px;">
-    Organisme d’affiliation
+    {header}
 </div>
 """)
 
     st.session_state.setdefault("n_stakeholder_rows", 8)
 
-    for i in range(1, st.session_state.n_stakeholder_rows + 1):
+    for i in range(1, st.session_state["n_stakeholder_rows"] + 1):
         col0, col1, col2, col3 = st.columns([1.4, 1.6, 1.6, 1.8])
 
         with col0:
@@ -655,25 +642,36 @@ def render_stakeholder_table():
         with col1:
             nom = st.text_input(
                 "Nom",
+                value="",
                 key=f"stakeholder_nom_{i}",
-                label_visibility="collapsed"
+                label_visibility="collapsed",
+                placeholder=""
             )
 
         with col2:
             poste = st.text_input(
                 "Poste",
+                value="",
                 key=f"stakeholder_poste_{i}",
-                label_visibility="collapsed"
+                label_visibility="collapsed",
+                placeholder=""
             )
 
         with col3:
             organisme = st.text_input(
                 "Organisme d’affiliation",
+                value="",
                 key=f"stakeholder_organisme_{i}",
-                label_visibility="collapsed"
+                label_visibility="collapsed",
+                placeholder=""
             )
 
-        if any([(categorie or "").strip(), nom.strip(), poste.strip(), organisme.strip()]):
+        if any([
+            (categorie or "").strip(),
+            nom.strip(),
+            poste.strip(),
+            organisme.strip()
+        ]):
             stakeholder_rows.append({
                 "categorie": categorie or "",
                 "nom": nom,
@@ -684,7 +682,8 @@ def render_stakeholder_table():
     add_row = st.form_submit_button("Ajouter une ligne")
 
     if add_row:
-        st.session_state["n_stakeholder_rows"] = st.session_state.get("n_stakeholder_rows", 8) + 1
+        st.session_state["n_stakeholder_rows"] += 1
+        st.rerun()
 
     return stakeholder_rows
 
