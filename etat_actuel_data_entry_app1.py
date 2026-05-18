@@ -1420,7 +1420,7 @@ with col_delete:
                 key="login_draft_code"
             )
 
-        with col_button:
+                with col_button:
             st.markdown("<br>", unsafe_allow_html=True)
             enter_form = st.button("Accéder au rapport")
 
