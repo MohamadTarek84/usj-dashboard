@@ -211,6 +211,28 @@ def preload_draft_into_session(data):
 
     st.session_state["current_draft_code"] = data.get("draft_code", "")
 
+    saved_data = data.get("data_json", {})
+
+    if isinstance(saved_data, str):
+        try:
+            saved_data = json.loads(saved_data)
+        except Exception:
+            saved_data = {}
+
+    stakeholder_rows = saved_data.get("stakeholder_rows", [])
+
+    if not stakeholder_rows:
+        stakeholder_rows = saved_data.get("parties_prenantes", [])
+
+    if not stakeholder_rows:
+        stakeholder_rows = saved_data.get("parties_prenantes_consultees", [])
+
+    for i, row in enumerate(stakeholder_rows, start=1):
+        st.session_state[f"stakeholder_category_{i}"] = row.get("categorie", "")
+        st.session_state[f"stakeholder_nom_{i}"] = row.get("nom", "")
+        st.session_state[f"stakeholder_poste_{i}"] = row.get("poste", "")
+        st.session_state[f"stakeholder_organisme_{i}"] = row.get("organisme_affiliation", "")
+
     metadata = data.get("metadata", {})
     st.session_state["institution"] = metadata.get("institution", "")
     st.session_state["responsable"] = metadata.get("responsable", "")
