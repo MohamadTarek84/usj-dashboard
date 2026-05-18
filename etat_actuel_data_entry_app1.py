@@ -1047,7 +1047,7 @@ def render_priorities_table():
             priority_value = word_limited_text_area(
                 label=f"Priorité stratégique {i}",
                 key=f"priority_{i}",
-                height=292,
+                height=350,
                 max_words=30
             )
 
