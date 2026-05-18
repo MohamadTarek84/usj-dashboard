@@ -338,9 +338,21 @@ div[data-testid="stDateInput"] input:focus {{
     outline: none !important;
 }}
 
-div[data-testid="stTextInput"] input::placeholder {{
+div[data-testid="stTextInput"] input::placeholder,
+div[data-testid="stDateInput"] input::placeholder {{
     color: #0070C0 !important;
     -webkit-text-fill-color: #0070C0 !important;
+    opacity: 1 !important;
+}}
+
+/* Keep Institution, Responsable, and Date disabled fields in old style */
+div[data-testid="stTextInput"] input:disabled,
+div[data-testid="stDateInput"] input:disabled {{
+    background-color: #FFFFFF !important;
+    border: 1px solid #D0D6E0 !important;
+    border-radius: 6px !important;
+    color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
     opacity: 1 !important;
 }}
 
@@ -419,19 +431,9 @@ p, div, span, label, button, input, textarea, select {{
     font-family: Candara, Calibri, Arial, sans-serif !important;
 }}
 
-.stTextArea textarea:focus, .stTextInput input:focus {{
-    border: 2px solid #000000 !important;
-    box-shadow: none !important;
-}}
-
 .stTextArea textarea {{
     resize: vertical !important;
     overflow-y: auto !important;
-}}
-
-.stTextArea textarea:focus, .stTextInput input:focus {{
-    border: 2px solid #E3DED9 !important;
-    box-shadow: none !important;
 }}
 
 div[data-testid="stForm"] {{
