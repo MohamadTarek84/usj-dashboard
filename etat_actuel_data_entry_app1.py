@@ -1321,7 +1321,7 @@ def main():
             with col_submit:
                 submit_final = st.form_submit_button("Envoyer")
 
-                       if save_draft or submit_final:
+                if save_draft or submit_final:
 
                 statut = "Brouillon" if save_draft else "Soumis"
 
