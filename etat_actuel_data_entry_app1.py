@@ -713,7 +713,7 @@ def render_stakeholder_table():
                 "organisme_affiliation": organisme.strip(),
             })
 
-    col_add1, col_add2, _ = st.columns([1.3, 1.5, 4])
+    col_add1, col_add2, _ = st.columns([1.3, 2.2, 3.3])
 
     with col_add1:
         if st.button("Ajouter une ligne", key="add_stakeholder_standard"):
@@ -721,7 +721,7 @@ def render_stakeholder_table():
             st.rerun()
 
     with col_add2:
-        if st.button("Ajouter Autres", key="add_stakeholder_autres"):
+        if st.button("Ajouter une ligne Autre", key="add_stakeholder_autres"):
             st.session_state["stakeholder_row_types"].append("autres")
             st.rerun()
 
