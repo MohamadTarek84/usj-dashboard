@@ -1362,9 +1362,9 @@ with col_delete:
 st.markdown("### Raw responses table")
 st.dataframe(df, use_container_width=True)
 
-try:
-    flat_df = pd.DataFrame([flatten_response(row) for _, row in df.iterrows()])
-            except Exception as e:
+        try:
+            flat_df = pd.DataFrame([flatten_response(row) for _, row in df.iterrows()])
+        except Exception as e:
             st.warning(f"Could not flatten JSON responses. Raw data is still available. Details: {e}")
             flat_df = df.copy()
 
