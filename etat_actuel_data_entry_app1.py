@@ -645,7 +645,7 @@ def render_stakeholder_table():
         with col0:
             categorie = st.selectbox(
                 "Parties prenantes consultées",
-                options=[""] + stakeholder_options,
+                options=stakeholder_options,
                 key=f"stakeholder_category_{i}",
                 label_visibility="collapsed"
             )
