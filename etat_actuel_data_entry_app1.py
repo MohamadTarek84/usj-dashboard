@@ -570,16 +570,7 @@ def render_fixed_introduction():
 def render_stakeholder_intro():
     annexe_a_src = image_to_base64(ANNEXE_A_PATH)
 
-    annexe_hover_html = "Annexe&nbsp;A"
-    if annexe_a_src:
-        annexe_hover_html = f"""
-        <span class="annexe-a-hover">
-            Annexe&nbsp;A
-            <span class="annexe-a-popup">
-                <img src="{annexe_a_src}" style="width:720px; height:auto;">
-            </span>
-        </span>
-        """
+    annexe_hover_html = f'<span class="annexe-a-hover">Annexe&nbsp;A<span class="annexe-a-popup"><img src="{annexe_a_src}" style="width:720px; height:auto;"></span></span>'
 
     html_block(f"""
 <div style="background-color:#ffffff; padding:20px 34px 12px 34px; border-radius:12px; border-left:none; border-top:none; border-bottom:none; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:12px;">
