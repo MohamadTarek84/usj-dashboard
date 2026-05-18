@@ -1460,7 +1460,7 @@ def main():
 
         st.stop()
 
-                        section_header("I - Introduction")
+            section_header("I - Introduction")
             render_fixed_introduction()
 
             st.divider()
