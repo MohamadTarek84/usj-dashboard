@@ -715,34 +715,24 @@ def count_words(text):
 
 
 def word_limited_text_area(label, key, height=300, max_words=500):
-
-    current_value = st.session_state.get(key, "")
-
     value = st.text_area(
         label=label,
         key=key,
         height=height,
-        value=current_value,
         placeholder=f"Merci de saisir votre réponse ici (au maximum {max_words} mots)",
         label_visibility="collapsed"
     )
 
-    words = value.split()
+    word_count = count_words(value)
 
-    if len(words) > max_words:
-
-        trimmed_text = " ".join(words[:max_words])
-
-        st.session_state[key] = trimmed_text
-
-        st.warning(
-            f"Le nombre maximal de {max_words} mots a été atteint. "
-            "Le texte supplémentaire a été supprimé automatiquement."
+    if word_count > max_words:
+        st.error(
+            f"Vous avez saisi {word_count} mots. "
+            f"La limite autorisée est de {max_words} mots. "
+            "Merci de réduire votre réponse avant l’enregistrement."
         )
-
-        value = trimmed_text
-
-    st.caption(f"{len(value.split())}/{max_words} mots")
+    elif word_count > 0:
+        st.caption(f"{word_count}/{max_words} mots")
 
     return value
 
@@ -853,12 +843,11 @@ def render_external_analysis():
 </div>
 """)
 
-        external_analysis[theme] = st.text_area(
+        external_analysis[theme] = word_limited_text_area(
             label=theme,
             key=f"external_{theme}",
             height=300,
-            placeholder="Merci de saisir votre réponse ici",
-            label_visibility="collapsed"
+            max_words=500
         )
 
     return external_analysis
@@ -896,21 +885,19 @@ def render_swot_table(section_key, left_title, right_title):
         col1, col2 = st.columns(2)
 
         with col1:
-            left_value = st.text_area(
+            left_value = word_limited_text_area(
                 label=f"{left_title} {i}",
                 key=f"{section_key}_{left_title}_{i}",
                 height=95,
-                placeholder="Merci de saisir votre réponse ici",
-                label_visibility="collapsed"
+                max_words=300
             )
 
         with col2:
-            right_value = st.text_area(
+            right_value = word_limited_text_area(
                 label=f"{right_title} {i}",
                 key=f"{section_key}_{right_title}_{i}",
                 height=95,
-                placeholder="Merci de saisir votre réponse ici",
-                label_visibility="collapsed"
+                max_words=300
             )
 
         rows.append({
@@ -1016,37 +1003,33 @@ def render_priorities_table():
         col1, col2 = st.columns([1.2, 1.8])
 
         with col1:
-            priority_value = st.text_area(
+            priority_value = word_limited_text_area(
                 label=f"Priorité stratégique {i}",
                 key=f"priority_{i}",
                 height=240,
-                placeholder="Merci de saisir votre réponse ici",
-                label_visibility="collapsed"
+                max_words=30
             )
 
         with col2:
-            initiative_1 = st.text_area(
+            initiative_1 = word_limited_text_area(
                 label=f"Initiative {i}.1",
                 key=f"initiative_{i}_1",
                 height=70,
-                placeholder="Initiative 1",
-                label_visibility="collapsed"
+                max_words=30
             )
 
-            initiative_2 = st.text_area(
+            initiative_2 = word_limited_text_area(
                 label=f"Initiative {i}.2",
                 key=f"initiative_{i}_2",
                 height=70,
-                placeholder="Initiative 2",
-                label_visibility="collapsed"
+                max_words=30
             )
 
-            initiative_3 = st.text_area(
+            initiative_3 = word_limited_text_area(
                 label=f"Initiative {i}.3",
                 key=f"initiative_{i}_3",
                 height=70,
-                placeholder="Initiative 3",
-                label_visibility="collapsed"
+                max_words=30
             )
 
         priorities_rows.append({
@@ -1094,6 +1077,34 @@ def render_pour_finir():
             )
 
     return pour_finir
+
+def find_word_limit_errors(section_data, section_label, max_words):
+    errors = []
+
+    if isinstance(section_data, dict):
+        items = section_data.items()
+    elif isinstance(section_data, list):
+        items = enumerate(section_data, start=1)
+    else:
+        return errors
+
+    for key, value in items:
+        if isinstance(value, dict):
+            for sub_key, sub_value in value.items():
+                word_count = count_words(sub_value)
+                if word_count > max_words:
+                    errors.append(
+                        f"{section_label} - {key} - {sub_key} : {word_count} mots / maximum {max_words}"
+                    )
+        else:
+            word_count = count_words(value)
+            if word_count > max_words:
+                errors.append(
+                    f"{section_label} - {key} : {word_count} mots / maximum {max_words}"
+                )
+
+    return errors
+
 
 def main():
     st.set_page_config(page_title=APP_TITLE, page_icon="📋", layout="wide")
@@ -1334,6 +1345,51 @@ def main():
                 submit_final = st.form_submit_button("Envoyer la version finale uniquement")
 
         if save_draft or submit_final:
+
+            word_limit_errors = []
+
+            word_limit_errors.extend(
+                find_word_limit_errors(
+                    internal_analysis,
+                    "Section III - Analyse interne",
+                    max_words=500
+                )
+            )
+
+            word_limit_errors.extend(
+                find_word_limit_errors(
+                    external_analysis,
+                    "Section IV - Analyse externe",
+                    max_words=500
+                )
+            )
+
+            word_limit_errors.extend(
+                find_word_limit_errors(
+                    swot_analysis,
+                    "Section V - Analyse SWOT",
+                    max_words=300
+                )
+            )
+
+            word_limit_errors.extend(
+                find_word_limit_errors(
+                    priorities_initiatives,
+                    "Section VI - Priorités stratégiques et initiatives",
+                    max_words=30
+                )
+            )
+
+            if word_limit_errors:
+                st.error(
+                    "Certaines réponses dépassent la limite autorisée. "
+                    "Merci de les réduire avant l’enregistrement."
+                )
+
+                for error in word_limit_errors:
+                    st.warning(error)
+
+                st.stop()
 
             statut = "Brouillon" if save_draft else "Soumis"
 
