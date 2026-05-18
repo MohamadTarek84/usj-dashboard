@@ -602,7 +602,6 @@ def render_stakeholder_table():
         "Étudiants",
         "Anciens",
         "Employeurs / Conseil d’orientation stratégique",
-        "Autres",
     ]
 
     stakeholder_rows = []
