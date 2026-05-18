@@ -844,59 +844,12 @@ def render_external_analysis():
 
 def render_swot_intro():
     html_block(f"""
-<div style="background-color:#ffffff; padding:24px 34px; border-radius:12px; border-left:none; border-top:none; border-bottom:none; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:25px;">
-    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
+<div style="background-color:#ffffff; padding:24px 34px 10px 34px; border-radius:12px; border-left:none; border-top:none; border-bottom:none; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:6px;">
+    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:0;">
     L&apos;Analyse SWOT est un levier de planification stratégique qui permet de synthétiser les constats majeurs afin d&apos;améliorer les processus de planification et d&apos;optimiser la prise de décision au niveau de l&apos;Université.
     </p>
 </div>
 """)
-
-def render_swot_table(section_key, left_title, right_title):
-    rows = []
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        html_block(f"""
-<div style="background:{USJ_BLUE}; color:white; padding:10px 12px; min-height:42px; display:flex; align-items:center; justify-content:center; font-weight:700; border-radius:6px;">
-    {left_title}
-</div>
-""")
-
-    with col2:
-        html_block(f"""
-<div style="background:{USJ_BLUE}; color:white; padding:10px 12px; min-height:42px; display:flex; align-items:center; justify-content:center; font-weight:700; border-radius:6px;">
-    {right_title}
-</div>
-""")
-
-    for i in range(1, 6):
-        col1, col2 = st.columns(2)
-
-        with col1:
-            left_value = st.text_area(
-                label=f"{left_title} {i}",
-                key=f"{section_key}_{left_title}_{i}",
-                height=95,
-                placeholder="Merci de saisir votre réponse ici",
-                label_visibility="collapsed"
-            )
-
-        with col2:
-            right_value = st.text_area(
-                label=f"{right_title} {i}",
-                key=f"{section_key}_{right_title}_{i}",
-                height=95,
-                placeholder="Merci de saisir votre réponse ici",
-                label_visibility="collapsed"
-            )
-
-        rows.append({
-            left_title: left_value,
-            right_title: right_value,
-        })
-
-    return rows
 
 
 def render_swot_analysis():
@@ -904,32 +857,18 @@ def render_swot_analysis():
 
     annexe_b_src = image_to_base64(ANNEXE_B_PATH)
 
-    annexe_b_hover_html = "Annexe B"
+    annexe_b_hover_html = "Annexe&nbsp;B"
     if annexe_b_src:
-        annexe_b_hover_html = f"""
-        <span class="annexe-a-hover">
-            Annexe B
-            <span class="annexe-a-popup">
-                <img src="{annexe_b_src}" style="width:900px; height:auto;">
-            </span>
-        </span>
-        """
+        annexe_b_hover_html = f'<span class="annexe-a-hover">Annexe&nbsp;B<span class="annexe-a-popup"><img src="{annexe_b_src}" style="width:900px; height:auto;"></span></span>'
 
     annexe_c_src = image_to_base64(ANNEXE_C_PATH)
 
-    annexe_c_hover_html = "Annexe C"
+    annexe_c_hover_html = "Annexe&nbsp;C"
     if annexe_c_src:
-        annexe_c_hover_html = f"""
-        <span class="annexe-a-hover">
-            Annexe C
-            <span class="annexe-a-popup">
-                <img src="{annexe_c_src}" style="width:900px; height:auto;">
-            </span>
-        </span>
-        """
+        annexe_c_hover_html = f'<span class="annexe-a-hover">Annexe&nbsp;C<span class="annexe-a-popup"><img src="{annexe_c_src}" style="width:900px; height:auto;"></span></span>'
 
     st.markdown(f"""
-<div style="background:#ffffff; padding:18px 24px; border-radius:10px; border-left:none; margin-top:15px; margin-bottom:15px;">
+<div style="background:#ffffff; padding:8px 24px 8px 24px; border-radius:10px; border-left:none; margin-top:6px; margin-bottom:8px;">
     <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:6px;">
     <strong>1. Facteurs internes :</strong> Identification des <strong>forces</strong> et des <strong>faiblesses</strong> propres à l'Université (Exemples de Forces et Faiblesses en {annexe_b_hover_html}).
     </p>
@@ -946,9 +885,9 @@ def render_swot_analysis():
     )
 
     html_block(f"""
-<div style="background:#ffffff; padding:18px 24px; border-radius:10px; border-left:none; margin-top:28px; margin-bottom:15px;">
+<div style="background:#ffffff; padding:8px 24px 8px 24px; border-radius:10px; border-left:none; margin-top:14px; margin-bottom:8px;">
     <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:6px;">
-    <strong>2. Facteurs externes :</strong> Identification des opportunités de développement et des menaces émanant de l'environnement extérieur (Exemples d’Opportunités et de Menaces en {annexe_c_hover_html}).
+    <strong>2. Facteurs externes :</strong> Identification des <strong>opportunités</strong> de développement et des <strong>menaces</strong> émanant de l'environnement extérieur (Exemples d’Opportunités et de Menaces en {annexe_c_hover_html}).
     </p>
     <p style="text-align:left; font-size:17px; line-height:1.55; color:#7F7F7F; font-weight:700; font-style:italic; margin-bottom:0;">
     Nous vous remercions de bien vouloir compléter le tableau ci-dessous en indiquant au maximum <span style="text-decoration:underline; font-weight:700; font-style:italic;">cinq opportunités et cinq menaces</span>. Vos réponses seront déduites de l’analyse de l’état actuel externe (<a href="#section-iv" style="text-decoration:underline; color:#0000FF; font-weight:700; font-style:italic;">section IV</a> principalement).
