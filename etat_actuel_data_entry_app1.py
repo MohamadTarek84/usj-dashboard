@@ -1238,9 +1238,8 @@ def main():
                     "ISSP", "ISSR", "UPT",
                 ]
 
-                institution = st.selectbox(
+                institution = st.text_input(
                     "Institution",
-                    options=[""] + institution_options,
                     key="institution",
                     disabled=True
                 )
