@@ -309,6 +309,106 @@ def flatten_response(row):
     return base
 
 
+def render_admin_dashboard():
+    st.markdown("## Tableau de bord administrateur")
+    st.info("Espace réservé à la consultation et à l’exportation des réponses enregistrées.")
+
+    df = load_responses()
+
+    if df.empty:
+        st.warning("Aucune réponse enregistrée pour le moment.")
+        st.stop()
+
+    col_a, col_b, col_c = st.columns(3)
+
+    with col_a:
+        st.metric("Nombre total de réponses", len(df))
+
+    with col_b:
+        if "statut" in df.columns:
+            st.metric("Réponses soumises", int((df["statut"] == "Soumis").sum()))
+        else:
+            st.metric("Réponses soumises", 0)
+
+    with col_c:
+        if "statut" in df.columns:
+            st.metric("Brouillons", int((df["statut"] == "Brouillon").sum()))
+        else:
+            st.metric("Brouillons", 0)
+
+    st.markdown("### Réponses enregistrées")
+
+    display_cols = [
+        col for col in [
+            "id",
+            "submitted_at",
+            "respondent_name",
+            "respondent_unit",
+            "respondent_email",
+            "statut",
+            "draft_code",
+        ] if col in df.columns
+    ]
+
+    st.dataframe(df[display_cols], use_container_width=True)
+
+    flat_df = pd.DataFrame([flatten_response(row) for _, row in df.iterrows()])
+
+    st.markdown("### Exporter les réponses")
+
+    csv_data = flat_df.to_csv(index=False).encode("utf-8-sig")
+
+    st.download_button(
+        label="Télécharger les réponses en CSV",
+        data=csv_data,
+        file_name="etat_actuel_responses.csv",
+        mime="text/csv",
+    )
+
+    excel_path = Path("etat_actuel_responses.xlsx")
+    flat_df.to_excel(excel_path, index=False)
+
+    with open(excel_path, "rb") as f:
+        st.download_button(
+            label="Télécharger les réponses en Excel",
+            data=f,
+            file_name="etat_actuel_responses.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+
+    st.markdown("### Consulter une réponse spécifique")
+
+    available_codes = []
+    if "draft_code" in df.columns:
+        available_codes = [
+            code for code in df["draft_code"].dropna().astype(str).sort_values().unique().tolist()
+            if code.strip()
+        ]
+
+    selected_code = st.selectbox(
+        "Code de reprise",
+        options=[""] + available_codes
+    )
+
+    if selected_code:
+        selected_rows = df[df["draft_code"].astype(str) == selected_code]
+
+        if not selected_rows.empty:
+            selected_row = selected_rows.iloc[0]
+            selected_data = json.loads(selected_row["data_json"])
+
+            st.markdown("#### Informations générales")
+            st.json(selected_data.get("metadata", {}), expanded=False)
+
+            st.markdown("#### Données complètes de la réponse")
+            st.json(selected_data, expanded=False)
+
+    st.markdown("### Données complètes aplaties")
+    st.dataframe(flat_df, use_container_width=True)
+
+    st.stop()
+
+
 def apply_usj_style():
     html_block(f"""
 <style>
@@ -1143,75 +1243,6 @@ def main():
                 st.session_state["institution"] = AUTHORIZED_TEST_CODES[cleaned_code]["institution"]
                 st.info("Nouveau formulaire ouvert. Vous pouvez commencer à remplir vos réponses.")
                 st.rerun()
-
-        st.stop()
-
-    if st.session_state.get("admin_mode", False):
-        st.markdown("## Tableau de bord administrateur")
-        st.info("Espace réservé à la consultation et à l’exportation des réponses enregistrées.")
-
-        df = load_responses()
-
-        if df.empty:
-            st.warning("Aucune réponse enregistrée pour le moment.")
-            st.stop()
-
-        col_a, col_b, col_c = st.columns(3)
-
-        with col_a:
-            st.metric("Nombre total de réponses", len(df))
-
-        with col_b:
-            if "statut" in df.columns:
-                st.metric("Réponses soumises", int((df["statut"] == "Soumis").sum()))
-            else:
-                st.metric("Réponses soumises", 0)
-
-        with col_c:
-            if "statut" in df.columns:
-                st.metric("Brouillons", int((df["statut"] == "Brouillon").sum()))
-            else:
-                st.metric("Brouillons", 0)
-
-        st.markdown("### Réponses enregistrées")
-        display_cols = [
-            col for col in [
-                "id",
-                "submitted_at",
-                "respondent_name",
-                "respondent_unit",
-                "statut",
-                "draft_code",
-            ] if col in df.columns
-        ]
-        st.dataframe(df[display_cols], use_container_width=True)
-
-        flat_df = pd.DataFrame([flatten_response(row) for _, row in df.iterrows()])
-
-        st.markdown("### Exporter les réponses")
-
-        csv_data = flat_df.to_csv(index=False).encode("utf-8-sig")
-
-        st.download_button(
-            label="Télécharger les réponses en CSV",
-            data=csv_data,
-            file_name="etat_actuel_responses.csv",
-            mime="text/csv",
-        )
-
-        excel_path = Path("etat_actuel_responses.xlsx")
-        flat_df.to_excel(excel_path, index=False)
-
-        with open(excel_path, "rb") as f:
-            st.download_button(
-                label="Télécharger les réponses en Excel",
-                data=f,
-                file_name="etat_actuel_responses.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            )
-
-        st.markdown("### Données complètes")
-        st.dataframe(flat_df, use_container_width=True)
 
         st.stop()
 
