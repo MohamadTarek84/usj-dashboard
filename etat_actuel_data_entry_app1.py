@@ -1414,7 +1414,6 @@ def main():
                 submit_final = st.button("Envoyer la version finale\u00A0uniquement", key="submit_final_button")
 
         quick_save_clicked = any([
-            quick_save_after_intro,
             quick_save_after_stakeholders,
             quick_save_after_internal,
             quick_save_after_external,
