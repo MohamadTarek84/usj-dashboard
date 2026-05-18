@@ -328,6 +328,12 @@ div[data-testid="stDateInput"] input {{
     opacity: 1 !important;
 }}
 
+div[data-testid="stTextInput"] input::placeholder {{
+    color: #0070C0 !important;
+    -webkit-text-fill-color: #0070C0 !important;
+    opacity: 1 !important;
+}}
+
 .annexe-a-hover {{
     position: relative;
     color: #0000FF;
