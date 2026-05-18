@@ -766,7 +766,7 @@ def render_internal_analysis():
 
 def render_external_intro():
     html_block(f"""
-<div style="background-color:#ffffff; padding:24px 34px; border-radius:12px; border-left:none; border-top:none; border-bottom:none; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:25px;">
+<div style="background-color:#ffffff; padding:24px 34px 10px 34px; border-radius:12px; border-left:none; border-top:none; border-bottom:none; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:6px;">
 
     <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
     L’analyse de l’environnement externe constitue une étape essentielle du processus de planification stratégique. Elle vise à situer l’USJ dans son écosystème institutionnel, académique, économique et réglementaire, afin d’identifier les facteurs externes susceptibles d’influencer ses orientations, ses performances et sa soutenabilité à moyen et à long terme.
@@ -784,7 +784,7 @@ def render_external_intro():
     Dans cette deuxième étape, vous êtes appelés donc à analyser et évaluer, d’après votre expérience, l’état actuel des dimensions suivantes au niveau de l’Université.
     </p>
 
-    <p style="text-align:justify; font-size:17px; line-height:1.55; color:#7F7F7F; font-weight:700; font-style:italic; margin-bottom:0px;">
+    <p style="text-align:justify; font-size:17px; line-height:1.55; color:#7F7F7F; font-weight:700; font-style:italic; margin-bottom:2px;">
     Nous vous remercions de bien vouloir compléter les tableaux ci-dessous, dans une perspective globale à l’échelle de l’Université.
     </p>
 
@@ -825,7 +825,7 @@ def render_external_analysis():
             """
 
         html_block(f"""
-<div style="padding:2px 0px; margin-top:10px; margin-bottom:4px;">
+<div style="padding:2px 0px; margin-top:2px; margin-bottom:4px;">
     <p style="font-size:17px; line-height:1.25; color:{USJ_RED}; font-weight:700; margin:0;">
         {title_html}
     </p>
