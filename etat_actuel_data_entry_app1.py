@@ -333,6 +333,20 @@ div[data-testid="stTextInput"] input::placeholder {{
     opacity: 1 !important;
 }}
 
+div[data-testid="stTextInput"] input {
+    background-color: #E3DED9 !important;
+    border: 1.5px solid #595959 !important;
+    border-radius: 0px !important;
+    box-shadow: none !important;
+}
+
+div[data-testid="stTextInput"] input:focus {
+    background-color: #E3DED9 !important;
+    border: 2px solid #595959 !important;
+    box-shadow: none !important;
+    outline: none !important;
+}
+
 .annexe-a-hover {{
     position: relative;
     color: #0000FF;
