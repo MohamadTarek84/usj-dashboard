@@ -606,6 +606,9 @@ def render_stakeholder_table():
 
     stakeholder_rows = []
 
+    if "stakeholder_row_types" not in st.session_state:
+        st.session_state["stakeholder_row_types"] = ["standard"] * 7
+
     col0, col1, col2, col3 = st.columns([1.4, 1.6, 1.6, 1.8])
 
     headers = [
@@ -623,20 +626,26 @@ def render_stakeholder_table():
 </div>
 """)
 
-    st.session_state.setdefault("n_stakeholder_rows", 8)
-
-    for i in range(1, st.session_state["n_stakeholder_rows"] + 1):
+    for i, row_type in enumerate(st.session_state["stakeholder_row_types"], start=1):
         col0, col1, col2, col3 = st.columns([1.4, 1.6, 1.6, 1.8])
 
         with col0:
-            categorie = st.selectbox(
-                "Parties prenantes consultées",
-                options=stakeholder_options,
-                index=None,
-                placeholder="Choisir",
-                key=f"stakeholder_category_{i}",
-                label_visibility="collapsed"
-            )
+            if row_type == "autres":
+                categorie = st.text_input(
+                    "Autre partie prenante",
+                    key=f"stakeholder_category_autre_{i}",
+                    label_visibility="collapsed",
+                    placeholder="Préciser"
+                )
+            else:
+                categorie = st.selectbox(
+                    "Parties prenantes consultées",
+                    options=stakeholder_options,
+                    index=None,
+                    placeholder="Choisir une catégorie",
+                    key=f"stakeholder_category_{i}",
+                    label_visibility="collapsed"
+                )
 
         with col1:
             nom = st.text_input(
@@ -669,16 +678,27 @@ def render_stakeholder_table():
             organisme.strip()
         ]):
             stakeholder_rows.append({
-                "categorie": categorie or "",
+                "categorie": (categorie or "").strip(),
                 "nom": nom.strip(),
                 "poste": poste.strip(),
                 "organisme_affiliation": organisme.strip(),
             })
 
-    add_row = st.form_submit_button("Ajouter une ligne")
+    col_add1, col_add2, _ = st.columns([1.3, 1.5, 4])
+
+    with col_add1:
+        add_row = st.form_submit_button("Ajouter une ligne")
+
+    with col_add2:
+        add_autres = st.form_submit_button("Ajouter Autres")
 
     if add_row:
-        st.session_state["n_stakeholder_rows"] += 1
+        st.session_state["stakeholder_row_types"].append("standard")
+        st.rerun()
+
+    if add_autres:
+        st.session_state["stakeholder_row_types"].append("autres")
+        st.rerun()
 
     return stakeholder_rows
     
