@@ -627,28 +627,47 @@ def render_stakeholder_table():
     st.session_state.setdefault("n_stakeholder_rows", 8)
 
     for i in range(1, st.session_state["n_stakeholder_rows"] + 1):
-        col0, col1, col2, col3 = st.columns([1.4, 1.6, 1.6, 1.8])
 
-        with col0:
-            categorie = st.selectbox(
-                "Parties prenantes consultées",
-                options=stakeholder_options,
-                index=None,
-                placeholder="",
-                key=f"stakeholder_category_{i}",
-                label_visibility="collapsed"
-            )
+        is_autres = st.session_state.get(f"stakeholder_category_{i}") == "Autres"
 
-            if categorie == "Autres":
+        if is_autres:
+            col0a, col0b, col1, col2, col3 = st.columns([0.9, 1.1, 1.6, 1.6, 1.8])
+        else:
+            col0, col1, col2, col3 = st.columns([1.4, 1.6, 1.6, 1.8])
+
+        if is_autres:
+            with col0a:
+                categorie = st.selectbox(
+                    "Parties prenantes consultées",
+                    options=stakeholder_options,
+                    index=None,
+                    placeholder="Choisir",
+                    key=f"stakeholder_category_{i}",
+                    label_visibility="collapsed"
+                )
+
+            with col0b:
                 categorie_autre = st.text_input(
-                    "Préciser la catégorie",
+                    "Autre catégorie",
                     key=f"stakeholder_category_autre_{i}",
                     label_visibility="collapsed",
                     placeholder="Préciser"
                 )
-                categorie_finale = categorie_autre.strip()
-            else:
-                categorie_finale = categorie or ""
+
+            categorie_finale = categorie_autre.strip()
+
+        else:
+            with col0:
+                categorie = st.selectbox(
+                    "Parties prenantes consultées",
+                    options=stakeholder_options,
+                    index=None,
+                    placeholder="Choisir une catégorie",
+                    key=f"stakeholder_category_{i}",
+                    label_visibility="collapsed"
+                )
+
+            categorie_finale = categorie or ""
 
         with col1:
             nom = st.text_input(
