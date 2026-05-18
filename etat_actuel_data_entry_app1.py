@@ -1138,6 +1138,16 @@ def render_pour_finir():
 
     return pour_finir
 
+
+def render_quick_save_button(key):
+    col_left, col_button, col_right = st.columns([1.4, 1.2, 1.4])
+
+    with col_button:
+        return st.button(
+            "Enregistrer et continuer plus tard",
+            key=key
+        )
+
 def find_word_limit_errors(section_data, section_label, max_words):
     errors = []
 
@@ -1340,12 +1350,14 @@ def main():
 
             section_header("I - Introduction")
             render_fixed_introduction()
+            quick_save_after_intro = render_quick_save_button("quick_save_after_intro")
 
             st.divider()
 
             section_header("II - Identification des parties prenantes")
             render_stakeholder_intro()
             stakeholder_rows = render_stakeholder_table()
+            quick_save_after_stakeholders = render_quick_save_button("quick_save_after_stakeholders")
 
             st.divider()
 
@@ -1358,6 +1370,7 @@ def main():
             section_header("III - Analyse interne de l’état actuel de l’Université")
             render_internal_intro()
             internal_analysis = render_internal_analysis()
+            quick_save_after_internal = render_quick_save_button("quick_save_after_internal")
 
             st.divider()
 
@@ -1370,18 +1383,21 @@ def main():
             section_header("IV - Analyse externe de l’environnement actuel de l’Université")
             render_external_intro()
             external_analysis = render_external_analysis()
+            quick_save_after_external = render_quick_save_button("quick_save_after_external")
 
             st.divider()
 
             section_header("V - Analyse SWOT – Niveau USJ")
             render_swot_intro()
             swot_analysis = render_swot_analysis()
+            quick_save_after_swot = render_quick_save_button("quick_save_after_swot")
 
             st.divider()
 
             section_header("VI - Priorités stratégiques et initiatives proposées – Niveau USJ")
             render_priorities_intro()
             priorities_initiatives = render_priorities_table()
+            quick_save_after_priorities = render_quick_save_button("quick_save_after_priorities")
 
             st.divider()
 
@@ -1397,7 +1413,16 @@ def main():
             with col_submit:
                 submit_final = st.button("Envoyer la version finale\u00A0uniquement", key="submit_final_button")
 
-        if save_draft or submit_final:
+        quick_save_clicked = any([
+            quick_save_after_intro,
+            quick_save_after_stakeholders,
+            quick_save_after_internal,
+            quick_save_after_external,
+            quick_save_after_swot,
+            quick_save_after_priorities,
+        ])
+
+        if save_draft or submit_final or quick_save_clicked:
 
             word_limit_errors = []
 
@@ -1444,7 +1469,7 @@ def main():
 
                 st.stop()
 
-            statut = "Brouillon" if save_draft else "Soumis"
+            statut = "Soumis" if submit_final else "Brouillon"
 
             metadata = {
                 "institution": institution,
