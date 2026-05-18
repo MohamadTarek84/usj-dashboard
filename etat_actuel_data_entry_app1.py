@@ -1228,22 +1228,14 @@ def main():
             col1, col2, col3 = st.columns(3)
 
             with col1:
-                institution_options = [
-                    "CDB", "CFP", "CLN", "CLS", "CPM", "CZB",
-                    "ESAR", "ESF", "ESIA", "ESIAM", "ESIB", "ESMOD",
-                    "ESTS", "ETIB", "ETLAM", "FDLT", "FDSP", "FGM",
-                    "FLSH", "FM", "FMD", "FP", "FS", "FSE", "FSEDU",
-                    "FSI", "FSR", "IEIC", "IESAV", "IET", "IGE", "ILE",
-                    "ILO", "INCI", "IPHY", "IPM", "ISO", "ISP", "ISSA",
-                    "ISSP", "ISSR", "UPT",
-                ]
-
-                institution = st.text_input(
+                st.text_input(
                     "Institution",
                     value=st.session_state.get("institution", ""),
                     disabled=True,
                     key="institution_display"
                 )
+
+                institution = st.session_state.get("institution", "")
 
             with col2:
                 responsable = st.text_input(
