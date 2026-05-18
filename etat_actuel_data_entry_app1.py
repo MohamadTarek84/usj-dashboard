@@ -791,8 +791,8 @@ div[data-testid="stButton"]:has(button[aria-label="Ajouter une ligne Autre"]) bu
 
 div[data-testid="stButton"]:has(button[aria-label="Ajouter une ligne"]) button:hover,
 div[data-testid="stButton"]:has(button[aria-label="Ajouter une ligne Autre"]) button:hover {
-    background-color: #4A148C !important;
-    border: 1px solid #4A148C !important;
+    background-color: #001352 !important;
+    border: 1px solid #001352 !important;
     color: white !important;
 }
 </style>
