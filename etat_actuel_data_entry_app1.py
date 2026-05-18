@@ -551,9 +551,9 @@ def render_fixed_introduction():
     VI. Propositions de Priorités stratégiques et Initiatives
 
 </div>
-    <p style="font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:5px;">
+    <p style="font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-top:22px; margin-bottom:8px;">
     Pour toute information supplémentaire ou support, contacter :
-    </p>
+</p>
 
 <p style="font-size:16px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:0;">
     <p style="font-size:17px; line-height:1.75; color:{USJ_BLUE}; margin-top:22px; margin-bottom:0;">
