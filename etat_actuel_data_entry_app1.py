@@ -723,7 +723,7 @@ def word_limited_text_area(label, key, height=300, max_words=500):
         label_visibility="collapsed"
     )
 
-    word_count = count_words(value)
+    word_count = len((value or "").split())
 
     if word_count > max_words:
         st.error(
