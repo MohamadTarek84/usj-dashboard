@@ -737,16 +737,15 @@ def render_internal_analysis():
 </div>
 """)
 
-        internal_analysis[theme] = st.text_area(
+        internal_analysis[theme] = word_limited_text_area(
             label=theme,
             key=f"internal_{theme}",
             height=300,
-            placeholder="Merci de saisir votre réponse ici",
-            label_visibility="collapsed"
+            max_words=500
         )
 
     return internal_analysis
-
+    
 def render_external_intro():
     html_block(f"""
 <div style="background-color:#ffffff; padding:24px 34px 10px 34px; border-radius:12px; border-left:none; border-top:none; border-bottom:none; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:6px;">
