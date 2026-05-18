@@ -1041,13 +1041,13 @@ def render_priorities_table():
 """)
 
     for i in range(1, 4):
-        col1, col2 = st.columns([1.2, 1.8])
+        col1, col2 = st.columns([1.2, 1.8], gap="small")
 
         with col1:
             priority_value = word_limited_text_area(
                 label=f"Priorité stratégique {i}",
                 key=f"priority_{i}",
-                height=240,
+                height=292,
                 max_words=30
             )
 
