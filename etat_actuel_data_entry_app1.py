@@ -1184,11 +1184,11 @@ def render_pour_finir():
     ]
 
     for i, phrase in enumerate(phrases, start=1):
-        col_label, col_boxes = st.columns([1.45, 3.55], gap="large")
+        col_label, col_boxes = st.columns([2.1, 2.9], gap="large")
 
         with col_label:
             html_block(f"""
-<div style="font-size:17px; line-height:1.35; color:{USJ_BLUE}; font-weight:700; margin-top:8px; white-space:normal;">
+<div style="font-size:17px; line-height:1.35; color:{USJ_BLUE}; font-weight:700; margin-top:8px; white-space:nowrap;">
     &bull; {phrase}
 </div>
 """)
