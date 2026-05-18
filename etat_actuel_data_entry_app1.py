@@ -1252,7 +1252,7 @@ def main():
     mode = "Saisir une réponse"
 
     if mode == "Saisir une réponse":
-        with st.form("etat_actuel_form", clear_on_submit=False, enter_to_submit=False):
+        with st.container():
 
             st.markdown("## Informations générales")
 
@@ -1339,10 +1339,10 @@ def main():
             col_left, col_save, col_submit, col_right = st.columns([1.4, 1.2, 0.8, 1.4])
 
             with col_save:
-                save_draft = st.form_submit_button("Enregistrer et continuer plus tard")
+                save_draft = st.button("Enregistrer et continuer plus tard", key="save_draft_button")
 
             with col_submit:
-                submit_final = st.form_submit_button("Envoyer la version finale uniquement")
+                submit_final = st.button("Envoyer la version finale uniquement", key="submit_final_button")
 
         if save_draft or submit_final:
 
