@@ -1254,6 +1254,31 @@ def find_word_limit_errors(section_data, section_label, max_words):
     check_value(section_data, section_label)
     return errors
 
+def unlock_response_by_code(draft_code):
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+
+    cur.execute("""
+        UPDATE responses
+        SET statut = 'Brouillon'
+        WHERE draft_code = ?
+    """, (draft_code.strip().upper(),))
+
+    conn.commit()
+    conn.close()
+
+
+def delete_response_by_code(draft_code):
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+
+    cur.execute("""
+        DELETE FROM responses
+        WHERE draft_code = ?
+    """, (draft_code.strip().upper(),))
+
+    conn.commit()
+    conn.close()
 
 def main():
     st.set_page_config(page_title=APP_TITLE, page_icon="📋", layout="wide")
@@ -1298,8 +1323,44 @@ def main():
 
         st.success(f"{len(df)} response(s) found.")
 
-        st.markdown("### Raw responses table")
-        st.dataframe(df, use_container_width=True)
+st.markdown("### Gestion des réponses")
+
+admin_df = df.copy()
+admin_df["display_label"] = (
+    admin_df["draft_code"].fillna("") + " | " +
+    admin_df["respondent_name"].fillna("") + " | " +
+    admin_df["respondent_unit"].fillna("") + " | " +
+    admin_df["statut"].fillna("")
+)
+
+selected_response = st.selectbox(
+    "Choisir une réponse",
+    options=admin_df["display_label"].tolist()
+)
+
+selected_draft_code = selected_response.split(" | ")[0].strip()
+
+col_unlock, col_delete = st.columns(2)
+
+with col_unlock:
+    if st.button("Redonner accès à cette personne"):
+        unlock_response_by_code(selected_draft_code)
+        st.success(
+            f"L’accès a été redonné au code {selected_draft_code}. "
+            "La personne peut modifier et soumettre à nouveau."
+        )
+        st.rerun()
+
+with col_delete:
+    if st.button("Supprimer les réponses de cette personne"):
+        delete_response_by_code(selected_draft_code)
+        st.success(
+            f"Les réponses associées au code {selected_draft_code} ont été supprimées."
+        )
+        st.rerun()
+
+st.markdown("### Raw responses table")
+st.dataframe(df, use_container_width=True)
 
         try:
             flat_df = pd.DataFrame([flatten_response(row) for _, row in df.iterrows()])
