@@ -508,7 +508,7 @@ def render_fixed_introduction():
     if intro_image_src:
         image_html = f"""
         <div style="text-align:center; margin:18px 0;">
-            <img src="{intro_image_src}" style="max-width:100%; height:auto; border-radius:8px;">
+            <img src="{intro_image_src}" style="width:650px; max-width:100%; height:auto; border-radius:8px;">
         </div>
         """
 
