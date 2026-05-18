@@ -607,17 +607,16 @@ def render_stakeholder_table():
 
     stakeholder_rows = []
 
-    col0, col0b, col1, col2, col3 = st.columns([1.25, 1.15, 1.6, 1.6, 1.8])
+    col0, col1, col2, col3 = st.columns([1.4, 1.6, 1.6, 1.8])
 
     headers = [
         "Parties prenantes consultées",
-        "Si Autres, préciser",
         "Nom",
         "Poste",
         "Organisme d’affiliation",
     ]
 
-    for col, header in zip([col0, col0b, col1, col2, col3], headers):
+    for col, header in zip([col0, col1, col2, col3], headers):
         with col:
             html_block(f"""
 <div style="background:{USJ_BLUE}; color:white; padding:10px 12px; height:40px; display:flex; align-items:center; font-weight:700; border-radius:6px;">
@@ -628,30 +627,17 @@ def render_stakeholder_table():
     st.session_state.setdefault("n_stakeholder_rows", 8)
 
     for i in range(1, st.session_state["n_stakeholder_rows"] + 1):
-        col0, col0b, col1, col2, col3 = st.columns([1.25, 1.15, 1.6, 1.6, 1.8])
+        col0, col1, col2, col3 = st.columns([1.4, 1.6, 1.6, 1.8])
 
         with col0:
             categorie = st.selectbox(
                 "Parties prenantes consultées",
                 options=stakeholder_options,
                 index=None,
-                placeholder="Choisir",
+                placeholder="Choisir une catégorie",
                 key=f"stakeholder_category_{i}",
                 label_visibility="collapsed"
             )
-
-        with col0b:
-            categorie_autre = st.text_input(
-                "Si Autres, préciser",
-                key=f"stakeholder_category_autre_{i}",
-                label_visibility="collapsed",
-                placeholder="Préciser"
-            )
-
-        if categorie == "Autres":
-            categorie_finale = categorie_autre.strip()
-        else:
-            categorie_finale = categorie or ""
 
         with col1:
             nom = st.text_input(
@@ -678,13 +664,13 @@ def render_stakeholder_table():
             )
 
         if any([
-            categorie_finale.strip(),
+            (categorie or "").strip(),
             nom.strip(),
             poste.strip(),
             organisme.strip()
         ]):
             stakeholder_rows.append({
-                "categorie": categorie_finale,
+                "categorie": categorie or "",
                 "nom": nom.strip(),
                 "poste": poste.strip(),
                 "organisme_affiliation": organisme.strip(),
