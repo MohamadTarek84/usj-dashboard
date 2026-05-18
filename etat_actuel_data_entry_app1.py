@@ -1312,7 +1312,7 @@ def main():
                 save_draft = st.form_submit_button("Enregistrer et continuer plus tard")
 
             with col_submit:
-                submit_final = st.form_submit_button("Envoyer")
+                submit_final = st.form_submit_button("Envoyer la version finale uniquement")
 
         if save_draft or submit_final:
 
