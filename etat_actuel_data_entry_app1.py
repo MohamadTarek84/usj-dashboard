@@ -1166,8 +1166,8 @@ def render_priorities_table():
     return priorities_rows
 
 def render_pour_finir():
-    read_only = st.session_state.get("read_only_submitted", False)
     pour_finir = {}
+    read_only = st.session_state.get("read_only_submitted", False)
 
     html_block(f"""
 <div style="background-color:#ffffff; padding:4px 0 2px 0; margin-bottom:2px;">
@@ -1184,19 +1184,34 @@ def render_pour_finir():
     ]
 
     for i, phrase in enumerate(phrases, start=1):
-        col_label, col_boxes = st.columns([1.15, 3.2], gap="small")
+        col_label, col_boxes = st.columns([2.2, 3.0], gap="large")
 
         with col_label:
             html_block(f"""
-<div style="font-size:17px; line-height:1.2; color:{USJ_BLUE}; font-weight:700; margin-top:8px; white-space:nowrap;">
+<div style="font-size:17px; line-height:1.35; color:{USJ_BLUE}; font-weight:700; margin-top:8px; white-space:normal;">
     &bull; {phrase}
 </div>
 """)
 
         with col_boxes:
-            r1 = st.text_input(f"{phrase} 1", key=f"pour_finir_{i}_1", label_visibility="collapsed", disabled=read_only)
-            r2 = st.text_input(f"{phrase} 2", key=f"pour_finir_{i}_2", label_visibility="collapsed", disabled=read_only)
-            r3 = st.text_input(f"{phrase} 3", key=f"pour_finir_{i}_3", label_visibility="collapsed", disabled=read_only)
+            r1 = st.text_input(
+                f"{phrase} 1",
+                key=f"pour_finir_{i}_1",
+                label_visibility="collapsed",
+                disabled=read_only
+            )
+            r2 = st.text_input(
+                f"{phrase} 2",
+                key=f"pour_finir_{i}_2",
+                label_visibility="collapsed",
+                disabled=read_only
+            )
+            r3 = st.text_input(
+                f"{phrase} 3",
+                key=f"pour_finir_{i}_3",
+                label_visibility="collapsed",
+                disabled=read_only
+            )
 
         pour_finir[phrase] = {
             "reponse_1": r1,
