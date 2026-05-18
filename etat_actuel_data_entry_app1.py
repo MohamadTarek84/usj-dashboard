@@ -702,8 +702,8 @@ def render_stakeholder_table():
     add_autre = st.form_submit_button("Ajouter une ligne Autres")
 
     if add_autre:
-        st.session_state.n_autres_rows += 1
-        st.rerun()
+        st.session_state["n_autres_rows"] = st.session_state.get("n_autres_rows", 1) + 1
+    
 
     return stakeholder_rows
 
