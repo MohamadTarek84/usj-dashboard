@@ -634,7 +634,8 @@ def render_stakeholder_table():
 </div>
 """)
 
-    for i, row_type in enumerate(st.session_state["stakeholder_row_types"], start=1):
+    for i in range(1, 9):
+    row_type = "standard"
         col0, col1, col2, col3 = st.columns([1.4, 1.6, 1.6, 1.8])
 
         with col0:
