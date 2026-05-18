@@ -1184,7 +1184,7 @@ def render_pour_finir():
     ]
 
     for i, phrase in enumerate(phrases, start=1):
-        col_label, col_boxes = st.columns([2.1, 2.9], gap="large")
+        col_label, col_boxes = st.columns([1.9, 2.1], gap="large")
 
         with col_label:
             html_block(f"""
