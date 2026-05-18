@@ -481,8 +481,8 @@ div[data-testid="stFormSubmitButton"] button p {{
 /* ONLY these two stakeholder add-row buttons */
 .st-key-add_stakeholder_standard button,
 .st-key-add_stakeholder_autres button {{
-    background-color: #6A1B9A !important;
-    border: 1px solid #6A1B9A !important;
+    background-color: #001F5B !important;
+    border: 1px solid #001F5B !important;
     color: white !important;
 }}
 
