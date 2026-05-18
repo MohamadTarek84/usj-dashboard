@@ -615,7 +615,7 @@ def render_stakeholder_table():
     stakeholder_rows = []
 
     if "stakeholder_row_types" not in st.session_state:
-        st.session_state["stakeholder_row_types"] = ["standard"] * 7
+        st.session_state["stakeholder_row_types"] = ["standard"] * 8
 
     col0, col1, col2, col3 = st.columns([1.4, 1.6, 1.6, 1.8])
 
