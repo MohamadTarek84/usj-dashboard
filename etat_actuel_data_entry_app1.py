@@ -1460,9 +1460,8 @@ def main():
 
         st.stop()
 
-            section_header("I - Introduction")
+                        section_header("I - Introduction")
             render_fixed_introduction()
-            
 
             st.divider()
 
@@ -1546,7 +1545,6 @@ def main():
         ])
 
         if save_draft or submit_final or quick_save_clicked:
-
             word_limit_errors = []
 
             word_limit_errors.extend(
@@ -1632,46 +1630,3 @@ def main():
 
             except ValueError as e:
                 st.error(str(e))
-                    
-    else:
-        st.markdown("## Consulter / exporter les réponses")
-
-        df = load_responses()
-
-        if df.empty:
-            st.warning("Aucune réponse enregistrée pour le moment.")
-            return
-
-        st.metric("Nombre total de réponses", len(df))
-
-        st.markdown("### Réponses enregistrées")
-        st.dataframe(df, use_container_width=True)
-
-        flat_df = pd.DataFrame([flatten_response(row) for _, row in df.iterrows()])
-
-        csv_data = flat_df.to_csv(index=False).encode("utf-8-sig")
-
-        st.download_button(
-            label="Télécharger les réponses en CSV",
-            data=csv_data,
-            file_name="etat_actuel_responses.csv",
-            mime="text/csv",
-        )
-
-        excel_path = Path("etat_actuel_responses.xlsx")
-        flat_df.to_excel(excel_path, index=False)
-
-        with open(excel_path, "rb") as f:
-            st.download_button(
-                label="Télécharger les réponses en Excel",
-                data=f,
-                file_name="etat_actuel_responses.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            )
-
-        st.markdown("### Données complètes")
-        st.dataframe(flat_df, use_container_width=True)
-
-
-if __name__ == "__main__":
-    main()
