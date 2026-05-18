@@ -662,7 +662,7 @@ def render_stakeholder_table():
                     "Parties prenantes consultées",
                     options=stakeholder_options,
                     index=None,
-                    placeholder="Choisir une catégorie",
+                    placeholder="",
                     key=f"stakeholder_category_{i}",
                     label_visibility="collapsed"
                 )
