@@ -708,6 +708,35 @@ def render_internal_intro():
 """)
 
 
+def count_words(text):
+    if not text:
+        return 0
+    return len(text.split())
+
+
+def word_limited_text_area(label, key, height=300, max_words=500):
+    value = st.text_area(
+        label=label,
+        key=key,
+        height=height,
+        placeholder=f"Merci de saisir votre réponse ici (au maximum {max_words} mots)",
+        label_visibility="collapsed"
+    )
+
+    word_count = count_words(value)
+
+    if word_count > max_words:
+        st.error(
+            f"Vous avez saisi {word_count} mots. "
+            f"La limite autorisée est de {max_words} mots. "
+            "Merci de réduire votre réponse avant l’enregistrement."
+        )
+    elif word_count > 0:
+        st.caption(f"{word_count}/{max_words} mots")
+
+    return value
+
+
 def render_internal_analysis():
     internal_themes = [
         "Soutenabilité financière",
