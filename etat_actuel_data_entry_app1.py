@@ -457,7 +457,7 @@ section[data-testid="stSidebar"] {{
     border-right: 4px solid {USJ_BLUE};
 }}
 
-/* Normal buttons: old USJ blue */
+/* Normal buttons */
 .stButton button,
 .stDownloadButton button,
 div[data-testid="stFormSubmitButton"] button {{
@@ -474,6 +474,27 @@ div[data-testid="stFormSubmitButton"] button {{
 .stButton button p,
 .stDownloadButton button p,
 div[data-testid="stFormSubmitButton"] button p {{
+    color: white !important;
+    white-space: nowrap !important;
+}}
+
+/* ONLY these two stakeholder add-row buttons */
+.st-key-add_stakeholder_standard button,
+.st-key-add_stakeholder_autres button {{
+    background-color: #6A1B9A !important;
+    border: 1px solid #6A1B9A !important;
+    color: white !important;
+}}
+
+.st-key-add_stakeholder_standard button:hover,
+.st-key-add_stakeholder_autres button:hover {{
+    background-color: #4A148C !important;
+    border: 1px solid #4A148C !important;
+    color: white !important;
+}}
+
+.st-key-add_stakeholder_standard button p,
+.st-key-add_stakeholder_autres button p {{
     color: white !important;
     white-space: nowrap !important;
 }}
@@ -516,7 +537,6 @@ hr {{
 
 </style>
 """)
-
 def section_header(title):
     html_block(f"""
 <div style="background-color:{USJ_LIGHT_BLUE}; padding:12px 18px; border-radius:10px; border-left:7px solid {USJ_BLUE}; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-top:14px; margin-bottom:18px;">
