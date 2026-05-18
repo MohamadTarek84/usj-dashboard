@@ -709,24 +709,21 @@ def render_internal_intro():
 
 
 def count_words(text):
-    if not text:
+    if text is None:
         return 0
-    return len(text.split())
+    return len(str(text).split())
 
 
 def word_limited_text_area(label, key, height=300, max_words=500):
-    max_chars = max_words * 7
-
     value = st.text_area(
         label=label,
         key=key,
         height=height,
-        max_chars=max_chars,
         placeholder=f"Merci de saisir votre réponse ici (au maximum {max_words} mots)",
         label_visibility="collapsed"
     )
 
-    word_count = len((value or "").split())
+    word_count = count_words(value)
 
     if word_count > max_words:
         st.error(
@@ -846,11 +843,12 @@ def render_external_analysis():
 </div>
 """)
 
-        external_analysis[theme] = word_limited_text_area(
+        external_analysis[theme] = st.text_area(
             label=theme,
             key=f"external_{theme}",
             height=300,
-            max_words=500
+            placeholder="Merci de saisir votre réponse ici",
+            label_visibility="collapsed"
         )
 
     return external_analysis
@@ -888,19 +886,21 @@ def render_swot_table(section_key, left_title, right_title):
         col1, col2 = st.columns(2)
 
         with col1:
-            left_value = word_limited_text_area(
+            left_value = st.text_area(
                 label=f"{left_title} {i}",
                 key=f"{section_key}_{left_title}_{i}",
                 height=95,
-                max_words=300
+                placeholder="Merci de saisir votre réponse ici",
+                label_visibility="collapsed"
             )
 
         with col2:
-            right_value = word_limited_text_area(
+            right_value = st.text_area(
                 label=f"{right_title} {i}",
                 key=f"{section_key}_{right_title}_{i}",
                 height=95,
-                max_words=300
+                placeholder="Merci de saisir votre réponse ici",
+                label_visibility="collapsed"
             )
 
         rows.append({
@@ -1006,33 +1006,37 @@ def render_priorities_table():
         col1, col2 = st.columns([1.2, 1.8])
 
         with col1:
-            priority_value = word_limited_text_area(
+            priority_value = st.text_area(
                 label=f"Priorité stratégique {i}",
                 key=f"priority_{i}",
                 height=240,
-                max_words=30
+                placeholder="Merci de saisir votre réponse ici",
+                label_visibility="collapsed"
             )
 
         with col2:
-            initiative_1 = word_limited_text_area(
+            initiative_1 = st.text_area(
                 label=f"Initiative {i}.1",
                 key=f"initiative_{i}_1",
                 height=70,
-                max_words=30
+                placeholder="Initiative 1",
+                label_visibility="collapsed"
             )
 
-            initiative_2 = word_limited_text_area(
+            initiative_2 = st.text_area(
                 label=f"Initiative {i}.2",
                 key=f"initiative_{i}_2",
                 height=70,
-                max_words=30
+                placeholder="Initiative 2",
+                label_visibility="collapsed"
             )
 
-            initiative_3 = word_limited_text_area(
+            initiative_3 = st.text_area(
                 label=f"Initiative {i}.3",
                 key=f"initiative_{i}_3",
                 height=70,
-                max_words=30
+                placeholder="Initiative 3",
+                label_visibility="collapsed"
             )
 
         priorities_rows.append({
@@ -1084,28 +1088,21 @@ def render_pour_finir():
 def find_word_limit_errors(section_data, section_label, max_words):
     errors = []
 
-    if isinstance(section_data, dict):
-        items = section_data.items()
-    elif isinstance(section_data, list):
-        items = enumerate(section_data, start=1)
-    else:
-        return errors
-
-    for key, value in items:
+    def check_value(value, path):
         if isinstance(value, dict):
-            for sub_key, sub_value in value.items():
-                word_count = count_words(sub_value)
-                if word_count > max_words:
-                    errors.append(
-                        f"{section_label} - {key} - {sub_key} : {word_count} mots / maximum {max_words}"
-                    )
+            for key, sub_value in value.items():
+                check_value(sub_value, f"{path} - {key}")
+        elif isinstance(value, list):
+            for index, item in enumerate(value, start=1):
+                check_value(item, f"{path} - Ligne {index}")
         else:
             word_count = count_words(value)
             if word_count > max_words:
                 errors.append(
-                    f"{section_label} - {key} : {word_count} mots / maximum {max_words}"
+                    f"{path} : {word_count} mots / maximum {max_words}"
                 )
 
+    check_value(section_data, section_label)
     return errors
 
 
