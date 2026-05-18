@@ -866,13 +866,12 @@ def render_external_analysis():
 </div>
 """)
 
-        external_analysis[theme] = st.text_area(
-            label=theme,
-            key=f"external_{theme}",
-            height=300,
-            placeholder="Merci de saisir votre réponse ici",
-            label_visibility="collapsed"
-        )
+external_analysis[theme] = word_limited_text_area(
+    label=theme,
+    key=f"external_{theme}",
+    height=300,
+    max_words=500
+)
 
     return external_analysis
 
