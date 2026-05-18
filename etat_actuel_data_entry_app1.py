@@ -633,6 +633,9 @@ def render_stakeholder_table():
         "Conseil d’orientation stratégique",
     ]
 
+    if "stakeholder_row_types" not in st.session_state:
+        st.session_state["stakeholder_row_types"] = ["standard"] * 8
+
     stakeholder_rows = []
 
     col0, col1, col2, col3 = st.columns([1.4, 1.6, 1.6, 1.8])
@@ -652,8 +655,7 @@ def render_stakeholder_table():
 </div>
 """)
 
-    for i in range(1, 9):
-        row_type = "standard"
+    for i, row_type in enumerate(st.session_state["stakeholder_row_types"], start=1):
         col0, col1, col2, col3 = st.columns([1.4, 1.6, 1.6, 1.8])
 
         with col0:
@@ -710,6 +712,18 @@ def render_stakeholder_table():
                 "poste": poste.strip(),
                 "organisme_affiliation": organisme.strip(),
             })
+
+    col_add1, col_add2, _ = st.columns([1.3, 1.5, 4])
+
+    with col_add1:
+        if st.button("Ajouter une ligne", key="add_stakeholder_standard"):
+            st.session_state["stakeholder_row_types"].append("standard")
+            st.rerun()
+
+    with col_add2:
+        if st.button("Ajouter Autres", key="add_stakeholder_autres"):
+            st.session_state["stakeholder_row_types"].append("autres")
+            st.rerun()
 
     return stakeholder_rows
     
