@@ -763,13 +763,17 @@ def word_limited_text_area(label, key, height=300, max_words=500):
     word_count = count_words(value)
 
     if word_count > max_words:
-        st.error(
-            f"Vous avez saisi {word_count} mots. "
-            f"La limite autorisée est de {max_words} mots. "
-            "Merci de réduire votre réponse avant l’enregistrement."
-        )
-    elif word_count > 0:
-        st.caption(f"{word_count}/{max_words} mots")
+        html_block(f"""
+<div style="min-height:24px; color:#8B1538; font-weight:700; font-size:14px; margin-top:-6px; margin-bottom:8px;">
+    ⚠ Vous avez saisi {word_count} mots. Maximum autorisé : {max_words} mots.
+</div>
+""")
+    else:
+        html_block(f"""
+<div style="min-height:24px; color:#595959; font-size:13px; margin-top:-6px; margin-bottom:8px;">
+    {word_count}/{max_words} mots
+</div>
+""")
 
     return value
 
