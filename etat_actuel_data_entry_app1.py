@@ -303,7 +303,6 @@ def flatten_response(row):
 
     return base
 
-
 def apply_usj_style():
     html_block(f"""
 <style>
@@ -325,6 +324,18 @@ div[data-testid="stDateInput"] input {{
     color: #000000 !important;
     -webkit-text-fill-color: #000000 !important;
     opacity: 1 !important;
+    background-color: #E3DED9 !important;
+    border: 1.5px solid #595959 !important;
+    border-radius: 0px !important;
+    box-shadow: none !important;
+}}
+
+div[data-testid="stTextInput"] input:focus,
+div[data-testid="stDateInput"] input:focus {{
+    background-color: #E3DED9 !important;
+    border: 2px solid #595959 !important;
+    box-shadow: none !important;
+    outline: none !important;
 }}
 
 div[data-testid="stTextInput"] input::placeholder {{
@@ -332,20 +343,6 @@ div[data-testid="stTextInput"] input::placeholder {{
     -webkit-text-fill-color: #0070C0 !important;
     opacity: 1 !important;
 }}
-
-div[data-testid="stTextInput"] input {
-    background-color: #E3DED9 !important;
-    border: 1.5px solid #595959 !important;
-    border-radius: 0px !important;
-    box-shadow: none !important;
-}
-
-div[data-testid="stTextInput"] input:focus {
-    background-color: #E3DED9 !important;
-    border: 2px solid #595959 !important;
-    box-shadow: none !important;
-    outline: none !important;
-}
 
 .annexe-a-hover {{
     position: relative;
@@ -391,6 +388,9 @@ div[data-testid="stTextArea"] > div {{
 }}
 
 div[data-testid="stTextArea"] textarea {{
+    color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
+    opacity: 1 !important;
     border: 1.5px solid #595959 !important;
     border-radius: 0px !important;
     background-color: #E3DED9 !important;
@@ -402,6 +402,13 @@ div[data-testid="stTextArea"] textarea:focus {{
     box-shadow: none !important;
     outline: none !important;
 }}
+
+div[data-testid="stTextArea"] textarea::placeholder {{
+    color: #0070C0 !important;
+    -webkit-text-fill-color: #0070C0 !important;
+    opacity: 1 !important;
+}}
+
 h1, h2, h3, h4, h5, h6 {{
     font-family: Candara, Calibri, Arial, sans-serif !important;
     color: {USJ_BLUE} !important;
