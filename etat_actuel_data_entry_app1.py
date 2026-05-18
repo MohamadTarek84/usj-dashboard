@@ -1146,7 +1146,56 @@ def main():
             col1, col2, col3 = st.columns(3)
 
             with col1:
-                institution = st.text_input("Institution", key="institution")
+                institution_options = sorted([
+    "ESMOD",
+    "CDB",
+    "CFP",
+    "CLN",
+    "CLS",
+    "CPM",
+    "CZB",
+    "ESAR",
+    "ESF",
+    "ESIA",
+    "ESIAM",
+    "ESIB",
+    "ESTS",
+    "ETIB",
+    "ETLAM",
+    "FDLT",
+    "FDSP",
+    "FGM",
+    "FLSH",
+    "FM",
+    "FMD",
+    "FP",
+    "FS",
+    "FSE",
+    "FSEDU",
+    "FSI",
+    "FSR",
+    "IEIC",
+    "IESAV",
+    "IET",
+    "IGE",
+    "ILE",
+    "ILO",
+    "INCI",
+    "IPHY",
+    "IPM",
+    "ISO",
+    "ISP",
+    "ISSA",
+    "ISSP",
+    "ISSR",
+    "UPT",
+])
+
+institution = st.selectbox(
+    "Institution",
+    options=[""] + institution_options,
+    key="institution"
+)
 
             with col2:
                 responsable = st.text_input("Responsable", key="responsable")
