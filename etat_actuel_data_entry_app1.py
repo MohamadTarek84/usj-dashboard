@@ -1350,7 +1350,7 @@ def main():
 
             section_header("I - Introduction")
             render_fixed_introduction()
-            quick_save_after_intro = render_quick_save_button("quick_save_after_intro")
+            
 
             st.divider()
 
