@@ -1247,11 +1247,16 @@ def main():
                 institution = st.selectbox(
                     "Institution",
                     options=[""] + institution_options,
-                    key="institution"
+                    key="institution",
+                    disabled=True
                 )
 
             with col2:
-                responsable = st.text_input("Responsable", key="responsable")
+                responsable = st.text_input(
+                "Responsable",
+                key="responsable",
+                disabled=True
+            )
 
             with col3:
                 st.text_input(
