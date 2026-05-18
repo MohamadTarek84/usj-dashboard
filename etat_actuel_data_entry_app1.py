@@ -449,18 +449,37 @@ section[data-testid="stSidebar"] {{
     border-right: 4px solid {USJ_BLUE};
 }}
 
-.stButton button, .stDownloadButton button, div[data-testid="stFormSubmitButton"] button {{
-    background-color: {USJ_BLUE} !important;
+/* All regular buttons: save / add row / quick save */
+.stButton button, 
+.stDownloadButton button, 
+div[data-testid="stFormSubmitButton"] button {{
+    background-color: #0070C0 !important;
     color: white !important;
     border-radius: 8px !important;
-    border: 1px solid {USJ_BLUE} !important;
+    border: 1px solid #0070C0 !important;
     font-weight: 800 !important;
     font-size: 18px !important;
     padding: 10px 22px !important;
+    white-space: nowrap !important;
 }}
 
-.stButton button p, .stDownloadButton button p, div[data-testid="stFormSubmitButton"] button p {{
+.stButton button p, 
+.stDownloadButton button p, 
+div[data-testid="stFormSubmitButton"] button p {{
     color: white !important;
+    white-space: nowrap !important;
+}}
+
+/* Final submit button only */
+button[kind="primary"] {{
+    background-color: #8B1538 !important;
+    border: 1px solid #8B1538 !important;
+    color: white !important;
+}}
+
+button[kind="primary"] p {{
+    color: white !important;
+    white-space: nowrap !important;
 }}
 
 div[data-testid="InputInstructions"] {{
@@ -1410,8 +1429,13 @@ def main():
             with col_save:
                 save_draft = st.button("Enregistrer et continuer plus tard", key="save_draft_button")
 
+           
             with col_submit:
-                submit_final = st.button("Envoyer la version finale\u00A0uniquement", key="submit_final_button")
+                submit_final = st.button(
+                    "Envoyer la version finale\u00A0uniquement",
+                    key="submit_final_button",
+                    type="primary"
+                )
 
         quick_save_clicked = any([
             quick_save_after_stakeholders,
