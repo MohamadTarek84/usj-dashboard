@@ -1325,7 +1325,7 @@ def main():
 
                 statut = "Brouillon" if save_draft else "Soumis"
 
-            metadata = {
+                metadata = {
                 "institution": institution,
                 "responsable": responsable,
                 "email": "",
@@ -1334,7 +1334,7 @@ def main():
                 "draft_code": st.session_state.get("current_draft_code", ""),
             }
 
-            data = {
+                data = {
                 "metadata": metadata,
                 "introduction": {},
                 "stakeholders": {
@@ -1347,7 +1347,7 @@ def main():
                 "pour_finir": pour_finir,
             }
 
-            try:
+                try:
                 if submit_final:
                     existing = load_existing_draft_by_code(
                         st.session_state.get("current_draft_code", "")
