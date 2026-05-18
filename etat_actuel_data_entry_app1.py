@@ -1347,16 +1347,7 @@ def main():
                 "pour_finir": pour_finir,
             }
 
-                try:
-                if submit_final:
-                    existing = load_existing_draft_by_code(
-                        st.session_state.get("current_draft_code", "")
-                    )
-
-                    if existing and existing.get("loaded_statut") == "Soumis":
-                        st.error("Vous avez déjà soumis ce formulaire. Une seule soumission est autorisée.")
-                        st.stop()
-
+            try:
                 draft_code = save_response(metadata, data)
                 st.session_state["current_draft_code"] = draft_code
 
