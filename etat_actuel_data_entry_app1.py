@@ -1364,9 +1364,9 @@ st.dataframe(df, use_container_width=True)
 
 try:
     flat_df = pd.DataFrame([flatten_response(row) for _, row in df.iterrows()])
-        except Exception as e:
-            st.warning(f"Could not flatten JSON responses. Raw data is still available. Details: {e}")
-            flat_df = df.copy()
+    except Exception as e:
+        st.warning(f"Could not flatten JSON responses. Raw data is still available. Details: {e}")
+        flat_df = df.copy()
 
         st.markdown("### Flattened responses table")
         st.dataframe(flat_df, use_container_width=True)
