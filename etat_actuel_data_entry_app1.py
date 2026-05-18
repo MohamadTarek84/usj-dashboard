@@ -626,24 +626,25 @@ def render_stakeholder_table():
 
     st.session_state.setdefault("n_stakeholder_rows", 8)
 
+    def rerun_after_category_change():
+        st.rerun()
+
     for i in range(1, st.session_state["n_stakeholder_rows"] + 1):
 
-        is_autres = st.session_state.get(f"stakeholder_category_{i}") == "Autres"
+        current_category = st.session_state.get(f"stakeholder_category_{i}")
 
-        if is_autres:
-            col0a, col0b, col1, col2, col3 = st.columns([0.9, 1.1, 1.6, 1.6, 1.8])
-        else:
-            col0, col1, col2, col3 = st.columns([1.4, 1.6, 1.6, 1.8])
+        if current_category == "Autres":
+            col0a, col0b, col1, col2, col3 = st.columns([0.85, 1.05, 1.6, 1.6, 1.8])
 
-        if is_autres:
             with col0a:
                 categorie = st.selectbox(
                     "Parties prenantes consultées",
                     options=stakeholder_options,
-                    index=None,
+                    index=stakeholder_options.index(current_category) if current_category in stakeholder_options else None,
                     placeholder="Choisir",
                     key=f"stakeholder_category_{i}",
-                    label_visibility="collapsed"
+                    label_visibility="collapsed",
+                    on_change=rerun_after_category_change
                 )
 
             with col0b:
@@ -657,14 +658,17 @@ def render_stakeholder_table():
             categorie_finale = categorie_autre.strip()
 
         else:
+            col0, col1, col2, col3 = st.columns([1.4, 1.6, 1.6, 1.8])
+
             with col0:
                 categorie = st.selectbox(
                     "Parties prenantes consultées",
                     options=stakeholder_options,
-                    index=None,
+                    index=stakeholder_options.index(current_category) if current_category in stakeholder_options else None,
                     placeholder="",
                     key=f"stakeholder_category_{i}",
-                    label_visibility="collapsed"
+                    label_visibility="collapsed",
+                    on_change=rerun_after_category_change
                 )
 
             categorie_finale = categorie or ""
@@ -672,7 +676,6 @@ def render_stakeholder_table():
         with col1:
             nom = st.text_input(
                 "Nom",
-                value="",
                 key=f"stakeholder_nom_{i}",
                 label_visibility="collapsed",
                 placeholder=""
@@ -681,7 +684,6 @@ def render_stakeholder_table():
         with col2:
             poste = st.text_input(
                 "Poste",
-                value="",
                 key=f"stakeholder_poste_{i}",
                 label_visibility="collapsed",
                 placeholder=""
@@ -690,7 +692,6 @@ def render_stakeholder_table():
         with col3:
             organisme = st.text_input(
                 "Organisme d’affiliation",
-                value="",
                 key=f"stakeholder_organisme_{i}",
                 label_visibility="collapsed",
                 placeholder=""
