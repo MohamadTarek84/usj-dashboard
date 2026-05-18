@@ -1323,14 +1323,14 @@ def main():
 
         st.success(f"{len(df)} response(s) found.")
 
-st.markdown("### Gestion des réponses")
+        st.markdown("### Gestion des réponses")
 
-admin_df = df.copy()
-admin_df["display_label"] = (
-    admin_df["draft_code"].fillna("") + " | " +
-    admin_df["respondent_name"].fillna("") + " | " +
-    admin_df["respondent_unit"].fillna("") + " | " +
-    admin_df["statut"].fillna("")
+        admin_df = df.copy()
+        admin_df["display_label"] = (
+            admin_df["draft_code"].fillna("") + " | " +
+            admin_df["respondent_name"].fillna("") + " | " +
+            admin_df["respondent_unit"].fillna("") + " | " +
+            admin_df["statut"].fillna("")
 )
 
 selected_response = st.selectbox(
