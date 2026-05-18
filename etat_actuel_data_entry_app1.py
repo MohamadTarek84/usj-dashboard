@@ -463,6 +463,22 @@ section[data-testid="stSidebar"] {{
     color: white !important;
 }}
 
+div[data-testid="InputInstructions"] {{
+    display: none !important;
+}}
+
+[data-testid="stTextInput"] [data-testid="InputInstructions"],
+[data-testid="stSelectbox"] [data-testid="InputInstructions"],
+[data-testid="stTextArea"] [data-testid="InputInstructions"] {{
+    display: none !important;
+    visibility: hidden !important;
+    height: 0px !important;
+}}
+
+textarea + div {{
+    display: none !important;
+}}
+
 hr {{
     border: none !important;
     height: 3px !important;
