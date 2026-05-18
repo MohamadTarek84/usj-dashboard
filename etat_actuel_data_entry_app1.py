@@ -607,16 +607,17 @@ def render_stakeholder_table():
 
     stakeholder_rows = []
 
-    col0, col1, col2, col3 = st.columns([1.4, 1.6, 1.6, 1.8])
+    col0, col0b, col1, col2, col3 = st.columns([1.25, 1.15, 1.6, 1.6, 1.8])
 
     headers = [
         "Parties prenantes consultées",
+        "Si Autres, préciser",
         "Nom",
         "Poste",
         "Organisme d’affiliation",
     ]
 
-    for col, header in zip([col0, col1, col2, col3], headers):
+    for col, header in zip([col0, col0b, col1, col2, col3], headers):
         with col:
             html_block(f"""
 <div style="background:{USJ_BLUE}; color:white; padding:10px 12px; height:40px; display:flex; align-items:center; font-weight:700; border-radius:6px;">
@@ -626,51 +627,30 @@ def render_stakeholder_table():
 
     st.session_state.setdefault("n_stakeholder_rows", 8)
 
-    def rerun_after_category_change():
-        st.rerun()
-
     for i in range(1, st.session_state["n_stakeholder_rows"] + 1):
+        col0, col0b, col1, col2, col3 = st.columns([1.25, 1.15, 1.6, 1.6, 1.8])
 
-        current_category = st.session_state.get(f"stakeholder_category_{i}")
+        with col0:
+            categorie = st.selectbox(
+                "Parties prenantes consultées",
+                options=stakeholder_options,
+                index=None,
+                placeholder="Choisir",
+                key=f"stakeholder_category_{i}",
+                label_visibility="collapsed"
+            )
 
-        if current_category == "Autres":
-            col0a, col0b, col1, col2, col3 = st.columns([0.85, 1.05, 1.6, 1.6, 1.8])
+        with col0b:
+            categorie_autre = st.text_input(
+                "Si Autres, préciser",
+                key=f"stakeholder_category_autre_{i}",
+                label_visibility="collapsed",
+                placeholder="Préciser"
+            )
 
-            with col0a:
-                categorie = st.selectbox(
-                    "Parties prenantes consultées",
-                    options=stakeholder_options,
-                    index=stakeholder_options.index(current_category) if current_category in stakeholder_options else None,
-                    placeholder="Choisir",
-                    key=f"stakeholder_category_{i}",
-                    label_visibility="collapsed",
-                    on_change=rerun_after_category_change
-                )
-
-            with col0b:
-                categorie_autre = st.text_input(
-                    "Autre catégorie",
-                    key=f"stakeholder_category_autre_{i}",
-                    label_visibility="collapsed",
-                    placeholder="Préciser"
-                )
-
+        if categorie == "Autres":
             categorie_finale = categorie_autre.strip()
-
         else:
-            col0, col1, col2, col3 = st.columns([1.4, 1.6, 1.6, 1.8])
-
-            with col0:
-                categorie = st.selectbox(
-                    "Parties prenantes consultées",
-                    options=stakeholder_options,
-                    index=stakeholder_options.index(current_category) if current_category in stakeholder_options else None,
-                    placeholder="",
-                    key=f"stakeholder_category_{i}",
-                    label_visibility="collapsed",
-                    on_change=rerun_after_category_change
-                )
-
             categorie_finale = categorie or ""
 
         with col1:
@@ -705,16 +685,15 @@ def render_stakeholder_table():
         ]):
             stakeholder_rows.append({
                 "categorie": categorie_finale,
-                "nom": nom,
-                "poste": poste,
-                "organisme_affiliation": organisme,
+                "nom": nom.strip(),
+                "poste": poste.strip(),
+                "organisme_affiliation": organisme.strip(),
             })
 
     add_row = st.form_submit_button("Ajouter une ligne")
 
     if add_row:
         st.session_state["n_stakeholder_rows"] += 1
-        st.rerun()
 
     return stakeholder_rows
     
