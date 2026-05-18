@@ -1292,13 +1292,8 @@ def main():
     st.session_state.setdefault("admin_mode", False)
     st.session_state.setdefault("read_only_submitted", False)
 
-    render_first_page_header()
+        render_first_page_header()
 
-    # =========================
-    # HIDDEN ADMIN DOWNLOAD MODE
-    # Only USJ-ADMIN-2032 can access this section.
-    # Other respondent codes continue to access the normal form.
-    # =========================
     ADMIN_CODE = "USJ-ADMIN-2032"
 
     if st.session_state.get("current_draft_code", "").strip().upper() == ADMIN_CODE:
@@ -1331,33 +1326,33 @@ def main():
             admin_df["respondent_name"].fillna("") + " | " +
             admin_df["respondent_unit"].fillna("") + " | " +
             admin_df["statut"].fillna("")
-)
-
-selected_response = st.selectbox(
-    "Choisir une réponse",
-    options=admin_df["display_label"].tolist()
-)
-
-selected_draft_code = selected_response.split(" | ")[0].strip()
-
-col_unlock, col_delete = st.columns(2)
-
-with col_unlock:
-    if st.button("Redonner accès à cette personne"):
-        unlock_response_by_code(selected_draft_code)
-        st.success(
-            f"L’accès a été redonné au code {selected_draft_code}. "
-            "La personne peut modifier et soumettre à nouveau."
         )
-        st.rerun()
 
-with col_delete:
-    if st.button("Supprimer les réponses de cette personne"):
-        delete_response_by_code(selected_draft_code)
-        st.success(
-            f"Les réponses associées au code {selected_draft_code} ont été supprimées."
+        selected_response = st.selectbox(
+            "Choisir une réponse",
+            options=admin_df["display_label"].tolist()
         )
-        st.rerun()
+
+        selected_draft_code = selected_response.split(" | ")[0].strip()
+
+        col_unlock, col_delete = st.columns(2)
+
+        with col_unlock:
+            if st.button("Redonner accès à cette personne"):
+                unlock_response_by_code(selected_draft_code)
+                st.success(
+                    f"L’accès a été redonné au code {selected_draft_code}. "
+                    "La personne peut modifier et soumettre à nouveau."
+                )
+                st.rerun()
+
+        with col_delete:
+            if st.button("Supprimer les réponses de cette personne"):
+                delete_response_by_code(selected_draft_code)
+                st.success(
+                    f"Les réponses associées au code {selected_draft_code} ont été supprimées."
+                )
+                st.rerun()
 
         st.markdown("### Raw responses table")
         st.dataframe(df, use_container_width=True)
@@ -1409,7 +1404,6 @@ with col_delete:
 
         st.stop()
 
-
     if not st.session_state["access_granted"]:
         col_code, col_button = st.columns([2, 1])
 
@@ -1420,7 +1414,7 @@ with col_delete:
                 key="login_draft_code"
             )
 
-                with col_button:
+        with col_button:
             st.markdown("<br>", unsafe_allow_html=True)
             enter_form = st.button("Accéder au rapport")
 
@@ -1431,8 +1425,7 @@ with col_delete:
                 st.warning("Veuillez saisir un code personnel de reprise avant d’accéder au formulaire.")
                 return
 
-
-            if cleaned_code == "USJ-ADMIN-2032":
+            if cleaned_code == ADMIN_CODE:
                 st.session_state["access_granted"] = True
                 st.session_state["admin_mode"] = True
                 st.session_state["current_draft_code"] = cleaned_code
@@ -1466,42 +1459,6 @@ with col_delete:
                 st.rerun()
 
         st.stop()
-
-    mode = "Saisir une réponse"
-
-    if mode == "Saisir une réponse":
-        with st.container():
-
-            st.markdown("## Informations générales")
-
-            col1, col2, col3 = st.columns(3)
-
-            with col1:
-                st.text_input(
-                    "Institution",
-                    value=st.session_state.get("institution", ""),
-                    disabled=True,
-                    key="institution_display"
-                )
-
-                institution = st.session_state.get("institution", "")
-
-            with col2:
-                responsable = st.text_input(
-                "Responsable",
-                key="responsable",
-                disabled=True
-            )
-
-            with col3:
-                st.text_input(
-                    "Date",
-                    value=datetime.now().strftime("%Y-%m-%d"),
-                    disabled=True
-                )
-                response_date = datetime.now().date()
-
-            st.markdown("---")
 
             section_header("I - Introduction")
             render_fixed_introduction()
