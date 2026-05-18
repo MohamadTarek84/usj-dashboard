@@ -1224,7 +1224,7 @@ def main():
         with st.form("etat_actuel_form", clear_on_submit=False, enter_to_submit=False):
 
             st.markdown("## Informations générales")
-            st.info(f"Code de reprise actif : {st.session_state.get('current_draft_code', '')}")
+            st.info(f"" : {st.session_state.get('current_draft_code', '')}")
 
             col1, col2, col3 = st.columns(3)
 
