@@ -751,12 +751,12 @@ def render_stakeholder_table():
     col_add1, col_add2, _ = st.columns([1.3, 2.2, 3.3])
 
     with col_add1:
-        if st.button("Ajouter une ligne", key="add_stakeholder_standard"):
+        if st.button("Ajouter une ligne", key="add_stakeholder_standard", type="primary"):
             st.session_state["stakeholder_row_types"].append("standard")
             st.rerun()
 
     with col_add2:
-        if st.button("Ajouter une ligne Autre", key="add_stakeholder_autres"):
+        if st.button("Ajouter une ligne Autre", key="add_stakeholder_autres", type="primary"):
             st.session_state["stakeholder_row_types"].append("autres")
             st.rerun()
 
