@@ -755,17 +755,40 @@ def render_stakeholder_table():
                 "organisme_affiliation": organisme.strip(),
             })
 
-    col_add1, col_add2, _ = st.columns([1.3, 2.2, 3.3])
+html_block("""
+<style>
+div[data-testid="stButton"]:has(button#add_stakeholder_standard) button,
+div[data-testid="stButton"]:has(button#add_stakeholder_autres) button {
+    background-color: #6A1B9A !important;
+    border: 1px solid #6A1B9A !important;
+    color: white !important;
+}
 
-    with col_add1:
-        if st.button("Ajouter une ligne", key="add_stakeholder_standard", type="secondary"):
-            st.session_state["stakeholder_row_types"].append("standard")
-            st.rerun()
+div[data-testid="stButton"]:has(button#add_stakeholder_standard) button:hover,
+div[data-testid="stButton"]:has(button#add_stakeholder_autres) button:hover {
+    background-color: #4A148C !important;
+    border: 1px solid #4A148C !important;
+    color: white !important;
+}
 
-    with col_add2:
-        if st.button("Ajouter une ligne Autre", key="add_stakeholder_autres", type="secondary"):
-            st.session_state["stakeholder_row_types"].append("autres")
-            st.rerun()
+div[data-testid="stButton"]:has(button#add_stakeholder_standard) button p,
+div[data-testid="stButton"]:has(button#add_stakeholder_autres) button p {
+    color: white !important;
+}
+</style>
+""")
+
+col_add1, col_add2, _ = st.columns([1.3, 2.2, 3.3])
+
+with col_add1:
+    if st.button("Ajouter une ligne", key="add_stakeholder_standard"):
+        st.session_state["stakeholder_row_types"].append("standard")
+        st.rerun()
+
+with col_add2:
+    if st.button("Ajouter une ligne Autre", key="add_stakeholder_autres"):
+        st.session_state["stakeholder_row_types"].append("autres")
+        st.rerun()
 
     return stakeholder_rows
     
