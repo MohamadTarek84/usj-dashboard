@@ -1145,7 +1145,7 @@ def main():
         )
 
         excel_buffer = BytesIO()
-        with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
+        with pd.ExcelWriter(excel_buffer, engine="openpyxl") as writer:
             df.to_excel(writer, index=False, sheet_name="Raw responses")
             flat_df.to_excel(writer, index=False, sheet_name="Flattened responses")
 
