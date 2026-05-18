@@ -1172,14 +1172,14 @@ def main():
 
         with col_code:
             login_code = st.text_input(
-                "Code personnel de reprise",
-                placeholder="Exemple : USJ-FS-2026",
+                "Mot de passe reçu par email",
+                placeholder="",
                 key="login_draft_code"
             )
 
         with col_button:
             st.markdown("<br>", unsafe_allow_html=True)
-            enter_form = st.button("Accéder au formulaire")
+            enter_form = st.button("Accéder au rapport")
 
         if enter_form:
             cleaned_code = login_code.strip().upper()
