@@ -228,17 +228,26 @@ def preload_draft_into_session(data):
         "Conseil d’orientation stratégique",
     ]
 
-    for i in range(1, 9):
+    row_types = []
+    number_of_rows_to_load = max(8, len(stakeholder_rows))
+
+    for i in range(1, number_of_rows_to_load + 1):
         row = stakeholder_rows[i - 1] if i <= len(stakeholder_rows) else {}
 
         categorie = row.get("categorie", "")
-        if categorie not in stakeholder_options:
-            categorie = ""
 
-        st.session_state[f"stakeholder_category_{i}"] = categorie
+        if categorie and categorie not in stakeholder_options:
+            row_types.append("autres")
+            st.session_state[f"stakeholder_category_autre_{i}"] = categorie
+        else:
+            row_types.append("standard")
+            st.session_state[f"stakeholder_category_{i}"] = categorie if categorie in stakeholder_options else None
+
         st.session_state[f"stakeholder_nom_{i}"] = row.get("nom", "")
         st.session_state[f"stakeholder_poste_{i}"] = row.get("poste", "")
         st.session_state[f"stakeholder_organisme_{i}"] = row.get("organisme_affiliation", "")
+
+    st.session_state["stakeholder_row_types"] = row_types
 
     for theme, value in data.get("internal_analysis", {}).items():
         st.session_state[f"internal_{theme}"] = value
@@ -684,6 +693,8 @@ def render_stakeholder_intro():
 """)
 
 def render_stakeholder_table():
+    read_only = st.session_state.get("read_only_submitted", False)
+
     stakeholder_options = [
         "Responsables institution",
         "Enseignants cadrés",
@@ -726,7 +737,8 @@ def render_stakeholder_table():
                     "Autre partie prenante",
                     key=f"stakeholder_category_autre_{i}",
                     label_visibility="collapsed",
-                    placeholder="Autre, préciser"
+                    placeholder="Autre, préciser",
+                    disabled=read_only
                 )
             else:
                 categorie = st.selectbox(
@@ -735,7 +747,8 @@ def render_stakeholder_table():
                     index=None,
                     placeholder="Choisir une catégorie",
                     key=f"stakeholder_category_{i}",
-                    label_visibility="collapsed"
+                    label_visibility="collapsed",
+                    disabled=read_only
                 )
 
         with col1:
@@ -743,7 +756,8 @@ def render_stakeholder_table():
                 "Nom",
                 key=f"stakeholder_nom_{i}",
                 label_visibility="collapsed",
-                placeholder=""
+                placeholder="",
+                disabled=read_only
             )
 
         with col2:
@@ -751,7 +765,8 @@ def render_stakeholder_table():
                 "Poste",
                 key=f"stakeholder_poste_{i}",
                 label_visibility="collapsed",
-                placeholder=""
+                placeholder="",
+                disabled=read_only
             )
 
         with col3:
@@ -759,7 +774,8 @@ def render_stakeholder_table():
                 "Organisme d’affiliation",
                 key=f"stakeholder_organisme_{i}",
                 label_visibility="collapsed",
-                placeholder=""
+                placeholder="",
+                disabled=read_only
             )
 
         if any([
@@ -775,40 +791,18 @@ def render_stakeholder_table():
                 "organisme_affiliation": organisme.strip(),
             })
 
-    html_block("""
-<style>
-div[data-testid="stButton"]:has(button[aria-label="Ajouter une ligne"]) button {
-    background-color: #6A1B9A !important;
-    border: 1px solid #6A1B9A !important;
-    color: white !important;
-}
+    if not read_only:
+        col_add1, col_add2, _ = st.columns([1.3, 2.2, 3.3])
 
-div[data-testid="stButton"]:has(button[aria-label="Ajouter une ligne Autre"]) button {
-    background-color: #6A1B9A !important;
-    border: 1px solid #6A1B9A !important;
-    color: white !important;
-}
+        with col_add1:
+            if st.button("Ajouter une ligne", key="add_stakeholder_standard"):
+                st.session_state["stakeholder_row_types"].append("standard")
+                st.rerun()
 
-div[data-testid="stButton"]:has(button[aria-label="Ajouter une ligne"]) button:hover,
-div[data-testid="stButton"]:has(button[aria-label="Ajouter une ligne Autre"]) button:hover {
-    background-color: #001352 !important;
-    border: 1px solid #001352 !important;
-    color: white !important;
-}
-</style>
-""")
-
-    col_add1, col_add2, _ = st.columns([1.3, 2.2, 3.3])
-
-    with col_add1:
-        if st.button("Ajouter une ligne", key="add_stakeholder_standard"):
-            st.session_state["stakeholder_row_types"].append("standard")
-            st.rerun()
-
-    with col_add2:
-        if st.button("Ajouter une ligne Autre", key="add_stakeholder_autres"):
-            st.session_state["stakeholder_row_types"].append("autres")
-            st.rerun()
+        with col_add2:
+            if st.button("Ajouter une ligne Autre", key="add_stakeholder_autres"):
+                st.session_state["stakeholder_row_types"].append("autres")
+                st.rerun()
 
     return stakeholder_rows
     
@@ -837,24 +831,28 @@ def count_words(text):
 
 
 def word_limited_text_area(label, key, height=300, max_words=500):
+    read_only = st.session_state.get("read_only_submitted", False)
+
     value = st.text_area(
         label=label,
         key=key,
         height=height,
         placeholder=f"Merci de saisir votre réponse ici (au maximum {max_words} mots)",
-        label_visibility="collapsed"
+        label_visibility="collapsed",
+        disabled=read_only
     )
 
     word_count = count_words(value)
 
-    if word_count > max_words:
-        html_block(f"""
+    if not read_only:
+        if word_count > max_words:
+            html_block(f"""
 <div style="min-height:24px; color:#8B1538; font-weight:700; font-size:14px; margin-top:-6px; margin-bottom:8px;">
     ⚠ Vous avez saisi {word_count} mots. Maximum autorisé : {max_words} mots.
 </div>
 """)
-    else:
-        html_block(f"""
+        else:
+            html_block(f"""
 <div style="min-height:24px; color:#595959; font-size:13px; margin-top:-6px; margin-bottom:8px;">
     {word_count}/{max_words} mots
 </div>
@@ -1168,6 +1166,7 @@ def render_priorities_table():
     return priorities_rows
 
 def render_pour_finir():
+    read_only = st.session_state.get("read_only_submitted", False)
     pour_finir = {}
 
     html_block(f"""
@@ -1195,9 +1194,9 @@ def render_pour_finir():
 """)
 
         with col_boxes:
-            r1 = st.text_input(f"{phrase} 1", key=f"pour_finir_{i}_1", label_visibility="collapsed")
-            r2 = st.text_input(f"{phrase} 2", key=f"pour_finir_{i}_2", label_visibility="collapsed")
-            r3 = st.text_input(f"{phrase} 3", key=f"pour_finir_{i}_3", label_visibility="collapsed")
+            r1 = st.text_input(f"{phrase} 1", key=f"pour_finir_{i}_1", label_visibility="collapsed", disabled=read_only)
+            r2 = st.text_input(f"{phrase} 2", key=f"pour_finir_{i}_2", label_visibility="collapsed", disabled=read_only)
+            r3 = st.text_input(f"{phrase} 3", key=f"pour_finir_{i}_3", label_visibility="collapsed", disabled=read_only)
 
         pour_finir[phrase] = {
             "reponse_1": r1,
@@ -1209,6 +1208,9 @@ def render_pour_finir():
 
 
 def render_quick_save_button(key):
+    if st.session_state.get("read_only_submitted", False):
+        return False
+
     col_left, col_button, col_right = st.columns([1.4, 1.2, 1.4])
 
     with col_button:
@@ -1216,6 +1218,7 @@ def render_quick_save_button(key):
             "Enregistrer et continuer plus tard",
             key=key
         )
+
 
 def find_word_limit_errors(section_data, section_label, max_words):
     errors = []
@@ -1248,6 +1251,7 @@ def main():
     st.session_state.setdefault("access_granted", False)
     st.session_state.setdefault("current_draft_code", "")
     st.session_state.setdefault("admin_mode", False)
+    st.session_state.setdefault("read_only_submitted", False)
 
     render_first_page_header()
 
@@ -1369,11 +1373,18 @@ def main():
                 preload_draft_into_session(draft)
                 st.session_state["current_draft_code"] = cleaned_code
                 st.session_state["access_granted"] = True
+
+                if draft.get("loaded_statut") == "Soumis":
+                    st.session_state["read_only_submitted"] = True
+                else:
+                    st.session_state["read_only_submitted"] = False
+
                 st.success("Vos réponses enregistrées ont été chargées.")
                 st.rerun()
             else:
                 st.session_state["current_draft_code"] = cleaned_code
                 st.session_state["access_granted"] = True
+                st.session_state["read_only_submitted"] = False
                 st.session_state["responsable"] = AUTHORIZED_TEST_CODES[cleaned_code]["responsable"]
                 st.session_state["institution"] = AUTHORIZED_TEST_CODES[cleaned_code]["institution"]
                 st.info("Nouveau formulaire ouvert. Vous pouvez commencer à remplir vos réponses.")
@@ -1476,16 +1487,23 @@ def main():
 
             col_left, col_save, col_submit, col_right = st.columns([1.0, 1.3, 1.8, 1.0])
 
-            with col_save:
-                save_draft = st.button("Enregistrer et continuer plus tard", key="save_draft_button")
-
-           
-            with col_submit:
-                submit_final = st.button(
-                    "Envoyer la version finale\u00A0uniquement",
-                    key="submit_final_button",
-                    type="primary"
+            if st.session_state.get("read_only_submitted", False):
+                st.info(
+                    "Cette réponse a déjà été envoyée en version finale. "
+                    "Vous pouvez la consulter, mais vous ne pouvez plus la modifier ni l’enregistrer à nouveau."
                 )
+                save_draft = False
+                submit_final = False
+            else:
+                with col_save:
+                    save_draft = st.button("Enregistrer et continuer plus tard", key="save_draft_button")
+
+                with col_submit:
+                    submit_final = st.button(
+                        "Envoyer la version finale\u00A0uniquement",
+                        key="submit_final_button",
+                        type="primary"
+                    )
 
         quick_save_clicked = any([
             quick_save_after_stakeholders,
@@ -1576,7 +1594,9 @@ def main():
                     )
 
                 if submit_final:
+                    st.session_state["read_only_submitted"] = True
                     st.success("Merci.\nVos réponses ont été enregistrées.")
+                    st.rerun()
 
             except ValueError as e:
                 st.error(str(e))
