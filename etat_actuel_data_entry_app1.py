@@ -1133,8 +1133,17 @@ def render_pour_finir():
         "L’USJ serait un excellent lieu de travail si …",
     ]
 
-    for i, phrase in enumerate(phrases, start=1):
-        col_label, col_boxes = st.columns([1.15, 3.2], gap="small")
+for i, phrase in enumerate(phrases, start=1):
+    saved_phrase = pour_finir.get(phrase, {})
+
+    if isinstance(saved_phrase, dict):
+        st.session_state[f"pour_finir_{i}_1"] = saved_phrase.get("reponse_1", "")
+        st.session_state[f"pour_finir_{i}_2"] = saved_phrase.get("reponse_2", "")
+        st.session_state[f"pour_finir_{i}_3"] = saved_phrase.get("reponse_3", "")
+    else:
+        st.session_state[f"pour_finir_{i}_1"] = saved_phrase
+        st.session_state[f"pour_finir_{i}_2"] = ""
+        st.session_state[f"pour_finir_{i}_3"] = ""
 
         with col_label:
             html_block(f"""
