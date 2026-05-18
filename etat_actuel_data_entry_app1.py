@@ -991,30 +991,36 @@ def render_priorities_table():
 </div>
 """)
 
-    for i in range(1, 7):
+    for i in range(1, 4):
         col1, col2 = st.columns([1.2, 1.8])
 
         with col1:
             priority_value = st.text_area(
                 label=f"Priorité stratégique {i}",
                 key=f"priority_{i}",
-                height=140,
+                height=210,
                 placeholder="Merci de saisir votre réponse ici",
                 label_visibility="collapsed"
             )
 
         with col2:
-            initiative_value = st.text_area(
-                label=f"Initiatives {i}",
-                key=f"initiative_{i}",
-                height=140,
-                placeholder="Merci de saisir votre réponse ici",
-                label_visibility="collapsed"
-            )
+            initiative_values = []
+
+            for j in range(1, 4):
+                initiative_value = st.text_area(
+                    label=f"Initiative {i}.{j}",
+                    key=f"initiative_{i}_{j}",
+                    height=65,
+                    placeholder=f"Initiative {j}",
+                    label_visibility="collapsed"
+                )
+                initiative_values.append(initiative_value)
 
         priorities_rows.append({
             "priorite_strategique": priority_value,
-            "initiatives": initiative_value,
+            "initiative_1": initiative_values[0],
+            "initiative_2": initiative_values[1],
+            "initiative_3": initiative_values[2],
         })
 
     return priorities_rows
