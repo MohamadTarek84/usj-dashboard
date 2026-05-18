@@ -483,7 +483,7 @@ def render_first_page_header():
 
     with col_right:
         if LOGO_PATH.exists():
-            st.image(str(LOGO_PATH), width=420)
+            st.image(str(LOGO_PATH), width=350)
         else:
             st.warning("LogoUAQ.png non trouvé. Placez le logo dans le même dossier que le script.")
 
