@@ -1041,8 +1041,8 @@ def render_pour_finir():
     pour_finir = {}
 
     html_block(f"""
-<div style="background-color:#ffffff; padding:4px 0 4px 0; margin-bottom:4px;">
-    <p style="font-size:18px; line-height:1.35; color:{USJ_RED}; font-weight:700; font-style:italic; margin-bottom:4px;">
+<div style="background-color:#ffffff; padding:4px 0 2px 0; margin-bottom:2px;">
+    <p style="font-size:18px; line-height:1.25; color:{USJ_RED}; font-weight:700; font-style:italic; margin-bottom:2px;">
     POUR FINIR. Nous vous remercions de compléter les phrases suivantes.
     </p>
 </div>
@@ -1055,11 +1055,11 @@ def render_pour_finir():
     ]
 
     for i, phrase in enumerate(phrases, start=1):
-        col1, col2 = st.columns([1.7, 2.6], gap="small")
+        col1, col2 = st.columns([1.45, 3.0], gap="small")
 
         with col1:
             html_block(f"""
-<div style="font-size:17px; line-height:1.35; color:{USJ_BLUE}; font-weight:700; margin-top:6px; white-space:nowrap;">
+<div style="font-size:17px; line-height:1.2; color:{USJ_BLUE}; font-weight:700; margin-top:4px; white-space:nowrap;">
     &bull; {phrase}
 </div>
 """)
