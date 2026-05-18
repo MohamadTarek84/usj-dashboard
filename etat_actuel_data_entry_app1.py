@@ -488,8 +488,8 @@ div[data-testid="stFormSubmitButton"] button p {{
 
 .st-key-add_stakeholder_standard button:hover,
 .st-key-add_stakeholder_autres button:hover {{
-    background-color: #4A148C !important;
-    border: 1px solid #4A148C !important;
+    background-color: #001352 !important;
+    border: 1px solid #001352 !important;
     color: white !important;
 }}
 
