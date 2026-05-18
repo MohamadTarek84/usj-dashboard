@@ -1323,7 +1323,7 @@ def main():
 
             if save_draft or submit_final:
 
-            statut = "Brouillon" if save_draft else "Soumis"
+                statut = "Brouillon" if save_draft else "Soumis"
 
             metadata = {
                 "institution": institution,
