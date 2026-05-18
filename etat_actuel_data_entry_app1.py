@@ -6,6 +6,7 @@ import json
 import base64
 from datetime import datetime
 from pathlib import Path
+from io import BytesIO
 
 import pandas as pd
 import streamlit as st
@@ -52,11 +53,6 @@ AUTHORIZED_TEST_CODES = {
         "institution": "",
     },
 }
-
-ADMIN_CODES = {
-    "USJ-ADMIN-2032": "Tarek Halabi",
-}
-
 
 def html_block(content):
     if hasattr(st, "html"):
@@ -555,16 +551,17 @@ def render_fixed_introduction():
     VI. Propositions de Priorités stratégiques et Initiatives
 
 </div>
-    <p style="font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:5px;">
+    <p style="font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-top:22px; margin-bottom:8px;">
     Pour toute information supplémentaire ou support, contacter :
-    </p>
+</p>
 
 <p style="font-size:16px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:0;">
-    M. Hadi Sawaya – Coordinateur de l’Unité Assurance Qualité : <a href="mailto:hadi.sawaya@usj.edu.lb" style="color:{USJ_BLUE}; text-decoration:underline;">hadi.sawaya@usj.edu.lb</a><br>
-    Mme Irma Majdalani – Expert qualité – Unité Assurance qualité : <a href="mailto:irma.majdalani@usj.edu.lb" style="color:{USJ_BLUE}; text-decoration:underline;">irma.majdalani@usj.edu.lb</a><br>
-    Mme Nadine Riachi Haddad – Secrétaire général : <a href="mailto:secg@usj.edu.lb" style="color:{USJ_BLUE}; text-decoration:underline;">secg@usj.edu.lb</a><br>
-    Mme Ursula El Hage – Directeur du Service de l’insertion professionnelle : <a href="mailto:ursula.hage@usj.edu.lb" style="color:{USJ_BLUE}; text-decoration:underline;">ursula.hage@usj.edu.lb</a><br>
-    Mme Lina Koleilat Ghalayini – Chef de projets – Unité Assurance qualité : <a href="mailto:lina.koleilat@usj.edu.lb" style="color:{USJ_BLUE}; text-decoration:underline;">lina.koleilat@usj.edu.lb</a>
+    <p style="font-size:17px; line-height:1.75; color:{USJ_BLUE}; margin-top:22px; margin-bottom:0;">
+    M. Hadi Sawaya – Coordinateur de l’Unité Assurance Qualité : hadi.sawaya@usj.edu.lb<br>
+    Mme Irma Majdalani – Expert qualité – Unité Assurance qualité : irma.majdalani@usj.edu.lb<br>
+    Mme Nadine Riachi Haddad – Secrétaire général : secg@usj.edu.lb<br>
+    Mme Ursula El Hage – Directeur du Service de l’insertion professionnelle : ursula.hage@usj.edu.lb<br>
+    Mme Lina Koleilat Ghalayini – Chef de projets – Unité Assurance qualité : lina.koleilat@usj.edu.lb
 </p>
 </div>
 """)
@@ -573,38 +570,28 @@ def render_fixed_introduction():
 def render_stakeholder_intro():
     annexe_a_src = image_to_base64(ANNEXE_A_PATH)
 
-    annexe_hover_html = "Annexe A"
-    if annexe_a_src:
-        annexe_hover_html = f"""
-        <span class="annexe-a-hover">
-            Annexe A
-            <span class="annexe-a-popup">
-                <img src="{annexe_a_src}" style="width:720px; height:auto;">
-            </span>
-        </span>
-        """
+    annexe_hover_html = f'<span class="annexe-a-hover">Annexe&nbsp;A<span class="annexe-a-popup"><img src="{annexe_a_src}" style="width:720px; height:auto;"></span></span>'
 
     html_block(f"""
 <div style="background-color:#ffffff; padding:20px 34px 12px 34px; border-radius:12px; border-left:none; border-top:none; border-bottom:none; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:12px;">
 
-    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
+    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:16px;">
     Le rapport d’analyse des données existantes est le fruit d’une consultation menée auprès de l’ensemble des parties prenantes de l’institution. L’identification et la prise en compte de leurs attentes constituent un levier essentiel pour la réussite du processus de planification stratégique. En raison de la diversité de leurs rôles, de leurs intérêts et de leur degré d’influence, les parties prenantes apportent des perspectives complémentaires, qui enrichissent l’analyse stratégique et favorisent l’adhésion aux orientations retenues. L’analyse de leurs attentes vise à mieux comprendre leurs besoins, leurs priorités et leur niveau d’influence, afin d’éclairer les choix stratégiques de l’USJ. Cette démarche participative est essentielle pour garantir une vision partagée, réaliste et représentative de la diversité de la communauté universitaire.
     </p>
 
-    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:4px;">
+    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:16px;">
     Il est proposé aux institutions de consulter notamment les parties prenantes suivantes : le conseil de l’institution, le conseil d’orientation stratégique, les employeurs, les étudiants, les enseignants, le PSG, les anciens, ainsi que toute autre partie jugée pertinente et engagée dans l’institution (Exemple de parties prenantes en {annexe_hover_html}).
     </p>
 
-    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:4px;">
-    L’institution est libre d’organiser, selon les modalités qu’elle juge les plus appropriées, une ou plusieurs réunions avec les parties prenantes, ou, dans certains cas, de recourir à des questionnaires (voir la note de bas de page de l’introduction).
+    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:16px;">
+    L’institution est libre d’organiser, selon les modalités qu’elle juge les plus appropriées, une ou plusieurs réunions avec les parties prenantes, ou, dans certains cas, de recourir à des questionnaires.
     </p>
 
-    <p style="font-size:17px; line-height:1.55; color:#7F7F7F; font-weight:700; font-style:italic; margin-bottom:0px;">
+    <p style="font-size:17px; line-height:1.55; color:#7F7F7F; font-weight:700; font-style:italic; margin-bottom:16px;">
     Le tableau ci-dessous doit être dûment complété.
     </p>
 </div>
 """)
-
 
 def render_stakeholder_table():
     stakeholder_categories = [
@@ -715,14 +702,14 @@ def render_stakeholder_table():
     add_autre = st.form_submit_button("Ajouter une ligne Autres")
 
     if add_autre:
-        st.session_state.n_autres_rows += 1
-        st.rerun()
+        st.session_state["n_autres_rows"] = st.session_state.get("n_autres_rows", 1) + 1
+    
 
     return stakeholder_rows
 
 def render_internal_intro():
     html_block(f"""
-<div style="background-color:#ffffff; padding:24px 34px; border-radius:12px; border-left:none; border-top:none; border-bottom:none; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:25px;">
+<div style="background-color:#ffffff; padding:24px 34px 10px 34px; border-radius:12px; border-left:none; border-top:none; border-bottom:none; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:6px;">
     <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
     L’analyse interne vise à apprécier dans quelle mesure l’USJ dispose des ressources nécessaires pour soutenir sa mission et mettre en œuvre ses orientations stratégiques. Elle porte également sur l’évaluation des modes d’organisation et des pratiques de gestion qui influencent directement la performance et l’efficacité de l’Université. Cette analyse permettra d’identifier dans une étape ultérieure les forces et les faiblesses de l’Université. Elle constitue un élément central du diagnostic institutionnel et contribue à éclairer les choix stratégiques, en assurant la cohérence entre les ambitions, les moyens disponibles et les capacités opérationnelles à l’échelle de l’USJ.
     </p>
@@ -731,10 +718,9 @@ def render_internal_intro():
     Dans cette première étape, vous êtes appelés donc à analyser et évaluer, d’après votre expérience, l’état actuel des volets suivants (6 au minimum) au niveau de l’Université.
     </p>
 
-    <p style="text-align:justify; font-size:17px; line-height:1.55; color:#7F7F7F; font-weight:700; font-style:italic; margin-bottom:0px;">
+    <p style="text-align:justify; font-size:17px; line-height:1.55; color:#7F7F7F; font-weight:700; font-style:italic; margin-bottom:2px;">
     Nous vous remercions de bien vouloir compléter les tableaux ci-dessous en vous appuyant sur les données disponibles et sur l’avis de votre institution et de ses parties prenantes, en traitant <span style="text-decoration:underline;">au moins six</span> des thèmes proposés, dans une perspective globale à l’échelle de l’Université.
     </p>
-    
 </div>
 """)
 
@@ -761,7 +747,7 @@ def render_internal_analysis():
 
     for theme in internal_themes:
         html_block(f"""
-<div style="padding:2px 0px; margin-top:10px; margin-bottom:4px;">
+<div style="padding:2px 0px; margin-top:2px; margin-bottom:4px;">
     <p style="font-size:17px; line-height:1.25; color:{USJ_RED}; font-weight:700; margin:0;">
         • {theme}
     </p>
@@ -780,7 +766,7 @@ def render_internal_analysis():
 
 def render_external_intro():
     html_block(f"""
-<div style="background-color:#ffffff; padding:24px 34px; border-radius:12px; border-left:none; border-top:none; border-bottom:none; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:25px;">
+<div style="background-color:#ffffff; padding:24px 34px 10px 34px; border-radius:12px; border-left:none; border-top:none; border-bottom:none; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:6px;">
 
     <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
     L’analyse de l’environnement externe constitue une étape essentielle du processus de planification stratégique. Elle vise à situer l’USJ dans son écosystème institutionnel, académique, économique et réglementaire, afin d’identifier les facteurs externes susceptibles d’influencer ses orientations, ses performances et sa soutenabilité à moyen et à long terme.
@@ -795,10 +781,10 @@ def render_external_intro():
     </p>
 
     <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
-    Dans cette deuxième étape, vous êtes appelés donc à analyser et évaluer, d’après votre expérience, l’état actuel des dimensions suivantes au niveau de l’Université
+    Dans cette deuxième étape, vous êtes appelés donc à analyser et évaluer, d’après votre expérience, l’état actuel des dimensions suivantes au niveau de l’Université.
     </p>
 
-    <p style="text-align:justify; font-size:17px; line-height:1.55; color:#7F7F7F; font-weight:700; font-style:italic; margin-bottom:0px;">
+    <p style="text-align:justify; font-size:17px; line-height:1.55; color:#7F7F7F; font-weight:700; font-style:italic; margin-bottom:2px;">
     Nous vous remercions de bien vouloir compléter les tableaux ci-dessous, dans une perspective globale à l’échelle de l’Université.
     </p>
 
@@ -839,7 +825,7 @@ def render_external_analysis():
             """
 
         html_block(f"""
-<div style="padding:2px 0px; margin-top:10px; margin-bottom:4px;">
+<div style="padding:2px 0px; margin-top:2px; margin-bottom:4px;">
     <p style="font-size:17px; line-height:1.25; color:{USJ_RED}; font-weight:700; margin:0;">
         {title_html}
     </p>
@@ -858,12 +844,13 @@ def render_external_analysis():
 
 def render_swot_intro():
     html_block(f"""
-<div style="background-color:#ffffff; padding:24px 34px; border-radius:12px; border-left:none; border-top:none; border-bottom:none; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:25px;">
-    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
+<div style="background-color:#ffffff; padding:24px 34px 10px 34px; border-radius:12px; border-left:none; border-top:none; border-bottom:none; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:6px;">
+    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:0;">
     L&apos;Analyse SWOT est un levier de planification stratégique qui permet de synthétiser les constats majeurs afin d&apos;améliorer les processus de planification et d&apos;optimiser la prise de décision au niveau de l&apos;Université.
     </p>
 </div>
 """)
+
 
 def render_swot_table(section_key, left_title, right_title):
     rows = []
@@ -918,32 +905,18 @@ def render_swot_analysis():
 
     annexe_b_src = image_to_base64(ANNEXE_B_PATH)
 
-    annexe_b_hover_html = "Annexe B"
+    annexe_b_hover_html = "Annexe&nbsp;B"
     if annexe_b_src:
-        annexe_b_hover_html = f"""
-        <span class="annexe-a-hover">
-            Annexe B
-            <span class="annexe-a-popup">
-                <img src="{annexe_b_src}" style="width:900px; height:auto;">
-            </span>
-        </span>
-        """
+        annexe_b_hover_html = f'<span class="annexe-a-hover">Annexe&nbsp;B<span class="annexe-a-popup"><img src="{annexe_b_src}" style="width:900px; height:auto; text-decoration:none; border-bottom:none;"></span></span>'
 
     annexe_c_src = image_to_base64(ANNEXE_C_PATH)
 
-    annexe_c_hover_html = "Annexe C"
+    annexe_c_hover_html = "Annexe&nbsp;C"
     if annexe_c_src:
-        annexe_c_hover_html = f"""
-        <span class="annexe-a-hover">
-            Annexe C
-            <span class="annexe-a-popup">
-                <img src="{annexe_c_src}" style="width:900px; height:auto;">
-            </span>
-        </span>
-        """
+        annexe_c_hover_html = f'<span class="annexe-a-hover">Annexe&nbsp;C<span class="annexe-a-popup"><img src="{annexe_c_src}" style="width:900px; height:auto; text-decoration:none; border-bottom:none;"></span></span>'
 
     st.markdown(f"""
-<div style="background:#ffffff; padding:18px 24px; border-radius:10px; border-left:none; margin-top:15px; margin-bottom:15px;">
+<div style="background:#ffffff; padding:8px 24px 8px 24px; border-radius:10px; border-left:none; margin-top:6px; margin-bottom:8px;">
     <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:6px;">
     <strong>1. Facteurs internes :</strong> Identification des <strong>forces</strong> et des <strong>faiblesses</strong> propres à l'Université (Exemples de Forces et Faiblesses en {annexe_b_hover_html}).
     </p>
@@ -960,9 +933,9 @@ def render_swot_analysis():
     )
 
     html_block(f"""
-<div style="background:#ffffff; padding:18px 24px; border-radius:10px; border-left:none; margin-top:28px; margin-bottom:15px;">
+<div style="background:#ffffff; padding:8px 24px 8px 24px; border-radius:10px; border-left:none; margin-top:10px; margin-bottom:6px;">
     <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:6px;">
-    <strong>2. Facteurs externes :</strong> Identification des opportunités de développement et des menaces émanant de l'environnement extérieur (Exemples d’Opportunités et de Menaces en {annexe_c_hover_html}).
+    <strong>2. Facteurs externes :</strong> Identification des <strong>opportunités</strong> de développement et des <strong>menaces</strong> émanant de l'environnement extérieur (Exemples d’Opportunités et de Menaces en {annexe_c_hover_html}).
     </p>
     <p style="text-align:left; font-size:17px; line-height:1.55; color:#7F7F7F; font-weight:700; font-style:italic; margin-bottom:0;">
     Nous vous remercions de bien vouloir compléter le tableau ci-dessous en indiquant au maximum <span style="text-decoration:underline; font-weight:700; font-style:italic;">cinq opportunités et cinq menaces</span>. Vos réponses seront déduites de l’analyse de l’état actuel externe (<a href="#section-iv" style="text-decoration:underline; color:#0000FF; font-weight:700; font-style:italic;">section IV</a> principalement).
@@ -977,7 +950,6 @@ def render_swot_analysis():
     )
 
     return swot_data
-
 def render_priorities_intro():
     html_block(f"""
 <div style="background-color:#ffffff; padding:24px 34px; border-radius:12px; border-left:none; border-top:none; border-bottom:none; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:25px;">
@@ -1019,30 +991,48 @@ def render_priorities_table():
 </div>
 """)
 
-    for i in range(1, 7):
+    for i in range(1, 4):
         col1, col2 = st.columns([1.2, 1.8])
 
         with col1:
             priority_value = st.text_area(
                 label=f"Priorité stratégique {i}",
                 key=f"priority_{i}",
-                height=140,
+                height=240,
                 placeholder="Merci de saisir votre réponse ici",
                 label_visibility="collapsed"
             )
 
         with col2:
-            initiative_value = st.text_area(
-                label=f"Initiatives {i}",
-                key=f"initiative_{i}",
-                height=140,
-                placeholder="Merci de saisir votre réponse ici",
+            initiative_1 = st.text_area(
+                label=f"Initiative {i}.1",
+                key=f"initiative_{i}_1",
+                height=70,
+                placeholder="Initiative 1",
+                label_visibility="collapsed"
+            )
+
+            initiative_2 = st.text_area(
+                label=f"Initiative {i}.2",
+                key=f"initiative_{i}_2",
+                height=70,
+                placeholder="Initiative 2",
+                label_visibility="collapsed"
+            )
+
+            initiative_3 = st.text_area(
+                label=f"Initiative {i}.3",
+                key=f"initiative_{i}_3",
+                height=70,
+                placeholder="Initiative 3",
                 label_visibility="collapsed"
             )
 
         priorities_rows.append({
             "priorite_strategique": priority_value,
-            "initiatives": initiative_value,
+            "initiative_1": initiative_1,
+            "initiative_2": initiative_2,
+            "initiative_3": initiative_3,
         })
 
     return priorities_rows
@@ -1051,8 +1041,8 @@ def render_pour_finir():
     pour_finir = {}
 
     html_block(f"""
-<div style="background-color:#ffffff; padding:4px 0 4px 0; margin-bottom:4px;">
-    <p style="font-size:18px; line-height:1.35; color:{USJ_RED}; font-weight:700; font-style:italic; margin-bottom:4px;">
+<div style="background-color:#ffffff; padding:4px 0 2px 0; margin-bottom:2px;">
+    <p style="font-size:18px; line-height:1.25; color:{USJ_RED}; font-weight:700; font-style:italic; margin-bottom:2px;">
     POUR FINIR. Nous vous remercions de compléter les phrases suivantes.
     </p>
 </div>
@@ -1065,11 +1055,11 @@ def render_pour_finir():
     ]
 
     for i, phrase in enumerate(phrases, start=1):
-        col1, col2 = st.columns([1.7, 2.6], gap="small")
+        col1, col2 = st.columns([1.0, 3.0], gap="small")
 
         with col1:
             html_block(f"""
-<div style="font-size:17px; line-height:1.35; color:{USJ_BLUE}; font-weight:700; margin-top:6px; white-space:nowrap;">
+<div style="font-size:17px; line-height:1.2; color:{USJ_BLUE}; font-weight:700; margin-top:4px; white-space:nowrap;">
     &bull; {phrase}
 </div>
 """)
@@ -1084,70 +1074,6 @@ def render_pour_finir():
 
     return pour_finir
 
-
-def render_download_dashboard():
-    """Minimal hidden admin page to download the SQLite DB and exported responses."""
-    st.markdown("## Télécharger les données soumises")
-
-    st.info("Cette page lit les données depuis le même environnement Streamlit que le formulaire principal.")
-
-    st.markdown("### Emplacement de la base SQLite")
-    st.write("Dossier courant :")
-    st.code(str(Path.cwd()))
-    st.write("Chemin attendu de la base :")
-    st.code(str(DB_PATH.resolve()))
-
-    if not DB_PATH.exists():
-        st.error("La base SQLite etat_actuel_responses.db est introuvable dans cet environnement.")
-        return
-
-    st.success("Base SQLite trouvée.")
-
-    with open(DB_PATH, "rb") as f:
-        st.download_button(
-            label="Télécharger la base SQLite (.db)",
-            data=f,
-            file_name="etat_actuel_responses.db",
-            mime="application/octet-stream",
-        )
-
-    df = load_responses()
-
-    if df.empty:
-        st.warning("La base existe, mais aucune réponse n’est enregistrée pour le moment.")
-        return
-
-    st.markdown("### Aperçu des réponses")
-    st.metric("Nombre total d’enregistrements", len(df))
-
-    if "statut" in df.columns:
-        st.metric("Réponses soumises", int((df["statut"] == "Soumis").sum()))
-        st.metric("Brouillons", int((df["statut"] == "Brouillon").sum()))
-
-    st.dataframe(df, use_container_width=True)
-
-    flat_df = pd.DataFrame([flatten_response(row) for _, row in df.iterrows()])
-
-    csv_data = flat_df.to_csv(index=False).encode("utf-8-sig")
-    st.download_button(
-        label="Télécharger les réponses en CSV",
-        data=csv_data,
-        file_name="etat_actuel_responses.csv",
-        mime="text/csv",
-    )
-
-    excel_path = Path("etat_actuel_responses_export.xlsx")
-    flat_df.to_excel(excel_path, index=False)
-
-    with open(excel_path, "rb") as f:
-        st.download_button(
-            label="Télécharger les réponses en Excel",
-            data=f,
-            file_name="etat_actuel_responses.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        )
-
-
 def main():
     st.set_page_config(page_title=APP_TITLE, page_icon="📋", layout="wide")
 
@@ -1161,13 +1087,85 @@ def main():
 
     render_first_page_header()
 
-    if st.session_state.get("current_draft_code", "").strip().upper() in ADMIN_CODES:
+    # =========================
+    # HIDDEN ADMIN DOWNLOAD MODE
+    # Only USJ-ADMIN-2032 can access this section.
+    # Other respondent codes continue to access the normal form.
+    # =========================
+    ADMIN_CODE = "USJ-ADMIN-2032"
+
+    if st.session_state.get("current_draft_code", "").strip().upper() == ADMIN_CODE:
         st.session_state["access_granted"] = True
         st.session_state["admin_mode"] = True
 
     if st.session_state.get("admin_mode", False):
-        render_download_dashboard()
+        st.markdown("## Admin download")
+
+        st.write("DB path:", DB_PATH.resolve())
+        st.write("DB exists:", DB_PATH.exists())
+
+        if not DB_PATH.exists():
+            st.error("Database not found in this app environment.")
+            st.stop()
+
+        df = load_responses()
+
+        if df.empty:
+            st.warning("Database exists, but no responses are saved.")
+            st.stop()
+
+        st.success(f"{len(df)} response(s) found.")
+
+        st.markdown("### Raw responses table")
+        st.dataframe(df, use_container_width=True)
+
+        try:
+            flat_df = pd.DataFrame([flatten_response(row) for _, row in df.iterrows()])
+        except Exception as e:
+            st.warning(f"Could not flatten JSON responses. Raw data is still available. Details: {e}")
+            flat_df = df.copy()
+
+        st.markdown("### Flattened responses table")
+        st.dataframe(flat_df, use_container_width=True)
+
+        raw_csv = df.to_csv(index=False).encode("utf-8-sig")
+        st.download_button(
+            label="Download raw CSV",
+            data=raw_csv,
+            file_name="etat_actuel_responses_raw.csv",
+            mime="text/csv",
+        )
+
+        flat_csv = flat_df.to_csv(index=False).encode("utf-8-sig")
+        st.download_button(
+            label="Download flattened CSV",
+            data=flat_csv,
+            file_name="etat_actuel_responses_flattened.csv",
+            mime="text/csv",
+        )
+
+        excel_buffer = BytesIO()
+        with pd.ExcelWriter(excel_buffer, engine="openpyxl") as writer:
+            df.to_excel(writer, index=False, sheet_name="Raw responses")
+            flat_df.to_excel(writer, index=False, sheet_name="Flattened responses")
+
+        st.download_button(
+            label="Download Excel",
+            data=excel_buffer.getvalue(),
+            file_name="etat_actuel_responses.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+
+        with open(DB_PATH, "rb") as f:
+            st.download_button(
+                label="Download SQLite DB",
+                data=f,
+                file_name="etat_actuel_responses.db",
+                mime="application/octet-stream",
+            )
+
         st.stop()
+
 
     if not st.session_state["access_granted"]:
         col_code, col_button = st.columns([2, 1])
@@ -1190,7 +1188,8 @@ def main():
                 st.warning("Veuillez saisir un code personnel de reprise avant d’accéder au formulaire.")
                 return
 
-            if cleaned_code in ADMIN_CODES:
+
+            if cleaned_code == "USJ-ADMIN-2032":
                 st.session_state["access_granted"] = True
                 st.session_state["admin_mode"] = True
                 st.session_state["current_draft_code"] = cleaned_code
@@ -1248,10 +1247,10 @@ def main():
 
             with col2:
                 responsable = st.text_input(
-                    "Responsable",
-                    key="responsable",
-                    disabled=True
-                )
+                "Responsable",
+                key="responsable",
+                disabled=True
+            )
 
             with col3:
                 st.text_input(
@@ -1322,56 +1321,56 @@ def main():
             with col_submit:
                 submit_final = st.form_submit_button("Envoyer")
 
-            if save_draft or submit_final:
+                        if save_draft or submit_final:
 
-                statut = "Brouillon" if save_draft else "Soumis"
+            statut = "Brouillon" if save_draft else "Soumis"
 
-                metadata = {
-                    "institution": institution,
-                    "responsable": responsable,
-                    "email": "",
-                    "response_date": str(response_date),
-                    "statut": statut,
-                    "draft_code": st.session_state.get("current_draft_code", ""),
-                }
+            metadata = {
+                "institution": institution,
+                "responsable": responsable,
+                "email": "",
+                "response_date": str(response_date),
+                "statut": statut,
+                "draft_code": st.session_state.get("current_draft_code", ""),
+            }
 
-                data = {
-                    "metadata": metadata,
-                    "introduction": {},
-                    "stakeholders": {
-                        "rows": stakeholder_rows,
-                    },
-                    "internal_analysis": internal_analysis,
-                    "external_analysis": external_analysis,
-                    "swot_analysis": swot_analysis,
-                    "priorities_initiatives": priorities_initiatives,
-                    "pour_finir": pour_finir,
-                }
+            data = {
+                "metadata": metadata,
+                "introduction": {},
+                "stakeholders": {
+                    "rows": stakeholder_rows,
+                },
+                "internal_analysis": internal_analysis,
+                "external_analysis": external_analysis,
+                "swot_analysis": swot_analysis,
+                "priorities_initiatives": priorities_initiatives,
+                "pour_finir": pour_finir,
+            }
 
-                try:
-                    if submit_final:
-                        existing = load_existing_draft_by_code(
-                            st.session_state.get("current_draft_code", "")
-                        )
+            try:
+                if submit_final:
+                    existing = load_existing_draft_by_code(
+                        st.session_state.get("current_draft_code", "")
+                    )
 
-                        if existing and existing.get("loaded_statut") == "Soumis":
-                            st.error("Vous avez déjà soumis ce formulaire. Une seule soumission est autorisée.")
-                            st.stop()
+                    if existing and existing.get("loaded_statut") == "Soumis":
+                        st.error("Vous avez déjà soumis ce formulaire. Une seule soumission est autorisée.")
+                        st.stop()
 
-                    draft_code = save_response(metadata, data)
-                    st.session_state["current_draft_code"] = draft_code
+                draft_code = save_response(metadata, data)
+                st.session_state["current_draft_code"] = draft_code
 
-                    if save_draft:
-                        st.success(
-                            f"Vos réponses ont été enregistrées. Utilisez ce code pour reprendre plus tard : {draft_code}"
-                        )
+                if save_draft:
+                    st.success(
+                        f"Vos réponses ont été enregistrées. Utilisez ce code pour reprendre plus tard : {draft_code}"
+                    )
 
-                    if submit_final:
-                        st.success("Merci.\nVos réponses ont été enregistrées.")
+                if submit_final:
+                    st.success("Merci.\nVos réponses ont été enregistrées.")
 
-                except ValueError as e:
-                    st.error(str(e))
-
+            except ValueError as e:
+                st.error(str(e))
+                    
     else:
         st.markdown("## Consulter / exporter les réponses")
 
