@@ -1459,6 +1459,40 @@ def main():
                 st.rerun()
 
         st.stop()
+    mode = "Saisir une réponse"
+
+    if mode == "Saisir une réponse":
+        with st.container():
+
+            st.markdown("## Informations générales")
+
+            col1, col2, col3 = st.columns(3)
+
+            with col1:
+                st.text_input(
+                    "Institution",
+                    value=st.session_state.get("institution", ""),
+                    disabled=True,
+                    key="institution_display"
+                )
+                institution = st.session_state.get("institution", "")
+
+            with col2:
+                responsable = st.text_input(
+                    "Responsable",
+                    key="responsable",
+                    disabled=True
+                )
+
+            with col3:
+                st.text_input(
+                    "Date",
+                    value=datetime.now().strftime("%Y-%m-%d"),
+                    disabled=True
+                )
+                response_date = datetime.now().date()
+
+            st.markdown("---")
 
             section_header("I - Introduction")
             render_fixed_introduction()
@@ -1630,3 +1664,7 @@ def main():
 
             except ValueError as e:
                 st.error(str(e))
+
+
+if __name__ == "__main__":
+    main()
