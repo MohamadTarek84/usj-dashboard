@@ -587,7 +587,7 @@ def render_stakeholder_intro():
     L’institution est libre d’organiser, selon les modalités qu’elle juge les plus appropriées, une ou plusieurs réunions avec les parties prenantes, ou, dans certains cas, de recourir à des questionnaires.
     </p>
 
-    <p style="font-size:17px; line-height:1.55; color:#7F7F7F; font-weight:700; font-style:italic; margin-bottom:16px;">
+    <p style="font-size:17px; line-height:1.55; color:#0070C0; font-weight:700; font-style:italic; margin-bottom:16px;">
     Le tableau ci-dessous doit être dûment complété.
     </p>
 </div>
@@ -694,7 +694,7 @@ def render_internal_intro():
     Dans cette première étape, vous êtes appelés donc à analyser et évaluer, d’après votre expérience, l’état actuel des volets suivants (6 au minimum) au niveau de l’Université.
     </p>
 
-    <p style="text-align:justify; font-size:17px; line-height:1.55; color:#7F7F7F; font-weight:700; font-style:italic; margin-bottom:2px;">
+    <p style="text-align:justify; font-size:17px; line-height:1.55; color:#0070C0; font-weight:700; font-style:italic; margin-bottom:2px;">
     Nous vous remercions de bien vouloir compléter les tableaux ci-dessous en vous appuyant sur les données disponibles et sur l’avis de votre institution et de ses parties prenantes, en traitant <span style="text-decoration:underline;">au moins six</span> des thèmes proposés, dans une perspective globale à l’échelle de l’Université.
     </p>
 </div>
@@ -760,7 +760,7 @@ def render_external_intro():
     Dans cette deuxième étape, vous êtes appelés donc à analyser et évaluer, d’après votre expérience, l’état actuel des dimensions suivantes au niveau de l’Université.
     </p>
 
-    <p style="text-align:justify; font-size:17px; line-height:1.55; color:#7F7F7F; font-weight:700; font-style:italic; margin-bottom:2px;">
+    <p style="text-align:justify; font-size:17px; line-height:1.55; color:#0070C0; font-weight:700; font-style:italic; margin-bottom:2px;">
     Nous vous remercions de bien vouloir compléter les tableaux ci-dessous, dans une perspective globale à l’échelle de l’Université.
     </p>
 
@@ -896,7 +896,7 @@ def render_swot_analysis():
     <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:6px;">
     <strong>1. Facteurs internes :</strong> Identification des <strong>forces</strong> et des <strong>faiblesses</strong> propres à l'Université (Exemples de Forces et Faiblesses en {annexe_b_hover_html}).
     </p>
-    <p style="text-align:left; font-size:17px; line-height:1.55; color:#7F7F7F; font-weight:700; font-style:italic; margin-bottom:0;">
+    <p style="text-align:left; font-size:17px; line-height:1.55; color:#0070C0; font-weight:700; font-style:italic; margin-bottom:0;">
     Nous vous remercions de bien vouloir compléter le tableau ci-dessous en indiquant au maximum <span style="text-decoration:underline; font-weight:700; font-style:italic;">cinq forces et cinq faiblesses</span>. Vos réponses seront déduites de l’analyse de l’état actuel interne (<a href="#section-iii" style="text-decoration:underline; color:#0000FF; font-weight:700; font-style:italic;">section III</a> principalement).
     </p>
 </div>
@@ -913,7 +913,7 @@ def render_swot_analysis():
     <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:6px;">
     <strong>2. Facteurs externes :</strong> Identification des <strong>opportunités</strong> de développement et des <strong>menaces</strong> émanant de l'environnement extérieur (Exemples d’Opportunités et de Menaces en {annexe_c_hover_html}).
     </p>
-    <p style="text-align:left; font-size:17px; line-height:1.55; color:#7F7F7F; font-weight:700; font-style:italic; margin-bottom:0;">
+    <p style="text-align:left; font-size:17px; line-height:1.55; color:#0070C0; font-weight:700; font-style:italic; margin-bottom:0;">
     Nous vous remercions de bien vouloir compléter le tableau ci-dessous en indiquant au maximum <span style="text-decoration:underline; font-weight:700; font-style:italic;">cinq opportunités et cinq menaces</span>. Vos réponses seront déduites de l’analyse de l’état actuel externe (<a href="#section-iv" style="text-decoration:underline; color:#0000FF; font-weight:700; font-style:italic;">section IV</a> principalement).
     </p>
 </div>
@@ -941,7 +941,7 @@ def render_priorities_intro():
     <strong>L'initiative</strong> correspond plus concrètement, à un projet spécifique qui permet la mise en œuvre de la priorité correspondante. Elle peut être au niveau de l’Université ou bien au niveau de votre institution. Afin de clarifier les attentes et de faciliter le pilotage, chaque initiative doit impérativement être formulée par un verbe d'action.
     </p>
 
-    <p style="text-align:left; font-size:17px; line-height:1.55; color:#7F7F7F; font-weight:700; font-style:italic; margin-bottom:0;">
+    <p style="text-align:left; font-size:17px; line-height:1.55; color:#0070C0; font-weight:700; font-style:italic; margin-bottom:0;">
     Nous vous remercions de bien vouloir compléter le tableau ci-dessous en indiquant au maximum <span style="text-decoration:underline; font-weight:700; font-style:italic;">trois priorités stratégiques et 1 à 3 initiatives par priorité</span>. Les initiatives peuvent être au niveau de l’Université et/ou au niveau de l’institution. Vos réponses seront déduites de l’analyse SWOT. Vous pouvez hiérarchiser les priorités en les numérotant de 1 à 3.
     </p>
 </div>
