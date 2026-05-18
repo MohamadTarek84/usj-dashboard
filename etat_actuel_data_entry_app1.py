@@ -209,65 +209,40 @@ def preload_draft_into_session(data):
     if not data:
         return
 
+    # load_existing_draft_by_code() already returns the saved JSON as a Python dict.
+    # Therefore, data is already the full saved response, not a wrapper containing data_json.
     st.session_state["current_draft_code"] = data.get("draft_code", "")
-
-    saved_data = data.get("data_json", {})
-
-    if isinstance(saved_data, str):
-        try:
-            saved_data = json.loads(saved_data)
-        except Exception:
-            saved_data = {}
-
-    stakeholder_rows = saved_data.get("stakeholder_rows", [])
-
-    if not stakeholder_rows:
-        stakeholder_rows = saved_data.get("parties_prenantes", [])
-
-    if not stakeholder_rows:
-        stakeholder_rows = saved_data.get("parties_prenantes_consultees", [])
-
-    for i, row in enumerate(stakeholder_rows, start=1):
-        st.session_state[f"stakeholder_category_{i}"] = row.get("categorie", "")
-        st.session_state[f"stakeholder_nom_{i}"] = row.get("nom", "")
-        st.session_state[f"stakeholder_poste_{i}"] = row.get("poste", "")
-        st.session_state[f"stakeholder_organisme_{i}"] = row.get("organisme_affiliation", "")
 
     metadata = data.get("metadata", {})
     st.session_state["institution"] = metadata.get("institution", "")
     st.session_state["responsable"] = metadata.get("responsable", "")
 
+    # Reload stakeholder table answers from the same structure used in the save block:
+    # data["stakeholders"]["rows"]
     stakeholder_rows = data.get("stakeholders", {}).get("rows", [])
 
-    fixed_categories = [
+    stakeholder_options = [
         "Responsables institution",
         "Enseignants cadrés",
         "Enseignants non-cadrés",
         "PSG",
         "Étudiants",
         "Anciens",
-        "Employeurs"
+        "Employeurs",
         "Conseil d’orientation stratégique",
     ]
 
-    autres_rows = []
+    for i in range(1, 9):
+        row = stakeholder_rows[i - 1] if i <= len(stakeholder_rows) else {}
 
-    for row in stakeholder_rows:
-        category = row.get("categorie", "")
+        categorie = row.get("categorie", "")
+        if categorie not in stakeholder_options:
+            categorie = ""
 
-        if category in fixed_categories:
-            st.session_state[f"{category}_nom"] = row.get("nom", "")
-            st.session_state[f"{category}_poste"] = row.get("poste", "")
-            st.session_state[f"{category}_organisme"] = row.get("organisme_affiliation", "")
-        elif category == "Autres":
-            autres_rows.append(row)
-
-    st.session_state["n_autres_rows"] = max(1, len(autres_rows))
-
-    for i, row in enumerate(autres_rows, start=1):
-        st.session_state[f"autre_nom_{i}"] = row.get("nom", "")
-        st.session_state[f"autre_poste_{i}"] = row.get("poste", "")
-        st.session_state[f"autre_org_{i}"] = row.get("organisme_affiliation", "")
+        st.session_state[f"stakeholder_category_{i}"] = categorie
+        st.session_state[f"stakeholder_nom_{i}"] = row.get("nom", "")
+        st.session_state[f"stakeholder_poste_{i}"] = row.get("poste", "")
+        st.session_state[f"stakeholder_organisme_{i}"] = row.get("organisme_affiliation", "")
 
     for theme, value in data.get("internal_analysis", {}).items():
         st.session_state[f"internal_{theme}"] = value
@@ -284,19 +259,20 @@ def preload_draft_into_session(data):
 
     for i, row in enumerate(data.get("priorities_initiatives", []), start=1):
         st.session_state[f"priority_{i}"] = row.get("priorite_strategique", "")
-        st.session_state[f"initiative_{i}"] = row.get("initiatives", "")
+        st.session_state[f"initiative_{i}_1"] = row.get("initiative_1", "")
+        st.session_state[f"initiative_{i}_2"] = row.get("initiative_2", "")
+        st.session_state[f"initiative_{i}_3"] = row.get("initiative_3", "")
 
     phrases = [
         "Nous souhaitons que l’USJ soit reconnue pour …",
         "Nous souhaitons que nos étudiants disent que l’USJ …",
-        "L’USJ un excellent lieu de travail si …",
+        "L’USJ serait un excellent lieu de travail si …",
     ]
 
     pour_finir = data.get("pour_finir", {})
 
     for i, phrase in enumerate(phrases, start=1):
         st.session_state[f"pour_finir_{i}"] = pour_finir.get(phrase, "")
-
 
 def flatten_response(row):
     base = {
@@ -636,9 +612,6 @@ def render_stakeholder_table():
 
     stakeholder_rows = []
 
-    if "stakeholder_row_types" not in st.session_state:
-        st.session_state["stakeholder_row_types"] = ["standard"] * 8
-
     col0, col1, col2, col3 = st.columns([1.4, 1.6, 1.6, 1.8])
 
     headers = [
@@ -714,22 +687,6 @@ def render_stakeholder_table():
                 "poste": poste.strip(),
                 "organisme_affiliation": organisme.strip(),
             })
-
-    col_add1, col_add2, _ = st.columns([1.3, 1.5, 4])
-
-    with col_add1:
-        add_row = st.form_submit_button("Ajouter une ligne")
-
-    with col_add2:
-        add_autres = st.form_submit_button("Ajouter Autres")
-
-    if add_row:
-        st.session_state["stakeholder_row_types"].append("standard")
-        st.rerun()
-
-    if add_autres:
-        st.session_state["stakeholder_row_types"].append("autres")
-        st.rerun()
 
     return stakeholder_rows
     
