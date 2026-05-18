@@ -30,30 +30,29 @@ USJ_TEXT = "#1B2A41"
 AUTHORIZED_TEST_CODES = {
     "USJ-HS-2032": {
         "responsable": "Hadi Sawaya",
-        "institution": "",
+        "institution": "ESIB",
     },
     "USJ-IM-2032": {
         "responsable": "Irma Majdalani",
-        "institution": "",
+        "institution": "FSE",
     },
     "USJ-NRH-2032": {
         "responsable": "Nadine Riachi Haddad",
-        "institution": "",
+        "institution": "FDLT",
     },
     "USJ-UEH-2032": {
         "responsable": "Ursula El Hage",
-        "institution": "",
+        "institution": "FGM",
     },
     "USJ-LKG-2032": {
         "responsable": "Lina Koleilat Ghalayini",
-        "institution": "",
+        "institution": "FSE",
     },
     "USJ-TH-2032": {
         "responsable": "Tarek Halabi",
         "institution": "",
     },
 }
-
 
 def html_block(content):
     if hasattr(st, "html"):
