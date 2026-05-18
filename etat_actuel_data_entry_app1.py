@@ -635,7 +635,7 @@ def render_stakeholder_table():
 """)
 
     for i in range(1, 9):
-    row_type = "standard"
+        row_type = "standard"
         col0, col1, col2, col3 = st.columns([1.4, 1.6, 1.6, 1.8])
 
         with col0:
