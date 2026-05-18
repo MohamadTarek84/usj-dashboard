@@ -797,7 +797,7 @@ def render_external_analysis():
     external_themes = [
         "Exigences ministérielles et Environnement réglementaire",
         "Marché du travail et Associations professionnelles",
-        "Institutions paires : Concurrence et Benchmarking (si des informations précises sont disponibles prière de les fournir avec un document à part si nécessaire)",
+        "Institutions paires : Concurrence et Benchmarking (si des informations précises sont disponibles prière de les fournir dans un document à part si nécessaire)",
         "L’Intelligence artificielle",
         "Attractivité vis-à-vis des élèves des écoles",
         "Réputation et Image",
@@ -1052,7 +1052,7 @@ def render_pour_finir():
     phrases = [
         "Nous souhaitons que l’USJ soit reconnue pour …",
         "Nous souhaitons que nos étudiants disent que l’USJ …",
-        "L’USJ un excellent lieu de travail si …",
+        "L’USJ serait un excellent lieu de travail si …",
     ]
 
     for i, phrase in enumerate(phrases, start=1):
@@ -1272,7 +1272,7 @@ def main():
                 """,
                 unsafe_allow_html=True
             )
-            section_header("III - Analyse interne de l’État actuel de l’Université")
+            section_header("III - Analyse interne de l’état actuel de l’Université")
             render_internal_intro()
             internal_analysis = render_internal_analysis()
 
