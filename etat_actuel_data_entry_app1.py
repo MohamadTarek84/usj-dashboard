@@ -453,7 +453,7 @@ section[data-testid="stSidebar"] {{
 .stButton button,
 .stDownloadButton button,
 div[data-testid="stFormSubmitButton"] button {{
-    background-color: #FF3333 !important;
+    background-color: #0070C0 !important;
     color: white !important;
     border-radius: 8px !important;
     border: 1px solid #001F5B !important;
