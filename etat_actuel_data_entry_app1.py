@@ -715,15 +715,18 @@ def count_words(text):
 
 
 def word_limited_text_area(label, key, height=300, max_words=500):
+    max_chars = max_words * 7
+
     value = st.text_area(
         label=label,
         key=key,
         height=height,
+        max_chars=max_chars,
         placeholder=f"Merci de saisir votre réponse ici (au maximum {max_words} mots)",
         label_visibility="collapsed"
     )
 
-    word_count = count_words(value)
+    word_count = len((value or "").split())
 
     if word_count > max_words:
         st.error(
