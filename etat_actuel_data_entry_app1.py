@@ -635,7 +635,7 @@ def render_stakeholder_table():
                     "Autre partie prenante",
                     key=f"stakeholder_category_autre_{i}",
                     label_visibility="collapsed",
-                    placeholder="Préciser"
+                    placeholder="Autre, préciser"
                 )
             else:
                 categorie = st.selectbox(
