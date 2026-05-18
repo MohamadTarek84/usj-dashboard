@@ -781,7 +781,7 @@ def render_external_intro():
     </p>
 
     <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
-    Dans cette deuxième étape, vous êtes appelés donc à analyser et évaluer, d’après votre expérience, l’état actuel des dimensions suivantes au niveau de l’Université
+    Dans cette deuxième étape, vous êtes appelés donc à analyser et évaluer, d’après votre expérience, l’état actuel des dimensions suivantes au niveau de l’Université.
     </p>
 
     <p style="text-align:justify; font-size:17px; line-height:1.55; color:#7F7F7F; font-weight:700; font-style:italic; margin-bottom:0px;">
