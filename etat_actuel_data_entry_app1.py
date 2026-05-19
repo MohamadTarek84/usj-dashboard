@@ -21,7 +21,7 @@ INTRO_IMAGE_PATH = Path("Intro_schema.png")
 ANNEXE_A_PATH = Path("Annexe_A.png")
 ANNEXE_B_PATH = Path("Annexe_B.png")
 ANNEXE_C_PATH = Path("Annexe_C.png")
-PRINT_ICON_PATH = Path("print.png")
+PRINT_ICON_PATH = Path("Print.png")
 
 USJ_BLUE = "#001F5B"
 USJ_BLUE_2 = "#1F3C88"
