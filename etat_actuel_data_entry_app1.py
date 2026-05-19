@@ -548,25 +548,25 @@ hr {{
 /* =========================
    CLEAN PRINT / PDF MODE
 ========================= */
-@media print {
+@media print {{
 
-    @page {
+    @page {{
         size: A4 portrait;
         margin: 12mm 10mm 12mm 10mm;
-    }
+    }}
 
-    html, body, .stApp {
+    html, body, .stApp {{
         background: white !important;
         overflow: visible !important;
         width: 100% !important;
-    }
+    }}
 
-    .block-container {
+    .block-container {{
         max-width: 190mm !important;
         width: 190mm !important;
         padding: 0 !important;
         margin: 0 auto !important;
-    }
+    }}
 
     header,
     footer,
@@ -578,38 +578,37 @@ hr {{
     .print-button-wrapper,
     div[data-testid="stButton"],
     div[data-testid="stDownloadButton"],
-    iframe {
+    iframe {{
         display: none !important;
-    }
-}
+    }}
 
-    div[data-testid="stHorizontalBlock"] {
+    div[data-testid="stHorizontalBlock"] {{
         page-break-inside: avoid !important;
         break-inside: avoid !important;
         width: 100% !important;
-    }
+    }}
 
-    div[data-testid="column"] {
+    div[data-testid="column"] {{
         page-break-inside: avoid !important;
         break-inside: avoid !important;
-    }
+    }}
 
     h1, h2, h3, h4,
-    div[style*="border-left:7px"] {
+    div[style*="border-left:7px"] {{
         page-break-after: avoid !important;
         break-after: avoid !important;
         page-break-inside: avoid !important;
         break-inside: avoid !important;
-    }
+    }}
 
-    div[data-testid="stTextArea"] {
+    div[data-testid="stTextArea"] {{
         page-break-inside: avoid !important;
         break-inside: avoid !important;
         border: none !important;
         background: transparent !important;
-    }
+    }}
 
-    div[data-testid="stTextArea"] textarea {
+    div[data-testid="stTextArea"] textarea {{
         height: 95px !important;
         min-height: 95px !important;
         max-height: 95px !important;
@@ -620,38 +619,38 @@ hr {{
         font-size: 12px !important;
         line-height: 1.25 !important;
         padding: 8px !important;
-    }
+    }}
 
-    div[data-testid="stTextInput"] input {
+    div[data-testid="stTextInput"] input {{
         height: 34px !important;
         min-height: 34px !important;
         border: none !important;
         background-color: #E3DED9 !important;
         font-size: 12px !important;
-    }
+    }}
 
-    div[data-testid="stSelectbox"] {
+    div[data-testid="stSelectbox"] {{
         page-break-inside: avoid !important;
         break-inside: avoid !important;
-    }
+    }}
 
-    div[data-testid="stSelectbox"] > div {
+    div[data-testid="stSelectbox"] > div {{
         height: 34px !important;
         min-height: 34px !important;
         overflow: hidden !important;
-    }
+    }}
 
-    p, div, span, label {
+    p, div, span, label {{
         font-size: 12px !important;
         line-height: 1.35 !important;
-    }
+    }}
 
-    hr {
+    hr {{
         margin-top: 8px !important;
         margin-bottom: 8px !important;
         height: 1px !important;
-    }
-}
+    }}
+}}
 
 </style>
 """)
