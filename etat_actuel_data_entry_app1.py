@@ -552,7 +552,7 @@ hr {{
     height: 3px !important;
     background-color: #D0D6E0 !important;
     margin-top: 16px !important;
-    margin-bottom: -38px !important;
+    margin-bottom: -28px !important;
     position: relative !important;
     z-index: 1 !important;
 }}
@@ -567,7 +567,7 @@ hr {{
 .st-key-submit_final_button {{
     display: flex !important;
     justify-content: center !important;
-    margin-top: 12px !important;
+    margin-top: 20px !important;
 }}
 
 /* =========================
@@ -1813,12 +1813,12 @@ def main():
                 save_draft = False
                 submit_final = False
             else:
-                col_left, col_save, col_right = st.columns([1.0, 1.3, 1.0])
-                with col_save:
+                col_left, col_center, col_right = st.columns([1.0, 1.3, 1.0])
+                with col_center:
                     save_draft = st.button("Enregistrer et continuer plus tard", key="save_draft_button")
 
-                col_left, col_submit, col_right = st.columns([1.0, 1.8, 1.0])
-                with col_submit:
+                col_left, col_center, col_right = st.columns([1.0, 1.3, 1.0])
+                with col_center:
                     submit_final = st.button(
                         "Envoyer la version finale\u00A0uniquement",
                         key="submit_final_button",
