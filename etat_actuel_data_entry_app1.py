@@ -2200,7 +2200,7 @@ def main():
                 draft_code = save_response(metadata, data)
                 st.session_state["current_draft_code"] = draft_code
 
-                if save_draft:
+                if save_draft or quick_save_clicked:
                     st.success(
                         f"Vos réponses ont été enregistrées. Utilisez ce code pour reprendre plus tard : {draft_code}"
                     )
