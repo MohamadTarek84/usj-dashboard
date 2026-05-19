@@ -545,6 +545,114 @@ hr {{
     margin-bottom: 14px !important;
 }}
 
+/* =========================
+   CLEAN PRINT / PDF MODE
+========================= */
+@media print {
+
+    @page {
+        size: A4 portrait;
+        margin: 12mm 10mm 12mm 10mm;
+    }
+
+    html, body, .stApp {
+        background: white !important;
+        overflow: visible !important;
+        width: 100% !important;
+    }
+
+    .block-container {
+        max-width: 190mm !important;
+        width: 190mm !important;
+        padding: 0 !important;
+        margin: 0 auto !important;
+    }
+
+    header,
+    footer,
+    #MainMenu,
+    .stDeployButton,
+    div[data-testid="stToolbar"],
+    div[data-testid="stDecoration"],
+    div[data-testid="stStatusWidget"],
+    .print-button-wrapper,
+    div[data-testid="stButton"],
+    div[data-testid="stDownloadButton"],
+    iframe {
+        display: none !important;
+    }
+}
+
+    div[data-testid="stHorizontalBlock"] {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        width: 100% !important;
+    }
+
+    div[data-testid="column"] {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+
+    h1, h2, h3, h4,
+    div[style*="border-left:7px"] {
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+
+    div[data-testid="stTextArea"] {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        border: none !important;
+        background: transparent !important;
+    }
+
+    div[data-testid="stTextArea"] textarea {
+        height: 95px !important;
+        min-height: 95px !important;
+        max-height: 95px !important;
+        overflow: hidden !important;
+        resize: none !important;
+        border: 1px solid #595959 !important;
+        background-color: #E3DED9 !important;
+        font-size: 12px !important;
+        line-height: 1.25 !important;
+        padding: 8px !important;
+    }
+
+    div[data-testid="stTextInput"] input {
+        height: 34px !important;
+        min-height: 34px !important;
+        border: none !important;
+        background-color: #E3DED9 !important;
+        font-size: 12px !important;
+    }
+
+    div[data-testid="stSelectbox"] {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+
+    div[data-testid="stSelectbox"] > div {
+        height: 34px !important;
+        min-height: 34px !important;
+        overflow: hidden !important;
+    }
+
+    p, div, span, label {
+        font-size: 12px !important;
+        line-height: 1.35 !important;
+    }
+
+    hr {
+        margin-top: 8px !important;
+        margin-bottom: 8px !important;
+        height: 1px !important;
+    }
+}
+
 </style>
 """)
 def section_header(title):
