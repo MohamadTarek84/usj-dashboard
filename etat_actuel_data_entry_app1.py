@@ -588,7 +588,7 @@ hr {{
 
 /* Move the print icon iframe upward while keeping enough height so the image is not cut */
 div[data-testid="stIFrame"] {{
-    margin-top: -6px !important;
+    margin-top: 0px !important;
 }}
 
 /* =========================
@@ -798,6 +798,14 @@ div[data-testid="stIFrame"] {{
         padding: 0 !important;
     }}
 
+    .pour-finir-screen-label {{
+        display: none !important;
+        height: 0 !important;
+        min-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }}
+
     .pour-finir-print-row {{
         display: block !important;
         width: 100% !important;
@@ -870,7 +878,7 @@ def render_print_icon_button():
         components.html(
             f"""
             <div class="print-button-wrapper" style="
-                height:100px;
+                height:150px;
                 display:flex;
                 align-items:center;
                 justify-content:center;
@@ -884,22 +892,22 @@ def render_print_icon_button():
                     cursor:pointer;
                     padding:0;
                     margin:0;
-                    width:82px;
-                    height:82px;
+                    width:130px;
+                    height:130px;
                     display:flex;
                     align-items:center;
                     justify-content:center;
                 ">
                     <img src="{print_icon_src}" alt="Imprimer / Enregistrer en PDF" style="
-                        width:82px;
-                        height:82px;
+                        width:130px;
+                        height:130px;
                         object-fit:contain;
                         display:block;
                     ">
                 </button>
             </div>
             """,
-            height=110
+            height=155
         )
     else:
         st.warning("Print.png non trouvé. Placez Print.png dans le même dossier que le script.")
@@ -1551,7 +1559,7 @@ def render_pour_finir():
 
         with col_label:
             html_block(f"""
-<div style="font-size:17px; line-height:1.35; color:{USJ_BLUE}; font-weight:700; margin-top:8px; white-space:nowrap;">
+<div class="pour-finir-screen-label" style="font-size:17px; line-height:1.35; color:{USJ_BLUE}; font-weight:700; margin-top:8px; white-space:nowrap;">
     &bull; {phrase}
 </div>
 """)
@@ -1977,7 +1985,7 @@ def main():
                         components.html(
                             f"""
                             <div style="
-                                height:64px;
+                                height:150px;
                                 display:flex;
                                 align-items:center;
                                 justify-content:center;
@@ -1991,22 +1999,22 @@ def main():
                                     cursor:pointer;
                                     padding:0;
                                     margin:0;
-                                    width:62px;
-                                    height:62px;
+                                    width:130px;
+                                    height:130px;
                                     display:flex;
                                     align-items:center;
                                     justify-content:center;
                                 ">
                                     <img src="{print_icon_src}" alt="Imprimer / Enregistrer en PDF" style="
-                                        width:62px;
-                                        height:62px;
+                                        width:130px;
+                                        height:130px;
                                         object-fit:contain;
                                         display:block;
                                     ">
                                 </button>
                             </div>
                             """,
-                            height=68
+                            height=155
                         )
 
         quick_save_clicked = any([
