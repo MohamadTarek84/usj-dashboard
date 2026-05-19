@@ -755,13 +755,12 @@ def render_print_icon_button():
         components.html(
             f"""
             <div class="print-button-wrapper" style="
-                width:100%;
-                height:58px;
+                height:100px;
                 display:flex;
                 align-items:center;
-                justify-content:flex-start;
-                margin-top:-13px;
+                justify-content:center;
                 overflow:visible;
+                padding-top:8px;
             ">
                 <button onclick="window.parent.print()" title="Imprimer / Enregistrer en PDF" style="
                     background-color:transparent;
@@ -769,23 +768,22 @@ def render_print_icon_button():
                     cursor:pointer;
                     padding:0;
                     margin:0;
-                    width:86px;
-                    height:86px;
+                    width:82px;
+                    height:82px;
                     display:flex;
                     align-items:center;
                     justify-content:center;
-                    overflow:visible;
                 ">
                     <img src="{print_icon_src}" alt="Imprimer / Enregistrer en PDF" style="
-                        width:86px;
-                        height:86px;
+                        width:82px;
+                        height:82px;
                         object-fit:contain;
                         display:block;
                     ">
                 </button>
             </div>
             """,
-            height=74
+            height=110
         )
     else:
         st.warning("Print.png non trouvé. Placez Print.png dans le même dossier que le script.")
