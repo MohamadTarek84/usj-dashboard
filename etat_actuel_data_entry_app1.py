@@ -31,7 +31,6 @@ USJ_LIGHT_BLUE = "#EAF2F8"
 USJ_TEXT = "#1B2A41"
 
 AUTHORIZED_TEST_CODES = {
-
     # Old test codes
     "USJ-HS-2032": {"responsable": "Hadi Sawaya", "institution": "ESIB"},
     "USJ-IM-2032": {"responsable": "Irma Majdalani", "institution": "FSE"},
@@ -84,6 +83,7 @@ AUTHORIZED_TEST_CODES = {
     "USJ-CPM-L3Q8-2032": {"responsable": "Johanna HAWARI-BOURJEILY", "institution": "CPM"},
     "USJ-UPT-H9C2-2032": {"responsable": "Roland TOMB", "institution": "UPT"},
 }
+
 def html_block(content):
     if hasattr(st, "html"):
         st.html(content)
@@ -358,12 +358,41 @@ html, body, [class*="css"], [class*="st-"], .stApp {{
     color: {USJ_TEXT};
 }}
 
-button[kind="header"] {{
+/* =====================================================
+   AZURE / STREAMLIT FIX
+   Hide Streamlit multipage/sidebar elements and the
+   broken keyboard_double_arrow_right text in Azure.
+===================================================== */
+section[data-testid="stSidebar"] {{
     display: none !important;
+    visibility: hidden !important;
+    width: 0px !important;
+    min-width: 0px !important;
+    max-width: 0px !important;
 }}
 
-[data-testid="collapsedControl"] {{
+[data-testid="stSidebarNav"] {{
     display: none !important;
+    visibility: hidden !important;
+}}
+
+[data-testid="collapsedControl"],
+[data-testid="stSidebarCollapsedControl"],
+button[kind="header"] {{
+    display: none !important;
+    visibility: hidden !important;
+}}
+
+div[data-testid="stAppViewContainer"] {{
+    margin-left: 0px !important;
+    padding-left: 0px !important;
+}}
+
+.main .block-container,
+div[data-testid="stAppViewContainer"] .block-container {{
+    padding-left: 3rem !important;
+    padding-right: 3rem !important;
+    max-width: 100% !important;
 }}
 
 div[data-testid="stTextInput"] label,
@@ -499,10 +528,6 @@ div[data-testid="stForm"] {{
     box-shadow: none !important;
 }}
 
-
-[data-testid="stSidebarNav"] {{
-    display: none !important;
-}}
 
 /* Normal buttons */
 .stButton button,
@@ -1698,11 +1723,11 @@ def delete_response_by_code(draft_code):
 
 def main():
     st.set_page_config(
-    page_title=APP_TITLE,
-    page_icon="📋",
-    layout="wide",
-    initial_sidebar_state="collapsed"
-)
+        page_title=APP_TITLE,
+        page_icon="📋",
+        layout="wide",
+        initial_sidebar_state="collapsed"
+    )
 
     apply_usj_style()
     init_db()
