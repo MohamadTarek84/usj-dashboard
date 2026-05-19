@@ -4,6 +4,7 @@
 import sqlite3
 import json
 import base64
+import html as html_lib
 from datetime import datetime
 from pathlib import Path
 from io import BytesIO
@@ -548,11 +549,19 @@ hr {{
 /* =========================
    CLEAN PRINT / PDF MODE
 ========================= */
+.print-textarea-value {{
+    display: none;
+}}
+
+.print-stakeholder-table {{
+    display: none;
+}}
+
 @media print {{
 
     @page {{
         size: A4 portrait;
-        margin: 12mm 10mm 12mm 10mm;
+        margin: 10mm 9mm 10mm 9mm;
     }}
 
     html, body, .stApp {{
@@ -580,6 +589,19 @@ hr {{
     div[data-testid="stDownloadButton"],
     iframe {{
         display: none !important;
+        height: 0 !important;
+        min-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }}
+
+    .print-page-break {{
+        break-before: page !important;
+        page-break-before: always !important;
+        height: 0 !important;
+        min-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
     }}
 
     .print-answer-block {{
@@ -587,74 +609,127 @@ hr {{
         page-break-inside: avoid !important;
         display: block !important;
         width: 100% !important;
-    }}
-
-    div[data-testid="stHorizontalBlock"] {{
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
-        width: 100% !important;
-    }}
-
-    div[data-testid="column"] {{
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
-    }}
-
-    h1, h2, h3, h4,
-    div[style*="border-left:7px"] {{
-        page-break-after: avoid !important;
-        break-after: avoid !important;
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
+        margin-bottom: 8px !important;
     }}
 
     div[data-testid="stTextArea"] {{
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
-        border: none !important;
-        background: transparent !important;
+        display: none !important;
     }}
 
-    div[data-testid="stTextArea"] textarea {{
-        height: 95px !important;
-        min-height: 95px !important;
-        max-height: 95px !important;
-        overflow: hidden !important;
-        resize: none !important;
+    .print-textarea-value {{
+        display: block !important;
+        width: 100% !important;
+        min-height: 40px !important;
+        height: auto !important;
+        overflow: visible !important;
+        box-sizing: border-box !important;
         border: 1px solid #595959 !important;
         background-color: #E3DED9 !important;
-        font-size: 12px !important;
+        color: #000000 !important;
+        font-size: 11px !important;
         line-height: 1.25 !important;
         padding: 8px !important;
+        white-space: pre-wrap !important;
+        word-break: break-word !important;
+        break-inside: auto !important;
+        page-break-inside: auto !important;
+    }}
+
+    div[data-testid="stHorizontalBlock"],
+    div[data-testid="column"] {{
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+        width: 100% !important;
+    }}
+
+    h1 {{
+        font-size: 26px !important;
+        line-height: 1.15 !important;
+        margin-top: 0 !important;
+        margin-bottom: 6px !important;
+    }}
+
+    h2 {{
+        font-size: 18px !important;
+        line-height: 1.2 !important;
+    }}
+
+    h3, h4, p, div, span, label {{
+        font-size: 11px !important;
+        line-height: 1.3 !important;
+    }}
+
+    div[style*="border-left:7px"] {{
+        break-after: avoid !important;
+        page-break-after: avoid !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+        margin-top: 6px !important;
+        margin-bottom: 8px !important;
+        padding: 8px 12px !important;
+    }}
+
+    [class*="st-key-stakeholder_category_"],
+    [class*="st-key-stakeholder_category_autre_"],
+    [class*="st-key-stakeholder_nom_"],
+    [class*="st-key-stakeholder_poste_"],
+    [class*="st-key-stakeholder_organisme_"] {{
+        display: none !important;
+    }}
+
+    .print-stakeholder-table {{
+        display: table !important;
+        width: 100% !important;
+        border-collapse: collapse !important;
+        table-layout: fixed !important;
+        margin-top: 8px !important;
+        margin-bottom: 10px !important;
+    }}
+
+    .print-stakeholder-table th {{
+        background: #001F5B !important;
+        color: white !important;
+        border: 1px solid #001F5B !important;
+        padding: 6px !important;
+        font-size: 10px !important;
+        line-height: 1.2 !important;
+        text-align: left !important;
+    }}
+
+    .print-stakeholder-table td {{
+        border: 1px solid #595959 !important;
+        background: #E3DED9 !important;
+        padding: 6px !important;
+        font-size: 10px !important;
+        line-height: 1.2 !important;
+        white-space: normal !important;
+        word-break: break-word !important;
+        vertical-align: top !important;
     }}
 
     div[data-testid="stTextInput"] input {{
-        height: 34px !important;
-        min-height: 34px !important;
+        height: auto !important;
+        min-height: 30px !important;
         border: none !important;
         background-color: #E3DED9 !important;
-        font-size: 12px !important;
-    }}
-
-    div[data-testid="stSelectbox"] {{
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
+        font-size: 10px !important;
+        overflow: visible !important;
     }}
 
     div[data-testid="stSelectbox"] > div {{
-        height: 34px !important;
-        min-height: 34px !important;
-        overflow: hidden !important;
+        height: auto !important;
+        min-height: 30px !important;
+        overflow: visible !important;
+        font-size: 10px !important;
     }}
 
-    p, div, span, label {{
-        font-size: 12px !important;
-        line-height: 1.35 !important;
+    div[data-testid="InputInstructions"] {{
+        display: none !important;
     }}
 
     hr {{
-        margin-top: 8px !important;
-        margin-bottom: 8px !important;
+        margin-top: 6px !important;
+        margin-bottom: 6px !important;
         height: 1px !important;
     }}
 }}
@@ -680,38 +755,6 @@ def text_area(label, key, height=500, placeholder=None):
     )
 
 def render_first_page_header():
-    st.markdown("""
-<style>
-@media print {
-    @page {
-        size: A4;
-        margin: 14mm 12mm 14mm 12mm;
-    }
-
-    header,
-    footer,
-    #MainMenu,
-    .stDeployButton,
-    div[data-testid="stToolbar"],
-    div[data-testid="stDecoration"],
-    div[data-testid="stStatusWidget"],
-    .print-button-wrapper {
-        display: none !important;
-    }
-
-    .block-container {
-        max-width: 100% !important;
-        padding: 0 !important;
-    }
-
-    html, body, .stApp {
-        background: white !important;
-        overflow: visible !important;
-    }
-}
-</style>
-""", unsafe_allow_html=True)
-
     components.html(
         """
         <div class="print-button-wrapper">
@@ -878,6 +921,7 @@ def render_stakeholder_table():
         st.session_state["stakeholder_row_types"] = ["standard"] * 8
 
     stakeholder_rows = []
+    stakeholder_print_rows = []
 
     col0, col1, col2, col3 = st.columns([1.4, 1.6, 1.6, 1.8])
 
@@ -946,18 +990,17 @@ def render_stakeholder_table():
                 disabled=read_only
             )
 
-        if any([
-            (categorie or "").strip(),
-            nom.strip(),
-            poste.strip(),
-            organisme.strip()
-        ]):
-            stakeholder_rows.append({
-                "categorie": (categorie or "").strip(),
-                "nom": nom.strip(),
-                "poste": poste.strip(),
-                "organisme_affiliation": organisme.strip(),
-            })
+        row_data = {
+            "categorie": (categorie or "").strip(),
+            "nom": nom.strip(),
+            "poste": poste.strip(),
+            "organisme_affiliation": organisme.strip(),
+        }
+
+        stakeholder_print_rows.append(row_data)
+
+        if any(row_data.values()):
+            stakeholder_rows.append(row_data)
 
     if not read_only:
         col_add1, col_add2, _ = st.columns([1.3, 2.2, 3.3])
@@ -971,6 +1014,33 @@ def render_stakeholder_table():
             if st.button("Ajouter une ligne Autre", key="add_stakeholder_autres"):
                 st.session_state["stakeholder_row_types"].append("autres")
                 st.rerun()
+
+    table_rows_html = ""
+    for row in stakeholder_print_rows:
+        table_rows_html += f"""
+<tr>
+    <td>{html_lib.escape(row.get('categorie', ''))}</td>
+    <td>{html_lib.escape(row.get('nom', ''))}</td>
+    <td>{html_lib.escape(row.get('poste', ''))}</td>
+    <td>{html_lib.escape(row.get('organisme_affiliation', ''))}</td>
+</tr>
+"""
+
+    html_block(f"""
+<table class="print-stakeholder-table">
+    <thead>
+        <tr>
+            <th>Parties prenantes consultées</th>
+            <th>Nom</th>
+            <th>Poste</th>
+            <th>Organisme d’affiliation</th>
+        </tr>
+    </thead>
+    <tbody>
+        {table_rows_html}
+    </tbody>
+</table>
+""")
 
     return stakeholder_rows
     
@@ -1026,6 +1096,14 @@ def word_limited_text_area(label, key, height=300, max_words=500):
 </div>
 """)
 
+    printable_value = html_lib.escape(value or "")
+    if printable_value.strip() == "":
+        printable_value = html_lib.escape(f"Merci de saisir votre réponse ici (au maximum {max_words} mots)")
+
+    html_block(f"""
+<div class="print-textarea-value">{printable_value}</div>
+""")
+
     return value
 
 
@@ -1050,8 +1128,6 @@ def render_internal_analysis():
     internal_analysis = {}
 
     for theme in internal_themes:
-        html_block('<div class="print-answer-block">')
-
         html_block(f"""
 <div style="padding:2px 0px; margin-top:2px; margin-bottom:4px;">
     <p style="font-size:17px; line-height:1.25; color:{USJ_RED}; font-weight:700; margin:0;">
@@ -1066,8 +1142,6 @@ def render_internal_analysis():
             height=300,
             max_words=500
         )
-
-        html_block('</div>')
 
     return internal_analysis
     
@@ -1131,8 +1205,6 @@ def render_external_analysis():
             </span>
             """
 
-        html_block('<div class="print-answer-block">')
-
         html_block(f"""
 <div style="padding:2px 0px; margin-top:2px; margin-bottom:4px;">
     <p style="font-size:17px; line-height:1.25; color:{USJ_RED}; font-weight:700; margin:0;">
@@ -1147,8 +1219,6 @@ def render_external_analysis():
             height=300,
             max_words=500
         )
-
-        html_block('</div>')
 
     return external_analysis
 
@@ -1674,6 +1744,7 @@ def main():
             render_fixed_introduction()
 
             st.divider()
+            st.markdown('<div class="print-page-break"></div>', unsafe_allow_html=True)
 
             section_header("II - Identification des parties prenantes")
             render_stakeholder_intro()
@@ -1681,6 +1752,7 @@ def main():
             quick_save_after_stakeholders = render_quick_save_button("quick_save_after_stakeholders")
 
             st.divider()
+            st.markdown('<div class="print-page-break"></div>', unsafe_allow_html=True)
 
             st.markdown(
                 """
@@ -1694,6 +1766,7 @@ def main():
             quick_save_after_internal = render_quick_save_button("quick_save_after_internal")
 
             st.divider()
+            st.markdown('<div class="print-page-break"></div>', unsafe_allow_html=True)
 
             st.markdown(
                 """
@@ -1707,6 +1780,7 @@ def main():
             quick_save_after_external = render_quick_save_button("quick_save_after_external")
 
             st.divider()
+            st.markdown('<div class="print-page-break"></div>', unsafe_allow_html=True)
 
             section_header("V - Analyse SWOT – Niveau USJ")
             render_swot_intro()
@@ -1714,6 +1788,7 @@ def main():
             quick_save_after_swot = render_quick_save_button("quick_save_after_swot")
 
             st.divider()
+            st.markdown('<div class="print-page-break"></div>', unsafe_allow_html=True)
 
             section_header("VI - Priorités stratégiques et initiatives proposées – Niveau USJ")
             render_priorities_intro()
