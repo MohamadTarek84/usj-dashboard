@@ -807,8 +807,8 @@ def render_print_icon_button():
                     justify-content:center;
                 ">
                     <img src="{print_icon_src}" alt="Imprimer / Enregistrer en PDF" style="
-                        width:115px;
-                        height:115px;
+                        width:150px;
+                        height:150px;
                         object-fit:contain;
                         display:block;
                     ">
