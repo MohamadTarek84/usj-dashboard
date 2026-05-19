@@ -512,7 +512,7 @@ div[data-testid="stFormSubmitButton"] button p {{
 }}
 
 
-/* Center all save/final action buttons without changing their size */
+/* Center all save/final action buttons */
 .st-key-quick_save_after_stakeholders,
 .st-key-quick_save_after_internal,
 .st-key-quick_save_after_external,
@@ -522,6 +522,29 @@ div[data-testid="stFormSubmitButton"] button p {{
 .st-key-submit_final_button {{
     display: flex !important;
     justify-content: center !important;
+}}
+
+/* Same width for the two final action buttons */
+.st-key-save_draft_button button,
+.st-key-submit_final_button button {{
+    width: 360px !important;
+    min-width: 360px !important;
+    max-width: 360px !important;
+    height: 58px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}}
+
+.st-key-save_draft_button button p,
+.st-key-submit_final_button button p {{
+    font-size: 18px !important;
+    line-height: 1.2 !important;
+    white-space: nowrap !important;
+}}
+
+.st-key-submit_final_button {{
+    margin-top: -6px !important;
 }}
 
 /* Final submit button only */
@@ -1821,56 +1844,51 @@ def main():
 
                 st.markdown("---")
 
-                col_left_final, col_submit_final, col_print_final, col_right_final = st.columns(
-                    [1.0, 1.25, 0.4, 0.6],
-                    vertical_alignment="center"
-                )
+                print_icon_src = image_to_base64(PRINT_ICON_PATH)
 
-                with col_submit_final:
-                    submit_final = st.button(
-                        "Envoyer la version finale\u00A0uniquement",
-                        key="submit_final_button",
-                        type="primary"
-                    )
-
-                with col_print_final:
-                    print_icon_src = image_to_base64(PRINT_ICON_PATH)
-
-                    if print_icon_src:
-                        components.html(
-                            f"""
-                            <div style="
-                                height:86px;
+                if print_icon_src:
+                    components.html(
+                        f"""
+                        <div class="print-button-wrapper" style="
+                            height:94px;
+                            display:flex;
+                            align-items:center;
+                            justify-content:center;
+                            overflow:visible;
+                            padding:0;
+                            margin:0 auto;
+                        ">
+                            <button onclick="window.parent.print()" title="Imprimer / Enregistrer en PDF" style="
+                                background-color:transparent;
+                                border:none;
+                                cursor:pointer;
+                                padding:0;
+                                margin:0;
+                                width:82px;
+                                height:82px;
                                 display:flex;
                                 align-items:center;
                                 justify-content:center;
-                                overflow:hidden;
-                                padding:0;
-                                margin:0;
                             ">
-                                <button onclick="window.parent.print()" title="Imprimer / Enregistrer en PDF" style="
-                                    background-color:transparent;
-                                    border:none;
-                                    cursor:pointer;
-                                    padding:0;
-                                    margin:0;
+                                <img src="{print_icon_src}" alt="Imprimer / Enregistrer en PDF" style="
                                     width:82px;
                                     height:82px;
-                                    display:flex;
-                                    align-items:center;
-                                    justify-content:center;
+                                    object-fit:contain;
+                                    display:block;
                                 ">
-                                    <img src="{print_icon_src}" alt="Imprimer / Enregistrer en PDF" style="
-                                        width:82px;
-                                        height:82px;
-                                        object-fit:contain;
-                                        display:block;
-                                    ">
-                                </button>
-                            </div>
-                            """,
-                            height=90
-                        )
+                            </button>
+                        </div>
+                        """,
+                        height=100
+                    )
+                else:
+                    st.warning("Print.png non trouvé. Placez Print.png dans le même dossier que le script.")
+
+                submit_final = st.button(
+                    "Envoyer la version finale uniquement",
+                    key="submit_final_button",
+                    type="primary"
+                )
 
         quick_save_clicked = any([
             quick_save_after_stakeholders,
