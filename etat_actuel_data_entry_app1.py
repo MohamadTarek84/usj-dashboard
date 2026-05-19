@@ -352,6 +352,28 @@ def flatten_response(row):
 
 def apply_usj_style():
     html_block(f"""
+
+    #MainMenu {{
+    visibility: hidden !important;
+    display: none !important;
+}}
+
+header {{
+    visibility: hidden !important;
+}}
+
+[data-testid="stToolbar"] {{
+    display: none !important;
+}}
+
+[data-testid="stDecoration"] {{
+    display: none !important;
+}}
+
+[data-testid="stStatusWidget"] {{
+    display: none !important;
+}}
+
 <style>
 html, body, [class*="css"], [class*="st-"], .stApp {{
     font-family: Candara, Calibri, Arial, sans-serif !important;
