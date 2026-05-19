@@ -352,29 +352,42 @@ def flatten_response(row):
 
 def apply_usj_style():
     html_block(f"""
-    <style>
-    
-    #MainMenu {{
-    visibility: hidden !important;
+<style>
+
+#MainMenu {{
     display: none !important;
+    visibility: hidden !important;
 }}
 
 header {{
+    display: none !important;
     visibility: hidden !important;
 }}
 
 [data-testid="stToolbar"] {{
     display: none !important;
+    visibility: hidden !important;
 }}
 
 [data-testid="stDecoration"] {{
     display: none !important;
+    visibility: hidden !important;
 }}
 
 [data-testid="stStatusWidget"] {{
     display: none !important;
+    visibility: hidden !important;
 }}
 
+button[data-testid="stBaseButton-header"] {{
+    display: none !important;
+    visibility: hidden !important;
+}}
+
+[data-testid="stBaseButton-header"] {{
+    display: none !important;
+    visibility: hidden !important;
+}}
 
 html, body, [class*="css"], [class*="st-"], .stApp {{
     font-family: Candara, Calibri, Arial, sans-serif !important;
