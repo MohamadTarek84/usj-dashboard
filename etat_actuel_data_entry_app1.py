@@ -574,14 +574,14 @@ def render_first_page_header():
         margin: 14mm 12mm 14mm 12mm;
     }
 
-    button,
     header,
     footer,
     #MainMenu,
     .stDeployButton,
     div[data-testid="stToolbar"],
     div[data-testid="stDecoration"],
-    div[data-testid="stStatusWidget"] {
+    div[data-testid="stStatusWidget"],
+    .print-button-wrapper {
         display: none !important;
     }
 
@@ -597,7 +597,29 @@ def render_first_page_header():
 }
 </style>
 """, unsafe_allow_html=True)
-    
+
+    components.html(
+        """
+        <div class="print-button-wrapper">
+            <button onclick="window.parent.print()" style="
+                background-color:#001F5B;
+                color:white;
+                border:none;
+                border-radius:8px;
+                padding:10px 22px;
+                font-size:18px;
+                font-weight:800;
+                cursor:pointer;
+                margin-bottom:16px;
+                font-family:Candara, Calibri, Arial, sans-serif;
+            ">
+                Imprimer / Enregistrer en PDF
+            </button>
+        </div>
+        """,
+        height=70
+    )
+
     col_left, col_right = st.columns([2.2, 1])
 
     with col_left:
@@ -631,7 +653,6 @@ def render_first_page_header():
     )
 
     st.markdown("---")
-
 
 def render_fixed_introduction():
     intro_image_src = image_to_base64(INTRO_IMAGE_PATH)
