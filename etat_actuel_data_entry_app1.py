@@ -552,7 +552,7 @@ hr {{
 
     @page {{
         size: A4 portrait;
-        margin: 10mm 9mm 10mm 9mm;
+        margin: 12mm 10mm 12mm 10mm;
     }}
 
     html, body, .stApp {{
@@ -576,95 +576,85 @@ hr {{
     div[data-testid="stDecoration"],
     div[data-testid="stStatusWidget"],
     .print-button-wrapper,
-    iframe,
     div[data-testid="stButton"],
-    div[data-testid="stDownloadButton"] {{
+    div[data-testid="stDownloadButton"],
+    iframe {{
         display: none !important;
-        height: 0 !important;
-        min-height: 0 !important;
-        margin: 0 !important;
-        padding: 0 !important;
     }}
 
-    .print-page-break {{
-        break-before: page !important;
-        page-break-before: always !important;
-        height: 0 !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }}
-
-    div[data-testid="stHorizontalBlock"],
-    div[data-testid="column"] {{
+    .print-answer-block {{
         break-inside: avoid !important;
         page-break-inside: avoid !important;
+        display: block !important;
+        width: 100% !important;
     }}
 
-    h1 {{
-        font-size: 26px !important;
-        line-height: 1.15 !important;
-        margin-top: 0 !important;
-        margin-bottom: 6px !important;
+    div[data-testid="stHorizontalBlock"] {{
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        width: 100% !important;
     }}
 
-    h2 {{
-        font-size: 18px !important;
-        line-height: 1.2 !important;
+    div[data-testid="column"] {{
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
     }}
 
-    h3, h4, p, div, span, label {{
-        font-size: 11px !important;
-        line-height: 1.3 !important;
-    }}
-
+    h1, h2, h3, h4,
     div[style*="border-left:7px"] {{
-        break-after: avoid !important;
         page-break-after: avoid !important;
-        margin-top: 6px !important;
-        margin-bottom: 8px !important;
-        padding: 8px 12px !important;
+        break-after: avoid !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
     }}
 
     div[data-testid="stTextArea"] {{
-        break-inside: avoid !important;
         page-break-inside: avoid !important;
+        break-inside: avoid !important;
         border: none !important;
         background: transparent !important;
-        height: auto !important;
-        overflow: visible !important;
     }}
 
     div[data-testid="stTextArea"] textarea {{
-        field-sizing: content !important;
-        height: auto !important;
-        min-height: 80px !important;
-        max-height: none !important;
-        overflow: visible !important;
+        height: 95px !important;
+        min-height: 95px !important;
+        max-height: 95px !important;
+        overflow: hidden !important;
         resize: none !important;
         border: 1px solid #595959 !important;
         background-color: #E3DED9 !important;
-        font-size: 11px !important;
-        line-height: 1.3 !important;
+        font-size: 12px !important;
+        line-height: 1.25 !important;
         padding: 8px !important;
-        white-space: pre-wrap !important;
     }}
 
-    div[data-testid="stTextInput"] input,
-    div[data-testid="stSelectbox"] > div {{
-        height: 30px !important;
-        min-height: 30px !important;
+    div[data-testid="stTextInput"] input {{
+        height: 34px !important;
+        min-height: 34px !important;
+        border: none !important;
         background-color: #E3DED9 !important;
-        font-size: 10px !important;
-        overflow: visible !important;
+        font-size: 12px !important;
     }}
 
-    div[data-testid="InputInstructions"] {{
-        display: none !important;
+    div[data-testid="stSelectbox"] {{
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }}
+
+    div[data-testid="stSelectbox"] > div {{
+        height: 34px !important;
+        min-height: 34px !important;
+        overflow: hidden !important;
+    }}
+
+    p, div, span, label {{
+        font-size: 12px !important;
+        line-height: 1.35 !important;
     }}
 
     hr {{
-        margin-top: 6px !important;
-        margin-bottom: 6px !important;
+        margin-top: 8px !important;
+        margin-bottom: 8px !important;
         height: 1px !important;
     }}
 }}
@@ -690,6 +680,38 @@ def text_area(label, key, height=500, placeholder=None):
     )
 
 def render_first_page_header():
+    st.markdown("""
+<style>
+@media print {
+    @page {
+        size: A4;
+        margin: 14mm 12mm 14mm 12mm;
+    }
+
+    header,
+    footer,
+    #MainMenu,
+    .stDeployButton,
+    div[data-testid="stToolbar"],
+    div[data-testid="stDecoration"],
+    div[data-testid="stStatusWidget"],
+    .print-button-wrapper {
+        display: none !important;
+    }
+
+    .block-container {
+        max-width: 100% !important;
+        padding: 0 !important;
+    }
+
+    html, body, .stApp {
+        background: white !important;
+        overflow: visible !important;
+    }
+}
+</style>
+""", unsafe_allow_html=True)
+
     components.html(
         """
         <div class="print-button-wrapper">
@@ -1028,6 +1050,8 @@ def render_internal_analysis():
     internal_analysis = {}
 
     for theme in internal_themes:
+        html_block('<div class="print-answer-block">')
+
         html_block(f"""
 <div style="padding:2px 0px; margin-top:2px; margin-bottom:4px;">
     <p style="font-size:17px; line-height:1.25; color:{USJ_RED}; font-weight:700; margin:0;">
@@ -1042,6 +1066,8 @@ def render_internal_analysis():
             height=300,
             max_words=500
         )
+
+        html_block('</div>')
 
     return internal_analysis
     
@@ -1105,6 +1131,8 @@ def render_external_analysis():
             </span>
             """
 
+        html_block('<div class="print-answer-block">')
+
         html_block(f"""
 <div style="padding:2px 0px; margin-top:2px; margin-bottom:4px;">
     <p style="font-size:17px; line-height:1.25; color:{USJ_RED}; font-weight:700; margin:0;">
@@ -1119,6 +1147,8 @@ def render_external_analysis():
             height=300,
             max_words=500
         )
+
+        html_block('</div>')
 
     return external_analysis
 
@@ -1645,7 +1675,6 @@ def main():
 
             st.divider()
 
-            st.markdown('<div class="print-page-break"></div>', unsafe_allow_html=True)
             section_header("II - Identification des parties prenantes")
             render_stakeholder_intro()
             stakeholder_rows = render_stakeholder_table()
@@ -1659,7 +1688,6 @@ def main():
                 """,
                 unsafe_allow_html=True
             )
-            st.markdown('<div class="print-page-break"></div>', unsafe_allow_html=True)
             section_header("III - Analyse interne de l’état actuel de l’Université")
             render_internal_intro()
             internal_analysis = render_internal_analysis()
@@ -1673,7 +1701,6 @@ def main():
                 """,
                 unsafe_allow_html=True
             )
-            st.markdown('<div class="print-page-break"></div>', unsafe_allow_html=True)
             section_header("IV - Analyse externe de l’environnement actuel de l’Université")
             render_external_intro()
             external_analysis = render_external_analysis()
@@ -1681,7 +1708,6 @@ def main():
 
             st.divider()
 
-            st.markdown('<div class="print-page-break"></div>', unsafe_allow_html=True)
             section_header("V - Analyse SWOT – Niveau USJ")
             render_swot_intro()
             swot_analysis = render_swot_analysis()
@@ -1689,7 +1715,6 @@ def main():
 
             st.divider()
 
-            st.markdown('<div class="print-page-break"></div>', unsafe_allow_html=True)
             section_header("VI - Priorités stratégiques et initiatives proposées – Niveau USJ")
             render_priorities_intro()
             priorities_initiatives = render_priorities_table()
