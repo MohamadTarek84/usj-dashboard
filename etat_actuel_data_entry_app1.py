@@ -1821,11 +1821,56 @@ def main():
 
                 st.markdown("---")
 
-                submit_final = st.button(
-                    "Envoyer la version finale\u00A0uniquement",
-                    key="submit_final_button",
-                    type="primary"
+                col_left_final, col_submit_final, col_print_final, col_right_final = st.columns(
+                    [1.0, 1.25, 0.4, 0.6],
+                    vertical_alignment="center"
                 )
+
+                with col_submit_final:
+                    submit_final = st.button(
+                        "Envoyer la version finale\u00A0uniquement",
+                        key="submit_final_button",
+                        type="primary"
+                    )
+
+                with col_print_final:
+                    print_icon_src = image_to_base64(PRINT_ICON_PATH)
+
+                    if print_icon_src:
+                        components.html(
+                            f"""
+                            <div style="
+                                height:86px;
+                                display:flex;
+                                align-items:center;
+                                justify-content:center;
+                                overflow:hidden;
+                                padding:0;
+                                margin:0;
+                            ">
+                                <button onclick="window.parent.print()" title="Imprimer / Enregistrer en PDF" style="
+                                    background-color:transparent;
+                                    border:none;
+                                    cursor:pointer;
+                                    padding:0;
+                                    margin:0;
+                                    width:82px;
+                                    height:82px;
+                                    display:flex;
+                                    align-items:center;
+                                    justify-content:center;
+                                ">
+                                    <img src="{print_icon_src}" alt="Imprimer / Enregistrer en PDF" style="
+                                        width:82px;
+                                        height:82px;
+                                        object-fit:contain;
+                                        display:block;
+                                    ">
+                                </button>
+                            </div>
+                            """,
+                            height=90
+                        )
 
         quick_save_clicked = any([
             quick_save_after_stakeholders,
