@@ -549,11 +549,8 @@ hr {{
 /* =========================
    CLEAN PRINT / PDF MODE
 ========================= */
-.print-textarea-value {{
-    display: none;
-}}
 
-.print-stakeholder-table {{
+.print-answer-text {{
     display: none;
 }}
 
@@ -599,7 +596,6 @@ hr {{
         break-before: page !important;
         page-break-before: always !important;
         height: 0 !important;
-        min-height: 0 !important;
         margin: 0 !important;
         padding: 0 !important;
     }}
@@ -607,43 +603,15 @@ hr {{
     .print-answer-block {{
         break-inside: avoid !important;
         page-break-inside: avoid !important;
-        display: block !important;
-        width: 100% !important;
         margin-bottom: 8px !important;
     }}
 
-    div[data-testid="stTextArea"] {{
-        display: none !important;
-    }}
-
-    .print-textarea-value {{
-        display: block !important;
-        width: 100% !important;
-        min-height: 40px !important;
-        height: auto !important;
-        overflow: visible !important;
-        box-sizing: border-box !important;
-        border: 1px solid #595959 !important;
-        background-color: #E3DED9 !important;
-        color: #000000 !important;
-        font-size: 11px !important;
-        line-height: 1.25 !important;
-        padding: 8px !important;
-        white-space: pre-wrap !important;
-        word-break: break-word !important;
-        break-inside: auto !important;
-        page-break-inside: auto !important;
-    }}
-
-    div[data-testid="stHorizontalBlock"],
-    div[data-testid="column"] {{
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
+    div[data-testid="stHorizontalBlock"] {{
         width: 100% !important;
     }}
 
     h1 {{
-        font-size: 26px !important;
+        font-size: 28px !important;
         line-height: 1.15 !important;
         margin-top: 0 !important;
         margin-bottom: 6px !important;
@@ -669,56 +637,50 @@ hr {{
         padding: 8px 12px !important;
     }}
 
-    [class*="st-key-stakeholder_category_"],
-    [class*="st-key-stakeholder_category_autre_"],
-    [class*="st-key-stakeholder_nom_"],
-    [class*="st-key-stakeholder_poste_"],
-    [class*="st-key-stakeholder_organisme_"] {{
+    div[data-testid="stTextArea"] {{
         display: none !important;
     }}
 
-    .print-stakeholder-table {{
-        display: table !important;
+    .print-answer-text {{
+        display: block !important;
         width: 100% !important;
-        border-collapse: collapse !important;
-        table-layout: fixed !important;
-        margin-top: 8px !important;
-        margin-bottom: 10px !important;
+        margin-top: 4px !important;
+        margin-bottom: 8px !important;
+        break-inside: auto !important;
+        page-break-inside: auto !important;
     }}
 
-    .print-stakeholder-table th {{
-        background: #001F5B !important;
-        color: white !important;
-        border: 1px solid #001F5B !important;
-        padding: 6px !important;
-        font-size: 10px !important;
-        line-height: 1.2 !important;
-        text-align: left !important;
-    }}
-
-    .print-stakeholder-table td {{
+    .print-answer-content {{
+        display: block !important;
+        width: 100% !important;
+        min-height: 80px !important;
+        box-sizing: border-box !important;
         border: 1px solid #595959 !important;
-        background: #E3DED9 !important;
-        padding: 6px !important;
-        font-size: 10px !important;
-        line-height: 1.2 !important;
-        white-space: normal !important;
-        word-break: break-word !important;
-        vertical-align: top !important;
+        background-color: #E3DED9 !important;
+        color: #000000 !important;
+        font-size: 11px !important;
+        line-height: 1.25 !important;
+        padding: 8px !important;
+        white-space: pre-wrap !important;
+        overflow: visible !important;
     }}
 
     div[data-testid="stTextInput"] input {{
-        height: auto !important;
+        height: 30px !important;
         min-height: 30px !important;
         border: none !important;
         background-color: #E3DED9 !important;
         font-size: 10px !important;
-        overflow: visible !important;
+    }}
+
+    div[data-testid="stSelectbox"] {{
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
     }}
 
     div[data-testid="stSelectbox"] > div {{
-        height: auto !important;
         min-height: 30px !important;
+        height: auto !important;
         overflow: visible !important;
         font-size: 10px !important;
     }}
@@ -733,6 +695,7 @@ hr {{
         height: 1px !important;
     }}
 }}
+
 
 </style>
 """)
@@ -921,7 +884,6 @@ def render_stakeholder_table():
         st.session_state["stakeholder_row_types"] = ["standard"] * 8
 
     stakeholder_rows = []
-    stakeholder_print_rows = []
 
     col0, col1, col2, col3 = st.columns([1.4, 1.6, 1.6, 1.8])
 
@@ -990,17 +952,18 @@ def render_stakeholder_table():
                 disabled=read_only
             )
 
-        row_data = {
-            "categorie": (categorie or "").strip(),
-            "nom": nom.strip(),
-            "poste": poste.strip(),
-            "organisme_affiliation": organisme.strip(),
-        }
-
-        stakeholder_print_rows.append(row_data)
-
-        if any(row_data.values()):
-            stakeholder_rows.append(row_data)
+        if any([
+            (categorie or "").strip(),
+            nom.strip(),
+            poste.strip(),
+            organisme.strip()
+        ]):
+            stakeholder_rows.append({
+                "categorie": (categorie or "").strip(),
+                "nom": nom.strip(),
+                "poste": poste.strip(),
+                "organisme_affiliation": organisme.strip(),
+            })
 
     if not read_only:
         col_add1, col_add2, _ = st.columns([1.3, 2.2, 3.3])
@@ -1014,33 +977,6 @@ def render_stakeholder_table():
             if st.button("Ajouter une ligne Autre", key="add_stakeholder_autres"):
                 st.session_state["stakeholder_row_types"].append("autres")
                 st.rerun()
-
-    table_rows_html = ""
-    for row in stakeholder_print_rows:
-        table_rows_html += f"""
-<tr>
-    <td>{html_lib.escape(row.get('categorie', ''))}</td>
-    <td>{html_lib.escape(row.get('nom', ''))}</td>
-    <td>{html_lib.escape(row.get('poste', ''))}</td>
-    <td>{html_lib.escape(row.get('organisme_affiliation', ''))}</td>
-</tr>
-"""
-
-    html_block(f"""
-<table class="print-stakeholder-table">
-    <thead>
-        <tr>
-            <th>Parties prenantes consultées</th>
-            <th>Nom</th>
-            <th>Poste</th>
-            <th>Organisme d’affiliation</th>
-        </tr>
-    </thead>
-    <tbody>
-        {table_rows_html}
-    </tbody>
-</table>
-""")
 
     return stakeholder_rows
     
@@ -1082,6 +1018,17 @@ def word_limited_text_area(label, key, height=300, max_words=500):
 
     word_count = count_words(value)
 
+    printable_value = html_lib.escape(value or "")
+    printable_value = printable_value.replace("\n", "<br>")
+    if not printable_value.strip():
+        printable_value = "&nbsp;"
+
+    html_block(f"""
+<div class="print-answer-text">
+    <div class="print-answer-content">{printable_value}</div>
+</div>
+""")
+
     if not read_only:
         if word_count > max_words:
             html_block(f"""
@@ -1094,14 +1041,6 @@ def word_limited_text_area(label, key, height=300, max_words=500):
 <div style="min-height:24px; color:#595959; font-size:13px; margin-top:-6px; margin-bottom:8px;">
     {word_count}/{max_words} mots
 </div>
-""")
-
-    printable_value = html_lib.escape(value or "")
-    if printable_value.strip() == "":
-        printable_value = html_lib.escape(f"Merci de saisir votre réponse ici (au maximum {max_words} mots)")
-
-    html_block(f"""
-<div class="print-textarea-value">{printable_value}</div>
 """)
 
     return value
@@ -1128,6 +1067,8 @@ def render_internal_analysis():
     internal_analysis = {}
 
     for theme in internal_themes:
+        html_block('<div class="print-answer-block">')
+
         html_block(f"""
 <div style="padding:2px 0px; margin-top:2px; margin-bottom:4px;">
     <p style="font-size:17px; line-height:1.25; color:{USJ_RED}; font-weight:700; margin:0;">
@@ -1142,6 +1083,7 @@ def render_internal_analysis():
             height=300,
             max_words=500
         )
+        html_block('</div>')
 
     return internal_analysis
     
@@ -1205,6 +1147,8 @@ def render_external_analysis():
             </span>
             """
 
+        html_block('<div class="print-answer-block">')
+
         html_block(f"""
 <div style="padding:2px 0px; margin-top:2px; margin-bottom:4px;">
     <p style="font-size:17px; line-height:1.25; color:{USJ_RED}; font-weight:700; margin:0;">
@@ -1219,6 +1163,7 @@ def render_external_analysis():
             height=300,
             max_words=500
         )
+        html_block('</div>')
 
     return external_analysis
 
@@ -1744,6 +1689,7 @@ def main():
             render_fixed_introduction()
 
             st.divider()
+
             st.markdown('<div class="print-page-break"></div>', unsafe_allow_html=True)
 
             section_header("II - Identification des parties prenantes")
@@ -1752,7 +1698,6 @@ def main():
             quick_save_after_stakeholders = render_quick_save_button("quick_save_after_stakeholders")
 
             st.divider()
-            st.markdown('<div class="print-page-break"></div>', unsafe_allow_html=True)
 
             st.markdown(
                 """
@@ -1760,13 +1705,14 @@ def main():
                 """,
                 unsafe_allow_html=True
             )
+            st.markdown('<div class="print-page-break"></div>', unsafe_allow_html=True)
+
             section_header("III - Analyse interne de l’état actuel de l’Université")
             render_internal_intro()
             internal_analysis = render_internal_analysis()
             quick_save_after_internal = render_quick_save_button("quick_save_after_internal")
 
             st.divider()
-            st.markdown('<div class="print-page-break"></div>', unsafe_allow_html=True)
 
             st.markdown(
                 """
@@ -1774,12 +1720,15 @@ def main():
                 """,
                 unsafe_allow_html=True
             )
+            st.markdown('<div class="print-page-break"></div>', unsafe_allow_html=True)
+
             section_header("IV - Analyse externe de l’environnement actuel de l’Université")
             render_external_intro()
             external_analysis = render_external_analysis()
             quick_save_after_external = render_quick_save_button("quick_save_after_external")
 
             st.divider()
+
             st.markdown('<div class="print-page-break"></div>', unsafe_allow_html=True)
 
             section_header("V - Analyse SWOT – Niveau USJ")
@@ -1788,6 +1737,7 @@ def main():
             quick_save_after_swot = render_quick_save_button("quick_save_after_swot")
 
             st.divider()
+
             st.markdown('<div class="print-page-break"></div>', unsafe_allow_html=True)
 
             section_header("VI - Priorités stratégiques et initiatives proposées – Niveau USJ")
