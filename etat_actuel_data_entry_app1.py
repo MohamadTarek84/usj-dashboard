@@ -740,7 +740,7 @@ def section_header(title):
 """)
 
 
-def text_area(label, key, height=500, placeholder=None):
+def text_area(label, key, height=920, placeholder=None):
     return st.text_area(
         label,
         key=key,
@@ -756,11 +756,11 @@ def render_print_icon_button():
             f"""
             <div class="print-button-wrapper" style="
                 width:100%;
-                height:50px;
+                height:62px;
                 display:flex;
                 align-items:center;
                 justify-content:center;
-                margin-top:-4px;
+                margin-top:0px;
             ">
                 <button onclick="window.parent.print()" title="Imprimer / Enregistrer en PDF" style="
                     background-color:transparent;
@@ -768,22 +768,22 @@ def render_print_icon_button():
                     cursor:pointer;
                     padding:0;
                     margin:0;
-                    width:58px;
-                    height:58px;
+                    width:86px;
+                    height:86px;
                     display:flex;
                     align-items:center;
                     justify-content:center;
                 ">
                     <img src="{print_icon_src}" alt="Imprimer / Enregistrer en PDF" style="
-                        width:58px;
-                        height:58px;
+                        width:86px;
+                        height:86px;
                         object-fit:contain;
                         display:block;
                     ">
                 </button>
             </div>
             """,
-            height=50
+            height=92
         )
     else:
         st.warning("Print.png non trouvé. Placez Print.png dans le même dossier que le script.")
@@ -1815,7 +1815,7 @@ def main():
 
                 st.markdown("---")
 
-                col_left_final, col_submit_final, col_print_final, col_right_final = st.columns([1.4, 1.2, 0.35, 1.05])
+                col_left_final, col_submit_final, col_gap_final, col_print_final, col_right_final = st.columns([1.25, 1.25, 0.35, 0.55, 0.85])
 
                 with col_submit_final:
                     submit_final = st.button(
