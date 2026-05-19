@@ -755,12 +755,12 @@ def render_print_icon_button():
         components.html(
             f"""
             <div class="print-button-wrapper" style="
-                height:100px;
+                height:80px;
                 display:flex;
-                align-items:center;
+                align-items:flex-start;
                 justify-content:center;
                 overflow:visible;
-                padding-top:-100px;
+                padding-top:0px;
             ">
                 <button onclick="window.parent.print()" title="Imprimer / Enregistrer en PDF" style="
                     background-color:transparent;
