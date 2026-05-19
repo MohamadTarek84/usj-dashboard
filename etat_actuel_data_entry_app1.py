@@ -1705,10 +1705,21 @@ def render_quick_save_button(key):
     if st.session_state.get("read_only_submitted", False):
         return False
 
-    return st.button(
+    clicked = st.button(
         "Enregistrer et continuer plus tard",
         key=key
     )
+
+    if clicked:
+        st.session_state["last_quick_save_key"] = key
+
+    if st.session_state.get("quick_save_success_key") == key:
+        st.success(
+            f"Vos réponses ont été enregistrées. Utilisez ce code pour reprendre plus tard : "
+            f"{st.session_state.get('current_draft_code', '')}"
+        )
+
+    return clicked
 
 
 def find_word_limit_errors(section_data, section_label, max_words):
@@ -2199,6 +2210,9 @@ def main():
             try:
                 draft_code = save_response(metadata, data)
                 st.session_state["current_draft_code"] = draft_code
+
+                if quick_save_clicked:
+                    st.session_state["quick_save_success_key"] = st.session_state.get("last_quick_save_key", "")
 
                 if save_draft or quick_save_clicked:
                     st.success(
