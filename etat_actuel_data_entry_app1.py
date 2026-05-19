@@ -735,7 +735,7 @@ def text_area(label, key, height=500, placeholder=None):
     )
 
 def render_first_page_header():
-        components.html(
+    components.html(
         """
         <div class="print-button-wrapper">
             <button onclick="window.parent.print()" title="Imprimer / Enregistrer en PDF" style="
@@ -746,14 +746,12 @@ def render_first_page_header():
                 width:54px;
                 height:54px;
                 font-size:26px;
-                font-weight:800;
                 cursor:pointer;
-                font-family:Candara, Calibri, Arial, sans-serif;
                 display:flex;
                 align-items:center;
                 justify-content:center;
             ">
-                🖨️
+                🖨
             </button>
         </div>
         """,
