@@ -1874,7 +1874,7 @@ def main():
                         components.html(
                             f"""
                             <div style="
-                                height:64px;
+                                height:150px;
                                 display:flex;
                                 align-items:center;
                                 justify-content:center;
@@ -1888,22 +1888,22 @@ def main():
                                     cursor:pointer;
                                     padding:0;
                                     margin:0;
-                                    width:62px;
-                                    height:62px;
+                                    width:130px;
+                                    height:130px;
                                     display:flex;
                                     align-items:center;
                                     justify-content:center;
                                 ">
                                     <img src="{print_icon_src}" alt="Imprimer / Enregistrer en PDF" style="
-                                        width:62px;
-                                        height:62px;
+                                        width:130px;
+                                        height:130px;
                                         object-fit:contain;
                                         display:block;
                                     ">
                                 </button>
                             </div>
                             """,
-                            height=68
+                            height=155
                         )
 
         quick_save_clicked = any([
