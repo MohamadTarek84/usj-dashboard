@@ -31,57 +31,30 @@ USJ_LIGHT_BLUE = "#EAF2F8"
 USJ_TEXT = "#1B2A41"
 
 AUTHORIZED_TEST_CODES = {
-    # Old test codes
-    "USJ-HS-2032": {"responsable": "Hadi Sawaya", "institution": "ESIB"},
-    "USJ-IM-2032": {"responsable": "Irma Majdalani", "institution": "FSE"},
-    "USJ-NRH-2032": {"responsable": "Nadine Riachi Haddad", "institution": "FDLT"},
-    "USJ-UEH-2032": {"responsable": "Ursula El Hage", "institution": "FGM"},
-    "USJ-LKG-2032": {"responsable": "Lina Koleilat Ghalayini", "institution": "FSE"},
-    "USJ-TH-2032": {"responsable": "Tarek Halabi", "institution": ""},
-
-    # Final respondent codes
-    "USJ-ESMOD-7KQ4-2032": {"responsable": "Nicole MASSOUD", "institution": "ESMOD"},
-    "USJ-ESTS-M9X2-2032": {"responsable": "Rima MAWAD", "institution": "ESTS"},
-    "USJ-ETIB-P4L8-2032": {"responsable": "Mary YAZBECK", "institution": "ETIB"},
-    "USJ-FDLT-R6N3-2032": {"responsable": "Gina ABOU FADEL SAAD", "institution": "FDLT"},
-    "USJ-FLSH-T8B5-2032": {"responsable": "Myrna GANNAGÉ", "institution": "FLSH"},
-    "USJ-FSEDU-C2V7-2032": {"responsable": "Patricia FATA RACHED", "institution": "FSEDU"},
-    "USJ-FSR-H5D9-2032": {"responsable": "Salah ABOU JAOUDE s.j.", "institution": "FSR"},
-    "USJ-IEIC-J3W6-2032": {"responsable": "Roula TALHOUK", "institution": "IEIC"},
-    "USJ-IESAV-F8K1-2032": {"responsable": "Toufic EL-KHOURY", "institution": "IESAV"},
-    "USJ-ILE-Q2M4-2032": {"responsable": "Rock EL-ACHY", "institution": "ILE"},
-    "USJ-ILO-Y7P5-2032": {"responsable": "Tony El-KHAWAJI", "institution": "ILO"},
-    "USJ-ISSR-L9T2-2032": {"responsable": "Yara MATTA", "institution": "ISSR"},
-    "USJ-FDSP-X4A8-2032": {"responsable": "Marie-Claude NAJEM KOBEH", "institution": "FDSP"},
-    "USJ-ISP-N6E3-2032": {"responsable": "Sami NADER", "institution": "ISP"},
-    "USJ-FGM-U1R7-2032": {"responsable": "Fouad ZMOKHOL", "institution": "FGM"},
-    "USJ-FSE-B8C5-2032": {"responsable": "Jean-François VERNE", "institution": "FSE"},
-    "USJ-IGE-Z3H9-2032": {"responsable": "Céline BOUTROS SAAB", "institution": "IGE"},
-    "USJ-ISSA-K7V2-2032": {"responsable": "Irma Majdalani", "institution": "ISSA"},
-    "USJ-ESAR-M4Q6-2032": {"responsable": "Richard MITRI", "institution": "ESAR"},
-    "USJ-ESIA-P9L1-2032": {"responsable": "Wadih SKAFF", "institution": "ESIA"},
-    "USJ-ESIAM-T5X8-2032": {"responsable": "Wadih SKAFF", "institution": "ESIAM"},
-    "USJ-ESIB-W2N4-2032": {"responsable": "Wassim RAPHAËL", "institution": "ESIB"},
-    "USJ-FS-D7K3-2032": {"responsable": "Maher ABBOUD", "institution": "FS"},
-    "USJ-INCI-R8M6-2032": {"responsable": "Marc IBRAHIM", "institution": "INCI"},
-    "USJ-ESF-H1P9-2032": {"responsable": "Salimé SALAMEH SAAD", "institution": "ESF"},
-    "USJ-ETLAM-C6Y2-2032": {"responsable": "Marianne ABI FADEL", "institution": "ETLAM"},
-    "USJ-FM-V4T7-2032": {"responsable": "Elie NEMER", "institution": "FM"},
-    "USJ-FMD-L8Q5-2032": {"responsable": "Nada FARHAT MCHAYLEH", "institution": "FMD"},
-    "USJ-FP-J2R4-2032": {"responsable": "Hayat AZOURY TANNOUS", "institution": "FP"},
-    "USJ-FSI-X7B1-2032": {"responsable": "Rima SASSINE KAZAN", "institution": "FSI"},
-    "USJ-IET-N5K8-2032": {"responsable": "Carla MATTA-ABI ZEID", "institution": "IET"},
-    "USJ-IPHY-P3D6-2032": {"responsable": "Pascal BREIDY", "institution": "IPHY"},
-    "USJ-IPM-T9W2-2032": {"responsable": "Céleste YOUNES HARB", "institution": "IPM"},
-    "USJ-ISO-F6M7-2032": {"responsable": "Guillemette HENRY", "institution": "ISO"},
-    "USJ-ISSP-Q1H4-2032": {"responsable": "Michèle KOSREMELLI-ASMAR", "institution": "ISSP"},
-    "USJ-CDB-R5X9-2032": {"responsable": "Nathalie SABBAGH", "institution": "CDB"},
-    "USJ-CLN-B2V6-2032": {"responsable": "Fadia ALAM GEMAYEL", "institution": "CLN"},
-    "USJ-CLS-Y8P3-2032": {"responsable": "Dina SIDANI", "institution": "CLS"},
-    "USJ-CZB-K4N1-2032": {"responsable": "Alain AJAMI EL", "institution": "CZB"},
-    "USJ-CFP-M7T5-2032": {"responsable": "Fadi EL-HAGE", "institution": "CFP"},
-    "USJ-CPM-L3Q8-2032": {"responsable": "Johanna HAWARI-BOURJEILY", "institution": "CPM"},
-    "USJ-UPT-H9C2-2032": {"responsable": "Roland TOMB", "institution": "UPT"},
+    "USJ-HS-2032": {
+        "responsable": "Hadi Sawaya",
+        "institution": "ESIB",
+    },
+    "USJ-IM-2032": {
+        "responsable": "Irma Majdalani",
+        "institution": "FSE",
+    },
+    "USJ-NRH-2032": {
+        "responsable": "Nadine Riachi Haddad",
+        "institution": "FDLT",
+    },
+    "USJ-UEH-2032": {
+        "responsable": "Ursula El Hage",
+        "institution": "FGM",
+    },
+    "USJ-LKG-2032": {
+        "responsable": "Lina Koleilat Ghalayini",
+        "institution": "FSE",
+    },
+    "USJ-TH-2032": {
+        "responsable": "Tarek Halabi",
+        "institution": "",
+    },
 }
 
 def html_block(content):
@@ -775,28 +748,34 @@ def text_area(label, key, height=500, placeholder=None):
         placeholder=placeholder
     )
 
-def render_first_page_header():
+def render_print_icon_button():
     print_icon_src = image_to_base64(PRINT_ICON_PATH)
 
     if print_icon_src:
         components.html(
             f"""
-            <div class="print-button-wrapper" style="width:70px; height:70px;">
+            <div class="print-button-wrapper" style="
+                width:100%;
+                height:70px;
+                display:flex;
+                align-items:center;
+                justify-content:flex-start;
+            ">
                 <button onclick="window.parent.print()" title="Imprimer / Enregistrer en PDF" style="
                     background-color:transparent;
                     border:none;
                     cursor:pointer;
                     padding:0;
                     margin:0;
-                    width:60px;
-                    height:60px;
+                    width:70px;
+                    height:70px;
                     display:flex;
                     align-items:center;
                     justify-content:center;
                 ">
                     <img src="{print_icon_src}" alt="Imprimer / Enregistrer en PDF" style="
-                        width:100px;
-                        height:100px;
+                        width:95px;
+                        height:95px;
                         object-fit:contain;
                         display:block;
                     ">
@@ -806,8 +785,10 @@ def render_first_page_header():
             height=75
         )
     else:
-        st.warning("print.png non trouvé. Placez print.png dans le même dossier que le script.")
+        st.warning("Print.png non trouvé. Placez Print.png dans le même dossier que le script.")
 
+
+def render_first_page_header():
     col_left, col_right = st.columns([2.2, 1])
 
     with col_left:
@@ -1442,7 +1423,7 @@ def render_pour_finir():
     phrases = [
         "Nous souhaitons que l’USJ soit reconnue pour …",
         "Nous souhaitons que nos étudiants disent que l’USJ …",
-        "L’USJ serait un meilleur lieu de travail si …",
+        "L’USJ serait un excellent lieu de travail si …",
     ]
 
     for i, phrase in enumerate(phrases, start=1):
@@ -1834,11 +1815,17 @@ def main():
 
                 st.markdown("---")
 
-                submit_final = st.button(
-                    "Envoyer la version finale\u00A0uniquement",
-                    key="submit_final_button",
-                    type="primary"
-                )
+                col_left_final, col_submit_final, col_print_final = st.columns([1.4, 1.2, 1.4])
+
+                with col_submit_final:
+                    submit_final = st.button(
+                        "Envoyer la version finale\u00A0uniquement",
+                        key="submit_final_button",
+                        type="primary"
+                    )
+
+                with col_print_final:
+                    render_print_icon_button()
 
         quick_save_clicked = any([
             quick_save_after_stakeholders,
