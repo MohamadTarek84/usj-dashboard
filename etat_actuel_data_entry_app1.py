@@ -2213,6 +2213,7 @@ def main():
 
                 if quick_save_clicked:
                     st.session_state["quick_save_success_key"] = st.session_state.get("last_quick_save_key", "")
+                    st.rerun()
 
                 if save_draft or quick_save_clicked:
                     st.success(
