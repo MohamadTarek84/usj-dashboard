@@ -491,13 +491,6 @@ div[data-testid="stForm"] {{
     box-shadow: none !important;
 }}
 
-section[data-testid="stSidebar"] {{
-    display: none !important;
-}}
-
-section[data-testid="stSidebar"] + div {{
-    margin-left: 0rem !important;
-}}
 
 [data-testid="stSidebarNav"] {{
     display: none !important;
@@ -1696,7 +1689,12 @@ def delete_response_by_code(draft_code):
     conn.close()
 
 def main():
-    st.set_page_config(page_title=APP_TITLE, page_icon="📋", layout="wide")
+    st.set_page_config(
+    page_title=APP_TITLE,
+    page_icon="📋",
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
 
     apply_usj_style()
     init_db()
