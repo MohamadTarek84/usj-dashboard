@@ -783,7 +783,7 @@ def render_print_icon_button():
                 </button>
             </div>
             """,
-            height=110
+            height=80
         )
     else:
         st.warning("Print.png non trouvé. Placez Print.png dans le même dossier que le script.")
