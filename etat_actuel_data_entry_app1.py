@@ -352,7 +352,8 @@ def flatten_response(row):
 
 def apply_usj_style():
     html_block(f"""
-
+    <style>
+    
     #MainMenu {{
     visibility: hidden !important;
     display: none !important;
@@ -374,7 +375,7 @@ header {{
     display: none !important;
 }}
 
-<style>
+
 html, body, [class*="css"], [class*="st-"], .stApp {{
     font-family: Candara, Calibri, Arial, sans-serif !important;
     color: {USJ_TEXT};
