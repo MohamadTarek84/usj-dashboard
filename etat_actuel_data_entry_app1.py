@@ -599,6 +599,10 @@ div[data-testid="stIFrame"] {{
     display: none;
 }}
 
+.pour-finir-print-row {{
+    display: none;
+}}
+
 @media print {{
 
     @page {{
@@ -751,6 +755,86 @@ div[data-testid="stIFrame"] {{
         display: none !important;
     }}
 
+    .intro-parts-print-block {{
+        break-before: page !important;
+        page-break-before: always !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+        margin-top: 0 !important;
+    }}
+
+    .print-answer-block,
+    .print-answer-text,
+    .print-answer-content {{
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+    }}
+
+    .print-answer-content {{
+        overflow: hidden !important;
+    }}
+
+    .word-counter-status {{
+        display: none !important;
+        height: 0 !important;
+        min-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }}
+
+    .st-key-pour_finir_1_1,
+    .st-key-pour_finir_1_2,
+    .st-key-pour_finir_1_3,
+    .st-key-pour_finir_2_1,
+    .st-key-pour_finir_2_2,
+    .st-key-pour_finir_2_3,
+    .st-key-pour_finir_3_1,
+    .st-key-pour_finir_3_2,
+    .st-key-pour_finir_3_3 {{
+        display: none !important;
+        height: 0 !important;
+        min-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }}
+
+    .pour-finir-print-row {{
+        display: block !important;
+        width: 100% !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+        margin: 8px 0 12px 0 !important;
+        clear: both !important;
+    }}
+
+    .pour-finir-print-label {{
+        display: block !important;
+        width: 100% !important;
+        color: #001F5B !important;
+        font-weight: 700 !important;
+        font-size: 11px !important;
+        line-height: 1.25 !important;
+        margin-bottom: 5px !important;
+        white-space: normal !important;
+    }}
+
+    .pour-finir-print-box {{
+        display: block !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        min-height: 28px !important;
+        border: 1px solid #595959 !important;
+        background-color: #E3DED9 !important;
+        color: #000000 !important;
+        font-size: 10.5px !important;
+        line-height: 1.2 !important;
+        padding: 6px !important;
+        margin: 0 0 5px 0 !important;
+        white-space: pre-wrap !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+    }}
+
     hr {{
         margin-top: 6px !important;
         margin-bottom: 6px !important;
@@ -807,8 +891,8 @@ def render_print_icon_button():
                     justify-content:center;
                 ">
                     <img src="{print_icon_src}" alt="Imprimer / Enregistrer en PDF" style="
-                        width:150px;
-                        height:150px;
+                        width:82px;
+                        height:82px;
                         object-fit:contain;
                         display:block;
                     ">
@@ -886,24 +970,26 @@ def render_fixed_introduction():
     Ce rapport vise ainsi à produire <strong>deux résultats principaux</strong>. Le premier consiste en une <strong>analyse SWOT</strong> (Strengths, Weaknesses, Opportunities, Threats) <strong>de l’Université</strong>, fondée sur la réalité vécue au sein de votre institution. Sur la base de cette analyse, vous serez amenés à proposer <strong>des priorités stratégiques ainsi que des initiatives (ou projets), toujours à l’échelle de l’Université</strong>, constituant ainsi le second résultat attendu.
     </p>
 
+<div class="intro-parts-print-block">
     <p style="font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:5px;">
     Le document comprend 6 parties :
     </p>
 
-<div style="font-size:17px; line-height:1.75; color:{USJ_BLUE}; margin-top:5px;">
+    <div style="font-size:17px; line-height:1.75; color:{USJ_BLUE}; margin-top:5px;">
 
-    I. Introduction<br>
+        I. Introduction<br>
 
-    II. Identification des parties prenantes à consulter pour écrire le rapport<br>
+        II. Identification des parties prenantes à consulter pour écrire le rapport<br>
 
-    III. Analyse interne : cette analyse mène à produire les éléments Forces et Faiblesses de l’analyse SWOT<br>
+        III. Analyse interne : cette analyse mène à produire les éléments Forces et Faiblesses de l’analyse SWOT<br>
 
-    IV. Analyse externe : cette analyse mène à produire les éléments Opportunités et Menaces de l’analyse SWOT<br>
+        IV. Analyse externe : cette analyse mène à produire les éléments Opportunités et Menaces de l’analyse SWOT<br>
 
-    V. Analyse SWOT<br>
+        V. Analyse SWOT<br>
 
-    VI. Propositions de Priorités stratégiques et Initiatives
+        VI. Propositions de Priorités stratégiques et Initiatives
 
+    </div>
 </div>
     <p style="font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-top:22px; margin-bottom:8px;">
     Pour toute information supplémentaire ou support, contacter :
@@ -1116,13 +1202,13 @@ def word_limited_text_area(label, key, height=300, max_words=500):
     if not read_only:
         if word_count > max_words:
             html_block(f"""
-<div style="min-height:24px; color:#8B1538; font-weight:700; font-size:14px; margin-top:-6px; margin-bottom:8px;">
+<div class="word-counter-status" style="min-height:24px; color:#8B1538; font-weight:700; font-size:14px; margin-top:-6px; margin-bottom:8px;">
     ⚠ Vous avez saisi {word_count} mots. Maximum autorisé : {max_words} mots.
 </div>
 """)
         else:
             html_block(f"""
-<div style="min-height:24px; color:#595959; font-size:13px; margin-top:-6px; margin-bottom:8px;">
+<div class="word-counter-status" style="min-height:24px; color:#595959; font-size:13px; margin-top:-6px; margin-bottom:8px;">
     {word_count}/{max_words} mots
 </div>
 """)
@@ -1339,6 +1425,8 @@ def render_swot_analysis():
         right_title="Faiblesses (Saisir une faiblesse par case)"
     )
 
+    st.markdown('<div class="print-page-break"></div>', unsafe_allow_html=True)
+
     html_block(f"""
 <div style="background:#ffffff; padding:8px 24px 8px 24px; border-radius:10px; border-left:none; margin-top:10px; margin-bottom:6px;">
     <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:6px;">
@@ -1487,6 +1575,19 @@ def render_pour_finir():
                 label_visibility="collapsed",
                 disabled=read_only
             )
+
+        printable_r1 = html_lib.escape(r1 or "") or "&nbsp;"
+        printable_r2 = html_lib.escape(r2 or "") or "&nbsp;"
+        printable_r3 = html_lib.escape(r3 or "") or "&nbsp;"
+
+        html_block(f"""
+<div class="pour-finir-print-row">
+    <div class="pour-finir-print-label">&bull; {phrase}</div>
+    <div class="pour-finir-print-box">{printable_r1}</div>
+    <div class="pour-finir-print-box">{printable_r2}</div>
+    <div class="pour-finir-print-box">{printable_r3}</div>
+</div>
+""")
 
         pour_finir[phrase] = {
             "reponse_1": r1,
@@ -1828,6 +1929,8 @@ def main():
 
             st.divider()
 
+            st.markdown('<div class="print-page-break"></div>', unsafe_allow_html=True)
+
             pour_finir = render_pour_finir()
 
             st.markdown("<br>", unsafe_allow_html=True)
@@ -1874,7 +1977,7 @@ def main():
                         components.html(
                             f"""
                             <div style="
-                                height:150px;
+                                height:64px;
                                 display:flex;
                                 align-items:center;
                                 justify-content:center;
@@ -1888,22 +1991,22 @@ def main():
                                     cursor:pointer;
                                     padding:0;
                                     margin:0;
-                                    width:130px;
-                                    height:130px;
+                                    width:62px;
+                                    height:62px;
                                     display:flex;
                                     align-items:center;
                                     justify-content:center;
                                 ">
                                     <img src="{print_icon_src}" alt="Imprimer / Enregistrer en PDF" style="
-                                        width:130px;
-                                        height:130px;
+                                        width:62px;
+                                        height:62px;
                                         object-fit:contain;
                                         display:block;
                                     ">
                                 </button>
                             </div>
                             """,
-                            height=155
+                            height=68
                         )
 
         quick_save_clicked = any([
