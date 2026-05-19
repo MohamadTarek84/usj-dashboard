@@ -547,6 +547,29 @@ hr {{
     margin-bottom: 14px !important;
 }}
 
+.final-action-line {{
+    border: none !important;
+    height: 3px !important;
+    background-color: #D0D6E0 !important;
+    margin-top: 16px !important;
+    margin-bottom: -38px !important;
+    position: relative !important;
+    z-index: 1 !important;
+}}
+
+.st-key-save_draft_button {{
+    display: flex !important;
+    justify-content: center !important;
+    position: relative !important;
+    z-index: 5 !important;
+}}
+
+.st-key-submit_final_button {{
+    display: flex !important;
+    justify-content: center !important;
+    margin-top: 12px !important;
+}}
+
 /* =========================
    CLEAN PRINT / PDF MODE
 ========================= */
@@ -1780,9 +1803,7 @@ def main():
 
             pour_finir = render_pour_finir()
 
-            st.markdown("---")
-
-            col_left, col_save, col_submit, col_right = st.columns([1.0, 1.3, 1.8, 1.0])
+            st.markdown('<div class="final-action-line"></div>', unsafe_allow_html=True)
 
             if st.session_state.get("read_only_submitted", False):
                 st.info(
@@ -1792,9 +1813,11 @@ def main():
                 save_draft = False
                 submit_final = False
             else:
+                col_left, col_save, col_right = st.columns([1.0, 1.3, 1.0])
                 with col_save:
                     save_draft = st.button("Enregistrer et continuer plus tard", key="save_draft_button")
 
+                col_left, col_submit, col_right = st.columns([1.0, 1.8, 1.0])
                 with col_submit:
                     submit_final = st.button(
                         "Envoyer la version finale\u00A0uniquement",
