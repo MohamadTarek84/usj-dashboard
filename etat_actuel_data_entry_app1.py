@@ -736,7 +736,7 @@ def text_area(label, key, height=500, placeholder=None):
     )
 
 def render_first_page_header():
-        print_icon_src = image_to_base64(PRINT_ICON_PATH)
+    print_icon_src = image_to_base64(PRINT_ICON_PATH)
 
     if print_icon_src:
         components.html(
@@ -759,6 +759,8 @@ def render_first_page_header():
             """,
             height=70
         )
+
+    col_left, col_right = st.columns([2.2, 1])
  
 
     col_left, col_right = st.columns([2.2, 1])
