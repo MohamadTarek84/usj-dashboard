@@ -492,8 +492,11 @@ div[data-testid="stForm"] {{
 }}
 
 section[data-testid="stSidebar"] {{
-    background-color: {USJ_LIGHT_BLUE};
-    border-right: 4px solid {USJ_BLUE};
+    display: none !important;
+}}
+
+section[data-testid="stSidebar"] + div {{
+    margin-left: 0rem !important;
 }}
 
 [data-testid="stSidebarNav"] {{
