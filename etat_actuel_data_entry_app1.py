@@ -755,8 +755,8 @@ def render_first_page_header():
                     justify-content:center;
                 ">
                     <img src="{print_icon_src}" alt="Imprimer / Enregistrer en PDF" style="
-                        width:52px;
-                        height:52px;
+                        width:80px;
+                        height:80px;
                         object-fit:contain;
                         display:block;
                     ">
