@@ -1780,7 +1780,7 @@ def main():
 
             pour_finir = render_pour_finir()
 
-            st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown("---")
 
             col_left, col_save, col_submit, col_right = st.columns([1.0, 1.3, 1.8, 1.0])
 
