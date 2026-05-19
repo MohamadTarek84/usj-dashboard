@@ -1821,17 +1821,11 @@ def main():
 
                 st.markdown("---")
 
-                col_left_final, col_submit_final, col_gap_final, col_print_final, col_right_final = st.columns([1.0, 1.25, 1.0, 0.55, 0.35])
-
-                with col_submit_final:
-                    submit_final = st.button(
-                        "Envoyer la version finale\u00A0uniquement",
-                        key="submit_final_button",
-                        type="primary"
-                    )
-
-                with col_print_final:
-                    render_print_icon_button()
+                submit_final = st.button(
+                    "Envoyer la version finale\u00A0uniquement",
+                    key="submit_final_button",
+                    type="primary"
+                )
 
         quick_save_clicked = any([
             quick_save_after_stakeholders,
