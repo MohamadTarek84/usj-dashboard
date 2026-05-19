@@ -756,10 +756,11 @@ def render_print_icon_button():
             f"""
             <div class="print-button-wrapper" style="
                 width:100%;
-                height:52px;
+                height:50px;
                 display:flex;
                 align-items:center;
                 justify-content:center;
+                margin-top:-4px;
             ">
                 <button onclick="window.parent.print()" title="Imprimer / Enregistrer en PDF" style="
                     background-color:transparent;
@@ -767,26 +768,25 @@ def render_print_icon_button():
                     cursor:pointer;
                     padding:0;
                     margin:0;
-                    width:52px;
-                    height:52px;
+                    width:58px;
+                    height:58px;
                     display:flex;
                     align-items:center;
                     justify-content:center;
                 ">
                     <img src="{print_icon_src}" alt="Imprimer / Enregistrer en PDF" style="
-                        width:72px;
-                        height:72px;
+                        width:58px;
+                        height:58px;
                         object-fit:contain;
                         display:block;
                     ">
                 </button>
             </div>
             """,
-            height=58
+            height=50
         )
     else:
         st.warning("Print.png non trouvé. Placez Print.png dans le même dossier que le script.")
-
 
 def render_first_page_header():
     col_left, col_right = st.columns([2.2, 1])
