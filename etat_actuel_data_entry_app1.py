@@ -760,7 +760,7 @@ def render_print_icon_button():
                 align-items:center;
                 justify-content:center;
                 overflow:visible;
-                padding-top:-50px;
+                padding-top:-100px;
             ">
                 <button onclick="window.parent.print()" title="Imprimer / Enregistrer en PDF" style="
                     background-color:transparent;
