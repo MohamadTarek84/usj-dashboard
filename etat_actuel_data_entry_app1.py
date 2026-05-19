@@ -358,6 +358,14 @@ html, body, [class*="css"], [class*="st-"], .stApp {{
     color: {USJ_TEXT};
 }}
 
+button[kind="header"] {{
+    display: none !important;
+}}
+
+[data-testid="collapsedControl"] {{
+    display: none !important;
+}}
+
 div[data-testid="stTextInput"] label,
 div[data-testid="stTextInput"] label *,
 div[data-testid="stDateInput"] label,
