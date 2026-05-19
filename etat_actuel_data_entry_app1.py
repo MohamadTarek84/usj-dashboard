@@ -560,6 +560,11 @@ hr {{
     margin-bottom: 14px !important;
 }}
 
+/* Move the print icon iframe upward while keeping enough height so the image is not cut */
+div[data-testid="stIFrame"] {{
+    margin-top: -24px !important;
+}}
+
 /* =========================
    CLEAN PRINT / PDF MODE
 ========================= */
@@ -755,12 +760,13 @@ def render_print_icon_button():
         components.html(
             f"""
             <div class="print-button-wrapper" style="
-                height:80px;
+                height:100px;
                 display:flex;
-                align-items:flex-start;
+                align-items:center;
                 justify-content:center;
                 overflow:visible;
-                padding-top:0px;
+                padding:0;
+                margin:0;
             ">
                 <button onclick="window.parent.print()" title="Imprimer / Enregistrer en PDF" style="
                     background-color:transparent;
@@ -783,7 +789,7 @@ def render_print_icon_button():
                 </button>
             </div>
             """,
-            height=60
+            height=110
         )
     else:
         st.warning("Print.png non trouvé. Placez Print.png dans le même dossier que le script.")
@@ -1815,10 +1821,7 @@ def main():
 
                 st.markdown("---")
 
-                col_left_final, col_submit_final, col_gap_final, col_print_final, col_right_final = st.columns(
-                    [0.9, 1.4, 1.7, 0.5, 0.2],
-                    vertical_alignment="center"
-                )
+                col_left_final, col_submit_final, col_gap_final, col_print_final, col_right_final = st.columns([1.0, 1.25, 1.0, 0.55, 0.35])
 
                 with col_submit_final:
                     submit_final = st.button(
