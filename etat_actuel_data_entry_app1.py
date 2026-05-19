@@ -496,6 +496,10 @@ section[data-testid="stSidebar"] {{
     border-right: 4px solid {USJ_BLUE};
 }}
 
+[data-testid="stSidebarNav"] {{
+    display: none !important;
+}}
+
 /* Normal buttons */
 .stButton button,
 .stDownloadButton button,
