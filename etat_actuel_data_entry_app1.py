@@ -741,27 +741,32 @@ def render_first_page_header():
     if print_icon_src:
         components.html(
             f"""
-            <div class="print-button-wrapper">
+            <div class="print-button-wrapper" style="width:70px; height:70px;">
                 <button onclick="window.parent.print()" title="Imprimer / Enregistrer en PDF" style="
                     background-color:transparent;
                     border:none;
                     cursor:pointer;
                     padding:0;
-                    margin-bottom:12px;
+                    margin:0;
+                    width:60px;
+                    height:60px;
+                    display:flex;
+                    align-items:center;
+                    justify-content:center;
                 ">
-                    <img src="{print_icon_src}" style="
-                        width:54px;
-                        height:54px;
+                    <img src="{print_icon_src}" alt="Imprimer / Enregistrer en PDF" style="
+                        width:52px;
+                        height:52px;
                         object-fit:contain;
+                        display:block;
                     ">
                 </button>
             </div>
             """,
-            height=70
+            height=75
         )
-
-    col_left, col_right = st.columns([2.2, 1])
- 
+    else:
+        st.warning("print.png non trouvé. Placez print.png dans le même dossier que le script.")
 
     col_left, col_right = st.columns([2.2, 1])
 
