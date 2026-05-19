@@ -511,6 +511,19 @@ div[data-testid="stFormSubmitButton"] button p {{
     white-space: nowrap !important;
 }}
 
+
+/* Center all save/final action buttons without changing their size */
+.st-key-quick_save_after_stakeholders,
+.st-key-quick_save_after_internal,
+.st-key-quick_save_after_external,
+.st-key-quick_save_after_swot,
+.st-key-quick_save_after_priorities,
+.st-key-save_draft_button,
+.st-key-submit_final_button {{
+    display: flex !important;
+    justify-content: center !important;
+}}
+
 /* Final submit button only */
 button[kind="primary"] {{
     background-color: #8B1538 !important;
@@ -1402,7 +1415,7 @@ def render_pour_finir():
     phrases = [
         "Nous souhaitons que l’USJ soit reconnue pour …",
         "Nous souhaitons que nos étudiants disent que l’USJ …",
-        "L’USJ serait un excellent lieu de travail si …",
+        "L’USJ serait un meilleur lieu de travail si …",
     ]
 
     for i, phrase in enumerate(phrases, start=1):
@@ -1447,13 +1460,10 @@ def render_quick_save_button(key):
     if st.session_state.get("read_only_submitted", False):
         return False
 
-    col_left, col_button, col_right = st.columns([1.4, 1.2, 1.4])
-
-    with col_button:
-        return st.button(
-            "Enregistrer et continuer plus tard",
-            key=key
-        )
+    return st.button(
+        "Enregistrer et continuer plus tard",
+        key=key
+    )
 
 
 def find_word_limit_errors(section_data, section_label, max_words):
@@ -1790,19 +1800,18 @@ def main():
                 save_draft = False
                 submit_final = False
             else:
-                col_blue_left, col_blue, col_blue_right = st.columns([2.0, 1.3, 2.0])
-                with col_blue:
-                    save_draft = st.button("Enregistrer et continuer plus tard", key="save_draft_button")
+                save_draft = st.button(
+                    "Enregistrer et continuer plus tard",
+                    key="save_draft_button"
+                )
 
                 st.markdown("---")
 
-                col_red_left, col_red, col_red_right = st.columns([1.8, 1.8, 1.8])
-                with col_red:
-                    submit_final = st.button(
-                        "Envoyer la version finale\u00A0uniquement",
-                        key="submit_final_button",
-                        type="primary"
-                    )
+                submit_final = st.button(
+                    "Envoyer la version finale\u00A0uniquement",
+                    key="submit_final_button",
+                    type="primary"
+                )
 
         quick_save_clicked = any([
             quick_save_after_stakeholders,
