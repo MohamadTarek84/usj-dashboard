@@ -21,6 +21,7 @@ INTRO_IMAGE_PATH = Path("Intro_schema.png")
 ANNEXE_A_PATH = Path("Annexe_A.png")
 ANNEXE_B_PATH = Path("Annexe_B.png")
 ANNEXE_C_PATH = Path("Annexe_C.png")
+PRINT_ICON_PATH = Path("print.png")
 
 USJ_BLUE = "#001F5B"
 USJ_BLUE_2 = "#1F3C88"
@@ -735,28 +736,30 @@ def text_area(label, key, height=500, placeholder=None):
     )
 
 def render_first_page_header():
-    components.html(
-        """
-        <div class="print-button-wrapper">
-            <button onclick="window.parent.print()" title="Imprimer / Enregistrer en PDF" style="
-                background-color:#001F5B;
-                color:white;
-                border:none;
-                border-radius:50%;
-                width:54px;
-                height:54px;
-                font-size:26px;
-                cursor:pointer;
-                display:flex;
-                align-items:center;
-                justify-content:center;
-            ">
-                🖨
-            </button>
-        </div>
-        """,
-        height=70
-    )
+        print_icon_src = image_to_base64(PRINT_ICON_PATH)
+
+    if print_icon_src:
+        components.html(
+            f"""
+            <div class="print-button-wrapper">
+                <button onclick="window.parent.print()" title="Imprimer / Enregistrer en PDF" style="
+                    background-color:transparent;
+                    border:none;
+                    cursor:pointer;
+                    padding:0;
+                    margin-bottom:12px;
+                ">
+                    <img src="{print_icon_src}" style="
+                        width:54px;
+                        height:54px;
+                        object-fit:contain;
+                    ">
+                </button>
+            </div>
+            """,
+            height=70
+        )
+ 
 
     col_left, col_right = st.columns([2.2, 1])
 
