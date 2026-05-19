@@ -603,7 +603,7 @@ hr {{
     .print-answer-block {{
         break-inside: avoid !important;
         page-break-inside: avoid !important;
-        margin-bottom: 8px !important;
+        margin-bottom: 3px !important;
     }}
 
     div[data-testid="stHorizontalBlock"] {{
@@ -644,8 +644,8 @@ hr {{
     .print-answer-text {{
         display: block !important;
         width: 100% !important;
-        margin-top: 4px !important;
-        margin-bottom: 8px !important;
+        margin-top: 2px !important;
+        margin-bottom: 3px !important;
         break-inside: auto !important;
         page-break-inside: auto !important;
     }}
@@ -653,16 +653,33 @@ hr {{
     .print-answer-content {{
         display: block !important;
         width: 100% !important;
-        min-height: 80px !important;
         box-sizing: border-box !important;
         border: 1px solid #595959 !important;
         background-color: #E3DED9 !important;
         color: #000000 !important;
-        font-size: 11px !important;
-        line-height: 1.25 !important;
-        padding: 8px !important;
+        font-size: 10.5px !important;
+        line-height: 1.2 !important;
+        padding: 6px !important;
         white-space: pre-wrap !important;
         overflow: visible !important;
+    }}
+
+    .print-answer-content-empty {{
+        min-height: 34px !important;
+        height: 34px !important;
+    }}
+
+    .print-answer-content-filled {{
+        min-height: 40px !important;
+        height: auto !important;
+    }}
+
+    div[style*="min-height:24px"] {{
+        min-height: 10px !important;
+        margin-top: -2px !important;
+        margin-bottom: 2px !important;
+        font-size: 9px !important;
+        line-height: 1.1 !important;
     }}
 
     div[data-testid="stTextInput"] input {{
@@ -1020,12 +1037,15 @@ def word_limited_text_area(label, key, height=300, max_words=500):
 
     printable_value = html_lib.escape(value or "")
     printable_value = printable_value.replace("\n", "<br>")
+    print_answer_class = "print-answer-content-filled"
+
     if not printable_value.strip():
         printable_value = "&nbsp;"
+        print_answer_class = "print-answer-content-empty"
 
     html_block(f"""
 <div class="print-answer-text">
-    <div class="print-answer-content">{printable_value}</div>
+    <div class="print-answer-content {print_answer_class}">{printable_value}</div>
 </div>
 """)
 
