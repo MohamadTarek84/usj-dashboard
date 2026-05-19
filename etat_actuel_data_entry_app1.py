@@ -565,6 +565,52 @@ def text_area(label, key, height=500, placeholder=None):
     )
 
 def render_first_page_header():
+    st.markdown("""
+<style>
+@media print {
+    @page {
+        size: A4;
+        margin: 14mm 12mm 14mm 12mm;
+    }
+
+    button,
+    header,
+    footer,
+    #MainMenu,
+    .stDeployButton,
+    div[data-testid="stToolbar"],
+    div[data-testid="stDecoration"],
+    div[data-testid="stStatusWidget"] {
+        display: none !important;
+    }
+
+    .block-container {
+        max-width: 100% !important;
+        padding: 0 !important;
+    }
+
+    html, body, .stApp {
+        background: white !important;
+        overflow: visible !important;
+    }
+}
+</style>
+
+<button onclick="window.print()" style="
+    background-color:#001F5B;
+    color:white;
+    border:none;
+    border-radius:8px;
+    padding:10px 22px;
+    font-size:18px;
+    font-weight:800;
+    cursor:pointer;
+    margin-bottom:16px;
+">
+    Imprimer / Enregistrer en PDF
+</button>
+""", unsafe_allow_html=True)
+
     col_left, col_right = st.columns([2.2, 1])
 
     with col_left:
