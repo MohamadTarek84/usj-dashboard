@@ -783,7 +783,7 @@ def render_print_icon_button():
                 </button>
             </div>
             """,
-            height=80
+            height=60
         )
     else:
         st.warning("Print.png non trouvé. Placez Print.png dans le même dossier que le script.")
@@ -1815,7 +1815,10 @@ def main():
 
                 st.markdown("---")
 
-                col_left_final, col_submit_final, col_gap_final, col_print_final, col_right_final = st.columns([1.0, 1.25, 1.0, 0.55, 0.35])
+                col_left_final, col_submit_final, col_gap_final, col_print_final, col_right_final = st.columns(
+                    [0.9, 1.4, 1.7, 0.5, 0.2],
+                    vertical_alignment="center"
+                )
 
                 with col_submit_final:
                     submit_final = st.button(
