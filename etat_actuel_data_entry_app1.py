@@ -1906,7 +1906,7 @@ def main():
     if not st.session_state["access_granted"]:
         col_code, col_button = st.columns([2, 1])
 
-            def submit_login_code():
+        def submit_login_code():
             st.session_state["enter_form_clicked"] = True
 
 
