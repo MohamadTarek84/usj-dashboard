@@ -2055,178 +2055,148 @@ def main():
 
             st.markdown("<br>", unsafe_allow_html=True)
 
-if st.session_state.get("read_only_submitted", False):
-    st.info(
-        "Cette réponse a déjà été envoyée en version finale. "
-        "Vous pouvez la consulter, mais vous ne pouvez plus la modifier ni l’enregistrer à nouveau."
-    )
+            if st.session_state.get("read_only_submitted", False):
+                st.info(
+                    "Cette réponse a déjà été envoyée en version finale. "
+                    "Vous pouvez la consulter, mais vous ne pouvez plus la modifier ni l’enregistrer à nouveau."
+                )
 
-    save_draft = False
-    submit_final = False
+                save_draft = False
+                submit_final = False
 
-    st.markdown("<br>", unsafe_allow_html=True)
+                st.markdown("<br>", unsafe_allow_html=True)
 
-    col_submit_final, col_print_final, col_right_final = st.columns(
-        [1.25, 1.25, 1.50],
-        vertical_alignment="center"
-    )
+                col_submit_final, col_print_final, col_right_final = st.columns(
+                    [1.25, 1.25, 1.50],
+                    vertical_alignment="center"
+                )
 
-    with col_print_final:
-        render_print_icon_button()
-
-else:
-    col_save_final, col_save_empty = st.columns(
-        [1.25, 2.75],
-        vertical_alignment="center"
-    )
-
-         
-    with col_save_final:
-        save_draft = st.form_submit_button(
-            "Enregistrer et continuer plus tard",
-            use_container_width=True
-        )
-
-    submit_final = False
-
-           
                 with col_print_final:
-                    print_icon_src = image_to_base64(PRINT_ICON_PATH)
+                    render_print_icon_button()
 
-                    if print_icon_src:
-                        components.html(
-                            f"""
-                            <div style="
-                                height:150px;
-                                display:flex;
-                                align-items:center;
-                                justify-content:center;
-                                overflow:visible;
-                                padding:0;
-                                margin:0;
-                            ">
-                                <button onclick="window.parent.print()" title="Imprimer / Enregistrer en PDF" style="
-                                    background-color:transparent;
-                                    border:none;
-                                    cursor:pointer;
-                                    padding:0;
-                                    margin:0;
-                                    width:130px;
-                                    height:130px;
-                                    display:flex;
-                                    align-items:center;
-                                    justify-content:center;
-                                ">
-                                    <img src="{print_icon_src}" alt="Imprimer / Enregistrer en PDF" style="
-                                        width:130px;
-                                        height:130px;
-                                        object-fit:contain;
-                                        display:block;
-                                    ">
-                                </button>
-                            </div>
-                            """,
-                            height=155
-                        )
-
-        quick_save_clicked = any([
-            quick_save_after_stakeholders,
-            quick_save_after_internal,
-            quick_save_after_external,
-            quick_save_after_swot,
-            quick_save_after_priorities,
-        ])
-
-        if save_draft or submit_final or quick_save_clicked:
-            word_limit_errors = []
-
-            word_limit_errors.extend(
-                find_word_limit_errors(
-                    internal_analysis,
-                    "Section III - Analyse interne",
-                    max_words=500
-                )
-            )
-
-            word_limit_errors.extend(
-                find_word_limit_errors(
-                    external_analysis,
-                    "Section IV - Analyse externe",
-                    max_words=500
-                )
-            )
-
-            word_limit_errors.extend(
-                find_word_limit_errors(
-                    swot_analysis,
-                    "Section V - Analyse SWOT",
-                    max_words=30
-                )
-            )
-
-            word_limit_errors.extend(
-                find_word_limit_errors(
-                    priorities_initiatives,
-                    "Section VI - Priorités stratégiques et initiatives",
-                    max_words=30
-                )
-            )
-
-            if word_limit_errors:
-                st.error(
-                    "Certaines réponses dépassent la limite autorisée. "
-                    "Merci de les réduire avant l’enregistrement."
+            else:
+                col_save_final, col_print_final, col_right_final = st.columns(
+                    [1.25, 1.25, 1.50],
+                    vertical_alignment="center"
                 )
 
-                for error in word_limit_errors:
-                    st.warning(error)
-
-                st.stop()
-
-            statut = "Soumis" if submit_final else "Brouillon"
-
-            metadata = {
-                "institution": institution,
-                "responsable": responsable,
-                "email": "",
-                "response_date": str(response_date),
-                "statut": statut,
-                "draft_code": st.session_state.get("current_draft_code", ""),
-            }
-
-            data = {
-                "metadata": metadata,
-                "introduction": {},
-                "stakeholders": {
-                    "rows": stakeholder_rows,
-                },
-                "internal_analysis": internal_analysis,
-                "external_analysis": external_analysis,
-                "swot_analysis": swot_analysis,
-                "priorities_initiatives": priorities_initiatives,
-                "pour_finir": pour_finir,
-            }
-
-            try:
-                draft_code = save_response(metadata, data)
-                st.session_state["current_draft_code"] = draft_code
-
-                if quick_save_clicked:
-                    st.session_state["quick_save_success_key"] = st.session_state.get("last_quick_save_key", "")
-                    st.rerun()
-
-                if save_draft or quick_save_clicked:
-                    st.success(
-                        f"Vos réponses ont été enregistrées. Utilisez ce code pour reprendre plus tard : {draft_code}"
+                with col_save_final:
+                    save_draft = st.button(
+                        "Enregistrer et continuer plus tard",
+                        key="save_draft_button",
+                        use_container_width=True
                     )
 
-                if submit_final:
-                    st.session_state["read_only_submitted"] = True
-                    st.success("Merci.\nVos réponses ont été enregistrées.")
-                    st.rerun()
+                with col_print_final:
+                    render_print_icon_button()
 
-            except ValueError as e:
-                st.error(str(e))
+                with col_right_final:
+                    submit_final = st.button(
+                        "Envoyer la version finale uniquement",
+                        key="submit_final_button",
+                        type="primary",
+                        use_container_width=True
+                    )
+
+            quick_save_clicked = any([
+                quick_save_after_stakeholders,
+                quick_save_after_internal,
+                quick_save_after_external,
+                quick_save_after_swot,
+                quick_save_after_priorities,
+            ])
+
+            if save_draft or submit_final or quick_save_clicked:
+                word_limit_errors = []
+
+                if submit_final:
+                    word_limit_errors.extend(
+                        find_word_limit_errors(
+                            internal_analysis,
+                            "Section III - Analyse interne",
+                            max_words=500
+                        )
+                    )
+
+                    word_limit_errors.extend(
+                        find_word_limit_errors(
+                            external_analysis,
+                            "Section IV - Analyse externe",
+                            max_words=500
+                        )
+                    )
+
+                    word_limit_errors.extend(
+                        find_word_limit_errors(
+                            swot_analysis,
+                            "Section V - Analyse SWOT",
+                            max_words=30
+                        )
+                    )
+
+                    word_limit_errors.extend(
+                        find_word_limit_errors(
+                            priorities_initiatives,
+                            "Section VI - Priorités stratégiques et initiatives",
+                            max_words=30
+                        )
+                    )
+
+                if word_limit_errors:
+                    st.error(
+                        "Certaines réponses dépassent la limite autorisée. "
+                        "Merci de les réduire avant l’envoi final."
+                    )
+
+                    for error in word_limit_errors:
+                        st.warning(error)
+
+                    st.stop()
+
+                statut = "Soumis" if submit_final else "Brouillon"
+
+                metadata = {
+                    "institution": institution,
+                    "responsable": responsable,
+                    "email": "",
+                    "response_date": str(response_date),
+                    "statut": statut,
+                    "draft_code": st.session_state.get("current_draft_code", ""),
+                }
+
+                data = {
+                    "metadata": metadata,
+                    "introduction": {},
+                    "stakeholders": {
+                        "rows": stakeholder_rows,
+                    },
+                    "internal_analysis": internal_analysis,
+                    "external_analysis": external_analysis,
+                    "swot_analysis": swot_analysis,
+                    "priorities_initiatives": priorities_initiatives,
+                    "pour_finir": pour_finir,
+                }
+
+                try:
+                    draft_code = save_response(metadata, data)
+                    st.session_state["current_draft_code"] = draft_code
+
+                    if quick_save_clicked:
+                        st.session_state["quick_save_success_key"] = st.session_state.get("last_quick_save_key", "")
+                        st.rerun()
+
+                    if save_draft or quick_save_clicked:
+                        st.success(
+                            f"Vos réponses ont été enregistrées. Utilisez ce code pour reprendre plus tard : {draft_code}"
+                        )
+
+                    if submit_final:
+                        st.session_state["read_only_submitted"] = True
+                        st.success("Merci.\nVos réponses ont été enregistrées.")
+                        st.rerun()
+
+                except ValueError as e:
+                    st.error(str(e))
 
 
 if __name__ == "__main__":
