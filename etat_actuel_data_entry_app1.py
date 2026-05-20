@@ -1310,7 +1310,7 @@ if not read_only:
 </div>
 """)
 
-    return value
+return value
 
 
 def render_internal_analysis():
