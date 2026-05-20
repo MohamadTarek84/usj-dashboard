@@ -1,1 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <script src="https://unpkg.com/streamlit-component-lib@1.4.0/dist/index.js"></script>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            background: transparent;
+            font-family: Candara, Calibri, Arial, sans-serif;
+        }
 
+        textarea {
+            width: 100%;
+            background-color: #E3DED9;
+            border: 1.5px solid #595959;
+            border-radius: 0px;
+            color: #000000;
+            font-family: Candara, Calibri, Arial, sans-serif;
+            font-size: 16px;
+            line-height: 1.35;
+            padding: 8px;
+            box-sizing: border-box;
+            resize: vertical;
+            outline: none;
+        }
+
+        textarea:focus {
+            border: 2px solid #595959;
+            outline: none;
+        }
+
+        textarea::placeholder {
+            color: #000000;
+            opacity: 1;
+        }
+
+        .counter {
+            min-height: 24px;
+            font-family: Candara, Calibri, Arial, sans-serif;
+            font-size: 13px;
+            margin-top: 4px;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <textarea id="txt"></textarea>
+    <div id="counter" class="counter">0/0 mots</div>
+
+    <script>
+        let maxWords = 500;
+        let loadedOnce = false;
+        let syncTimer = null;
+
+        const txt = document.getElementById("txt");
+        const counter = document.getElementById("counter");
+
+        function wordsArray(text) {
+            const trimmed = text.trim();
+            if (!trimmed) return [];
+            return trimmed.split(/\s+/).filter(Boolean);
+        }
+
+        function syncValue() {
+            Streamlit.setComponentValue(txt.value);
+        }
+
+        function scheduleSync() {
+            if (syncTimer) clearTimeout(syncTimer);
+            syncTimer = setTimeout(syncValue, 200);
+        }
+
+        function updateCounterAndLimit(shouldSync) {
+            let words = wordsArray(txt.value);
+
+            if (words.length > maxWords) {
+                txt.value = words.slice(0, maxWords).join(" ");
+                words = wordsArray(txt.value);
+            }
+
+            if (words.length >= maxWords) {
+                counter.innerHTML = "Limite atteinte : " + words.length + "/" + maxWords + " mots";
+                counter.style.color = "#8B1538";
+                counter.style.fontWeight = "700";
+            } else {
+                counter.innerHTML = words.length + "/" + maxWords + " mots";
+                counter.style.color = "#595959";
+                counter.style.fontWeight = "400";
+            }
+
+            if (shouldSync) {
+                scheduleSync();
+            }
+        }
+
+        txt.addEventListener("input", function () {
+            updateCounterAndLimit(true);
+        });
+
+        txt.addEventListener("paste", function () {
+            setTimeout(function () {
+                updateCounterAndLimit(true);
+                syncValue();
+            }, 0);
+        });
+
+        txt.addEventListener("blur", function () {
+            updateCounterAndLimit(false);
+            syncValue();
+        });
+
+        function onRender(event) {
+            const args = event.detail.args;
+            maxWords = args.max_words || 500;
+
+            txt.style.height = (args.height || 300) + "px";
+            txt.placeholder = args.placeholder || "";
+
+            if (!loadedOnce) {
+                txt.value = args.value || "";
+                loadedOnce = true;
+            }
+
+            updateCounterAndLimit(false);
+            Streamlit.setFrameHeight((args.height || 300) + 45);
+        }
+
+        Streamlit.events.addEventListener(Streamlit.RENDER_EVENT, onRender);
+        Streamlit.setComponentReady();
+    </script>
+</body>
+</html>
