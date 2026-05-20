@@ -461,7 +461,7 @@ div[data-testid="stDateInput"] input:focus {{
 
 div[data-testid="stTextInput"] input:disabled,
 div[data-testid="stDateInput"] input:disabled {{
-    background-color: #EAF2F8 !important;
+    background-color: #E3DED9 !important;
     border: none !important;
     border-radius: 6px !important;
     color: #000000 !important;
