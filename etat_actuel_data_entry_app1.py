@@ -1080,6 +1080,8 @@ def word_limited_text_area(label, key, height=300, max_words=500):
         disabled=read_only
     )
 
+    word_count = count_words(value)
+
     printable_value = html_lib.escape(value or "")
     printable_value = printable_value.replace("\n", "<br>")
     print_answer_class = "print-answer-content-filled"
@@ -1097,19 +1099,18 @@ def word_limited_text_area(label, key, height=300, max_words=500):
     if not read_only:
         if word_count > max_words:
             html_block(f"""
-<div style="min-height:24px; color:#8B1538; font-weight:700; font-size:14px; margin-top:-6px; margin-bottom:8px;">
-    ⚠ Vous avez saisi {word_count} mots. Maximum autorisé : {max_words} mots.
+<div class="word-counter-status" style="min-height:18px; color:#8B1538; font-weight:700; font-size:13px; margin-top:-6px; margin-bottom:8px;">
+    Maximum autorisé : {max_words} mots
 </div>
 """)
         else:
             html_block(f"""
-<div style="min-height:24px; color:#595959; font-size:13px; margin-top:-6px; margin-bottom:8px;">
-    {word_count}/{max_words} mots
+<div class="word-counter-status" style="min-height:18px; color:#595959; font-size:13px; margin-top:-6px; margin-bottom:8px;">
+    Maximum autorisé : {max_words} mots
 </div>
 """)
 
     return value
-
 
 def render_internal_analysis():
     internal_themes = [
