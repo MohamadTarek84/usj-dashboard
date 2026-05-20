@@ -1278,20 +1278,72 @@ def count_words(text):
 def word_limited_text_area(label, key, height=300, max_words=500):
     read_only = st.session_state.get("read_only_submitted", False)
 
-    # ADDED
-    # max_chars = 3500 if max_words == 500 else 250
-    
     value = st.text_area(
         label=label,
         key=key,
         height=height,
         placeholder=f"Merci de saisir votre réponse ici (au maximum {max_words} mots)",
         label_visibility="collapsed",
-        disabled=read_only,
-
-        # ADDED
-        # max_chars=max_chars
+        disabled=read_only
     )
+
+    components.html(f"""
+<script>
+(function() {{
+    const textareas = window.parent.document.querySelectorAll('textarea');
+    const textarea = textareas[textareas.length - 1];
+
+    if (!textarea) return;
+
+    const maxWords = {max_words};
+
+    let counter = textarea.parentElement.parentElement.querySelector('.live-word-counter-{key}');
+    if (!counter) {{
+        counter = window.parent.document.createElement('div');
+        counter.className = 'live-word-counter-{key}';
+        counter.style.minHeight = '24px';
+        counter.style.fontSize = '13px';
+        counter.style.marginTop = '4px';
+        counter.style.marginBottom = '8px';
+        counter.style.fontFamily = 'Candara, Calibri, Arial, sans-serif';
+        textarea.parentElement.parentElement.appendChild(counter);
+    }}
+
+    function getWords(text) {{
+        const trimmed = text.trim();
+        if (!trimmed) return [];
+        return trimmed.split(/\\s+/);
+    }}
+
+    function updateCounter() {{
+        let words = getWords(textarea.value);
+
+        if (words.length > maxWords) {{
+            textarea.value = words.slice(0, maxWords).join(' ');
+            textarea.dispatchEvent(new Event('input', {{ bubbles: true }}));
+            words = getWords(textarea.value);
+        }}
+
+        if (words.length >= maxWords) {{
+            counter.innerHTML = 'Limite atteinte : ' + words.length + '/' + maxWords + ' mots';
+            counter.style.color = '#8B1538';
+            counter.style.fontWeight = '700';
+        }} else {{
+            counter.innerHTML = words.length + '/' + maxWords + ' mots';
+            counter.style.color = '#595959';
+            counter.style.fontWeight = '400';
+        }}
+    }}
+
+    textarea.addEventListener('input', updateCounter);
+    textarea.addEventListener('paste', function() {{
+        setTimeout(updateCounter, 0);
+    }});
+
+    updateCounter();
+}})();
+</script>
+""", height=0)
 
     word_count = count_words(value)
 
@@ -1306,20 +1358,6 @@ def word_limited_text_area(label, key, height=300, max_words=500):
     html_block(f"""
 <div class="print-answer-text">
     <div class="print-answer-content {print_answer_class}">{printable_value}</div>
-</div>
-""")
-
-    if not read_only:
-        if word_count > max_words:
-            html_block(f"""
-<div class="word-counter-status" style="min-height:24px; color:#8B1538; font-weight:700; font-size:14px; margin-top:-6px; margin-bottom:8px;">
-    ⚠ Vous avez saisi {word_count} mots. Maximum autorisé : {max_words} mots.
-</div>
-""")
-        else:
-            html_block(f"""
-<div class="word-counter-status" style="min-height:24px; color:#595959; font-size:13px; margin-top:-6px; margin-bottom:8px;">
-    {word_count}/{max_words} mots
 </div>
 """)
 
