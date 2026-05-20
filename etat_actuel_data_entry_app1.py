@@ -2181,7 +2181,7 @@ if save_draft or submit_final or quick_save_clicked:
 
         st.stop()
 
-            statut = "Soumis" if submit_final else "Brouillon"
+    statut = "Soumis" if submit_final else "Brouillon"
 
             metadata = {
                 "institution": institution,
