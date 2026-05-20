@@ -4,6 +4,7 @@
 import sqlite3
 import json
 import base64
+import re
 import html as html_lib
 from datetime import datetime
 from pathlib import Path
@@ -1272,7 +1273,14 @@ def render_internal_intro():
 def count_words(text):
     if text is None:
         return 0
-    return len(str(text).split())
+
+    text = str(text).strip()
+
+    if not text:
+        return 0
+
+    words = re.findall(r"\b[\wÀ-ÿ'-]+\b", text, flags=re.UNICODE)
+    return len(words)
 
 
 def word_limited_text_area(label, key, height=300, max_words=500):
