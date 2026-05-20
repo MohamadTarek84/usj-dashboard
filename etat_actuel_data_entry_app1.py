@@ -2055,7 +2055,7 @@ def main():
 
             st.markdown("<br>", unsafe_allow_html=True)
 
-            if st.session_state.get("read_only_submitted", False):
+if st.session_state.get("read_only_submitted", False):
     st.info(
         "Cette réponse a déjà été envoyée en version finale. "
         "Vous pouvez la consulter, mais vous ne pouvez plus la modifier ni l’enregistrer à nouveau."
@@ -2080,6 +2080,7 @@ else:
         vertical_alignment="center"
     )
 
+         
     with col_save_final:
         save_draft = st.form_submit_button(
             "Enregistrer et continuer plus tard",
