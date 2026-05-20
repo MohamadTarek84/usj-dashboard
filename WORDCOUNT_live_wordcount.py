@@ -25,8 +25,8 @@ ANNEXE_C_PATH = Path("Annexe_C.png")
 PRINT_ICON_PATH = Path("Print.png")
 
 LIVE_WORD_TEXTAREA = components.declare_component(
-    "live_word_textarea",
-    path=str(Path(__file__).parent / "live_word_textarea")
+    "live_textarea_component",
+    path=str(Path(__file__).parent / "live_textarea_component")
 )
 
 USJ_BLUE = "#001F5B"
