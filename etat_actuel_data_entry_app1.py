@@ -1279,7 +1279,7 @@ def word_limited_text_area(label, key, height=300, max_words=500):
     read_only = st.session_state.get("read_only_submitted", False)
 
     # ADDED
-    max_chars = 3500 if max_words == 500 else 250
+    # max_chars = 3500 if max_words == 500 else 250
     
     value = st.text_area(
         label=label,
@@ -1290,7 +1290,7 @@ def word_limited_text_area(label, key, height=300, max_words=500):
         disabled=read_only,
 
         # ADDED
-        max_chars=max_chars
+        # max_chars=max_chars
     )
 
     word_count = count_words(value)
