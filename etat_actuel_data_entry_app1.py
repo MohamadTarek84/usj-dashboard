@@ -461,7 +461,7 @@ div[data-testid="stDateInput"] input:focus {{
 
 div[data-testid="stTextInput"] input:disabled,
 div[data-testid="stDateInput"] input:disabled {{
-    background-color: #E3DED9 !important;
+    background-color: #EAF2F8 !important;
     border: none !important;
     border-radius: 6px !important;
     color: #000000 !important;
@@ -475,10 +475,6 @@ div[data-testid="stDateInput"] input::placeholder {{
     -webkit-text-fill-color: #000000 !important;
     opacity: 1 !important;
 }}
-
-div[data-testid="stSelectbox"] div[data-baseweb="select"] > div {
-    background-color: #E3DED9 !important;
-}
 
 .annexe-a-hover {{
     position: relative;
