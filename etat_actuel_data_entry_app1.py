@@ -1715,7 +1715,7 @@ def render_quick_save_button(key):
 
     if st.session_state.get("quick_save_success_key") == key:
         st.success(
-            f"Vos réponses ont été enregistrées. Utilisez ce code pour reprendre plus tard : "
+            f"Vos réponses ont été enregistrées. Votre code pour reprendre plus tard : "
             f"{st.session_state.get('current_draft_code', '')}"
         )
 
@@ -2057,8 +2057,8 @@ def main():
 
             if st.session_state.get("read_only_submitted", False):
                 st.info(
-                    "Cette réponse a déjà été envoyée en version finale. "
-                    "Vous pouvez la consulter, mais vous ne pouvez plus la modifier ni l’enregistrer à nouveau."
+                    "Le rapport de votre institution a déjà été envoyé. "
+                    "Les modifications ne sont plus possibles."
                 )
                 save_draft = False
                 submit_final = False
@@ -2217,7 +2217,7 @@ def main():
 
                 if save_draft or quick_save_clicked:
                     st.success(
-                        f"Vos réponses ont été enregistrées. Utilisez ce code pour reprendre plus tard : {draft_code}"
+                        f"Vos réponses ont été enregistrées. Votre code pour reprendre plus tard : {draft_code}"
                     )
 
                 if submit_final:
