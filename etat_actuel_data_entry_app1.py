@@ -2056,17 +2056,29 @@ def main():
             st.markdown("<br>", unsafe_allow_html=True)
 
             if st.session_state.get("read_only_submitted", False):
-                st.info(
-                    "Cette réponse a déjà été envoyée en version finale. "
-                    "Vous pouvez la consulter, mais vous ne pouvez plus la modifier ni l’enregistrer à nouveau."
-                )
-                save_draft = False
-                submit_final = False
-            else:
-                col_save_final, col_save_empty = st.columns(
-                    [1.25, 2.75],
-                    vertical_alignment="center"
-                )
+    st.info(
+        "Cette réponse a déjà été envoyée en version finale. "
+        "Vous pouvez la consulter, mais vous ne pouvez plus la modifier ni l’enregistrer à nouveau."
+    )
+
+    save_draft = False
+    submit_final = False
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    col_submit_final, col_print_final, col_right_final = st.columns(
+        [1.25, 1.25, 1.50],
+        vertical_alignment="center"
+    )
+
+    with col_print_final:
+        render_print_icon_button()
+
+else:
+    col_save_final, col_save_empty = st.columns(
+        [1.25, 2.75],
+        vertical_alignment="center"
+    )
 
                 with col_save_final:
                     save_draft = st.button(
