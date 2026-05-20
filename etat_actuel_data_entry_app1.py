@@ -2181,7 +2181,7 @@ if save_draft or submit_final or quick_save_clicked:
 
         st.stop()
 
-        statut = "Soumis" if submit_final else "Brouillon"
+            statut = "Soumis" if submit_final else "Brouillon"
 
     metadata = {
         "institution": institution,
@@ -2205,9 +2205,9 @@ if save_draft or submit_final or quick_save_clicked:
         "pour_finir": pour_finir,
     }
 
-            try:
-                draft_code = save_response(metadata, data)
-                st.session_state["current_draft_code"] = draft_code
+    try:
+        draft_code = save_response(metadata, data)
+        st.session_state["current_draft_code"] = draft_code
 
                 if quick_save_clicked:
                     st.session_state["quick_save_success_key"] = st.session_state.get("last_quick_save_key", "")
