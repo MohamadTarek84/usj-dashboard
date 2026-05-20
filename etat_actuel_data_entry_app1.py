@@ -2181,29 +2181,29 @@ if save_draft or submit_final or quick_save_clicked:
 
         st.stop()
 
-    statut = "Soumis" if submit_final else "Brouillon"
+        statut = "Soumis" if submit_final else "Brouillon"
 
-            metadata = {
-                "institution": institution,
-                "responsable": responsable,
-                "email": "",
-                "response_date": str(response_date),
-                "statut": statut,
-                "draft_code": st.session_state.get("current_draft_code", ""),
-            }
+    metadata = {
+        "institution": institution,
+        "responsable": responsable,
+        "email": "",
+        "response_date": str(response_date),
+        "statut": statut,
+        "draft_code": st.session_state.get("current_draft_code", ""),
+    }
 
-            data = {
-                "metadata": metadata,
-                "introduction": {},
-                "stakeholders": {
-                    "rows": stakeholder_rows,
-                },
-                "internal_analysis": internal_analysis,
-                "external_analysis": external_analysis,
-                "swot_analysis": swot_analysis,
-                "priorities_initiatives": priorities_initiatives,
-                "pour_finir": pour_finir,
-            }
+    data = {
+        "metadata": metadata,
+        "introduction": {},
+        "stakeholders": {
+            "rows": stakeholder_rows,
+        },
+        "internal_analysis": internal_analysis,
+        "external_analysis": external_analysis,
+        "swot_analysis": swot_analysis,
+        "priorities_initiatives": priorities_initiatives,
+        "pour_finir": pour_finir,
+    }
 
             try:
                 draft_code = save_response(metadata, data)
