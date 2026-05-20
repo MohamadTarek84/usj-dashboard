@@ -1303,17 +1303,10 @@ def word_limited_text_area(label, key, height=300, max_words=500):
 </div>
 """)
 
-    if not read_only:
-        if word_count > max_words:
-            html_block(f"""
-<div class="word-counter-status" style="min-height:24px; color:#8B1538; font-weight:700; font-size:14px; margin-top:-6px; margin-bottom:8px;">
-    ⚠ Vous avez saisi {word_count} mots. Maximum autorisé : {max_words} mots.
-</div>
-""")
-        else:
-            html_block(f"""
-<div class="word-counter-status" style="min-height:24px; color:#595959; font-size:13px; margin-top:-6px; margin-bottom:8px;">
-    {word_count}/{max_words} mots
+if not read_only:
+    html_block(f"""
+<div class="word-counter-status" style="min-height:18px; color:#595959; font-size:13px; margin-top:-6px; margin-bottom:8px;">
+    Maximum autorisé : {max_words} mots
 </div>
 """)
 
@@ -2141,16 +2134,19 @@ def main():
             quick_save_after_priorities,
         ])
 
-        if save_draft or submit_final or quick_save_clicked:
-            word_limit_errors = []
+if save_draft or submit_final or quick_save_clicked:
+    word_limit_errors = []
 
-            word_limit_errors.extend(
-                find_word_limit_errors(
-                    internal_analysis,
-                    "Section III - Analyse interne",
-                    max_words=500
-                )
+    # Validate word limits ONLY on final submission
+    if submit_final:
+
+        word_limit_errors.extend(
+            find_word_limit_errors(
+                internal_analysis,
+                "Section III - Analyse interne",
+                max_words=500
             )
+        )
 
             word_limit_errors.extend(
                 find_word_limit_errors(
