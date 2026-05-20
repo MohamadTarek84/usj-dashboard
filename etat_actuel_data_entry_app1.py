@@ -2134,84 +2134,46 @@ def main():
             quick_save_after_priorities,
         ])
 
-if save_draft or submit_final or quick_save_clicked:
-    word_limit_errors = []
+        if save_draft or submit_final or quick_save_clicked:
+            word_limit_errors = []
 
-    if submit_final:
-        word_limit_errors.extend(
-            find_word_limit_errors(
-                internal_analysis,
-                "Section III - Analyse interne",
-                max_words=500
-            )
-        )
+            if submit_final:
+                word_limit_errors.extend(find_word_limit_errors(internal_analysis, "Section III - Analyse interne", max_words=500))
+                word_limit_errors.extend(find_word_limit_errors(external_analysis, "Section IV - Analyse externe", max_words=500))
+                word_limit_errors.extend(find_word_limit_errors(swot_analysis, "Section V - Analyse SWOT", max_words=30))
+                word_limit_errors.extend(find_word_limit_errors(priorities_initiatives, "Section VI - Priorités stratégiques et initiatives", max_words=30))
 
-        word_limit_errors.extend(
-            find_word_limit_errors(
-                external_analysis,
-                "Section IV - Analyse externe",
-                max_words=500
-            )
-        )
-
-        word_limit_errors.extend(
-            find_word_limit_errors(
-                swot_analysis,
-                "Section V - Analyse SWOT",
-                max_words=30
-            )
-        )
-
-        word_limit_errors.extend(
-            find_word_limit_errors(
-                priorities_initiatives,
-                "Section VI - Priorités stratégiques et initiatives",
-                max_words=30
-            )
-        )
-
-    if word_limit_errors:
-        st.error(
-            "Certaines réponses dépassent la limite autorisée. "
-            "Merci de les réduire avant l’enregistrement."
-        )
-
-        for error in word_limit_errors:
-            st.warning(error)
-
-        st.stop()
+            if word_limit_errors:
+                st.error("Certaines réponses dépassent la limite autorisée. Merci de les réduire avant l’enregistrement.")
+                for error in word_limit_errors:
+                    st.warning(error)
+                st.stop()
 
             statut = "Soumis" if submit_final else "Brouillon"
 
-    metadata = {
-        "institution": institution,
-        "responsable": responsable,
-        "email": "",
-        "response_date": str(response_date),
-        "statut": statut,
-        "draft_code": st.session_state.get("current_draft_code", ""),
-    }
+            metadata = {
+                "institution": institution,
+                "responsable": responsable,
+                "email": "",
+                "response_date": str(response_date),
+                "statut": statut,
+                "draft_code": st.session_state.get("current_draft_code", ""),
+            }
 
-    data = {
-        "metadata": metadata,
-        "introduction": {},
-        "stakeholders": {
-            "rows": stakeholder_rows,
-        },
-        "internal_analysis": internal_analysis,
-        "external_analysis": external_analysis,
-        "swot_analysis": swot_analysis,
-        "priorities_initiatives": priorities_initiatives,
-        "pour_finir": pour_finir,
-    }
+            data = {
+                "metadata": metadata,
+                "introduction": {},
+                "stakeholders": {"rows": stakeholder_rows},
+                "internal_analysis": internal_analysis,
+                "external_analysis": external_analysis,
+                "swot_analysis": swot_analysis,
+                "priorities_initiatives": priorities_initiatives,
+                "pour_finir": pour_finir,
+            }
 
-    try:
-        draft_code = save_response(metadata, data)
-        st.session_state["current_draft_code"] = draft_code
-
-                if quick_save_clicked:
-                    st.session_state["quick_save_success_key"] = st.session_state.get("last_quick_save_key", "")
-                    st.rerun()
+            try:
+                draft_code = save_response(metadata, data)
+                st.session_state["current_draft_code"] = draft_code
 
                 if save_draft or quick_save_clicked:
                     st.success(
@@ -2225,7 +2187,6 @@ if save_draft or submit_final or quick_save_clicked:
 
             except ValueError as e:
                 st.error(str(e))
-
 
 if __name__ == "__main__":
     main()
