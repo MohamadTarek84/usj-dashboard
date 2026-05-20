@@ -1906,20 +1906,29 @@ def main():
     if not st.session_state["access_granted"]:
         col_code, col_button = st.columns([2, 1])
 
+            def submit_login_code():
+            st.session_state["enter_form_clicked"] = True
+
+
         with col_code:
             login_code = st.text_input(
                 "Mot de passe reçu par email",
                 placeholder="",
-                key="login_draft_code"
+                key="login_draft_code",
+                on_change=submit_login_code
             )
 
         with col_button:
             st.markdown("<br>", unsafe_allow_html=True)
-            enter_form = st.button("Accéder au rapport")
+
+            enter_form = (
+                st.button("Accéder au rapport")
+                or st.session_state.pop("enter_form_clicked", False)
+            )
 
         if enter_form:
             cleaned_code = login_code.strip().upper()
-
+            
             if not cleaned_code:
                 st.warning("Veuillez saisir un code personnel de reprise avant d’accéder au formulaire.")
                 return
