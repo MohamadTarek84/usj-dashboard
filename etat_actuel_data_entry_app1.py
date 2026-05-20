@@ -1931,7 +1931,7 @@ def main():
                 st.rerun()
 
             if cleaned_code not in AUTHORIZED_TEST_CODES:
-                st.error("Code non reconnu. Veuillez utiliser le code personnel qui vous a été communiqué.")
+                st.error("Merci d'utiliser le mot de passe reçu par email.")
                 return
 
             draft = load_existing_draft_by_code(cleaned_code)
