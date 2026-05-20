@@ -1291,30 +1291,16 @@ def count_words(text):
 def word_limited_text_area(label, key, height=300, max_words=500):
     read_only = st.session_state.get("read_only_submitted", False)
 
-    current_value = st.session_state.get(key, "")
+    value = st.text_area(
+        label=label,
+        key=key,
+        height=height,
+        placeholder=f"Merci de saisir votre réponse ici (au maximum {max_words} mots)",
+        label_visibility="collapsed",
+        disabled=read_only
+    )
 
-    if read_only:
-        value = st.text_area(
-            label=label,
-            key=key,
-            height=height,
-            placeholder=f"Merci de saisir votre réponse ici (au maximum {max_words} mots)",
-            label_visibility="collapsed",
-            disabled=True
-        )
-    else:
-        value = LIVE_WORD_TEXTAREA(
-            value=current_value,
-            max_words=max_words,
-            height=height,
-            placeholder=f"Merci de saisir votre réponse ici (au maximum {max_words} mots)",
-            key=f"live_{key}"
-        )
-
-        if value is None:
-            value = current_value
-
-        st.session_state[key] = value
+    word_count = count_words(value)
 
     printable_value = html_lib.escape(value or "")
     printable_value = printable_value.replace("\n", "<br>")
@@ -1327,6 +1313,20 @@ def word_limited_text_area(label, key, height=300, max_words=500):
     html_block(f"""
 <div class="print-answer-text">
     <div class="print-answer-content {print_answer_class}">{printable_value}</div>
+</div>
+""")
+
+    if not read_only:
+        if word_count > max_words:
+            html_block(f"""
+<div class="word-counter-status" style="min-height:24px; color:#8B1538; font-weight:700; font-size:14px; margin-top:-6px; margin-bottom:8px;">
+    ⚠ Vous avez saisi {word_count} mots. Maximum autorisé : {max_words} mots.
+</div>
+""")
+        else:
+            html_block(f"""
+<div class="word-counter-status" style="min-height:24px; color:#595959; font-size:13px; margin-top:-6px; margin-bottom:8px;">
+    {word_count}/{max_words} mots
 </div>
 """)
 
