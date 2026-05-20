@@ -1303,14 +1303,14 @@ def word_limited_text_area(label, key, height=300, max_words=500):
 </div>
 """)
 
-if not read_only:
-    html_block(f"""
+    if not read_only:
+        html_block(f"""
 <div class="word-counter-status" style="min-height:18px; color:#595959; font-size:13px; margin-top:-6px; margin-bottom:8px;">
     Maximum autorisé : {max_words} mots
 </div>
 """)
 
-return value
+    return value
 
 
 def render_internal_analysis():
