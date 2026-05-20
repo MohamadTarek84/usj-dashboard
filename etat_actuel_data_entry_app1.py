@@ -31,57 +31,30 @@ USJ_LIGHT_BLUE = "#EAF2F8"
 USJ_TEXT = "#1B2A41"
 
 AUTHORIZED_TEST_CODES = {
-    # Old test codes
-    "USJ-HS-2032": {"responsable": "Hadi Sawaya", "institution": "ESIB"},
-    "USJ-IM-2032": {"responsable": "Irma Majdalani", "institution": "FSE"},
-    "USJ-NRH-2032": {"responsable": "Nadine Riachi Haddad", "institution": "FDLT"},
-    "USJ-UEH-2032": {"responsable": "Ursula El Hage", "institution": "FGM"},
-    "USJ-LKG-2032": {"responsable": "Lina Koleilat Ghalayini", "institution": "FSE"},
-    "USJ-TH-2032": {"responsable": "Tarek Halabi", "institution": ""},
-
-    # Final respondent codes
-    "USJ-ESMOD-7KQ4-2032": {"responsable": "Nicole MASSOUD", "institution": "ESMOD"},
-    "USJ-ESTS-M9X2-2032": {"responsable": "Rima MAWAD", "institution": "ESTS"},
-    "USJ-ETIB-P4L8-2032": {"responsable": "Mary YAZBECK", "institution": "ETIB"},
-    "USJ-FDLT-R6N3-2032": {"responsable": "Gina ABOU FADEL SAAD", "institution": "FDLT"},
-    "USJ-FLSH-T8B5-2032": {"responsable": "Myrna GANNAGÉ", "institution": "FLSH"},
-    "USJ-FSEDU-C2V7-2032": {"responsable": "Patricia FATA RACHED", "institution": "FSEDU"},
-    "USJ-FSR-H5D9-2032": {"responsable": "Salah ABOU JAOUDE s.j.", "institution": "FSR"},
-    "USJ-IEIC-J3W6-2032": {"responsable": "Roula TALHOUK", "institution": "IEIC"},
-    "USJ-IESAV-F8K1-2032": {"responsable": "Toufic EL-KHOURY", "institution": "IESAV"},
-    "USJ-ILE-Q2M4-2032": {"responsable": "Rock EL-ACHY", "institution": "ILE"},
-    "USJ-ILO-Y7P5-2032": {"responsable": "Tony El-KHAWAJI", "institution": "ILO"},
-    "USJ-ISSR-L9T2-2032": {"responsable": "Yara MATTA", "institution": "ISSR"},
-    "USJ-FDSP-X4A8-2032": {"responsable": "Marie-Claude NAJEM KOBEH", "institution": "FDSP"},
-    "USJ-ISP-N6E3-2032": {"responsable": "Sami NADER", "institution": "ISP"},
-    "USJ-FGM-U1R7-2032": {"responsable": "Fouad ZMOKHOL", "institution": "FGM"},
-    "USJ-FSE-B8C5-2032": {"responsable": "Jean-François VERNE", "institution": "FSE"},
-    "USJ-IGE-Z3H9-2032": {"responsable": "Céline BOUTROS SAAB", "institution": "IGE"},
-    "USJ-ISSA-K7V2-2032": {"responsable": "Irma Majdalani", "institution": "ISSA"},
-    "USJ-ESAR-M4Q6-2032": {"responsable": "Richard MITRI", "institution": "ESAR"},
-    "USJ-ESIA-P9L1-2032": {"responsable": "Wadih SKAFF", "institution": "ESIA"},
-    "USJ-ESIAM-T5X8-2032": {"responsable": "Wadih SKAFF", "institution": "ESIAM"},
-    "USJ-ESIB-W2N4-2032": {"responsable": "Wassim RAPHAËL", "institution": "ESIB"},
-    "USJ-FS-D7K3-2032": {"responsable": "Maher ABBOUD", "institution": "FS"},
-    "USJ-INCI-R8M6-2032": {"responsable": "Marc IBRAHIM", "institution": "INCI"},
-    "USJ-ESF-H1P9-2032": {"responsable": "Salimé SALAMEH SAAD", "institution": "ESF"},
-    "USJ-ETLAM-C6Y2-2032": {"responsable": "Marianne ABI FADEL", "institution": "ETLAM"},
-    "USJ-FM-V4T7-2032": {"responsable": "Elie NEMER", "institution": "FM"},
-    "USJ-FMD-L8Q5-2032": {"responsable": "Nada FARHAT MCHAYLEH", "institution": "FMD"},
-    "USJ-FP-J2R4-2032": {"responsable": "Hayat AZOURY TANNOUS", "institution": "FP"},
-    "USJ-FSI-X7B1-2032": {"responsable": "Rima SASSINE KAZAN", "institution": "FSI"},
-    "USJ-IET-N5K8-2032": {"responsable": "Carla MATTA-ABI ZEID", "institution": "IET"},
-    "USJ-IPHY-P3D6-2032": {"responsable": "Pascal BREIDY", "institution": "IPHY"},
-    "USJ-IPM-T9W2-2032": {"responsable": "Céleste YOUNES HARB", "institution": "IPM"},
-    "USJ-ISO-F6M7-2032": {"responsable": "Guillemette HENRY", "institution": "ISO"},
-    "USJ-ISSP-Q1H4-2032": {"responsable": "Michèle KOSREMELLI-ASMAR", "institution": "ISSP"},
-    "USJ-CDB-R5X9-2032": {"responsable": "Nathalie SABBAGH", "institution": "CDB"},
-    "USJ-CLN-B2V6-2032": {"responsable": "Fadia ALAM GEMAYEL", "institution": "CLN"},
-    "USJ-CLS-Y8P3-2032": {"responsable": "Dina SIDANI", "institution": "CLS"},
-    "USJ-CZB-K4N1-2032": {"responsable": "Alain AJAMI EL", "institution": "CZB"},
-    "USJ-CFP-M7T5-2032": {"responsable": "Fadi EL-HAGE", "institution": "CFP"},
-    "USJ-CPM-L3Q8-2032": {"responsable": "Johanna HAWARI-BOURJEILY", "institution": "CPM"},
-    "USJ-UPT-H9C2-2032": {"responsable": "Roland TOMB", "institution": "UPT"},
+    "USJ-HS-2032": {
+        "responsable": "Hadi Sawaya",
+        "institution": "ESIB",
+    },
+    "USJ-IM-2032": {
+        "responsable": "Irma Majdalani",
+        "institution": "FSE",
+    },
+    "USJ-NRH-2032": {
+        "responsable": "Nadine Riachi Haddad",
+        "institution": "FDLT",
+    },
+    "USJ-UEH-2032": {
+        "responsable": "Ursula El Hage",
+        "institution": "FGM",
+    },
+    "USJ-LKG-2032": {
+        "responsable": "Lina Koleilat Ghalayini",
+        "institution": "FSE",
+    },
+    "USJ-TH-2032": {
+        "responsable": "Tarek Halabi",
+        "institution": "",
+    },
 }
 
 def html_block(content):
@@ -91,7 +64,10 @@ def html_block(content):
         st.markdown(content, unsafe_allow_html=True)
 
 
+@st.cache_data(show_spinner=False)
 def image_to_base64(image_path):
+    """Cache image encoding to reduce Streamlit/Azure rerun lag."""
+    image_path = Path(image_path)
     if not image_path.exists():
         return None
     suffix = image_path.suffix.lower().replace(".", "")
@@ -102,8 +78,11 @@ def image_to_base64(image_path):
 
 
 def init_db():
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=30)
     cur = conn.cursor()
+    cur.execute("PRAGMA journal_mode=WAL")
+    cur.execute("PRAGMA synchronous=NORMAL")
+    cur.execute("PRAGMA busy_timeout=30000")
 
     cur.execute("""
         CREATE TABLE IF NOT EXISTS responses (
@@ -143,8 +122,11 @@ def save_response(metadata, data):
     data["draft_code"] = draft_code
     data["metadata"]["draft_code"] = draft_code
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=30)
     cur = conn.cursor()
+    cur.execute("PRAGMA journal_mode=WAL")
+    cur.execute("PRAGMA synchronous=NORMAL")
+    cur.execute("PRAGMA busy_timeout=30000")
 
     existing = cur.execute("""
         SELECT id FROM responses
@@ -353,82 +335,9 @@ def flatten_response(row):
 def apply_usj_style():
     html_block(f"""
 <style>
-
-#MainMenu {{
-    display: none !important;
-    visibility: hidden !important;
-}}
-
-header {{
-    display: none !important;
-    visibility: hidden !important;
-}}
-
-[data-testid="stToolbar"] {{
-    display: none !important;
-    visibility: hidden !important;
-}}
-
-[data-testid="stDecoration"] {{
-    display: none !important;
-    visibility: hidden !important;
-}}
-
-[data-testid="stStatusWidget"] {{
-    display: none !important;
-    visibility: hidden !important;
-}}
-
-button[data-testid="stBaseButton-header"] {{
-    display: none !important;
-    visibility: hidden !important;
-}}
-
-[data-testid="stBaseButton-header"] {{
-    display: none !important;
-    visibility: hidden !important;
-}}
-
 html, body, [class*="css"], [class*="st-"], .stApp {{
     font-family: Candara, Calibri, Arial, sans-serif !important;
     color: {USJ_TEXT};
-}}
-
-/* =====================================================
-   AZURE / STREAMLIT FIX
-   Hide Streamlit multipage/sidebar elements and the
-   broken keyboard_double_arrow_right text in Azure.
-===================================================== */
-section[data-testid="stSidebar"] {{
-    display: none !important;
-    visibility: hidden !important;
-    width: 0px !important;
-    min-width: 0px !important;
-    max-width: 0px !important;
-}}
-
-[data-testid="stSidebarNav"] {{
-    display: none !important;
-    visibility: hidden !important;
-}}
-
-[data-testid="collapsedControl"],
-[data-testid="stSidebarCollapsedControl"],
-button[kind="header"] {{
-    display: none !important;
-    visibility: hidden !important;
-}}
-
-div[data-testid="stAppViewContainer"] {{
-    margin-left: 0px !important;
-    padding-left: 0px !important;
-}}
-
-.main .block-container,
-div[data-testid="stAppViewContainer"] .block-container {{
-    padding-left: 3rem !important;
-    padding-right: 3rem !important;
-    max-width: 100% !important;
 }}
 
 div[data-testid="stTextInput"] label,
@@ -564,6 +473,10 @@ div[data-testid="stForm"] {{
     box-shadow: none !important;
 }}
 
+section[data-testid="stSidebar"] {{
+    background-color: {USJ_LIGHT_BLUE};
+    border-right: 4px solid {USJ_BLUE};
+}}
 
 /* Normal buttons */
 .stButton button,
@@ -608,7 +521,7 @@ div[data-testid="stFormSubmitButton"] button p {{
 }}
 
 
-/* Action buttons: same size for save and final buttons */
+/* Center all save/final action buttons without changing their size */
 .st-key-quick_save_after_stakeholders,
 .st-key-quick_save_after_internal,
 .st-key-quick_save_after_external,
@@ -617,24 +530,6 @@ div[data-testid="stFormSubmitButton"] button p {{
 .st-key-save_draft_button,
 .st-key-submit_final_button {{
     display: flex !important;
-    justify-content: flex-start !important;
-}}
-
-.st-key-quick_save_after_stakeholders button,
-.st-key-quick_save_after_internal button,
-.st-key-quick_save_after_external button,
-.st-key-quick_save_after_swot button,
-.st-key-quick_save_after_priorities button,
-.st-key-save_draft_button button,
-.st-key-submit_final_button button {{
-    width: 360px !important;
-    min-width: 360px !important;
-    max-width: 360px !important;
-    height: 58px !important;
-    min-height: 58px !important;
-    padding: 10px 22px !important;
-    display: flex !important;
-    align-items: center !important;
     justify-content: center !important;
 }}
 
@@ -674,17 +569,9 @@ hr {{
     margin-bottom: 14px !important;
 }}
 
-.final-action-line {{
-    border: none !important;
-    height: 3px !important;
-    background-color: #D0D6E0 !important;
-    margin-top: 14px !important;
-    margin-bottom: 14px !important;
-}}
-
 /* Move the print icon iframe upward while keeping enough height so the image is not cut */
 div[data-testid="stIFrame"] {{
-    margin-top: 0px !important;
+    margin-top: -24px !important;
 }}
 
 /* =========================
@@ -692,10 +579,6 @@ div[data-testid="stIFrame"] {{
 ========================= */
 
 .print-answer-text {{
-    display: none;
-}}
-
-.pour-finir-print-row {{
     display: none;
 }}
 
@@ -851,94 +734,6 @@ div[data-testid="stIFrame"] {{
         display: none !important;
     }}
 
-    .intro-parts-print-block {{
-        break-before: page !important;
-        page-break-before: always !important;
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
-        margin-top: 0 !important;
-    }}
-
-    .print-answer-block,
-    .print-answer-text,
-    .print-answer-content {{
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
-    }}
-
-    .print-answer-content {{
-        overflow: hidden !important;
-    }}
-
-    .word-counter-status {{
-        display: none !important;
-        height: 0 !important;
-        min-height: 0 !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }}
-
-    .st-key-pour_finir_1_1,
-    .st-key-pour_finir_1_2,
-    .st-key-pour_finir_1_3,
-    .st-key-pour_finir_2_1,
-    .st-key-pour_finir_2_2,
-    .st-key-pour_finir_2_3,
-    .st-key-pour_finir_3_1,
-    .st-key-pour_finir_3_2,
-    .st-key-pour_finir_3_3 {{
-        display: none !important;
-        height: 0 !important;
-        min-height: 0 !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }}
-
-    .pour-finir-screen-label {{
-        display: none !important;
-        height: 0 !important;
-        min-height: 0 !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }}
-
-    .pour-finir-print-row {{
-        display: block !important;
-        width: 100% !important;
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
-        margin: 8px 0 12px 0 !important;
-        clear: both !important;
-    }}
-
-    .pour-finir-print-label {{
-        display: block !important;
-        width: 100% !important;
-        color: #001F5B !important;
-        font-weight: 700 !important;
-        font-size: 11px !important;
-        line-height: 1.25 !important;
-        margin-bottom: 5px !important;
-        white-space: normal !important;
-    }}
-
-    .pour-finir-print-box {{
-        display: block !important;
-        width: 100% !important;
-        box-sizing: border-box !important;
-        min-height: 28px !important;
-        border: 1px solid #595959 !important;
-        background-color: #E3DED9 !important;
-        color: #000000 !important;
-        font-size: 10.5px !important;
-        line-height: 1.2 !important;
-        padding: 6px !important;
-        margin: 0 0 5px 0 !important;
-        white-space: pre-wrap !important;
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
-    }}
-
     hr {{
         margin-top: 6px !important;
         margin-bottom: 6px !important;
@@ -974,7 +769,7 @@ def render_print_icon_button():
         components.html(
             f"""
             <div class="print-button-wrapper" style="
-                height:150px;
+                height:100px;
                 display:flex;
                 align-items:center;
                 justify-content:center;
@@ -988,22 +783,22 @@ def render_print_icon_button():
                     cursor:pointer;
                     padding:0;
                     margin:0;
-                    width:130px;
-                    height:130px;
+                    width:82px;
+                    height:82px;
                     display:flex;
                     align-items:center;
                     justify-content:center;
                 ">
                     <img src="{print_icon_src}" alt="Imprimer / Enregistrer en PDF" style="
-                        width:130px;
-                        height:130px;
+                        width:82px;
+                        height:82px;
                         object-fit:contain;
                         display:block;
                     ">
                 </button>
             </div>
             """,
-            height=155
+            height=110
         )
     else:
         st.warning("Print.png non trouvé. Placez Print.png dans le même dossier que le script.")
@@ -1074,26 +869,24 @@ def render_fixed_introduction():
     Ce rapport vise ainsi à produire <strong>deux résultats principaux</strong>. Le premier consiste en une <strong>analyse SWOT</strong> (Strengths, Weaknesses, Opportunities, Threats) <strong>de l’Université</strong>, fondée sur la réalité vécue au sein de votre institution. Sur la base de cette analyse, vous serez amenés à proposer <strong>des priorités stratégiques ainsi que des initiatives (ou projets), toujours à l’échelle de l’Université</strong>, constituant ainsi le second résultat attendu.
     </p>
 
-<div class="intro-parts-print-block">
     <p style="font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:5px;">
     Le document comprend 6 parties :
     </p>
 
-    <div style="font-size:17px; line-height:1.75; color:{USJ_BLUE}; margin-top:5px;">
+<div style="font-size:17px; line-height:1.75; color:{USJ_BLUE}; margin-top:5px;">
 
-        I. Introduction<br>
+    I. Introduction<br>
 
-        II. Identification des parties prenantes à consulter pour écrire le rapport<br>
+    II. Identification des parties prenantes à consulter pour écrire le rapport<br>
 
-        III. Analyse interne : cette analyse mène à produire les éléments Forces et Faiblesses de l’analyse SWOT<br>
+    III. Analyse interne : cette analyse mène à produire les éléments Forces et Faiblesses de l’analyse SWOT<br>
 
-        IV. Analyse externe : cette analyse mène à produire les éléments Opportunités et Menaces de l’analyse SWOT<br>
+    IV. Analyse externe : cette analyse mène à produire les éléments Opportunités et Menaces de l’analyse SWOT<br>
 
-        V. Analyse SWOT<br>
+    V. Analyse SWOT<br>
 
-        VI. Propositions de Priorités stratégiques et Initiatives
+    VI. Propositions de Priorités stratégiques et Initiatives
 
-    </div>
 </div>
     <p style="font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-top:22px; margin-bottom:8px;">
     Pour toute information supplémentaire ou support, contacter :
@@ -1287,8 +1080,6 @@ def word_limited_text_area(label, key, height=300, max_words=500):
         disabled=read_only
     )
 
-    word_count = count_words(value)
-
     printable_value = html_lib.escape(value or "")
     printable_value = printable_value.replace("\n", "<br>")
     print_answer_class = "print-answer-content-filled"
@@ -1304,9 +1095,16 @@ def word_limited_text_area(label, key, height=300, max_words=500):
 """)
 
     if not read_only:
-        html_block(f"""
-<div class="word-counter-status" style="min-height:18px; color:#595959; font-size:13px; margin-top:-6px; margin-bottom:8px;">
-    Maximum autorisé : {max_words} mots
+        if word_count > max_words:
+            html_block(f"""
+<div style="min-height:24px; color:#8B1538; font-weight:700; font-size:14px; margin-top:-6px; margin-bottom:8px;">
+    ⚠ Vous avez saisi {word_count} mots. Maximum autorisé : {max_words} mots.
+</div>
+""")
+        else:
+            html_block(f"""
+<div style="min-height:24px; color:#595959; font-size:13px; margin-top:-6px; margin-bottom:8px;">
+    {word_count}/{max_words} mots
 </div>
 """)
 
@@ -1522,8 +1320,6 @@ def render_swot_analysis():
         right_title="Faiblesses (Saisir une faiblesse par case)"
     )
 
-    st.markdown('<div class="print-page-break"></div>', unsafe_allow_html=True)
-
     html_block(f"""
 <div style="background:#ffffff; padding:8px 24px 8px 24px; border-radius:10px; border-left:none; margin-top:10px; margin-bottom:6px;">
     <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:6px;">
@@ -1648,7 +1444,7 @@ def render_pour_finir():
 
         with col_label:
             html_block(f"""
-<div class="pour-finir-screen-label" style="font-size:17px; line-height:1.35; color:{USJ_BLUE}; font-weight:700; margin-top:8px; white-space:nowrap;">
+<div style="font-size:17px; line-height:1.35; color:{USJ_BLUE}; font-weight:700; margin-top:8px; white-space:nowrap;">
     &bull; {phrase}
 </div>
 """)
@@ -1673,19 +1469,6 @@ def render_pour_finir():
                 disabled=read_only
             )
 
-        printable_r1 = html_lib.escape(r1 or "") or "&nbsp;"
-        printable_r2 = html_lib.escape(r2 or "") or "&nbsp;"
-        printable_r3 = html_lib.escape(r3 or "") or "&nbsp;"
-
-        html_block(f"""
-<div class="pour-finir-print-row">
-    <div class="pour-finir-print-label">&bull; {phrase}</div>
-    <div class="pour-finir-print-box">{printable_r1}</div>
-    <div class="pour-finir-print-box">{printable_r2}</div>
-    <div class="pour-finir-print-box">{printable_r3}</div>
-</div>
-""")
-
         pour_finir[phrase] = {
             "reponse_1": r1,
             "reponse_2": r2,
@@ -1698,21 +1481,10 @@ def render_quick_save_button(key):
     if st.session_state.get("read_only_submitted", False):
         return False
 
-    clicked = st.button(
+    return st.button(
         "Enregistrer et continuer plus tard",
         key=key
     )
-
-    if clicked:
-        st.session_state["last_quick_save_key"] = key
-
-    if st.session_state.get("quick_save_success_key") == key:
-        st.success(
-            f"Vos réponses ont été enregistrées. Utilisez ce code pour reprendre plus tard : "
-            f"{st.session_state.get('current_draft_code', '')}"
-        )
-
-    return clicked
 
 
 def find_word_limit_errors(section_data, section_label, max_words):
@@ -1762,12 +1534,7 @@ def delete_response_by_code(draft_code):
     conn.close()
 
 def main():
-    st.set_page_config(
-        page_title=APP_TITLE,
-        page_icon="📋",
-        layout="wide",
-        initial_sidebar_state="collapsed"
-    )
+    st.set_page_config(page_title=APP_TITLE, page_icon="📋", layout="wide")
 
     apply_usj_style()
     init_db()
@@ -2042,8 +1809,6 @@ def main():
 
             st.divider()
 
-            st.markdown('<div class="print-page-break"></div>', unsafe_allow_html=True)
-
             pour_finir = render_pour_finir()
 
             st.markdown("<br>", unsafe_allow_html=True)
@@ -2055,27 +1820,16 @@ def main():
                 )
                 save_draft = False
                 submit_final = False
-
-                st.markdown("<br>", unsafe_allow_html=True)
-                render_print_icon_button()
-                
             else:
-                col_save_final, col_save_empty = st.columns(
-                    [1.25, 2.75],
-                    vertical_alignment="center"
+                save_draft = st.button(
+                    "Enregistrer et continuer plus tard",
+                    key="save_draft_button"
                 )
 
-                with col_save_final:
-                    save_draft = st.button(
-                        "Enregistrer et continuer plus tard",
-                        key="save_draft_button",
-                        use_container_width=True
-                    )
+                st.markdown("---")
 
-                st.markdown('<hr class="final-action-line">', unsafe_allow_html=True)
-
-                col_submit_final, col_print_final, col_right_final = st.columns(
-                    [1.25, 1.25, 1.50],
+                col_left_final, col_submit_final, col_print_final, col_right_final = st.columns(
+                    [1.0, 1.25, 0.4, 0.6],
                     vertical_alignment="center"
                 )
 
@@ -2083,8 +1837,7 @@ def main():
                     submit_final = st.button(
                         "Envoyer la version finale\u00A0uniquement",
                         key="submit_final_button",
-                        type="primary",
-                        use_container_width=True
+                        type="primary"
                     )
 
                 with col_print_final:
@@ -2094,11 +1847,11 @@ def main():
                         components.html(
                             f"""
                             <div style="
-                                height:150px;
+                                height:86px;
                                 display:flex;
                                 align-items:center;
                                 justify-content:center;
-                                overflow:visible;
+                                overflow:hidden;
                                 padding:0;
                                 margin:0;
                             ">
@@ -2108,22 +1861,22 @@ def main():
                                     cursor:pointer;
                                     padding:0;
                                     margin:0;
-                                    width:130px;
-                                    height:130px;
+                                    width:82px;
+                                    height:82px;
                                     display:flex;
                                     align-items:center;
                                     justify-content:center;
                                 ">
                                     <img src="{print_icon_src}" alt="Imprimer / Enregistrer en PDF" style="
-                                        width:130px;
-                                        height:130px;
+                                        width:82px;
+                                        height:82px;
                                         object-fit:contain;
                                         display:block;
                                     ">
                                 </button>
                             </div>
                             """,
-                            height=155
+                            height=90
                         )
 
         quick_save_clicked = any([
@@ -2137,16 +1890,47 @@ def main():
         if save_draft or submit_final or quick_save_clicked:
             word_limit_errors = []
 
-            if submit_final:
-                word_limit_errors.extend(find_word_limit_errors(internal_analysis, "Section III - Analyse interne", max_words=500))
-                word_limit_errors.extend(find_word_limit_errors(external_analysis, "Section IV - Analyse externe", max_words=500))
-                word_limit_errors.extend(find_word_limit_errors(swot_analysis, "Section V - Analyse SWOT", max_words=30))
-                word_limit_errors.extend(find_word_limit_errors(priorities_initiatives, "Section VI - Priorités stratégiques et initiatives", max_words=30))
+            word_limit_errors.extend(
+                find_word_limit_errors(
+                    internal_analysis,
+                    "Section III - Analyse interne",
+                    max_words=500
+                )
+            )
+
+            word_limit_errors.extend(
+                find_word_limit_errors(
+                    external_analysis,
+                    "Section IV - Analyse externe",
+                    max_words=500
+                )
+            )
+
+            word_limit_errors.extend(
+                find_word_limit_errors(
+                    swot_analysis,
+                    "Section V - Analyse SWOT",
+                    max_words=30
+                )
+            )
+
+            word_limit_errors.extend(
+                find_word_limit_errors(
+                    priorities_initiatives,
+                    "Section VI - Priorités stratégiques et initiatives",
+                    max_words=30
+                )
+            )
 
             if word_limit_errors:
-                st.error("Certaines réponses dépassent la limite autorisée. Merci de les réduire avant l’enregistrement.")
+                st.error(
+                    "Certaines réponses dépassent la limite autorisée. "
+                    "Merci de les réduire avant l’enregistrement."
+                )
+
                 for error in word_limit_errors:
                     st.warning(error)
+
                 st.stop()
 
             statut = "Soumis" if submit_final else "Brouillon"
@@ -2163,7 +1947,9 @@ def main():
             data = {
                 "metadata": metadata,
                 "introduction": {},
-                "stakeholders": {"rows": stakeholder_rows},
+                "stakeholders": {
+                    "rows": stakeholder_rows,
+                },
                 "internal_analysis": internal_analysis,
                 "external_analysis": external_analysis,
                 "swot_analysis": swot_analysis,
@@ -2175,7 +1961,7 @@ def main():
                 draft_code = save_response(metadata, data)
                 st.session_state["current_draft_code"] = draft_code
 
-                if save_draft or quick_save_clicked:
+                if save_draft:
                     st.success(
                         f"Vos réponses ont été enregistrées. Utilisez ce code pour reprendre plus tard : {draft_code}"
                     )
@@ -2187,6 +1973,7 @@ def main():
 
             except ValueError as e:
                 st.error(str(e))
+
 
 if __name__ == "__main__":
     main()
