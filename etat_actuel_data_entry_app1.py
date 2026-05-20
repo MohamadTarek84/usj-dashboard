@@ -2080,28 +2080,15 @@ else:
         vertical_alignment="center"
     )
 
-                with col_save_final:
-                    save_draft = st.button(
-                        "Enregistrer et continuer plus tard",
-                        key="save_draft_button",
-                        use_container_width=True
-                    )
+    with col_save_final:
+        save_draft = st.form_submit_button(
+            "Enregistrer et continuer plus tard",
+            use_container_width=True
+        )
 
-                st.markdown('<hr class="final-action-line">', unsafe_allow_html=True)
+    submit_final = False
 
-                col_submit_final, col_print_final, col_right_final = st.columns(
-                    [1.25, 1.25, 1.50],
-                    vertical_alignment="center"
-                )
-
-                with col_submit_final:
-                    submit_final = st.button(
-                        "Envoyer la version finale\u00A0uniquement",
-                        key="submit_final_button",
-                        type="primary",
-                        use_container_width=True
-                    )
-
+           
                 with col_print_final:
                     print_icon_src = image_to_base64(PRINT_ICON_PATH)
 
