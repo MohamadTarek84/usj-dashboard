@@ -529,13 +529,6 @@ div[data-testid="stTextArea"] textarea {{
     box-shadow: none !important;
 }}
 
-div[data-testid="stTextArea"] textarea:disabled {{
-    color: #000000 !important;
-    -webkit-text-fill-color: #000000 !important;
-    opacity: 1 !important;
-    background-color: #E3DED9 !important;
-}}
-
 div[data-testid="stTextArea"] textarea:focus {{
     border: 2px solid #595959 !important;
     box-shadow: none !important;
