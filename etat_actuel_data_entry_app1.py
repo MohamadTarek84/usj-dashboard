@@ -64,10 +64,7 @@ def html_block(content):
         st.markdown(content, unsafe_allow_html=True)
 
 
-@st.cache_data(show_spinner=False)
 def image_to_base64(image_path):
-    """Cache image encoding to reduce Streamlit/Azure rerun lag."""
-    image_path = Path(image_path)
     if not image_path.exists():
         return None
     suffix = image_path.suffix.lower().replace(".", "")
@@ -78,11 +75,8 @@ def image_to_base64(image_path):
 
 
 def init_db():
-    conn = sqlite3.connect(DB_PATH, timeout=30)
+    conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
-    cur.execute("PRAGMA journal_mode=WAL")
-    cur.execute("PRAGMA synchronous=NORMAL")
-    cur.execute("PRAGMA busy_timeout=30000")
 
     cur.execute("""
         CREATE TABLE IF NOT EXISTS responses (
@@ -122,11 +116,8 @@ def save_response(metadata, data):
     data["draft_code"] = draft_code
     data["metadata"]["draft_code"] = draft_code
 
-    conn = sqlite3.connect(DB_PATH, timeout=30)
+    conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
-    cur.execute("PRAGMA journal_mode=WAL")
-    cur.execute("PRAGMA synchronous=NORMAL")
-    cur.execute("PRAGMA busy_timeout=30000")
 
     existing = cur.execute("""
         SELECT id FROM responses
@@ -1099,18 +1090,19 @@ def word_limited_text_area(label, key, height=300, max_words=500):
     if not read_only:
         if word_count > max_words:
             html_block(f"""
-<div class="word-counter-status" style="min-height:24px; color:#8B1538; font-weight:700; font-size:14px; margin-top:-6px; margin-bottom:8px;">
+<div style="min-height:24px; color:#8B1538; font-weight:700; font-size:14px; margin-top:-6px; margin-bottom:8px;">
     ⚠ Vous avez saisi {word_count} mots. Maximum autorisé : {max_words} mots.
 </div>
 """)
         else:
             html_block(f"""
-<div class="word-counter-status" style="min-height:24px; color:#595959; font-size:13px; margin-top:-6px; margin-bottom:8px;">
+<div style="min-height:24px; color:#595959; font-size:13px; margin-top:-6px; margin-bottom:8px;">
     {word_count}/{max_words} mots
 </div>
 """)
 
     return value
+
 
 def render_internal_analysis():
     internal_themes = [
@@ -1891,37 +1883,41 @@ def main():
         if save_draft or submit_final or quick_save_clicked:
             word_limit_errors = []
 
-            word_limit_errors.extend(
-                find_word_limit_errors(
-                    internal_analysis,
-                    "Section III - Analyse interne",
-                    max_words=500
+            # Performance fix for Azure:
+            # Draft saves are saved immediately without scanning the entire form.
+            # Word-limit validation remains strict on final submission only.
+            if submit_final:
+                word_limit_errors.extend(
+                    find_word_limit_errors(
+                        internal_analysis,
+                        "Section III - Analyse interne",
+                        max_words=500
+                    )
                 )
-            )
 
-            word_limit_errors.extend(
-                find_word_limit_errors(
-                    external_analysis,
-                    "Section IV - Analyse externe",
-                    max_words=500
+                word_limit_errors.extend(
+                    find_word_limit_errors(
+                        external_analysis,
+                        "Section IV - Analyse externe",
+                        max_words=500
+                    )
                 )
-            )
 
-            word_limit_errors.extend(
-                find_word_limit_errors(
-                    swot_analysis,
-                    "Section V - Analyse SWOT",
-                    max_words=30
+                word_limit_errors.extend(
+                    find_word_limit_errors(
+                        swot_analysis,
+                        "Section V - Analyse SWOT",
+                        max_words=30
+                    )
                 )
-            )
 
-            word_limit_errors.extend(
-                find_word_limit_errors(
-                    priorities_initiatives,
-                    "Section VI - Priorités stratégiques et initiatives",
-                    max_words=30
+                word_limit_errors.extend(
+                    find_word_limit_errors(
+                        priorities_initiatives,
+                        "Section VI - Priorités stratégiques et initiatives",
+                        max_words=30
+                    )
                 )
-            )
 
             if word_limit_errors:
                 st.error(
