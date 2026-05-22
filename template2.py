@@ -2235,11 +2235,8 @@ def create_interactive_swot_html(swot_values, group_name="groupe"):
 
     </div>
 
-    <div class="swot-footer">
-        <div>Survolez une carte ou un élément pour le mettre en évidence.</div>
-        <div>Source : versions admin modifiées.</div>
+
     </div>
-</div>
 
 <script>
 function filterCards(target, button) {{
