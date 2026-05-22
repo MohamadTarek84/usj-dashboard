@@ -2353,7 +2353,7 @@ def render_swot_image_download_block(updated_admin_data, selected_row):
 
 st.download_button(
     label="Télécharger la matrice SWOT interactive en HTML",
-    data=swot_html.encode("utf-8"),
+    data=interactive_html.encode("utf-8"),
     file_name=html_file_name,
     mime="text/html",
     key=f"download_interactive_swot_html_{safe_code}"
