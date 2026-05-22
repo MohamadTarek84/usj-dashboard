@@ -2485,17 +2485,17 @@ if mode == "Saisir une réponse":
 
     st.divider()
 
-            section_header("III - PRIORITES – Niveau USJ")
-            render_priorities_intro()
-            priorities_initiatives = render_priorities_table()
-            quick_save_after_priorities = render_quick_save_button("quick_save_after_priorities")
+    section_header("III - PRIORITES – Niveau USJ")
+    render_priorities_intro()
+    priorities_initiatives = render_priorities_table()
+    quick_save_after_priorities = render_quick_save_button("quick_save_after_priorities")
 
-            st.divider()
+    st.divider()
 
-            section_header("IV- CONCLUSION")
-            pour_finir = render_pour_finir()
+    section_header("IV- CONCLUSION")
+    pour_finir = render_pour_finir()
 
-            st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
 
             if st.session_state.get("read_only_submitted", False):
                 st.info(
