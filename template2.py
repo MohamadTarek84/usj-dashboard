@@ -1628,6 +1628,72 @@ def main():
 
         selected_draft_code = selected_response.split(" | ")[0].strip()
 
+        selected_row = admin_df[admin_df["draft_code"] == selected_draft_code].iloc[0]
+
+        original_data = json.loads(selected_row["data_json"]) if selected_row["data_json"] else {}
+
+        if pd.notna(selected_row.get("admin_data_json", None)) and selected_row.get("admin_data_json"):
+            admin_data = json.loads(selected_row["admin_data_json"])
+        else:
+            admin_data = {}
+
+        st.markdown("### Révision admin par groupe et par section")
+
+        section_choice = st.selectbox(
+            "Choisir la section à réviser",
+            [
+                "I - Forces et faiblesses",
+                "II - Opportunités et menaces",
+                "III - Priorités",
+                "IV - Conclusion",
+            ]
+        )
+
+        section_map = {
+            "I - Forces et faiblesses": ("swot_analysis", "facteurs_internes"),
+            "II - Opportunités et menaces": ("swot_analysis", "facteurs_externes"),
+            "III - Priorités": ("priorities_initiatives", None),
+            "IV - Conclusion": ("pour_finir", None),
+        }
+
+        main_key, sub_key = section_map[section_choice]
+
+        if sub_key:
+            original_section = original_data.get(main_key, {}).get(sub_key, [])
+        else:
+            original_section = original_data.get(main_key, {})
+
+        col_original, col_admin = st.columns(2)
+
+        with col_original:
+            st.markdown("#### Réponses originales du groupe")
+            st.json(original_section)
+
+        with col_admin:
+            st.markdown("#### Version admin modifiable")
+
+            existing_admin_text = admin_data.get(section_choice, "")
+
+            admin_text = st.text_area(
+                "Synthèse / corrections admin",
+                value=existing_admin_text,
+                height=350,
+                key=f"admin_edit_{selected_draft_code}_{section_choice}"
+            )
+
+            if st.button(
+                "Enregistrer la version admin",
+                key=f"save_admin_{selected_draft_code}_{section_choice}"
+            ):
+                admin_data[section_choice] = admin_text
+                save_admin_version_by_code(selected_draft_code, admin_data)
+
+                st.success(
+                    "Version admin enregistrée sans modifier les réponses originales du groupe."
+                )
+
+                st.rerun()
+
         # paste admin review block here
 
         col_unlock, col_delete = st.columns(2)
