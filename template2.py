@@ -1549,6 +1549,25 @@ def delete_response_by_code(draft_code):
     conn.commit()
     conn.close()
 
+def save_admin_version_by_code(draft_code, admin_data):
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+
+    cur.execute(
+        """
+        UPDATE responses
+        SET admin_data_json = ?
+        WHERE draft_code = ?
+        """,
+        (
+            json.dumps(admin_data, ensure_ascii=False),
+            draft_code
+        )
+    )
+
+    conn.commit()
+    conn.close()
+
 def main():
     st.set_page_config(
         page_title=APP_TITLE,
@@ -1608,6 +1627,10 @@ def main():
         )
 
         selected_draft_code = selected_response.split(" | ")[0].strip()
+
+        # paste admin review block here
+
+        col_unlock, col_delete = st.columns(2)
 
         col_unlock, col_delete = st.columns(2)
 
