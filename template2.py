@@ -1837,7 +1837,6 @@ def main():
             stakeholder_rows = []
             quick_save_after_stakeholders = False
 
-            st.divider()
 
             st.markdown(
                 """
