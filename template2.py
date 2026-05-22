@@ -1846,12 +1846,9 @@ def main():
             )
             st.markdown('<div class="print-page-break"></div>', unsafe_allow_html=True)
 
-            section_header("III - Analyse interne de l’état actuel de l’Université")
-            render_internal_intro()
-            internal_analysis = render_internal_analysis()
-            quick_save_after_internal = render_quick_save_button("quick_save_after_internal")
-
-            st.divider()
+            # Section III removed for Focus Group version
+            internal_analysis = {}
+            quick_save_after_internal = False
 
             st.markdown(
                 """
