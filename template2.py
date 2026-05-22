@@ -375,6 +375,17 @@ header {{
     visibility: hidden !important;
 }}
 
+div[data-testid="stSelectbox"] div[data-baseweb="select"] > div {{
+    background-color: #E3DED9 !important;
+    border: none !important;
+    border-radius: 6px !important;
+    color: #000000 !important;
+}}
+
+div[data-testid="stSelectbox"] span {{
+    color: #000000 !important;
+}}
+
 [data-testid="stToolbar"] {{
     display: none !important;
     visibility: hidden !important;
