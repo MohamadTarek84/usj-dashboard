@@ -1863,7 +1863,7 @@ def main():
                 """,
                 unsafe_allow_html=True
             )
-            st.markdown('<div class="print-page-break"></div>', unsafe_allow_html=True)
+            st.divider()
 
             # Section IV removed for Focus Group version
             external_analysis = {}
