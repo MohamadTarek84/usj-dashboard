@@ -1639,7 +1639,35 @@ def main():
         else:
             admin_data = {}
 
-        st.markdown("### Révision admin par groupe et par section")
+        html_block(f"""
+<div style="
+background-color:{USJ_LIGHT_BLUE};
+padding:14px 22px;
+border-radius:10px;
+border-left:7px solid {USJ_BLUE};
+box-shadow:0 2px 10px rgba(0,0,0,0.08);
+margin-top:12px;
+margin-bottom:18px;
+">
+<h2 style="font-size:26px; color:{USJ_BLUE}; margin:0; font-weight:700;">
+    Réponse des groupes
+</h2>
+</div>
+
+<div style="
+background-color:#F8F3F5;
+padding:14px 22px;
+border-radius:10px;
+border-left:7px solid {USJ_RED};
+box-shadow:0 2px 10px rgba(0,0,0,0.08);
+margin-top:12px;
+margin-bottom:18px;
+">
+<h2 style="font-size:26px; color:{USJ_RED}; margin:0; font-weight:700;">
+    Version modifiée après présentation des réponses
+</h2>
+</div>
+""")
 
         section_map = {
             "I - Forces et faiblesses": ("swot_analysis", "facteurs_internes"),
