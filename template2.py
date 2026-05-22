@@ -1715,16 +1715,81 @@ box-sizing:border-box;
             existing_admin_section = get_existing_admin_section(section_label, original_section)
             updated_admin_section = []
 
-            field_names = []
-            for row in original_section:
-                if isinstance(row, dict):
-                    for key in row.keys():
-                        if key not in field_names:
-                            field_names.append(key)
+            if not isinstance(original_section, list):
+                original_section = []
 
-            if not field_names:
-                st.info("Aucune réponse saisie pour cette section.")
-                return original_section
+            # Use the real expected fields for the SWOT sections.
+            # This avoids showing old long question labels or wrong keys from older saved drafts.
+            if section_label == "I - Forces et faiblesses":
+                field_names = ["Forces", "Faiblesses"]
+            elif section_label == "II - Opportunités et menaces":
+                field_names = ["Opportunités", "Menaces"]
+            else:
+                field_names = []
+                for row in original_section:
+                    if isinstance(row, dict):
+                        for key in row.keys():
+                            if key not in field_names:
+                                field_names.append(key)
+
+            def get_value_from_row(row, expected_field):
+                if not isinstance(row, dict):
+                    return ""
+
+                # Exact match first.
+                if expected_field in row:
+                    return row.get(expected_field, "")
+
+                expected_lower = expected_field.lower()
+
+                # Robust match for older keys such as long question labels.
+                for key, value in row.items():
+                    key_lower = str(key).lower()
+                    if expected_lower in key_lower:
+                        return value
+
+                # Accent-safe fallback for Opportunités / Menaces.
+                if expected_field == "Opportunités":
+                    for key, value in row.items():
+                        if "opportun" in str(key).lower():
+                            return value
+
+                if expected_field == "Menaces":
+                    for key, value in row.items():
+                        if "menace" in str(key).lower():
+                            return value
+
+                return ""
+
+            def get_admin_value(saved_admin_row, expected_field, original_value):
+                if not isinstance(saved_admin_row, dict):
+                    return original_value
+
+                if expected_field in saved_admin_row:
+                    return saved_admin_row.get(expected_field, original_value)
+
+                expected_lower = expected_field.lower()
+
+                for key, value in saved_admin_row.items():
+                    key_lower = str(key).lower()
+                    if expected_lower in key_lower:
+                        return value
+
+                if expected_field == "Opportunités":
+                    for key, value in saved_admin_row.items():
+                        if "opportun" in str(key).lower():
+                            return value
+
+                if expected_field == "Menaces":
+                    for key, value in saved_admin_row.items():
+                        if "menace" in str(key).lower():
+                            return value
+
+                return original_value
+
+            number_of_rows = 5
+            if original_section:
+                number_of_rows = max(5, len(original_section))
 
             for field_name in field_names:
                 col_original_section, col_admin_section = st.columns(2)
@@ -1735,11 +1800,9 @@ box-sizing:border-box;
                 with col_admin_section:
                     render_admin_title_bar(field_name, USJ_RED)
 
-                for i, row in enumerate(original_section, start=1):
-                    if not isinstance(row, dict):
-                        continue
-
-                    original_value = row.get(field_name, "")
+                for i in range(1, number_of_rows + 1):
+                    row = original_section[i - 1] if i <= len(original_section) else {}
+                    original_value = get_value_from_row(row, field_name)
 
                     saved_admin_row = {}
                     if (
@@ -1749,7 +1812,7 @@ box-sizing:border-box;
                     ):
                         saved_admin_row = existing_admin_section[i - 1]
 
-                    admin_value = saved_admin_row.get(field_name, original_value)
+                    admin_value = get_admin_value(saved_admin_row, field_name, original_value)
 
                     while len(updated_admin_section) < i:
                         updated_admin_section.append({})
@@ -1810,6 +1873,60 @@ box-sizing:border-box;
 
             return updated_admin_section
 
+        def render_conclusion_section(section_label, original_section):
+            existing_admin_section = get_existing_admin_section(section_label, original_section)
+            updated_admin_section = {}
+
+            if not isinstance(original_section, dict):
+                original_section = {}
+
+            if not isinstance(existing_admin_section, dict):
+                existing_admin_section = {}
+
+            phrases = [
+                "Nous souhaitons que l’USJ soit reconnue pour …",
+                "Nous souhaitons que nos étudiants disent que l’USJ …",
+                "L’USJ serait un excellent lieu de travail si …",
+            ]
+
+            for i, phrase in enumerate(phrases, start=1):
+                st.markdown(
+                    f"""
+<div style="
+font-size:18px;
+font-weight:700;
+color:{USJ_BLUE};
+margin-top:12px;
+margin-bottom:8px;
+">
+&bull; {phrase}
+</div>
+""",
+                    unsafe_allow_html=True
+                )
+
+                for j in range(2):
+                    key = f"pour_finir_{i}_{j}"
+                    original_value = original_section.get(key, "")
+                    admin_value = existing_admin_section.get(key, original_value)
+
+                    col_original_answer, col_admin_answer = st.columns(2)
+
+                    with col_original_answer:
+                        render_admin_title_bar(f"Réponse {j + 1}", USJ_BLUE)
+                        render_original_answer_box(original_value)
+
+                    with col_admin_answer:
+                        render_admin_title_bar(f"Réponse admin {j + 1}", USJ_RED)
+                        updated_admin_section[key] = render_admin_edit_box(
+                            label=f"{section_label}_{key}",
+                            value=admin_value,
+                            key=f"admin_edit_{selected_draft_code}_{section_label}_{key}",
+                            height=95
+                        )
+
+            return updated_admin_section
+
         for section_label, (main_key, sub_key) in section_map.items():
             st.markdown("---")
             section_header(section_label)
@@ -1819,7 +1936,9 @@ box-sizing:border-box;
             else:
                 original_section = original_data.get(main_key, {})
 
-            if isinstance(original_section, list):
+            if section_label == "IV - Conclusion":
+                updated_all_admin_data[section_label] = render_conclusion_section(section_label, original_section)
+            elif isinstance(original_section, list):
                 updated_all_admin_data[section_label] = render_list_section(section_label, original_section)
             elif isinstance(original_section, dict):
                 updated_all_admin_data[section_label] = render_dict_section(section_label, original_section)
