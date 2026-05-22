@@ -1574,11 +1574,15 @@ def save_admin_version_by_code(draft_code, admin_data):
     conn.close()
 
 
+
 def safe_filename(value):
     value = str(value or "").strip()
     value = re.sub(r"[^A-Za-z0-9À-ÿ._-]+", "_", value)
     value = value.strip("_")
     return value or "groupe"
+
+
+SWOT_TEMPLATE_PATH = Path("SWOTFG.png")
 
 
 def extract_admin_swot_values(admin_data):
@@ -1620,10 +1624,10 @@ def extract_admin_swot_values(admin_data):
         return values
 
     return {
-        "strengths": collect("I - Forces et faiblesses", "Forces"),
-        "weaknesses": collect("I - Forces et faiblesses", "Faiblesses"),
-        "opportunities": collect("II - Opportunités et menaces", "Opportunités"),
-        "threats": collect("II - Opportunités et menaces", "Menaces"),
+        "forces": collect("I - Forces et faiblesses", "Forces"),
+        "faiblesses": collect("I - Forces et faiblesses", "Faiblesses"),
+        "opportunites": collect("II - Opportunités et menaces", "Opportunités"),
+        "menaces": collect("II - Opportunités et menaces", "Menaces"),
     }
 
 
@@ -1643,14 +1647,14 @@ def load_font(size, bold=False):
 
 
 def text_width(draw, text, font):
-    bbox = draw.textbbox((0, 0), text, font=font)
+    bbox = draw.textbbox((0, 0), str(text), font=font)
     return bbox[2] - bbox[0]
 
 
 def wrap_text_pixels(draw, text, font, max_width):
     words = str(text or "").split()
     if not words:
-        return [""]
+        return []
 
     lines = []
     current = words[0]
@@ -1667,141 +1671,228 @@ def wrap_text_pixels(draw, text, font, max_width):
     return lines
 
 
-def draw_professional_items(draw, items, x, y, max_width, max_height, font, fill, line_gap=12, item_gap=18):
+def draw_auto_bulleted_answers(
+    draw,
+    items,
+    x,
+    y,
+    max_width,
+    max_height,
+    font,
+    color,
+    bullet_color=None,
+    line_gap=10,
+    item_gap=20
+):
     current_y = y
     bottom_y = y + max_height
+    bullet_color = bullet_color or color
 
     cleaned_items = [str(item).strip() for item in items if str(item or "").strip()]
     if not cleaned_items:
-        cleaned_items = ["Aucune réponse saisie"]
+        return
 
     for item in cleaned_items[:5]:
-        wrapped_lines = wrap_text_pixels(draw, item, font, max_width - 42)
-        item_start_y = current_y + 12
+        wrapped_lines = wrap_text_pixels(draw, item, font, max_width - 52)
+        if not wrapped_lines:
+            continue
 
-        if item_start_y + font.size > bottom_y:
-            draw.text((x + 42, current_y), "…", font=font, fill=fill)
+        if current_y + font.size > bottom_y:
             return
 
+        bullet_y = current_y + 13
         draw.ellipse(
-            (x, item_start_y + 10, x + 14, item_start_y + 24),
-            fill=fill
+            (x, bullet_y, x + 16, bullet_y + 16),
+            fill=bullet_color
         )
+
+        line_x = x + 42
 
         for line in wrapped_lines:
             if current_y + font.size + line_gap > bottom_y:
-                draw.text((x + 42, current_y), "…", font=font, fill=fill)
                 return
 
-            draw.text((x + 42, current_y), line, font=font, fill=fill)
+            draw.text(
+                (line_x, current_y),
+                line,
+                font=font,
+                fill=color
+            )
             current_y += font.size + line_gap
 
         current_y += item_gap
 
 
-def create_swot_image_bytes(swot_values):
-    """Create a clear, high-resolution SWOT PNG from the admin-modified answers."""
-    width, height = 1800, 1120
+def create_plain_swot_template(width=1800, height=1160):
     image = Image.new("RGB", (width, height), "white")
     draw = ImageDraw.Draw(image, "RGBA")
 
-    title_font = load_font(64, bold=True)
-    bullet_font = load_font(42, bold=False)
-    letter_font = load_font(115, bold=True)
-
-    margin_x = 60
-    margin_y = 52
-    gap_x = 60
-    gap_y = 46
+    margin_x = 35
+    margin_y = 28
+    gap_x = 28
+    gap_y = 30
     box_w = (width - 2 * margin_x - gap_x) // 2
     box_h = (height - 2 * margin_y - gap_y) // 2
-    radius = 54
+    radius = 32
 
-    text_color = (22, 28, 35, 255)
-    letter_color = (28, 34, 40, 210)
+    title_font = load_font(62, bold=True)
 
     boxes = [
-        {
-            "title": "Strengths",
-            "xy": (margin_x, margin_y, margin_x + box_w, margin_y + box_h),
-            "color": (205, 235, 242, 255),
-            "letter": "S",
-            "items": swot_values.get("strengths", []),
-        },
-        {
-            "title": "Weaknesses",
-            "xy": (margin_x + box_w + gap_x, margin_y, margin_x + 2 * box_w + gap_x, margin_y + box_h),
-            "color": (255, 219, 182, 255),
-            "letter": "W",
-            "items": swot_values.get("weaknesses", []),
-        },
-        {
-            "title": "Opportunities",
-            "xy": (margin_x, margin_y + box_h + gap_y, margin_x + box_w, margin_y + 2 * box_h + gap_y),
-            "color": (222, 242, 203, 255),
-            "letter": "O",
-            "items": swot_values.get("opportunities", []),
-        },
-        {
-            "title": "Threats",
-            "xy": (margin_x + box_w + gap_x, margin_y + box_h + gap_y, margin_x + 2 * box_w + gap_x, margin_y + 2 * box_h + gap_y),
-            "color": (247, 184, 178, 255),
-            "letter": "T",
-            "items": swot_values.get("threats", []),
-        },
+        ("FORCES", (margin_x, margin_y, margin_x + box_w, margin_y + box_h), (232, 244, 255, 255), USJ_BLUE),
+        ("FAIBLESSES", (margin_x + box_w + gap_x, margin_y, width - margin_x, margin_y + box_h), (255, 241, 226, 255), USJ_RED),
+        ("OPPORTUNITÉS", (margin_x, margin_y + box_h + gap_y, margin_x + box_w, height - margin_y), (239, 249, 230, 255), "#2F6B2F"),
+        ("MENACES", (margin_x + box_w + gap_x, margin_y + box_h + gap_y, width - margin_x, height - margin_y), (255, 235, 238, 255), USJ_RED),
     ]
 
-    for box in boxes:
-        x1, y1, x2, y2 = box["xy"]
-        draw.rounded_rectangle(box["xy"], radius=radius, fill=box["color"])
+    for title, xy, fill, color in boxes:
+        draw.rounded_rectangle(xy, radius=radius, fill=fill, outline=color, width=3)
+        x1, y1, x2, y2 = xy
+        draw.text((x1 + 70, y1 + 55), title, font=title_font, fill=color)
+        draw.line((x1 + 70, y1 + 135, x2 - 70, y1 + 135), fill=color, width=4)
 
-        draw.text((x1 + 72, y1 + 62), box["title"], font=title_font, fill=text_color)
+    center_x, center_y = width // 2, height // 2
+    draw.ellipse((center_x - 105, center_y - 105, center_x + 105, center_y + 105), fill=(255, 255, 255, 255), outline=USJ_BLUE, width=5)
+    swot_font = load_font(54, bold=True)
+    swot_text = "SWOT"
+    bbox = draw.textbbox((0, 0), swot_text, font=swot_font)
+    draw.text(
+        (center_x - (bbox[2] - bbox[0]) / 2, center_y - (bbox[3] - bbox[1]) / 2),
+        swot_text,
+        font=swot_font,
+        fill=USJ_BLUE
+    )
 
-        letter_text = box["letter"]
-        letter_bbox = draw.textbbox((0, 0), letter_text, font=letter_font)
-        letter_w = letter_bbox[2] - letter_bbox[0]
-        letter_h = letter_bbox[3] - letter_bbox[1]
-        draw.text(
-            (x2 - 150 - letter_w / 2, y1 + box_h / 2 - letter_h / 2),
-            letter_text,
-            font=letter_font,
-            fill=letter_color,
-        )
+    return image
 
-        draw_professional_items(
+
+def create_swot_image_bytes(swot_values, display_group_name):
+    """
+    Generate the final SWOT figure only after the admin clicks the button.
+
+    Required GitHub asset:
+    - SWOTFG.png in the same folder as template2.py
+
+    The template SWOTFG.png must be empty: no numbering and no bullets.
+    This function adds the admin-modified answers automatically as bullets.
+    """
+    title_height = 130
+
+    if SWOT_TEMPLATE_PATH.exists():
+        template = Image.open(SWOT_TEMPLATE_PATH).convert("RGB")
+    else:
+        template = create_plain_swot_template()
+
+    template_width, template_height = template.size
+
+    final_image = Image.new(
+        "RGB",
+        (template_width, template_height + title_height),
+        "white"
+    )
+
+    final_image.paste(template, (0, title_height))
+    draw = ImageDraw.Draw(final_image, "RGBA")
+
+    title_font = load_font(max(44, int(template_width * 0.038)), bold=True)
+    subtitle_font = load_font(max(26, int(template_width * 0.023)), bold=False)
+
+    title_text = "Matrice SWOT – Niveau USJ"
+    subtitle_text = f"Groupe : {display_group_name}"
+
+    title_bbox = draw.textbbox((0, 0), title_text, font=title_font)
+    subtitle_bbox = draw.textbbox((0, 0), subtitle_text, font=subtitle_font)
+
+    draw.text(
+        ((template_width - (title_bbox[2] - title_bbox[0])) / 2, 24),
+        title_text,
+        font=title_font,
+        fill=USJ_BLUE
+    )
+
+    draw.text(
+        ((template_width - (subtitle_bbox[2] - subtitle_bbox[0])) / 2, 82),
+        subtitle_text,
+        font=subtitle_font,
+        fill="#595959"
+    )
+
+    # Coordinates are proportional to the SWOTFG.png template.
+    # They target the empty writing zones only, not the headings or icons.
+    item_font = load_font(max(28, int(template_width * 0.030)), bold=False)
+
+    zones = {
+        "forces": {
+            "x": int(template_width * 0.075),
+            "y": title_height + int(template_height * 0.185),
+            "w": int(template_width * 0.405),
+            "h": int(template_height * 0.245),
+            "color": USJ_BLUE,
+        },
+        "faiblesses": {
+            "x": int(template_width * 0.560),
+            "y": title_height + int(template_height * 0.185),
+            "w": int(template_width * 0.370),
+            "h": int(template_height * 0.245),
+            "color": USJ_RED,
+        },
+        "opportunites": {
+            "x": int(template_width * 0.075),
+            "y": title_height + int(template_height * 0.680),
+            "w": int(template_width * 0.405),
+            "h": int(template_height * 0.250),
+            "color": "#2F6B2F",
+        },
+        "menaces": {
+            "x": int(template_width * 0.560),
+            "y": title_height + int(template_height * 0.680),
+            "w": int(template_width * 0.370),
+            "h": int(template_height * 0.250),
+            "color": USJ_RED,
+        },
+    }
+
+    for key, zone in zones.items():
+        draw_auto_bulleted_answers(
             draw=draw,
-            items=box["items"],
-            x=x1 + 76,
-            y=y1 + 174,
-            max_width=box_w - 275,
-            max_height=box_h - 218,
-            font=bullet_font,
-            fill=text_color,
-            line_gap=10,
-            item_gap=18,
+            items=swot_values.get(key, []),
+            x=zone["x"],
+            y=zone["y"],
+            max_width=zone["w"],
+            max_height=zone["h"],
+            font=item_font,
+            color="#111111",
+            bullet_color=zone["color"],
+            line_gap=max(6, int(item_font.size * 0.22)),
+            item_gap=max(10, int(item_font.size * 0.35))
         )
-
-    cx, cy = width // 2, height // 2
-    draw.ellipse((cx - 150, cy - 150, cx + 150, cy + 150), fill=(116, 151, 165, 50))
-    draw.ellipse((cx - 78, cy - 78, cx + 78, cy + 78), fill=(80, 116, 126, 72))
 
     buffer = BytesIO()
-    image.save(buffer, format="PNG", optimize=True)
+    final_image.save(buffer, format="PNG", optimize=True)
     buffer.seek(0)
     return buffer.getvalue()
 
+
 def render_swot_image_download_block(updated_admin_data, selected_row):
     swot_values = extract_admin_swot_values(updated_admin_data)
+
     group_name = selected_row.get("respondent_name", "") if hasattr(selected_row, "get") else ""
     group_unit = selected_row.get("respondent_unit", "") if hasattr(selected_row, "get") else ""
     draft_code = selected_row.get("draft_code", "") if hasattr(selected_row, "get") else ""
 
-    display_group_name = " - ".join([part for part in [str(group_name).strip(), str(group_unit).strip()] if part])
+    display_group_name = " - ".join([
+        part for part in [
+            str(group_name).strip(),
+            str(group_unit).strip()
+        ]
+        if part
+    ])
+
     if not display_group_name:
         display_group_name = str(draft_code).strip() or "groupe"
 
     file_name = f"SWOT_{safe_filename(display_group_name)}.png"
     has_values = any(swot_values[key] for key in swot_values)
+
     safe_code = safe_filename(str(draft_code))
     button_key = f"generate_swot_image_{safe_code}"
     state_key = f"show_swot_image_{safe_code}"
@@ -1814,6 +1905,8 @@ def render_swot_image_download_block(updated_admin_data, selected_row):
     if st.button("Générer l’image SWOT", key=button_key):
         st.session_state[state_key] = True
 
+    # Critical point:
+    # The image is not created, displayed, or downloadable before the admin clicks the button.
     if not st.session_state[state_key]:
         return
 
@@ -1821,7 +1914,10 @@ def render_swot_image_download_block(updated_admin_data, selected_row):
         st.warning("Aucune réponse admin n’est disponible pour générer l’image SWOT.")
         return
 
-    image_bytes = create_swot_image_bytes(swot_values)
+    image_bytes = create_swot_image_bytes(
+        swot_values=swot_values,
+        display_group_name=display_group_name
+    )
 
     st.image(image_bytes, use_container_width=True)
 
