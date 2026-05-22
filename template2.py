@@ -2497,23 +2497,22 @@ if mode == "Saisir une réponse":
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-            if st.session_state.get("read_only_submitted", False):
-                st.info(
-                    "Le rapport de votre institution a déjà été envoyé. "
-                    "Les modifications ne sont plus possibles."
-                )
-                save_draft = False
-                submit_final = False
+        if st.session_state.get("read_only_submitted", False):
+        st.info(
+            "Le rapport de votre institution a déjà été envoyé. "
+            "Les modifications ne sont plus possibles."
+        )
+        save_draft = False
+        submit_final = False
 
-                st.markdown("<br>", unsafe_allow_html=True)
-                render_print_icon_button()
-                
-            else:
-                col_save_final, col_save_empty = st.columns(
-                    [1.25, 2.75],
-                    vertical_alignment="center"
-                )
+        st.markdown("<br>", unsafe_allow_html=True)
+        render_print_icon_button()
 
+    else:
+        col_save_final, col_save_empty = st.columns(
+            [1.25, 2.75],
+            vertical_alignment="center"
+        )
                 with col_save_final:
                     save_draft = st.button(
                         "Enregistrer et continuer plus tard",
