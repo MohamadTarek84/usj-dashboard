@@ -1393,27 +1393,25 @@ def render_swot_analysis():
     )
 
     return swot_data
+    
 def render_priorities_intro():
+    
     html_block(f"""
-<div style="background-color:#ffffff; padding:24px 34px; border-radius:12px; border-left:none; border-top:none; border-bottom:none; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:25px;">
-    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
-    Cette section a pour objectif de proposer, à l’échelle de l’USJ, <strong>des priorités stratégiques et des initiatives (projets)</strong>, en cohérence avec les constats issus de l’analyse des environnements interne et externe et de l’analyse SWOT. Les propositions attendues doivent refléter les enjeux majeurs identifiés, les capacités institutionnelles existantes et les orientations à privilégier pour les prochaines années.
+<div style="background-color:#ffffff; padding:24px 34px 10px 34px; border-radius:12px; border:1px solid #E0E0E0; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:6px;">
+
+    <p style="font-size:19px; line-height:1.5; color:{USJ_BLUE}; font-weight:700; margin-bottom:16px;">
+    <span style="color:#C00000; font-style:italic;">Priorités :</span>
+    Suite à l’analyse précédente, quelles sont les priorités qu’il faudrait intégrer au prochain plan stratégique ?
     </p>
 
-    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
-    <strong>Les priorités stratégiques</strong> sont les enjeux sur lesquels l’Université doit porter ses efforts pour remédier aux faiblesses, capitaliser sur les forces, tirer avantage des opportunités et faire face aux menaces identifiées par l’analyse SWOT.
+    <p style="font-size:19px; line-height:1.5; color:#0070C0; font-style:italic; margin-bottom:0;">
+    Nous vous remercions de bien vouloir compléter le tableau ci-dessous en indiquant au 
+    <strong>maximum cinq priorités</strong>, avec un 
+    <strong>maximum de 30 mots par ligne.</strong>
     </p>
 
-    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
-    <strong>L'initiative</strong> correspond plus concrètement, à un projet spécifique qui permet la mise en œuvre de la priorité correspondante. Elle peut être au niveau de l’Université ou bien au niveau de votre institution. Afin de clarifier les attentes et de faciliter le pilotage, chaque initiative doit impérativement être formulée par un verbe d'action.
-    </p>
-
-    <p style="text-align:left; font-size:17px; line-height:1.55; color:#0070C0; font-weight:700; font-style:italic; margin-bottom:0;">
-    Nous vous remercions de bien vouloir compléter le tableau ci-dessous en indiquant au maximum <span style="text-decoration:underline; font-weight:700; font-style:italic;">trois priorités stratégiques et 1 à 3 initiatives par priorité</span>. Les initiatives peuvent être au niveau de l’Université et/ou au niveau de l’institution. Vos réponses seront déduites de l’analyse SWOT. Vous pouvez hiérarchiser les priorités en les numérotant de 1 à 3.
-    </p>
 </div>
 """)
-
 
 def render_priorities_table():
     priorities_rows = []
