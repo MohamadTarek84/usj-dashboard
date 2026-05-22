@@ -1665,7 +1665,6 @@ def main():
 
         col_original, col_admin = st.columns(2)
 
-   
         with col_original:
             st.markdown("#### Réponses originales du groupe")
 
@@ -1702,8 +1701,8 @@ def main():
             else:
                 st.write(original_section)
 
-            with col_admin:
-                st.markdown("#### Version admin modifiable")
+        with col_admin:
+            st.markdown("#### Version admin modifiable")
 
             existing_admin_section = admin_data.get(section_choice)
 
@@ -1715,11 +1714,9 @@ def main():
             if isinstance(original_section, list):
 
                 for i, row in enumerate(original_section, start=1):
-
                     st.markdown(f"### Réponse {i}")
 
                     updated_row = {}
-
                     saved_admin_row = {}
 
                     if (
@@ -1730,9 +1727,7 @@ def main():
                         saved_admin_row = existing_admin_section[i - 1]
 
                     if isinstance(row, dict):
-
                         for key, value in row.items():
-
                             admin_value = saved_admin_row.get(key, value)
 
                             st.markdown(
@@ -1796,21 +1791,24 @@ box-shadow:0 2px 6px rgba(0,0,0,0.05);
                         label_visibility="collapsed"
                     )
 
+            else:
+                updated_admin_section = st.text_area(
+                    "Synthèse / corrections admin",
+                    value=str(existing_admin_section) if existing_admin_section else "",
+                    height=350,
+                    key=f"admin_edit_{selected_draft_code}_{section_choice}"
+                )
+
             if st.button(
                 "Enregistrer la version admin",
                 key=f"save_admin_{selected_draft_code}_{section_choice}"
             ):
-
                 admin_data[section_choice] = updated_admin_section
-
-                save_admin_version_by_code(
-                    selected_draft_code,
-                    admin_data
-                )
-
-                st.success("Version admin enregistrée.")
-
+                save_admin_version_by_code(selected_draft_code, admin_data)
+                st.success("Version admin enregistrée sans modifier les réponses originales du groupe.")
                 st.rerun()
+
+        st.stop()
 
     if not st.session_state["access_granted"]:
         col_code, col_button = st.columns([2, 1])
