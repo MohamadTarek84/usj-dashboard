@@ -1697,65 +1697,69 @@ def draw_wrapped_bullets(draw, items, x, y, max_width, max_height, font, fill, l
 
 
 def create_swot_image_bytes(swot_values):
-    """Create a clear, professional SWOT PNG from the admin-modified answers."""
-    width, height = 1800, 1120
+    """Create a readable, professional SWOT PNG from the admin-modified answers."""
+    width, height = 1600, 1000
     image = Image.new("RGB", (width, height), "white")
     draw = ImageDraw.Draw(image, "RGBA")
 
-    title_font = load_font(58, bold=True)
-    bullet_font = load_font(38, bold=False)
-    letter_font = load_font(120, bold=True)
+    title_font = load_font(46, bold=True)
+    bullet_font = load_font(30, bold=False)
+    letter_font = load_font(92, bold=True)
 
-    margin_x = 58
-    margin_y = 55
-    gap_x = 56
-    gap_y = 48
+    margin_x = 46
+    margin_y = 42
+    gap_x = 46
+    gap_y = 42
     box_w = (width - 2 * margin_x - gap_x) // 2
     box_h = (height - 2 * margin_y - gap_y) // 2
-    radius = 52
+    radius = 38
 
-    text_color = (30, 35, 38, 255)
-    letter_color = (45, 45, 45, 205)
+    text_color = (25, 28, 32, 255)
+    letter_color = (40, 40, 40, 210)
 
-    boxes = {
-        "Strengths": {
+    boxes = [
+        {
+            "title": "Strengths",
             "xy": (margin_x, margin_y, margin_x + box_w, margin_y + box_h),
             "color": (207, 235, 242, 255),
             "letter": "S",
             "items": swot_values.get("strengths", []),
         },
-        "Weaknesses": {
+        {
+            "title": "Weaknesses",
             "xy": (margin_x + box_w + gap_x, margin_y, margin_x + 2 * box_w + gap_x, margin_y + box_h),
             "color": (255, 220, 184, 255),
             "letter": "W",
             "items": swot_values.get("weaknesses", []),
         },
-        "Opportunities": {
+        {
+            "title": "Opportunities",
             "xy": (margin_x, margin_y + box_h + gap_y, margin_x + box_w, margin_y + 2 * box_h + gap_y),
             "color": (221, 241, 202, 255),
             "letter": "O",
             "items": swot_values.get("opportunities", []),
         },
-        "Threats": {
+        {
+            "title": "Threats",
             "xy": (margin_x + box_w + gap_x, margin_y + box_h + gap_y, margin_x + 2 * box_w + gap_x, margin_y + 2 * box_h + gap_y),
             "color": (246, 184, 178, 255),
             "letter": "T",
             "items": swot_values.get("threats", []),
         },
-    }
+    ]
 
-    for title, info in boxes.items():
-        x1, y1, x2, y2 = info["xy"]
-        draw.rounded_rectangle(info["xy"], radius=radius, fill=info["color"])
+    for box in boxes:
+        x1, y1, x2, y2 = box["xy"]
+        draw.rounded_rectangle(box["xy"], radius=radius, fill=box["color"])
 
-        draw.text((x1 + 70, y1 + 58), title, font=title_font, fill=text_color)
+        draw.text((x1 + 62, y1 + 48), box["title"], font=title_font, fill=text_color)
 
-        letter_text = info["letter"]
+        letter_text = box["letter"]
         letter_bbox = draw.textbbox((0, 0), letter_text, font=letter_font)
         letter_w = letter_bbox[2] - letter_bbox[0]
         letter_h = letter_bbox[3] - letter_bbox[1]
         draw.text(
-            (x2 - 145 - letter_w / 2, y1 + box_h / 2 - letter_h / 2),
+            (x2 - 135 - letter_w / 2, y1 + box_h / 2 - letter_h / 2),
             letter_text,
             font=letter_font,
             fill=letter_color,
@@ -1763,26 +1767,25 @@ def create_swot_image_bytes(swot_values):
 
         draw_wrapped_bullets(
             draw=draw,
-            items=info["items"],
-            x=x1 + 75,
-            y=y1 + 165,
-            max_width=box_w - 240,
-            max_height=box_h - 210,
+            items=box["items"],
+            x=x1 + 68,
+            y=y1 + 135,
+            max_width=box_w - 230,
+            max_height=box_h - 170,
             font=bullet_font,
             fill=text_color,
-            line_gap=10,
-            bullet_gap=20,
+            line_gap=8,
+            bullet_gap=14,
         )
 
     cx, cy = width // 2, height // 2
-    draw.ellipse((cx - 165, cy - 165, cx + 165, cy + 165), fill=(115, 150, 165, 62))
-    draw.ellipse((cx - 85, cy - 85, cx + 85, cy + 85), fill=(80, 115, 125, 90))
+    draw.ellipse((cx - 125, cy - 125, cx + 125, cy + 125), fill=(116, 151, 165, 58))
+    draw.ellipse((cx - 68, cy - 68, cx + 68, cy + 68), fill=(80, 116, 126, 82))
 
     buffer = BytesIO()
     image.save(buffer, format="PNG", optimize=True)
     buffer.seek(0)
     return buffer.getvalue()
-
 
 def render_swot_image_download_block(updated_admin_data, selected_row):
     swot_values = extract_admin_swot_values(updated_admin_data)
@@ -1817,8 +1820,6 @@ def render_swot_image_download_block(updated_admin_data, selected_row):
 
     image_bytes = create_swot_image_bytes(swot_values)
 
-    st.image(image_bytes, width=1500)
-
     st.download_button(
         label="Télécharger l’image SWOT",
         data=image_bytes,
@@ -1826,6 +1827,8 @@ def render_swot_image_download_block(updated_admin_data, selected_row):
         mime="image/png",
         key=f"download_swot_image_{safe_code}"
     )
+
+    st.image(image_bytes, use_container_width=True)
 
 def main():
     st.set_page_config(
