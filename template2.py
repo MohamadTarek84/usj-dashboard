@@ -1714,7 +1714,8 @@ def main():
             if isinstance(original_section, list):
 
                 for i, row in enumerate(original_section, start=1):
-                    shown_anything = False
+                    st.markdown(f"### Réponse {i}")
+
                     updated_row = {}
                     saved_admin_row = {}
 
@@ -1726,26 +1727,15 @@ def main():
                         saved_admin_row = existing_admin_section[i - 1]
 
                     if isinstance(row, dict):
-
                         for key, value in row.items():
-                            original_value = str(value).strip() if value is not None else ""
-
-                            if not original_value:
-                                updated_row[key] = saved_admin_row.get(key, value)
-                                continue
-
-                            if not shown_anything:
-                                st.markdown(f"### Réponse {i}")
-                                shown_anything = True
-
                             admin_value = saved_admin_row.get(key, value)
 
                             st.markdown(
                                 f"""
 <div style="
-background-color:#FFF6F8;
-padding:12px 16px 6px 16px;
-border-radius:10px 10px 0 0;
+background-color:#F8F3F5;
+padding:12px 16px;
+border-radius:10px 10px 0px 0px;
 border-left:5px solid {USJ_RED};
 margin-bottom:0px;
 box-shadow:0 2px 6px rgba(0,0,0,0.05);
@@ -1759,14 +1749,9 @@ box-shadow:0 2px 6px rgba(0,0,0,0.05);
                             updated_row[key] = st.text_area(
                                 label=f"{key}_{i}",
                                 value=str(admin_value) if admin_value else "",
-                                height=68,
+                                height=80,
                                 key=f"admin_edit_{selected_draft_code}_{section_choice}_{i}_{key}",
                                 label_visibility="collapsed"
-                            )
-
-                            st.markdown(
-                                "<div style='margin-bottom:10px;'></div>",
-                                unsafe_allow_html=True
                             )
 
                     updated_admin_section.append(updated_row)
@@ -1776,10 +1761,6 @@ box-shadow:0 2px 6px rgba(0,0,0,0.05);
                 updated_admin_section = {}
 
                 for key, value in original_section.items():
-                    original_value = str(value).strip() if value is not None else ""
-
-                    if not original_value:
-                        continue
 
                     if isinstance(existing_admin_section, dict):
                         admin_value = existing_admin_section.get(key, value)
@@ -1789,9 +1770,9 @@ box-shadow:0 2px 6px rgba(0,0,0,0.05);
                     st.markdown(
                         f"""
 <div style="
-background-color:#FFF6F8;
-padding:12px 16px 6px 16px;
-border-radius:10px 10px 0 0;
+background-color:#F8F3F5;
+padding:12px 16px;
+border-radius:10px 10px 0px 0px;
 border-left:5px solid {USJ_RED};
 margin-bottom:0px;
 box-shadow:0 2px 6px rgba(0,0,0,0.05);
@@ -1805,14 +1786,9 @@ box-shadow:0 2px 6px rgba(0,0,0,0.05);
                     updated_admin_section[key] = st.text_area(
                         label=key,
                         value=str(admin_value) if admin_value else "",
-                        height=68,
+                        height=80,
                         key=f"admin_edit_{selected_draft_code}_{section_choice}_{key}",
                         label_visibility="collapsed"
-                    )
-
-                    st.markdown(
-                        "<div style='margin-bottom:10px;'></div>",
-                        unsafe_allow_html=True
                     )
 
             else:
