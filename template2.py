@@ -1791,6 +1791,8 @@ def main():
             section_header("Introduction")
             render_fixed_introduction()
 
+            st.divider()
+
             # Section II removed for Focus Group version
             stakeholder_rows = []
             quick_save_after_stakeholders = False
