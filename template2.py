@@ -951,22 +951,22 @@ div[data-testid="stIFrame"] {{
 
 
 /* Admin editable answers: same card geometry as original answers, red theme */
-div[class*="st-key-admin_edit_"] {
+div[class*="st-key-admin_edit_"] {{
     background-color: #FFF6F8 !important;
     border-left: 5px solid #8B1538 !important;
     border-radius: 0 0 10px 10px !important;
     box-shadow: 0 2px 6px rgba(0,0,0,0.05) !important;
     margin-bottom: 10px !important;
     padding: 0 12px 8px 12px !important;
-}
+}}
 
-div[class*="st-key-admin_edit_"] div[data-testid="stTextArea"] {
+div[class*="st-key-admin_edit_"] div[data-testid="stTextArea"] {{
     background-color: #FFF6F8 !important;
     border: none !important;
     border-radius: 0 0 10px 10px !important;
-}
+}}
 
-div[class*="st-key-admin_edit_"] div[data-testid="stTextArea"] textarea {
+div[class*="st-key-admin_edit_"] div[data-testid="stTextArea"] textarea {{
     background-color: #FFF6F8 !important;
     color: #000000 !important;
     -webkit-text-fill-color: #000000 !important;
@@ -977,13 +977,13 @@ div[class*="st-key-admin_edit_"] div[data-testid="stTextArea"] textarea {
     line-height: 1.35 !important;
     padding: 0 !important;
     min-height: 38px !important;
-}
+}}
 
-div[class*="st-key-admin_edit_"] div[data-testid="stTextArea"] textarea:focus {
+div[class*="st-key-admin_edit_"] div[data-testid="stTextArea"] textarea:focus {{
     border: none !important;
     box-shadow: none !important;
     outline: none !important;
-}
+}}
 
 
 </style>
