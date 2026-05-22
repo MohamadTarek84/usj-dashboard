@@ -1434,13 +1434,13 @@ def render_priorities_table():
 
     return priorities_initiatives
 
-
 def render_pour_finir():
     pour_finir = {}
+    read_only = st.session_state.get("read_only_submitted", False)
 
     html_block(f"""
 <div style="background-color:#ffffff; padding:4px 0 2px 0; margin-bottom:2px;">
-    <p style="font-size:18px; line-height:1.25; color:{USJ_RED}; font-weight:700; font-style:italic; margin-bottom:8px;">
+    <p style="font-size:18px; line-height:1.25; color:{USJ_RED}; font-weight:700; font-style:italic; margin-bottom:2px;">
     POUR FINIR. Nous vous remercions de compléter les phrases suivantes :
     </p>
 </div>
@@ -1453,26 +1453,31 @@ def render_pour_finir():
     ]
 
     for i, phrase in enumerate(phrases, start=1):
-        col_label, col_answer = st.columns([1.3, 2], gap="small")
+        col_label, col_boxes, col_empty = st.columns([260, 520, 1], gap="small")
 
         with col_label:
             html_block(f"""
-<div style="border:1px solid #595959; min-height:58px; padding:10px 12px; color:{USJ_BLUE}; font-size:19px; font-weight:700; display:flex; align-items:center;">
-    • {phrase}
+<div class="pour-finir-screen-label" style="font-size:17px; line-height:1.35; color:{USJ_BLUE}; font-weight:700; margin-top:8px; white-space:nowrap;">
+    &bull; {phrase}
 </div>
 """)
 
-        with col_answer:
-            pour_finir[f"phrase_{i}"] = st.text_area(
-                label=f"Réponse {i}",
-                key=f"pour_finir_phrase_{i}",
-                height=58,
-                label_visibility="collapsed",
-                placeholder="",
-                disabled=st.session_state.get("read_only_submitted", False)
-            )
+        with col_boxes:
+            cols = st.columns(2)
+
+            for j in range(2):
+                with cols[j]:
+                    key = f"pour_finir_{i}_{j}"
+
+                    pour_finir[key] = st.text_input(
+                        label=key,
+                        key=key,
+                        label_visibility="collapsed",
+                        disabled=read_only
+                    )
 
     return pour_finir
+
 
 def render_quick_save_button(key):
     if st.session_state.get("read_only_submitted", False):
