@@ -1702,15 +1702,15 @@ def main():
             else:
                 st.write(original_section)
 
-    with col_admin:
-    st.markdown(
-        f"""
-        <h4 style="color:{USJ_RED}; font-weight:700; margin-bottom:14px;">
-            Version admin modifiable
-        </h4>
-        """,
-        unsafe_allow_html=True
-    )
+        with col_admin:
+            st.markdown(
+                f"""
+                <h4 style="color:{USJ_RED}; font-weight:700; margin-bottom:14px;">
+                    Version admin modifiable
+                </h4>
+                """,
+                unsafe_allow_html=True
+            )
 
     existing_admin_section = admin_data.get(section_choice, original_section)
 
