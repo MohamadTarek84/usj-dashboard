@@ -1702,7 +1702,7 @@ def main():
             else:
                 st.write(original_section)
 
-        with col_admin:
+    with col_admin:
     st.markdown(
         f"""
         <h4 style="color:{USJ_RED}; font-weight:700; margin-bottom:14px;">
