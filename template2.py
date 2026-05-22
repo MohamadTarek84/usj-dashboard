@@ -946,6 +946,7 @@ div[data-testid="stIFrame"] {{
     .admin-debug-info,
     div[data-testid="stButton"],
     div[data-testid="stDownloadButton"],
+    div[data-testid="stSelectbox"],
     iframe,
     .swot-screen-only {{
         display: none !important;
@@ -969,7 +970,8 @@ div[data-testid="stIFrame"] {{
         break-after: avoid !important;
     }}
 
-    .admin-print-page-break {{
+    .admin-print-page-break,
+    .admin-print-field-page-break {{
         display: block !important;
         break-before: page !important;
         page-break-before: always !important;
@@ -1088,9 +1090,15 @@ div[data-testid="stIFrame"] {{
     }}
 
     hr {{
-        margin-top: 6px !important;
-        margin-bottom: 6px !important;
-        height: 1px !important;
+        display: none !important;
+        height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }}
+
+    .admin-answer-row-wrapper {{
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
     }}
 }}
 
@@ -2533,12 +2541,15 @@ def render_swot_image_download_block(updated_admin_data, selected_row):
     if st.button("Générer la matrice SWOT interactive", key=button_key):
         st.session_state[state_key] = True
 
-    # Nothing appears before the admin clicks the button.
-    if not st.session_state[state_key]:
-        return
-
     if not has_values:
         st.warning("Aucune réponse admin n’est disponible pour générer la matrice SWOT interactive.")
+        return
+
+    # Always include the printable SWOT matrix in the print/PDF version, even if the admin
+    # did not open the interactive matrix on screen.
+    html_block(_swot_print_static_html(swot_values, display_group_name))
+
+    if not st.session_state[state_key]:
         return
 
     interactive_html = create_interactive_swot_html(
@@ -2555,8 +2566,6 @@ def render_swot_image_download_block(updated_admin_data, selected_row):
     )
 
     html_block('</div>')
-
-    html_block(_swot_print_static_html(swot_values, display_group_name))
 
     st.download_button(
         label="Télécharger la matrice SWOT interactive en HTML",
@@ -2831,7 +2840,10 @@ box-sizing:border-box;
             if original_section:
                 number_of_rows = max(5, len(original_section))
 
-            for field_name in field_names:
+            for field_index, field_name in enumerate(field_names):
+                if field_index > 0:
+                    html_block('<div class="admin-print-field-page-break"></div>')
+
                 col_original_section, col_admin_section = st.columns(2)
 
                 with col_original_section:
@@ -2857,6 +2869,7 @@ box-sizing:border-box;
                     while len(updated_admin_section) < i:
                         updated_admin_section.append({})
 
+                    html_block('<div class="admin-answer-row-wrapper">')
                     col_original_answer, col_admin_answer = st.columns(2)
 
                     with col_original_answer:
@@ -2877,6 +2890,8 @@ box-sizing:border-box;
                             key=f"admin_edit_{selected_draft_code}_{section_label}_{field_name}_{i}",
                             height=95
                         )
+
+                    html_block('</div>')
 
                 st.markdown("<br>", unsafe_allow_html=True)
 
@@ -2931,6 +2946,9 @@ box-sizing:border-box;
             ]
 
             for i, phrase in enumerate(phrases, start=1):
+                if i > 1:
+                    html_block('<div class="admin-print-field-page-break"></div>')
+
                 st.markdown(
                     f"""
 <div style="
@@ -2952,6 +2970,7 @@ margin-bottom:8px;
                     saved_admin_value = existing_admin_section.get(key, original_value)
                     admin_value = saved_admin_value if str(saved_admin_value or "").strip() else original_value
 
+                    html_block('<div class="admin-answer-row-wrapper">')
                     col_original_answer, col_admin_answer = st.columns(2)
 
                     with col_original_answer:
