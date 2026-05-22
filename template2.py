@@ -2424,46 +2424,46 @@ margin-bottom:8px;
     if mode == "Saisir une réponse":
         with st.container():
 
-            st.markdown("## Informations générales")
+    st.markdown("## Informations générales")
 
-            col1, col2, col3 = st.columns(3)
+col1, col2, col3 = st.columns(3)
 
-        with col1:
-            focus_group_options = [
-                "Focus groupe 1",
-                "Focus groupe 2",
-                "Focus groupe 3",
-                "Focus groupe 4",
-                "Focus groupe 5",
-            ]
-            
-            institution = st.selectbox(
-                "Focus groupe",
-                options=focus_group_options,
-                key="institution"
-            )
+with col1:
+    focus_group_options = [
+        "Focus groupe 1",
+        "Focus groupe 2",
+        "Focus groupe 3",
+        "Focus groupe 4",
+        "Focus groupe 5",
+    ]
 
-            with col2:
-                responsable = st.text_input(
-                    "Responsable",
-                    key="responsable",
-                    disabled=True
-                )
+    institution = st.selectbox(
+        "Focus groupe",
+        options=focus_group_options,
+        key="institution"
+    )
 
-            with col3:
-                st.text_input(
-                    "Date",
-                    value="2026-06-04",
-                    disabled=True
-                )
-                response_date = datetime.now().date()
+with col2:
+    responsable = st.text_input(
+        "Responsable",
+        key="responsable",
+        disabled=True
+    )
 
-            st.markdown("---")
+with col3:
+    st.text_input(
+        "Date",
+        value="2026-06-04",
+        disabled=True
+    )
+    response_date = "2026-06-04"
 
-            section_header("Introduction")
-            render_fixed_introduction()
+st.markdown("---")
 
-            st.divider()
+section_header("Introduction")
+render_fixed_introduction()
+
+st.divider()
 
                         # Section II removed for Focus Group version
             stakeholder_rows = []
