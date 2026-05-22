@@ -1056,15 +1056,15 @@ def render_fixed_introduction():
 
     html_block(f"""
     <div style="background-color:#ffffff; padding:24px 34px; border-radius:12px; border-left:none; border-top:none; border-bottom:none; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:25px;">
-        <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
+        <p style="text-align:justify; font-size:19px; line-height:1.55; color:{USJ_BLUE};">
         L’enseignement supérieur est aujourd’hui confronté à des transformations rapides, à des contraintes économiques croissantes et à une intensification de la concurrence, tant nationale qu’internationale. Les évolutions technologiques, les attentes accrues des étudiants et des parties prenantes, ainsi que les exigences renforcées en matière de qualité et de performance, imposent une réflexion stratégique à la fois rigoureuse et collective. Les universités sont ainsi appelées à réinterroger en profondeur leurs modèles académiques, organisationnels et opérationnels.
         </p>
 
-        <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
+        <p style="text-align:justify; font-size:19px; line-height:1.55; color:{USJ_BLUE};">
         <strong>Le Plan stratégique USJ 2032</strong> s’inscrit dans cette dynamique. Il constitue une feuille de route institutionnelle visant à traduire la mission, la vision et les valeurs de l’USJ en priorités stratégiques claires, en objectifs cohérents et en initiatives concrètes, capables de renforcer durablement son positionnement, sa résilience ainsi que son impact académique et sociétal.
         </p>
 
-        <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
+        <p style="text-align:justify; font-size:19px; line-height:1.55; color:{USJ_BLUE};">
         L’élaboration de ce plan stratégique se décline en plusieurs étapes (voir le schéma ci-dessous), dont la première est consacrée à <strong>l’analyse de données relatives à l’état actuel de l’Université</strong>. L’ensemble des acteurs de l’Université, ainsi que les parties prenantes, sont invités à y contribuer. Ce rapport a pour objectif de vous accompagner dans la formulation de constats partagés, des pratiques existantes et des expériences vécues, afin d’identifier <strong>les forces à consolider, les fragilités à traiter, les opportunités de développement et les risques à maîtriser à l’échelle de l’Université</strong>.
         </p>
 
