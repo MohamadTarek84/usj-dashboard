@@ -1235,7 +1235,7 @@ def render_external_analysis():
 
 def render_swot_intro():
     html_block(f"""
-<div style="background-color:#ffffff; padding:24px 34px 10px 34px; border-radius:12px; border-left:none; border-top:none; border-bottom:none; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:6px;">
+<div style="background-color:#ffffff; padding:24px 34px 10px 34px; border-radius:12px; border:1px solid #E0E0E0; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:6px;">
 
     <p style="font-size:19px; line-height:1.45; color:{USJ_BLUE}; font-weight:700; margin-bottom:10px;">
     Thématiques à prendre en considération pour répondre aux questions 1 et 2 :
