@@ -2448,7 +2448,7 @@ margin-bottom:8px;
             with col3:
                 st.text_input(
                     "Date",
-                    value=datetime.now().strftime("%Y-%m-%d"),
+                    value="2026-06-04",
                     disabled=True
                 )
                 response_date = datetime.now().date()
