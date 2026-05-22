@@ -1349,15 +1349,18 @@ def render_swot_analysis():
 
     st.markdown('<div class="print-page-break"></div>', unsafe_allow_html=True)
 
+    section_header("II- OPPORTUNITES ET MENACES – NIVEAU USJ")
+
     html_block(f"""
         
 <div style="background:#ffffff; padding:8px 24px 8px 24px; border-radius:10px; border-left:none; margin-top:10px; margin-bottom:6px;">
 
-    <p style="font-size:22px; line-height:1.4; color:{USJ_BLUE}; font-weight:700; margin-bottom:10px;">
+        
+    <p style="font-size:19px; line-height:1.4; color:{USJ_BLUE}; font-weight:700; margin-bottom:10px;">
     Thématiques à prendre en considération pour répondre aux questions 3 et 4 :
     </p>
 
-    <ul style="font-size:22px; line-height:1.45; color:{USJ_BLUE}; margin-top:0; margin-bottom:18px;">
+    <ul style="font-size:19px; line-height:1.45; color:{USJ_BLUE}; margin-top:0; margin-bottom:18px;">
         <li>Marché du travail et Associations professionnelles</li>
         <li>Concurrence avec les autres universités</li>
         <li>Intelligence artificielle</li>
@@ -1366,7 +1369,7 @@ def render_swot_analysis():
         <li>Autres</li>
     </ul>
 
-    <p style="font-size:22px; line-height:1.5; color:{USJ_BLUE}; font-weight:700; margin-bottom:12px;">
+    <p style="font-size:19px; line-height:1.5; color:{USJ_BLUE}; font-weight:700; margin-bottom:12px;">
     3. <span style="color:#C00000; font-style:italic;">Opportunités :</span>
     Quels sont les éléments, facteurs, tendances, pratiques externes qui pourraient améliorer votre expérience à l’université et contribuer à votre succès ?
     </p>
