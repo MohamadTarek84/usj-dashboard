@@ -1347,8 +1347,7 @@ def render_swot_analysis():
         right_title="Faiblesses (Saisir une faiblesse par case)"
     )
 
-    st.markdown('<div class="print-page-break"></div>', unsafe_allow_html=True)
-
+    st.markdown("<br>", unsafe_allow_html=True)
     st.divider()
 
     section_header("II- OPPORTUNITES ET MENACES – NIVEAU USJ")
