@@ -15,7 +15,7 @@ import streamlit.components.v1 as components
 
 
 APP_TITLE = "PLAN STRATÉGIQUE USJ 2032"
-DB_PATH = Path("etat_actuel_responses.db")
+DB_PATH = Path("focus_group_responsesT2.db")
 LOGO_PATH = Path("LogoUAQ.png")
 INTRO_IMAGE_PATH = Path("Intro_schema.png")
 ANNEXE_A_PATH = Path("Annexe_A.png")
