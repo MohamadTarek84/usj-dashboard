@@ -295,11 +295,11 @@ def preload_draft_into_session(data):
             for col_name, value in row.items():
                 st.session_state[f"{prefix}_{col_name}_{i}"] = value
 
-    for i, row in enumerate(data.get("priorities_initiatives", []), start=1):
-        st.session_state[f"priority_{i}"] = row.get("priorite_strategique", "")
-        st.session_state[f"initiative_{i}_1"] = row.get("initiative_1", "")
-        st.session_state[f"initiative_{i}_2"] = row.get("initiative_2", "")
-        st.session_state[f"initiative_{i}_3"] = row.get("initiative_3", "")
+
+    priorities_data = data.get("priorities_initiatives", {})
+
+    for i in range(1, 6):
+        st.session_state[f"priority_only_{i}"] = priorities_data.get(f"priorite_{i}", "")
 
     phrases = [
         "Nous souhaitons que l’USJ soit reconnue pour …",
