@@ -16,6 +16,11 @@ import streamlit as st
 import streamlit.components.v1 as components
 from PIL import Image, ImageDraw, ImageFont
 
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+from matplotlib.patches import FancyBboxPatch, Circle
+
 
 APP_TITLE = "PLAN STRATÉGIQUE USJ 2032"
 DB_PATH = Path("focus_group_responsesT2.db")
@@ -42,49 +47,12 @@ AUTHORIZED_TEST_CODES = {
     "USJ-LKG-2032": {"responsable": "Lina Koleilat Ghalayini", "institution": "FSE"},
     "USJ-TH-2032": {"responsable": "Tarek Halabi", "institution": ""},
 
-    # Final respondent codes
-    "USJ-ESMOD-7KQ4-2032": {"responsable": "Nicole MASSOUD", "institution": "ESMOD"},
-    "USJ-ESTS-M9X2-2032": {"responsable": "Rima MAWAD", "institution": "ESTS"},
-    "USJ-ETIB-P4L8-2032": {"responsable": "Mary YAZBECK", "institution": "ETIB"},
-    "USJ-FDLT-R6N3-2032": {"responsable": "Gina ABOU FADEL SAAD", "institution": "FDLT"},
-    "USJ-FLSH-T8B5-2032": {"responsable": "Myrna GANNAGÉ", "institution": "FLSH"},
-    "USJ-FSEDU-C2V7-2032": {"responsable": "Patricia FATA RACHED", "institution": "FSEDU"},
-    "USJ-FSR-H5D9-2032": {"responsable": "Salah ABOU JAOUDE s.j.", "institution": "FSR"},
-    "USJ-IEIC-J3W6-2032": {"responsable": "Roula TALHOUK", "institution": "IEIC"},
-    "USJ-IESAV-F8K1-2032": {"responsable": "Toufic EL-KHOURY", "institution": "IESAV"},
-    "USJ-ILE-Q2M4-2032": {"responsable": "Rock EL-ACHY", "institution": "ILE"},
-    "USJ-ILO-Y7P5-2032": {"responsable": "Tony El-KHAWAJI", "institution": "ILO"},
-    "USJ-ISSR-L9T2-2032": {"responsable": "Yara MATTA", "institution": "ISSR"},
-    "USJ-FDSP-X4A8-2032": {"responsable": "Marie-Claude NAJEM KOBEH", "institution": "FDSP"},
-    "USJ-ISP-N6E3-2032": {"responsable": "Sami NADER", "institution": "ISP"},
-    "USJ-FGM-U1R7-2032": {"responsable": "Fouad ZMOKHOL", "institution": "FGM"},
-    "USJ-FSE-B8C5-2032": {"responsable": "Jean-François VERNE", "institution": "FSE"},
-    "USJ-IGE-Z3H9-2032": {"responsable": "Céline BOUTROS SAAB", "institution": "IGE"},
-    "USJ-ISSA-K7V2-2032": {"responsable": "Irma Majdalani", "institution": "ISSA"},
-    "USJ-ESAR-M4Q6-2032": {"responsable": "Richard MITRI", "institution": "ESAR"},
-    "USJ-ESIA-P9L1-2032": {"responsable": "Wadih SKAFF", "institution": "ESIA"},
-    "USJ-ESIAM-T5X8-2032": {"responsable": "Wadih SKAFF", "institution": "ESIAM"},
-    "USJ-ESIB-W2N4-2032": {"responsable": "Wassim RAPHAËL", "institution": "ESIB"},
-    "USJ-FS-D7K3-2032": {"responsable": "Maher ABBOUD", "institution": "FS"},
-    "USJ-INCI-R8M6-2032": {"responsable": "Marc IBRAHIM", "institution": "INCI"},
-    "USJ-ESF-H1P9-2032": {"responsable": "Salimé SALAMEH SAAD", "institution": "ESF"},
-    "USJ-ETLAM-C6Y2-2032": {"responsable": "Marianne ABI FADEL", "institution": "ETLAM"},
-    "USJ-FM-V4T7-2032": {"responsable": "Elie NEMER", "institution": "FM"},
-    "USJ-FMD-L8Q5-2032": {"responsable": "Nada FARHAT MCHAYLEH", "institution": "FMD"},
-    "USJ-FP-J2R4-2032": {"responsable": "Hayat AZOURY TANNOUS", "institution": "FP"},
-    "USJ-FSI-X7B1-2032": {"responsable": "Rima SASSINE KAZAN", "institution": "FSI"},
-    "USJ-IET-N5K8-2032": {"responsable": "Carla MATTA-ABI ZEID", "institution": "IET"},
-    "USJ-IPHY-P3D6-2032": {"responsable": "Pascal BREIDY", "institution": "IPHY"},
-    "USJ-IPM-T9W2-2032": {"responsable": "Céleste YOUNES HARB", "institution": "IPM"},
-    "USJ-ISO-F6M7-2032": {"responsable": "Guillemette HENRY", "institution": "ISO"},
-    "USJ-ISSP-Q1H4-2032": {"responsable": "Michèle KOSREMELLI-ASMAR", "institution": "ISSP"},
-    "USJ-CDB-R5X9-2032": {"responsable": "Nathalie SABBAGH", "institution": "CDB"},
-    "USJ-CLN-B2V6-2032": {"responsable": "Fadia ALAM GEMAYEL", "institution": "CLN"},
-    "USJ-CLS-Y8P3-2032": {"responsable": "Dina SIDANI", "institution": "CLS"},
-    "USJ-CZB-K4N1-2032": {"responsable": "Alain AJAMI EL", "institution": "CZB"},
-    "USJ-CFP-M7T5-2032": {"responsable": "Fadi EL-HAGE", "institution": "CFP"},
-    "USJ-CPM-L3Q8-2032": {"responsable": "Johanna HAWARI-BOURJEILY", "institution": "CPM"},
-    "USJ-UPT-H9C2-2032": {"responsable": "Roland TOMB", "institution": "UPT"},
+    # Focus groups
+    "USJ-FG1-2032": {"responsable": "", "institution": "Focus groupe 1"},
+    "USJ-FG2-2032": {"responsable": "", "institution": "Focus groupe 2"},
+    "USJ-FG3-2032": {"responsable": "", "institution": "Focus groupe 3"},
+    "USJ-FG4-2032": {"responsable": "", "institution": "Focus groupe 4"},
+    "USJ-FG5-2032": {"responsable": "", "institution": "Focus groupe 5"},
 }
 
 def html_block(content):
@@ -170,7 +138,7 @@ def save_response(metadata, data):
                 data_json = ?
             WHERE id = ?
         """, (
-            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "2026-06-04",
             responsable,
             institution,
             email,
@@ -370,6 +338,17 @@ header {{
     visibility: hidden !important;
 }}
 
+div[data-testid="stSelectbox"] div[data-baseweb="select"] > div {{
+    background-color: #E3DED9 !important;
+    border: none !important;
+    border-radius: 6px !important;
+    color: #000000 !important;
+}}
+
+div[data-testid="stSelectbox"] span {{
+    color: #000000 !important;
+}}
+
 [data-testid="stToolbar"] {{
     display: none !important;
     visibility: hidden !important;
@@ -526,12 +505,11 @@ div[data-testid="stTextArea"] > div {{
 }}
 
 div[data-testid="stTextArea"] textarea {{
+    background-color: #E3DED9 !important;
+    border: none !important;
+    border-radius: 6px !important;
     color: #000000 !important;
     -webkit-text-fill-color: #000000 !important;
-    opacity: 1 !important;
-    border: 1.5px solid #595959 !important;
-    border-radius: 0px !important;
-    background-color: #E3DED9 !important;
     box-shadow: none !important;
 }}
 
@@ -1071,13 +1049,12 @@ def render_fixed_introduction():
         </p>
 
         <p style="text-align:justify; font-size:19px; line-height:1.55; color:{USJ_BLUE};">
-        L’élaboration de ce plan stratégique se décline en plusieurs étapes (voir le schéma ci-dessous), dont la première est consacrée à <strong>l’analyse de données relatives à l’état actuel de l’Université</strong>. L’ensemble des acteurs de l’Université, ainsi que les parties prenantes, sont invités à y contribuer. Ce rapport a pour objectif de vous accompagner dans la formulation de constats partagés, des pratiques existantes et des expériences vécues, afin d’identifier <strong>les forces à consolider, les fragilités à traiter, les opportunités de développement et les risques à maîtriser à l’échelle de l’Université</strong>.
+        L’élaboration de ce plan stratégique se décline en plusieurs étapes (voir le schéma ci-dessous), dont la première est consacrée à <strong>l’analyse de données relatives à l’état actuel de l’Université</strong>. L’ensemble des acteurs de l’Université, ainsi que les parties prenantes, sont invités à y contribuer. Ce Focus groupe a pour objectif de vous accompagner dans la formulation de constats partagés, des pratiques existantes et des expériences vécues, afin d’identifier <strong>les forces à consolider, les fragilités à traiter, les opportunités de développement et les risques à maîtriser à l’échelle de l’Université</strong>.
         </p>
 
         {image_html}
     </div>
 """)
-
 
 
     
@@ -1249,7 +1226,7 @@ def render_swot_intro():
 
     <ul style="font-size:19px; line-height:1.45; color:{USJ_BLUE}; margin-top:0; margin-bottom:18px;">
         <li>Soutenabilité financière</li>
-        <li>Gouvernance et Leadership (Gestion, relation, représentation, etc.)</li>
+        <li>Gouvernance et Leadership (gestion, relation, représentation, etc.)</li>
         <li>Stratégie académique et qualité d’enseignement</li>
         <li>Recherche et Innovation</li>
         <li>Ressources documentaires et Environnement digital</li>
@@ -1501,7 +1478,7 @@ def render_quick_save_button(key):
 
     if st.session_state.get("quick_save_success_key") == key:
         st.success(
-            f"Vos réponses ont été enregistrées. Votre code pour reprendre plus tard : "
+            f"Vos réponses ont été enregistrées. Votre mot de passe pour reprendre plus tard : "
             f"{st.session_state.get('current_draft_code', '')}"
         )
 
@@ -1574,6 +1551,7 @@ def save_admin_version_by_code(draft_code, admin_data):
     conn.close()
 
 
+
 def safe_filename(value):
     value = str(value or "").strip()
     value = re.sub(r"[^A-Za-z0-9À-ÿ._-]+", "_", value)
@@ -1581,227 +1559,299 @@ def safe_filename(value):
     return value or "groupe"
 
 
-def extract_admin_swot_values(admin_data):
-    def collect(section_label, field_name):
-        section = admin_data.get(section_label, []) if isinstance(admin_data, dict) else []
-        values = []
+def _normalize_text_for_match(value):
+    value = str(value or "").strip().lower()
+    replacements = {
+        "é": "e", "è": "e", "ê": "e", "ë": "e",
+        "à": "a", "â": "a",
+        "ù": "u", "û": "u",
+        "î": "i", "ï": "i",
+        "ô": "o",
+        "ç": "c",
+    }
+    for old, new in replacements.items():
+        value = value.replace(old, new)
+    return value
 
+
+def _clean_swot_answer(value):
+    value = str(value or "").strip()
+    value = re.sub(r"\s+", " ", value)
+    value = value.strip("•*-–— ")
+    return value
+
+
+def _get_row_value_exact_or_safe(row, wanted_field):
+    """
+    Reads only the expected admin-edited answer field.
+    This prevents the old long question labels from being placed under the wrong SWOT box.
+    """
+    if not isinstance(row, dict):
+        return ""
+
+    if wanted_field in row:
+        return _clean_swot_answer(row.get(wanted_field, ""))
+
+    wanted_norm = _normalize_text_for_match(wanted_field)
+
+    # Safe fallback only for the same field family.
+    for key, value in row.items():
+        key_norm = _normalize_text_for_match(key)
+
+        if wanted_norm == "forces" and key_norm in ["force", "forces"]:
+            return _clean_swot_answer(value)
+
+        if wanted_norm == "faiblesses" and key_norm in ["faiblesse", "faiblesses"]:
+            return _clean_swot_answer(value)
+
+        if wanted_norm == "opportunites" and ("opportunite" in key_norm or "opportunites" in key_norm):
+            return _clean_swot_answer(value)
+
+        if wanted_norm == "menaces" and ("menace" in key_norm or "menaces" in key_norm):
+            return _clean_swot_answer(value)
+
+    return ""
+
+
+def _deduplicate_keep_order(values):
+    cleaned = []
+    seen = set()
+
+    for value in values:
+        value = _clean_swot_answer(value)
+
+        if not value:
+            continue
+
+        # Do not inject old instruction/question text into the image.
+        value_norm = _normalize_text_for_match(value)
+        blocked_fragments = [
+            "quels sont les elements",
+            "maximum cinq",
+            "merci de bien vouloir",
+            "thematique",
+            "opportunites : quels",
+            "menaces : quels",
+            "forces : quels",
+            "faiblesses : quels",
+        ]
+
+        if any(fragment in value_norm for fragment in blocked_fragments):
+            continue
+
+        key = value_norm
+        if key not in seen:
+            cleaned.append(value)
+            seen.add(key)
+
+    return cleaned[:5]
+
+
+def extract_admin_swot_values(admin_data):
+    """
+    Reads the live admin-edited answers only:
+    - I - Forces et faiblesses: Forces, Faiblesses
+    - II - Opportunités et menaces: Opportunités, Menaces
+    """
+    if not isinstance(admin_data, dict):
+        admin_data = {}
+
+    section_internal = admin_data.get("I - Forces et faiblesses", [])
+    section_external = admin_data.get("II - Opportunités et menaces", [])
+
+    def collect(section, field):
+        values = []
         if isinstance(section, list):
             for row in section:
-                if not isinstance(row, dict):
-                    continue
-
-                value = row.get(field_name, "")
-
-                if not value:
-                    field_lower = field_name.lower()
-                    for key, candidate in row.items():
-                        key_lower = str(key).lower()
-                        if field_lower in key_lower:
-                            value = candidate
-                            break
-
-                if not value and field_name == "Opportunités":
-                    for key, candidate in row.items():
-                        if "opportun" in str(key).lower():
-                            value = candidate
-                            break
-
-                if not value and field_name == "Menaces":
-                    for key, candidate in row.items():
-                        if "menace" in str(key).lower():
-                            value = candidate
-                            break
-
-                value = str(value or "").strip()
-                if value:
-                    values.append(value)
-
-        return values
+                values.append(_get_row_value_exact_or_safe(row, field))
+        elif isinstance(section, dict):
+            values.append(_get_row_value_exact_or_safe(section, field))
+        return _deduplicate_keep_order(values)
 
     return {
-        "strengths": collect("I - Forces et faiblesses", "Forces"),
-        "weaknesses": collect("I - Forces et faiblesses", "Faiblesses"),
-        "opportunities": collect("II - Opportunités et menaces", "Opportunités"),
-        "threats": collect("II - Opportunités et menaces", "Menaces"),
+        "forces": collect(section_internal, "Forces"),
+        "faiblesses": collect(section_internal, "Faiblesses"),
+        "opportunites": collect(section_external, "Opportunités"),
+        "menaces": collect(section_external, "Menaces"),
     }
 
 
-def load_font(size, bold=False):
-    candidates = [
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-        "/usr/share/fonts/truetype/liberation2/LiberationSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf",
-    ]
+def _wrap_lines_for_box(text, max_chars=42, max_lines=3):
+    text = _clean_swot_answer(text)
+    wrapped = textwrap.wrap(
+        text,
+        width=max_chars,
+        break_long_words=False,
+        break_on_hyphens=False
+    )
 
-    for font_path in candidates:
-        try:
-            return ImageFont.truetype(font_path, size)
-        except Exception:
-            pass
+    if len(wrapped) > max_lines:
+        wrapped = wrapped[:max_lines]
+        wrapped[-1] = wrapped[-1].rstrip(" .,;:") + "…"
 
-    return ImageFont.load_default()
-
-
-def text_width(draw, text, font):
-    bbox = draw.textbbox((0, 0), text, font=font)
-    return bbox[2] - bbox[0]
+    return wrapped
 
 
-def wrap_text_pixels(draw, text, font, max_width):
-    words = str(text or "").split()
-    if not words:
-        return [""]
+def _draw_swot_box(ax, x, y, w, h, title, items, facecolor, edgecolor):
+    box = FancyBboxPatch(
+        (x, y),
+        w,
+        h,
+        boxstyle="round,pad=0.035,rounding_size=0.18",
+        linewidth=2.2,
+        edgecolor=edgecolor,
+        facecolor=facecolor,
+        alpha=0.98,
+        zorder=1
+    )
+    ax.add_patch(box)
 
-    lines = []
-    current = words[0]
+    ax.text(
+        x + 0.32,
+        y + h - 0.35,
+        title,
+        fontsize=27,
+        fontweight="bold",
+        color=edgecolor,
+        ha="left",
+        va="center",
+        zorder=2
+    )
 
-    for word in words[1:]:
-        candidate = current + " " + word
-        if text_width(draw, candidate, font) <= max_width:
-            current = candidate
-        else:
-            lines.append(current)
-            current = word
+    ax.plot(
+        [x + 0.32, x + w - 0.32],
+        [y + h - 0.72, y + h - 0.72],
+        color=edgecolor,
+        linewidth=2.0,
+        zorder=2
+    )
 
-    lines.append(current)
-    return lines
+    text_y = y + h - 1.05
+    min_y = y + 0.34
 
+    for item in _deduplicate_keep_order(items):
+        lines = _wrap_lines_for_box(item, max_chars=45, max_lines=3)
+        needed_height = 0.29 * len(lines) + 0.22
 
-def draw_professional_items(draw, items, x, y, max_width, max_height, font, fill, line_gap=12, item_gap=18):
-    current_y = y
-    bottom_y = y + max_height
+        if text_y - needed_height < min_y:
+            break
 
-    cleaned_items = [str(item).strip() for item in items if str(item or "").strip()]
-    if not cleaned_items:
-        cleaned_items = ["Aucune réponse saisie"]
-
-    for item in cleaned_items[:5]:
-        wrapped_lines = wrap_text_pixels(draw, item, font, max_width - 42)
-        item_start_y = current_y + 12
-
-        if item_start_y + font.size > bottom_y:
-            draw.text((x + 42, current_y), "…", font=font, fill=fill)
-            return
-
-        draw.ellipse(
-            (x, item_start_y + 10, x + 14, item_start_y + 24),
-            fill=fill
+        ax.text(
+            x + 0.42,
+            text_y,
+            "•",
+            fontsize=23,
+            fontweight="bold",
+            color=edgecolor,
+            ha="left",
+            va="top",
+            zorder=2
         )
 
-        for line in wrapped_lines:
-            if current_y + font.size + line_gap > bottom_y:
-                draw.text((x + 42, current_y), "…", font=font, fill=fill)
-                return
+        line_y = text_y
+        for line in lines:
+            ax.text(
+                x + 0.68,
+                line_y,
+                line,
+                fontsize=17,
+                color="#2B2B2B",
+                ha="left",
+                va="top",
+                zorder=2
+            )
+            line_y -= 0.29
 
-            draw.text((x + 42, current_y), line, font=font, fill=fill)
-            current_y += font.size + line_gap
-
-        current_y += item_gap
+        text_y = line_y - 0.13
 
 
-def create_swot_image_bytes(swot_values):
-    """Create a clear, high-resolution SWOT PNG from the admin-modified answers."""
-    width, height = 1800, 1120
-    image = Image.new("RGB", (width, height), "white")
-    draw = ImageDraw.Draw(image, "RGBA")
+def create_swot_image_bytes(swot_values, group_name="groupe"):
+    """
+    Creates a clean SWOT image from the admin-modified answers.
+    The title and group name are inside the image.
+    """
+    fig, ax = plt.subplots(figsize=(13.2, 8.0), dpi=180)
+    ax.set_xlim(0, 10)
+    ax.set_ylim(0, 7.25)
+    ax.axis("off")
 
-    title_font = load_font(64, bold=True)
-    bullet_font = load_font(42, bold=False)
-    letter_font = load_font(115, bold=True)
+    ax.text(
+        5,
+        7.05,
+        "Matrice SWOT - Niveau USJ",
+        fontsize=22,
+        fontweight="bold",
+        color=USJ_BLUE,
+        ha="center",
+        va="center"
+    )
 
-    margin_x = 60
-    margin_y = 52
-    gap_x = 60
-    gap_y = 46
-    box_w = (width - 2 * margin_x - gap_x) // 2
-    box_h = (height - 2 * margin_y - gap_y) // 2
-    radius = 54
-
-    text_color = (22, 28, 35, 255)
-    letter_color = (28, 34, 40, 210)
+    ax.text(
+        5,
+        6.78,
+        f"Groupe : {group_name}",
+        fontsize=12,
+        color="#4F4F4F",
+        ha="center",
+        va="center"
+    )
 
     boxes = [
-        {
-            "title": "Strengths",
-            "xy": (margin_x, margin_y, margin_x + box_w, margin_y + box_h),
-            "color": (205, 235, 242, 255),
-            "letter": "S",
-            "items": swot_values.get("strengths", []),
-        },
-        {
-            "title": "Weaknesses",
-            "xy": (margin_x + box_w + gap_x, margin_y, margin_x + 2 * box_w + gap_x, margin_y + box_h),
-            "color": (255, 219, 182, 255),
-            "letter": "W",
-            "items": swot_values.get("weaknesses", []),
-        },
-        {
-            "title": "Opportunities",
-            "xy": (margin_x, margin_y + box_h + gap_y, margin_x + box_w, margin_y + 2 * box_h + gap_y),
-            "color": (222, 242, 203, 255),
-            "letter": "O",
-            "items": swot_values.get("opportunities", []),
-        },
-        {
-            "title": "Threats",
-            "xy": (margin_x + box_w + gap_x, margin_y + box_h + gap_y, margin_x + 2 * box_w + gap_x, margin_y + 2 * box_h + gap_y),
-            "color": (247, 184, 178, 255),
-            "letter": "T",
-            "items": swot_values.get("threats", []),
-        },
+        (0.35, 3.75, 4.25, 2.70, "FORCES", swot_values.get("forces", []), "#DDEFF7", USJ_BLUE),
+        (5.40, 3.75, 4.25, 2.70, "FAIBLESSES", swot_values.get("faiblesses", []), "#FBE3C3", USJ_RED),
+        (0.35, 0.45, 4.25, 2.70, "OPPORTUNITÉS", swot_values.get("opportunites", []), "#E2F2D3", "#2F6B2F"),
+        (5.40, 0.45, 4.25, 2.70, "MENACES", swot_values.get("menaces", []), "#F4C6C4", USJ_RED),
     ]
 
-    for box in boxes:
-        x1, y1, x2, y2 = box["xy"]
-        draw.rounded_rectangle(box["xy"], radius=radius, fill=box["color"])
+    for box_args in boxes:
+        _draw_swot_box(ax, *box_args)
 
-        draw.text((x1 + 72, y1 + 62), box["title"], font=title_font, fill=text_color)
+    center_circle = Circle(
+        (5.0, 3.42),
+        0.52,
+        facecolor="white",
+        edgecolor="#C7CDD6",
+        linewidth=2.0,
+        zorder=10
+    )
+    ax.add_patch(center_circle)
 
-        letter_text = box["letter"]
-        letter_bbox = draw.textbbox((0, 0), letter_text, font=letter_font)
-        letter_w = letter_bbox[2] - letter_bbox[0]
-        letter_h = letter_bbox[3] - letter_bbox[1]
-        draw.text(
-            (x2 - 150 - letter_w / 2, y1 + box_h / 2 - letter_h / 2),
-            letter_text,
-            font=letter_font,
-            fill=letter_color,
-        )
-
-        draw_professional_items(
-            draw=draw,
-            items=box["items"],
-            x=x1 + 76,
-            y=y1 + 174,
-            max_width=box_w - 275,
-            max_height=box_h - 218,
-            font=bullet_font,
-            fill=text_color,
-            line_gap=10,
-            item_gap=18,
-        )
-
-    cx, cy = width // 2, height // 2
-    draw.ellipse((cx - 150, cy - 150, cx + 150, cy + 150), fill=(116, 151, 165, 50))
-    draw.ellipse((cx - 78, cy - 78, cx + 78, cy + 78), fill=(80, 116, 126, 72))
+    ax.text(
+        5.0,
+        3.42,
+        "SWOT",
+        fontsize=19,
+        fontweight="bold",
+        color=USJ_BLUE,
+        ha="center",
+        va="center",
+        zorder=11
+    )
 
     buffer = BytesIO()
-    image.save(buffer, format="PNG", optimize=True)
+    fig.savefig(buffer, format="png", dpi=180, bbox_inches="tight", facecolor="white", pad_inches=0.08)
+    plt.close(fig)
     buffer.seek(0)
     return buffer.getvalue()
 
+
 def render_swot_image_download_block(updated_admin_data, selected_row):
     swot_values = extract_admin_swot_values(updated_admin_data)
+
     group_name = selected_row.get("respondent_name", "") if hasattr(selected_row, "get") else ""
     group_unit = selected_row.get("respondent_unit", "") if hasattr(selected_row, "get") else ""
     draft_code = selected_row.get("draft_code", "") if hasattr(selected_row, "get") else ""
 
-    display_group_name = " - ".join([part for part in [str(group_name).strip(), str(group_unit).strip()] if part])
+    display_group_name = " - ".join(
+        [part for part in [str(group_name).strip(), str(group_unit).strip()] if part]
+    )
+
     if not display_group_name:
         display_group_name = str(draft_code).strip() or "groupe"
 
     file_name = f"SWOT_{safe_filename(display_group_name)}.png"
     has_values = any(swot_values[key] for key in swot_values)
+
     safe_code = safe_filename(str(draft_code))
     button_key = f"generate_swot_image_{safe_code}"
     state_key = f"show_swot_image_{safe_code}"
@@ -1814,6 +1864,7 @@ def render_swot_image_download_block(updated_admin_data, selected_row):
     if st.button("Générer l’image SWOT", key=button_key):
         st.session_state[state_key] = True
 
+    # Nothing appears before the admin clicks the button.
     if not st.session_state[state_key]:
         return
 
@@ -1821,9 +1872,13 @@ def render_swot_image_download_block(updated_admin_data, selected_row):
         st.warning("Aucune réponse admin n’est disponible pour générer l’image SWOT.")
         return
 
-    image_bytes = create_swot_image_bytes(swot_values)
+    image_bytes = create_swot_image_bytes(
+        swot_values=swot_values,
+        group_name=display_group_name
+    )
 
-    st.image(image_bytes, use_container_width=True)
+    # Reduced display size inside the admin page.
+    st.image(image_bytes, width=1050)
 
     st.download_button(
         label="Télécharger l’image SWOT",
@@ -1832,6 +1887,7 @@ def render_swot_image_download_block(updated_admin_data, selected_row):
         mime="image/png",
         key=f"download_swot_image_{safe_code}"
     )
+
 
 def main():
     st.set_page_config(
@@ -2336,255 +2392,268 @@ margin-bottom:8px;
                 st.rerun()
 
         st.stop()
-    mode = "Saisir une réponse"
 
-    if mode == "Saisir une réponse":
-        with st.container():
+if not st.session_state.get("access_granted", False):
+    # login block here
+    st.stop()
+        
+mode = "Saisir une réponse"
 
-            st.markdown("## Informations générales")
 
-            col1, col2, col3 = st.columns(3)
+if mode == "Saisir une réponse":
+    with st.container():
 
-            with col1:
-                st.text_input(
-                    "Institution",
-                    value=st.session_state.get("institution", ""),
-                    disabled=True,
-                    key="institution_display"
-                )
-                institution = st.session_state.get("institution", "")
+        st.markdown("## Informations générales")
 
-            with col2:
-                responsable = st.text_input(
-                    "Responsable",
-                    key="responsable",
-                    disabled=True
-                )
+        col1, col2, col3 = st.columns(3)
 
-            with col3:
-                st.text_input(
-                    "Date",
-                    value=datetime.now().strftime("%Y-%m-%d"),
-                    disabled=True
-                )
-                response_date = datetime.now().date()
+        with col1:
+            focus_group_options = [
+                "Sous groupe 1",
+                "Sous groupe 2",
+                "Sous groupe 3",
+                "Sous groupe 4",
+                "Sous groupe 5",
+            ]
 
-            st.markdown("---")
+            institution = st.selectbox(
+                "Focus groupe",
+                options=focus_group_options,
+                key="institution"
+            )
 
-            section_header("Introduction")
-            render_fixed_introduction()
+        with col2:
+            responsable = st.text_input(
+                "Nom des participants",
+                key="responsable",
+                placeholder="Nom 1, Nom 2, Nom 3..."
+            )
 
-            st.divider()
+        with col3:
+            st.text_input(
+                "Date",
+                value="2026-06-04",
+                disabled=True
+            )
+            response_date = "2026-06-04"
 
-                        # Section II removed for Focus Group version
-            stakeholder_rows = []
-            quick_save_after_stakeholders = False
+        st.markdown("---")
 
-            # Section III removed for Focus Group version
-            internal_analysis = {}
-            quick_save_after_internal = False
+        section_header("Introduction")
+        render_fixed_introduction()
 
-            # Section IV removed for Focus Group version
-            external_analysis = {}
-            quick_save_after_external = False
+        st.divider()
+    
+       
+    # Section II removed for Focus Group version
+    stakeholder_rows = []
+    quick_save_after_stakeholders = False
 
-            section_header("I- FORCES ET FAIBLESSES – NIVEAU USJ")
-            render_swot_intro()
-            swot_analysis = render_swot_analysis()
-            quick_save_after_swot = False
+    # Section III removed for Focus Group version
+    internal_analysis = {}
+    quick_save_after_internal = False
 
-            st.divider()
+    # Section IV removed for Focus Group version
+    external_analysis = {}
+    quick_save_after_external = False
 
-            section_header("III - PRIORITES – Niveau USJ")
-            render_priorities_intro()
-            priorities_initiatives = render_priorities_table()
-            quick_save_after_priorities = render_quick_save_button("quick_save_after_priorities")
+    section_header("I- FORCES ET FAIBLESSES – NIVEAU USJ")
+    render_swot_intro()
+    swot_analysis = render_swot_analysis()
+    quick_save_after_swot = False
 
-            st.divider()
+    st.divider()
 
-            section_header("IV- CONCLUSION")
-            pour_finir = render_pour_finir()
+    section_header("III - PRIORITES – Niveau USJ")
+    render_priorities_intro()
+    priorities_initiatives = render_priorities_table()
+    quick_save_after_priorities = render_quick_save_button("quick_save_after_priorities")
 
-            st.markdown("<br>", unsafe_allow_html=True)
+    st.divider()
 
-            if st.session_state.get("read_only_submitted", False):
-                st.info(
-                    "Le rapport de votre institution a déjà été envoyé. "
-                    "Les modifications ne sont plus possibles."
-                )
-                save_draft = False
-                submit_final = False
+    section_header("IV- CONCLUSION")
+    pour_finir = render_pour_finir()
 
-                st.markdown("<br>", unsafe_allow_html=True)
-                render_print_icon_button()
-                
-            else:
-                col_save_final, col_save_empty = st.columns(
-                    [1.25, 2.75],
-                    vertical_alignment="center"
-                )
+    st.markdown("<br>", unsafe_allow_html=True)
 
-                with col_save_final:
-                    save_draft = st.button(
-                        "Enregistrer et continuer plus tard",
-                        key="save_draft_button",
-                        use_container_width=True
-                    )
+    if st.session_state.get("read_only_submitted", False):
+        st.info(
+            "Le rapport de votre institution a déjà été envoyé. "
+            "Les modifications ne sont plus possibles."
+        )
+        save_draft = False
+        submit_final = False
 
-                st.markdown('<hr class="final-action-line">', unsafe_allow_html=True)
+        st.markdown("<br>", unsafe_allow_html=True)
+        render_print_icon_button()
 
-                col_submit_final, col_print_final, col_right_final = st.columns(
-                    [1.25, 1.25, 1.50],
-                    vertical_alignment="center"
-                )
+    else:
+        col_save_final, col_save_empty = st.columns(
+            [1.25, 2.75],
+            vertical_alignment="center"
+        )
 
-                with col_submit_final:
-                    submit_final = st.button(
-                        "Envoyer la version finale\u00A0uniquement",
-                        key="submit_final_button",
-                        type="primary",
-                        use_container_width=True
-                    )
+        with col_save_final:
+            save_draft = st.button(
+                "Enregistrer et continuer plus tard",
+                key="save_draft_button",
+                use_container_width=True
+            )
 
-                with col_print_final:
-                    print_icon_src = image_to_base64(PRINT_ICON_PATH)
+        st.markdown('<hr class="final-action-line">', unsafe_allow_html=True)
 
-                    if print_icon_src:
-                        components.html(
-                            f"""
-                            <div style="
-                                height:150px;
-                                display:flex;
-                                align-items:center;
-                                justify-content:center;
-                                overflow:visible;
-                                padding:0;
-                                margin:0;
+        col_submit_final, col_print_final, col_right_final = st.columns(
+            [1.25, 1.25, 1.50],
+            vertical_alignment="center"
+        )
+
+        with col_submit_final:
+            submit_final = st.button(
+                "Envoyer la version finale\u00A0uniquement",
+                key="submit_final_button",
+                type="primary",
+                use_container_width=True
+            )
+
+        with col_print_final:
+            print_icon_src = image_to_base64(PRINT_ICON_PATH)
+
+            if print_icon_src:
+                components.html(
+                    f"""
+                    <div style="
+                        height:150px;
+                        display:flex;
+                        align-items:center;
+                        justify-content:center;
+                        overflow:visible;
+                        padding:0;
+                        margin:0;
+                    ">
+                        <button onclick="window.parent.print()" title="Imprimer / Enregistrer en PDF" style="
+                            background-color:transparent;
+                            border:none;
+                            cursor:pointer;
+                            padding:0;
+                            margin:0;
+                            width:130px;
+                            height:130px;
+                            display:flex;
+                            align-items:center;
+                            justify-content:center;
+                        ">
+                            <img src="{print_icon_src}" alt="Imprimer / Enregistrer en PDF" style="
+                                width:130px;
+                                height:130px;
+                                object-fit:contain;
+                                display:block;
                             ">
-                                <button onclick="window.parent.print()" title="Imprimer / Enregistrer en PDF" style="
-                                    background-color:transparent;
-                                    border:none;
-                                    cursor:pointer;
-                                    padding:0;
-                                    margin:0;
-                                    width:130px;
-                                    height:130px;
-                                    display:flex;
-                                    align-items:center;
-                                    justify-content:center;
-                                ">
-                                    <img src="{print_icon_src}" alt="Imprimer / Enregistrer en PDF" style="
-                                        width:130px;
-                                        height:130px;
-                                        object-fit:contain;
-                                        display:block;
-                                    ">
-                                </button>
-                            </div>
-                            """,
-                            height=155
-                        )
-
-        quick_save_clicked = any([
-            quick_save_after_stakeholders,
-            quick_save_after_internal,
-            quick_save_after_external,
-            quick_save_after_swot,
-            quick_save_after_priorities,
-            st.session_state.get("quick_save_after_section_i_clicked", False),
-            st.session_state.get("quick_save_after_section_ii_clicked", False),
-        ])
-
-        if save_draft or submit_final or quick_save_clicked:
-            word_limit_errors = []
-
-            word_limit_errors.extend(
-                find_word_limit_errors(
-                    internal_analysis,
-                    "Section III - Analyse interne",
-                    max_words=500
+                        </button>
+                    </div>
+                    """,
+                    height=155
                 )
+
+    quick_save_clicked = any([
+        quick_save_after_stakeholders,
+        quick_save_after_internal,
+        quick_save_after_external,
+        quick_save_after_swot,
+        quick_save_after_priorities,
+        st.session_state.get("quick_save_after_section_i_clicked", False),
+        st.session_state.get("quick_save_after_section_ii_clicked", False),
+    ])
+
+    if save_draft or submit_final or quick_save_clicked:
+        word_limit_errors = []
+
+        word_limit_errors.extend(
+            find_word_limit_errors(
+                internal_analysis,
+                "Section III - Analyse interne",
+                max_words=500
+            )
+        )
+
+        word_limit_errors.extend(
+            find_word_limit_errors(
+                external_analysis,
+                "Section IV - Analyse externe",
+                max_words=500
+            )
+        )
+
+        word_limit_errors.extend(
+            find_word_limit_errors(
+                swot_analysis,
+                "Section V - Analyse SWOT",
+                max_words=30
+            )
+        )
+
+        word_limit_errors.extend(
+            find_word_limit_errors(
+                priorities_initiatives,
+                "Section VI - Priorités stratégiques et initiatives",
+                max_words=30
+            )
+        )
+
+        if word_limit_errors:
+            st.error(
+                "Certaines réponses dépassent la limite autorisée. "
+                "Merci de les réduire avant l’enregistrement."
             )
 
-            word_limit_errors.extend(
-                find_word_limit_errors(
-                    external_analysis,
-                    "Section IV - Analyse externe",
-                    max_words=500
+            for error in word_limit_errors:
+                st.warning(error)
+
+            st.stop()
+
+        statut = "Soumis" if submit_final else "Brouillon"
+
+        metadata = {
+            "institution": institution,
+            "responsable": responsable,
+            "email": "",
+            "response_date": str(response_date),
+            "statut": statut,
+            "draft_code": st.session_state.get("current_draft_code", ""),
+        }
+
+        data = {
+            "metadata": metadata,
+            "introduction": {},
+            "stakeholders": {
+                "rows": stakeholder_rows,
+            },
+            "internal_analysis": {},
+            "external_analysis": {},
+            "swot_analysis": swot_analysis,
+            "priorities_initiatives": priorities_initiatives,
+            "pour_finir": pour_finir,
+        }
+
+        try:
+            draft_code = save_response(metadata, data)
+            st.session_state["current_draft_code"] = draft_code
+
+            if quick_save_clicked:
+                st.session_state["quick_save_success_key"] = st.session_state.get("last_quick_save_key", "")
+                st.rerun()
+
+            if save_draft or quick_save_clicked:
+                st.success(
+                    f"Vos réponses ont été enregistrées. Votre mot de passe pour reprendre plus tard : {draft_code}"
                 )
-            )
 
-            word_limit_errors.extend(
-                find_word_limit_errors(
-                    swot_analysis,
-                    "Section V - Analyse SWOT",
-                    max_words=30
-                )
-            )
+            if submit_final:
+                st.session_state["read_only_submitted"] = True
+                st.success("Merci.\nVos réponses ont été enregistrées.")
+                st.rerun()
 
-            word_limit_errors.extend(
-                find_word_limit_errors(
-                    priorities_initiatives,
-                    "Section VI - Priorités stratégiques et initiatives",
-                    max_words=30
-                )
-            )
-
-            if word_limit_errors:
-                st.error(
-                    "Certaines réponses dépassent la limite autorisée. "
-                    "Merci de les réduire avant l’enregistrement."
-                )
-
-                for error in word_limit_errors:
-                    st.warning(error)
-
-                st.stop()
-
-            statut = "Soumis" if submit_final else "Brouillon"
-
-            metadata = {
-                "institution": institution,
-                "responsable": responsable,
-                "email": "",
-                "response_date": str(response_date),
-                "statut": statut,
-                "draft_code": st.session_state.get("current_draft_code", ""),
-            }
-
-            data = {
-                "metadata": metadata,
-                "introduction": {},
-                "stakeholders": {
-                    "rows": stakeholder_rows,
-                },
-                "internal_analysis": {},
-                "external_analysis": {},
-                "swot_analysis": swot_analysis,
-                "priorities_initiatives": priorities_initiatives,
-                "pour_finir": pour_finir,
-            }
-
-            try:
-                draft_code = save_response(metadata, data)
-                st.session_state["current_draft_code"] = draft_code
-
-                if quick_save_clicked:
-                    st.session_state["quick_save_success_key"] = st.session_state.get("last_quick_save_key", "")
-                    st.rerun()
-
-                if save_draft or quick_save_clicked:
-                    st.success(
-                        f"Vos réponses ont été enregistrées. Votre code pour reprendre plus tard : {draft_code}"
-                    )
-
-                if submit_final:
-                    st.session_state["read_only_submitted"] = True
-                    st.success("Merci.\nVos réponses ont été enregistrées.")
-                    st.rerun()
-
-            except ValueError as e:
-                st.error(str(e))
+        except ValueError as e:
+            st.error(str(e))
 
 
 if __name__ == "__main__":
