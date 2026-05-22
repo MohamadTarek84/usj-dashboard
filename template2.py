@@ -1860,7 +1860,7 @@ def main():
             section_header("I- FORCES ET FAIBLESSES – NIVEAU USJ")
             render_swot_intro()
             swot_analysis = render_swot_analysis()
-            quick_save_after_swot = render_quick_save_button("quick_save_after_swot")
+            quick_save_after_swot = False
 
 
 
