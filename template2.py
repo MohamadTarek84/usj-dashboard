@@ -2419,7 +2419,9 @@ margin-bottom:8px;
                 st.rerun()
 
         st.stop()
-    mode = "Saisir une réponse"
+        
+mode = "Saisir une réponse"
+
 
 if mode == "Saisir une réponse":
     with st.container():
