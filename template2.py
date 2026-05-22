@@ -692,7 +692,7 @@ div[data-testid="stIFrame"] {{
     display: none;
 }}
 
-@media print {{
+@media print {{{
 
     @page {{
         size: A4 portrait;
