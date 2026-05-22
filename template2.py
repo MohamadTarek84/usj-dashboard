@@ -1639,7 +1639,10 @@ def main():
         else:
             admin_data = {}
 
-        html_block(f"""
+        col_group_title, col_admin_title = st.columns(2)
+
+        with col_group_title:
+            html_block(f"""
 <div style="
 background-color:{USJ_LIGHT_BLUE};
 padding:14px 22px;
@@ -1653,7 +1656,10 @@ margin-bottom:18px;
     Réponse des groupes
 </h2>
 </div>
+""")
 
+        with col_admin_title:
+            html_block(f"""
 <div style="
 background-color:#F8F3F5;
 padding:14px 22px;
