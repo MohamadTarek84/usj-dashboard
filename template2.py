@@ -2456,12 +2456,10 @@ if mode == "Saisir une réponse":
             )
 
         with col2:
-            responsable = st.text_area(
+            responsable = st.text_input(
                 "Nom des participants",
                 key="responsable",
-                height=68,
-                placeholder="Saisir les noms des participants, un nom par ligne",
-                label_visibility="visible"
+                placeholder="Nom 1, Nom 2, Nom 3..."
             )
 
         with col3:
