@@ -1089,6 +1089,100 @@ div[data-testid="stIFrame"] {{
         page-break-inside: avoid !important;
     }}
 
+
+
+    /* =========================
+       TIGHT ADMIN PRINT OVERRIDES
+       - less top spacing
+       - no comparison title cards in PDF
+       - equal compact boxes
+       - avoid blank pages from double page breaks
+    ========================= */
+
+    .admin-print-title {
+        margin-top: 0 !important;
+        margin-bottom: 4mm !important;
+        padding-top: 0 !important;
+        padding-bottom: 2mm !important;
+        border-bottom: 1px solid #D0D6E0 !important;
+        font-size: 21px !important;
+        line-height: 1.15 !important;
+    }
+
+    div[style*="border-left:7px"] {
+        margin-top: 0 !important;
+        margin-bottom: 4mm !important;
+        padding: 7px 11px !important;
+        box-shadow: none !important;
+    }
+
+    .admin-answer-row-wrapper {
+        margin-top: 0 !important;
+        margin-bottom: 3mm !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+    }
+
+    .admin-answer-row-wrapper + .admin-answer-row-wrapper {
+        margin-top: 0 !important;
+    }
+
+    .admin-original-answer-box,
+    div[data-testid="stTextArea"],
+    div[data-testid="stTextArea"] > div,
+    div[data-testid="stTextArea"] textarea {
+        min-height: 26mm !important;
+        height: 26mm !important;
+        max-height: 26mm !important;
+        margin-top: 0 !important;
+        margin-bottom: 2mm !important;
+        box-sizing: border-box !important;
+    }
+
+    div[data-testid="stTextArea"] textarea {
+        font-size: 10.5px !important;
+        line-height: 1.18 !important;
+        padding: 6px !important;
+    }
+
+    .admin-print-page-break,
+    .admin-print-field-page-break {
+        clear: both !important;
+        break-before: page !important;
+        page-break-before: always !important;
+        break-after: auto !important;
+        page-break-after: auto !important;
+        height: 0 !important;
+        line-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+    }
+
+    .swot-print-only {
+        break-before: page !important;
+        page-break-before: always !important;
+        break-after: page !important;
+        page-break-after: always !important;
+        margin-top: 0 !important;
+        margin-bottom: 0 !important;
+    }
+
+    .swot-print-shell {
+        padding: 5mm !important;
+        box-shadow: none !important;
+    }
+
+    .swot-print-grid {
+        gap: 4mm !important;
+    }
+
+    .swot-print-card {
+        min-height: 43mm !important;
+        padding: 4mm !important;
+    }
+
+
     hr {{
         display: none !important;
         height: 0 !important;
@@ -2650,7 +2744,7 @@ def main():
 
         with col_group_title:
             html_block(f"""
-<div style="
+<div class="admin-screen-only" style="
 background-color:{USJ_LIGHT_BLUE};
 padding:14px 22px;
 border-radius:10px;
@@ -2667,7 +2761,7 @@ margin-bottom:18px;
 
         with col_admin_title:
             html_block(f"""
-<div style="
+<div class="admin-screen-only" style="
 background-color:#F8F3F5;
 padding:14px 22px;
 border-radius:10px;
@@ -2702,8 +2796,8 @@ font-size:18px;
 font-weight:700;
 text-align:center;
 border-radius:6px;
-margin-top:8px;
-margin-bottom:12px;
+margin-top:4px;
+margin-bottom:6px;
 box-shadow:0 2px 6px rgba(0,0,0,0.05);
 ">
 {title}
@@ -2989,7 +3083,7 @@ margin-bottom:8px;
             return updated_admin_section
 
         for section_index, (section_label, (main_key, sub_key)) in enumerate(section_map.items()):
-            if section_index > 0:
+            if section_index > 0 and section_label != "III - Priorités":
                 html_block('<div class="admin-print-page-break"></div>')
             st.markdown("---")
             section_header(section_label)
@@ -3028,38 +3122,61 @@ margin-bottom:8px;
 
         st.markdown("---")
 
-        components.html(
-            """
-            <div class="admin-screen-only" style="height:72px; display:flex; align-items:center;">
-                <button onclick="window.parent.print()" style="
-                    background-color:#8B1538;
-                    color:white;
-                    border:none;
-                    border-radius:8px;
-                    padding:12px 24px;
-                    font-size:18px;
-                    font-weight:700;
-                    cursor:pointer;
-                    font-family:Candara, Calibri, Arial, sans-serif;
-                ">
-                    Aperçu avant impression / Enregistrer en PDF
-                </button>
-            </div>
-            """,
-            height=80
+        col_admin_print, col_admin_save, col_admin_spacer = st.columns(
+            [1.25, 1.25, 2.50],
+            vertical_alignment="center"
         )
+
+        with col_admin_print:
+            components.html(
+                """
+                <div class="admin-screen-only" style="
+                    height:58px;
+                    display:flex;
+                    align-items:center;
+                    justify-content:flex-start;
+                    padding:0;
+                    margin:0;
+                ">
+                    <button onclick="window.parent.print()" style="
+                        width:360px;
+                        min-width:360px;
+                        max-width:360px;
+                        height:58px;
+                        min-height:58px;
+                        background-color:#8B1538;
+                        color:white;
+                        border:1px solid #8B1538;
+                        border-radius:8px;
+                        padding:10px 22px;
+                        font-size:18px;
+                        font-weight:800;
+                        cursor:pointer;
+                        font-family:Candara, Calibri, Arial, sans-serif;
+                        display:flex;
+                        align-items:center;
+                        justify-content:center;
+                        white-space:nowrap;
+                    ">
+                        Imprimer / Enregistrer en PDF
+                    </button>
+                </div>
+                """,
+                height=66
+            )
 
         # Auto-save admin modifications on every rerun
         save_admin_version_by_code(selected_draft_code, updated_all_admin_data)
 
-
-        if st.button(
-            "Enregistrer toutes les versions admin",
-            key=f"save_admin_all_{selected_draft_code}"
-        ):
-            save_admin_version_by_code(selected_draft_code, updated_all_admin_data)
-            st.success("Versions admin enregistrées sans modifier les réponses originales du groupe.")
-            st.rerun()
+        with col_admin_save:
+            if st.button(
+                "Enregistrer toutes les versions admin",
+                key=f"save_admin_all_{selected_draft_code}",
+                use_container_width=True
+            ):
+                save_admin_version_by_code(selected_draft_code, updated_all_admin_data)
+                st.success("Versions admin enregistrées sans modifier les réponses originales du groupe.")
+                st.rerun()
 
         st.stop()
 
