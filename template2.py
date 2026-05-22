@@ -2794,28 +2794,36 @@ box-sizing:border-box;
                 return ""
 
             def get_admin_value(saved_admin_row, expected_field, original_value):
+                """
+                The admin version must start from the participant answer.
+                If a previously saved admin value is empty, keep showing the participant answer
+                so old test-code users and focus-group users always reopen with the participants' answers visible.
+                """
                 if not isinstance(saved_admin_row, dict):
                     return original_value
 
+                def fallback_if_empty(value):
+                    return value if str(value or "").strip() else original_value
+
                 if expected_field in saved_admin_row:
-                    return saved_admin_row.get(expected_field, original_value)
+                    return fallback_if_empty(saved_admin_row.get(expected_field, ""))
 
                 expected_lower = expected_field.lower()
 
                 for key, value in saved_admin_row.items():
                     key_lower = str(key).lower()
                     if expected_lower in key_lower:
-                        return value
+                        return fallback_if_empty(value)
 
                 if expected_field == "Opportunités":
                     for key, value in saved_admin_row.items():
                         if "opportun" in str(key).lower():
-                            return value
+                            return fallback_if_empty(value)
 
                 if expected_field == "Menaces":
                     for key, value in saved_admin_row.items():
                         if "menace" in str(key).lower():
-                            return value
+                            return fallback_if_empty(value)
 
                 return original_value
 
@@ -2884,7 +2892,8 @@ box-sizing:border-box;
 
             for key, original_value in original_section.items():
                 if isinstance(existing_admin_section, dict):
-                    admin_value = existing_admin_section.get(key, original_value)
+                    saved_admin_value = existing_admin_section.get(key, original_value)
+                    admin_value = saved_admin_value if str(saved_admin_value or "").strip() else original_value
                 else:
                     admin_value = original_value
 
@@ -2940,7 +2949,8 @@ margin-bottom:8px;
                 for j in range(2):
                     key = f"pour_finir_{i}_{j}"
                     original_value = original_section.get(key, "")
-                    admin_value = existing_admin_section.get(key, original_value)
+                    saved_admin_value = existing_admin_section.get(key, original_value)
+                    admin_value = saved_admin_value if str(saved_admin_value or "").strip() else original_value
 
                     col_original_answer, col_admin_answer = st.columns(2)
 
