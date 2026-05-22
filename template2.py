@@ -1703,7 +1703,7 @@ def main():
                 st.write(original_section)
 
             with col_admin:
-            st.markdown("#### Version admin modifiable")
+                st.markdown("#### Version admin modifiable")
 
             existing_admin_section = admin_data.get(section_choice)
 
