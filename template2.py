@@ -1964,7 +1964,7 @@ def main():
 
             st.markdown("---")
 
-            section_header("I - Introduction")
+            section_header("Introduction")
             render_fixed_introduction()
 
             st.divider()
