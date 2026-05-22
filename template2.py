@@ -1806,7 +1806,6 @@ def create_swot_image_bytes(swot_values, group_name="groupe"):
     for box_args in boxes:
         _draw_swot_box(ax, *box_args)
 
-    
     buffer = BytesIO()
     fig.savefig(buffer, format="png", dpi=180, bbox_inches="tight", facecolor="white", pad_inches=0.08)
     plt.close(fig)
@@ -1916,15 +1915,16 @@ def create_interactive_swot_html(swot_values, group_name="groupe"):
 
     .swot-shell {{
         width: 100%;
-        min-height: 760px;
-        padding: 28px 30px 32px 30px;
+        min-height: auto;
+        height: auto;
+        padding: 28px 30px 36px 30px;
         background:
-            radial-gradient(circle at 50% 47%, rgba(201,162,39,0.15) 0, rgba(201,162,39,0.00) 22%),
+            radial-gradient(circle at 50% 47%, rgba(201,162,39,0.10) 0, rgba(201,162,39,0.00) 22%),
             linear-gradient(135deg, #FFFFFF 0%, #F7FAFD 48%, #FFFFFF 100%);
         border: 1px solid #E2E8F0;
         border-radius: 22px;
         box-shadow: 0 16px 38px rgba(0,31,91,0.12);
-        overflow: hidden;
+        overflow: visible !important;
         position: relative;
     }}
 
@@ -1998,20 +1998,23 @@ def create_interactive_swot_html(swot_values, group_name="groupe"):
     .swot-grid {{
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 24px;
+        gap: 26px;
         position: relative;
+        align-items: stretch;
+        overflow: visible !important;
     }}
 
     .swot-card {{
-        min-height: 268px;
+        min-height: 300px;
+        height: auto !important;
         background: var(--bg);
         border: 2.5px solid var(--accent);
         border-radius: 22px;
-        padding: 22px 24px;
+        padding: 22px 24px 26px 24px;
         box-shadow: 0 12px 24px rgba(0,0,0,0.08);
         transition: transform 0.22s ease, box-shadow 0.22s ease, opacity 0.22s ease;
         position: relative;
-        overflow: hidden;
+        overflow: visible !important;
     }}
 
     .swot-card::after {{
@@ -2022,8 +2025,9 @@ def create_interactive_swot_html(swot_values, group_name="groupe"):
         right: -80px;
         bottom: -90px;
         border-radius: 50%;
-        background: color-mix(in srgb, var(--accent) 14%, transparent);
+        background: color-mix(in srgb, var(--accent) 10%, transparent);
         pointer-events: none;
+        z-index: 0;
     }}
 
     .swot-card:hover {{
@@ -2113,12 +2117,17 @@ def create_interactive_swot_html(swot_values, group_name="groupe"):
         grid-template-columns: 32px 1fr;
         gap: 10px;
         align-items: start;
+        min-height: 54px;
+        height: auto !important;
         background: rgba(255,255,255,0.62);
         border: 1px solid rgba(255,255,255,0.80);
         border-radius: 14px;
         padding: 10px 12px;
         transition: all 0.20s ease;
         cursor: default;
+        overflow: visible !important;
+        white-space: normal !important;
+        word-break: break-word;
     }}
 
     .swot-item:hover {{
@@ -2144,9 +2153,11 @@ def create_interactive_swot_html(swot_values, group_name="groupe"):
     .swot-item-text {{
         color: #202A35;
         font-size: 18px;
-        line-height: 1.26;
+        line-height: 1.28;
         font-weight: 650;
         overflow-wrap: anywhere;
+        white-space: normal !important;
+        word-break: break-word;
     }}
 
     .swot-empty {{
@@ -2160,26 +2171,6 @@ def create_interactive_swot_html(swot_values, group_name="groupe"):
         font-style: italic;
     }}
 
-    .swot-center {{
-        position: absolute;
-        left: 50%;
-        top: 52%;
-        transform: translate(-50%, -50%);
-        width: 118px;
-        height: 118px;
-        background: white;
-        border: 4px solid #D0D6E0;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #001F5B;
-        font-size: 27px;
-        font-weight: 900;
-        letter-spacing: 0.5px;
-        z-index: 5;
-        box-shadow: 0 12px 30px rgba(0,31,91,0.18);
-    }}
 
     .swot-footer {{
         margin-top: 18px;
@@ -2194,10 +2185,6 @@ def create_interactive_swot_html(swot_values, group_name="groupe"):
     @media (max-width: 900px) {{
         .swot-grid {{
             grid-template-columns: 1fr;
-        }}
-
-        .swot-center {{
-            display: none;
         }}
 
         .swot-card-top {{
@@ -2246,7 +2233,6 @@ def create_interactive_swot_html(swot_values, group_name="groupe"):
             {_swot_card_html("MENACES", "Risques externes à anticiper", menaces, USJ_RED, "#F4C6C4", "⚠")}
         </div>
 
-        <div class="swot-center">SWOT</div>
     </div>
 
     <div class="swot-footer">
@@ -2283,6 +2269,41 @@ function filterCards(target, button) {{
 </html>
 """
     return html
+
+
+def estimate_interactive_swot_height(swot_values):
+    """
+    Estimates iframe height so the interactive SWOT matrix expands instead of cutting content.
+    """
+    def item_lines(item):
+        text = _clean_swot_answer(item)
+        if not text:
+            return 1
+        return max(1, len(textwrap.wrap(text, width=58, break_long_words=False, break_on_hyphens=False)))
+
+    def card_height(items):
+        display_items = _split_admin_items_for_display(items)
+        if not display_items:
+            return 300
+
+        items_height = 0
+        for item in display_items:
+            lines = item_lines(item)
+            items_height += 58 + max(0, lines - 1) * 24 + 10
+
+        return max(300, 145 + items_height + 26)
+
+    top_row = max(
+        card_height(swot_values.get("forces", [])),
+        card_height(swot_values.get("faiblesses", []))
+    )
+    bottom_row = max(
+        card_height(swot_values.get("opportunites", [])),
+        card_height(swot_values.get("menaces", []))
+    )
+
+    # Header, toolbar, shell padding, grid gap, footer, and safety buffer.
+    return int(max(820, 165 + top_row + bottom_row + 26 + 65 + 70))
 
 
 def render_swot_image_download_block(updated_admin_data, selected_row):
@@ -2329,7 +2350,7 @@ def render_swot_image_download_block(updated_admin_data, selected_row):
 
     components.html(
         interactive_html,
-        height=820,
+        height=estimate_interactive_swot_height(swot_values),
         scrolling=False
     )
 
