@@ -2443,11 +2443,11 @@ if mode == "Saisir une réponse":
 
         with col1:
             focus_group_options = [
-                "Focus groupe 1",
-                "Focus groupe 2",
-                "Focus groupe 3",
-                "Focus groupe 4",
-                "Focus groupe 5",
+                "Sous groupe 1",
+                "Sous groupe 2",
+                "Sous groupe 3",
+                "Sous groupe 4",
+                "Sous groupe 5",
             ]
 
             institution = st.selectbox(
@@ -2457,10 +2457,11 @@ if mode == "Saisir une réponse":
             )
 
         with col2:
-            responsable = st.text_input(
-                "Responsable",
+            responsable = st.text_area(
+                "Nom des participants",
                 key="responsable",
-                disabled=True
+                height=90,
+                placeholder="Saisir les noms des participants, un nom par ligne"
             )
 
         with col3:
