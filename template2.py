@@ -1806,28 +1806,7 @@ def create_swot_image_bytes(swot_values, group_name="groupe"):
     for box_args in boxes:
         _draw_swot_box(ax, *box_args)
 
-    center_circle = Circle(
-        (5.0, 3.42),
-        0.52,
-        facecolor="white",
-        edgecolor="#C7CDD6",
-        linewidth=2.0,
-        zorder=10
-    )
-    ax.add_patch(center_circle)
-
-    ax.text(
-        5.0,
-        3.42,
-        "SWOT",
-        fontsize=19,
-        fontweight="bold",
-        color=USJ_BLUE,
-        ha="center",
-        va="center",
-        zorder=11
-    )
-
+    
     buffer = BytesIO()
     fig.savefig(buffer, format="png", dpi=180, bbox_inches="tight", facecolor="white", pad_inches=0.08)
     plt.close(fig)
