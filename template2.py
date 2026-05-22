@@ -1463,8 +1463,7 @@ def render_pour_finir():
 """)
 
         with col_boxes:
-            cols = st.columns(2)
-
+           
             for j in range(2):
                 with cols[j]:
                     key = f"pour_finir_{i}_{j}"
