@@ -1515,7 +1515,7 @@ def render_quick_save_button(key):
 
     if st.session_state.get("quick_save_success_key") == key:
         st.success(
-            f"Vos réponses ont été enregistrées. Votre code pour reprendre plus tard : "
+            f"Vos réponses ont été enregistrées. Votre mot de passe pour reprendre plus tard : "
             f"{st.session_state.get('current_draft_code', '')}"
         )
 
@@ -2677,7 +2677,7 @@ if mode == "Saisir une réponse":
 
             if save_draft or quick_save_clicked:
                 st.success(
-                    f"Vos réponses ont été enregistrées. Votre code pour reprendre plus tard : {draft_code}"
+                    f"Vos réponses ont été enregistrées. Votre mot de passe pour reprendre plus tard : {draft_code}"
                 )
 
             if submit_final:
