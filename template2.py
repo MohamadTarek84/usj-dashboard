@@ -1642,45 +1642,84 @@ def load_font(size, bold=False):
     return ImageFont.load_default()
 
 
-def draw_wrapped_bullets(draw, items, x, y, max_width_chars, font, fill, line_gap=12, bullet_gap=24):
+def text_width(draw, text, font):
+    bbox = draw.textbbox((0, 0), text, font=font)
+    return bbox[2] - bbox[0]
+
+
+def wrap_text_pixels(draw, text, font, max_width):
+    words = str(text or "").split()
+    if not words:
+        return [""]
+
+    lines = []
+    current = words[0]
+
+    for word in words[1:]:
+        candidate = current + " " + word
+        if text_width(draw, candidate, font) <= max_width:
+            current = candidate
+        else:
+            lines.append(current)
+            current = word
+
+    lines.append(current)
+    return lines
+
+
+def draw_wrapped_bullets(draw, items, x, y, max_width, max_height, font, fill, line_gap=8, bullet_gap=13):
     current_y = y
+    bottom_y = y + max_height
 
-    if not items:
-        items = ["Aucune réponse saisie"]
+    cleaned_items = [str(item).strip() for item in items if str(item or "").strip()]
+    if not cleaned_items:
+        cleaned_items = ["Aucune réponse saisie"]
 
-    for item in items[:5]:
-        item = str(item).strip()
-        wrapped_lines = textwrap.wrap(item, width=max_width_chars) or [item]
+    for item in cleaned_items[:5]:
+        bullet = "•"
+        bullet_width = text_width(draw, bullet + " ", font)
+        wrapped_lines = wrap_text_pixels(draw, item, font, max_width - bullet_width - 8)
 
         for line_index, line in enumerate(wrapped_lines):
-            prefix = "• " if line_index == 0 else "  "
-            draw.text((x, current_y), prefix + line, font=font, fill=fill)
+            if current_y + font.size + line_gap > bottom_y:
+                draw.text((x, current_y), "…", font=font, fill=fill)
+                return
+
+            if line_index == 0:
+                draw.text((x, current_y), bullet, font=font, fill=fill)
+                draw.text((x + bullet_width, current_y), line, font=font, fill=fill)
+            else:
+                draw.text((x + bullet_width, current_y), line, font=font, fill=fill)
+
             current_y += font.size + line_gap
 
         current_y += bullet_gap
 
 
 def create_swot_image_bytes(swot_values):
-    width, height = 1600, 900
+    width, height = 1800, 1050
     image = Image.new("RGB", (width, height), "white")
     draw = ImageDraw.Draw(image, "RGBA")
 
-    title_font = load_font(36, bold=True)
-    bullet_font = load_font(23, bold=False)
-    letter_font = load_font(56, bold=True)
+    title_font = load_font(44, bold=True)
+    bullet_font = load_font(29, bold=False)
+    letter_font = load_font(76, bold=True)
 
-    margin_x = 60
-    margin_y = 35
-    gap_x = 50
-    gap_y = 34
+    margin_x = 70
+    margin_y = 45
+    gap_x = 58
+    gap_y = 42
     box_w = (width - 2 * margin_x - gap_x) // 2
     box_h = (height - 2 * margin_y - gap_y) // 2
-    radius = 48
+    radius = 62
+
+    text_color = (18, 22, 25, 255)
+    letter_color = (35, 35, 35, 205)
 
     boxes = {
         "Strengths": {
             "xy": (margin_x, margin_y, margin_x + box_w, margin_y + box_h),
-            "color": (205, 235, 241, 255),
+            "color": (207, 235, 242, 255),
             "letter": "S",
             "items": swot_values.get("strengths", []),
         },
@@ -1692,7 +1731,7 @@ def create_swot_image_bytes(swot_values):
         },
         "Opportunities": {
             "xy": (margin_x, margin_y + box_h + gap_y, margin_x + box_w, margin_y + 2 * box_h + gap_y),
-            "color": (220, 240, 200, 255),
+            "color": (221, 241, 202, 255),
             "letter": "O",
             "items": swot_values.get("opportunities", []),
         },
@@ -1707,27 +1746,43 @@ def create_swot_image_bytes(swot_values):
     for title, info in boxes.items():
         x1, y1, x2, y2 = info["xy"]
         draw.rounded_rectangle(info["xy"], radius=radius, fill=info["color"])
-        draw.text((x1 + 62, y1 + 48), title, font=title_font, fill=(20, 20, 20, 255))
+
+        title_x = x1 + 68
+        title_y = y1 + 50
+        draw.text((title_x, title_y), title, font=title_font, fill=text_color)
+
+        letter_text = info["letter"]
+        letter_bbox = draw.textbbox((0, 0), letter_text, font=letter_font)
+        letter_w = letter_bbox[2] - letter_bbox[0]
+        letter_h = letter_bbox[3] - letter_bbox[1]
+        draw.text(
+            (x2 - 155 - letter_w / 2, y1 + box_h / 2 - letter_h / 2),
+            letter_text,
+            font=letter_font,
+            fill=letter_color,
+        )
+
         draw_wrapped_bullets(
             draw=draw,
             items=info["items"],
-            x=x1 + 62,
-            y=y1 + 130,
-            max_width_chars=46,
+            x=x1 + 70,
+            y=y1 + 145,
+            max_width=box_w - 250,
+            max_height=box_h - 190,
             font=bullet_font,
-            fill=(25, 25, 25, 255),
+            fill=text_color,
+            line_gap=8,
+            bullet_gap=13,
         )
-        draw.text((x2 - 140, y1 + box_h // 2 - 18), info["letter"], font=letter_font, fill=(35, 35, 35, 210))
 
     cx, cy = width // 2, height // 2
-    draw.ellipse((cx - 145, cy - 145, cx + 145, cy + 145), fill=(120, 150, 160, 70))
-    draw.ellipse((cx - 70, cy - 70, cx + 70, cy + 70), fill=(80, 115, 125, 95))
+    draw.ellipse((cx - 168, cy - 168, cx + 168, cy + 168), fill=(115, 150, 165, 65))
+    draw.ellipse((cx - 84, cy - 84, cx + 84, cy + 84), fill=(80, 115, 125, 92))
 
     buffer = BytesIO()
-    image.save(buffer, format="PNG")
+    image.save(buffer, format="PNG", optimize=True)
     buffer.seek(0)
     return buffer.getvalue()
-
 
 def render_swot_image_download_block(updated_admin_data, selected_row):
     swot_values = extract_admin_swot_values(updated_admin_data)
@@ -1740,31 +1795,49 @@ def render_swot_image_download_block(updated_admin_data, selected_row):
         display_group_name = str(draft_code).strip() or "groupe"
 
     file_name = f"SWOT_{safe_filename(display_group_name)}.png"
-
     has_values = any(swot_values[key] for key in swot_values)
+    button_key = f"generate_swot_image_{safe_filename(str(draft_code))}"
+    state_key = f"show_swot_image_{safe_filename(str(draft_code))}"
 
     st.markdown("---")
     html_block(f"""
 <div style="background-color:#ffffff; padding:18px 22px; border-radius:10px; border-left:7px solid {USJ_RED}; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-top:12px; margin-bottom:14px;">
     <h3 style="font-size:24px; color:{USJ_RED}; margin:0; font-weight:700;">
-        Générer l’image SWOT à partir de la version admin modifiée
+        Image SWOT à partir de la version admin modifiée
     </h3>
+    <p style="font-size:16px; color:{USJ_TEXT}; margin:8px 0 0 0;">
+        Cliquez sur le bouton ci-dessous pour générer l’image SWOT et la télécharger au nom du groupe sélectionné.
+    </p>
 </div>
 """)
+
+    if st.button(
+        "Générer l’image SWOT",
+        key=button_key
+    ):
+        st.session_state[state_key] = True
+
+    if not st.session_state.get(state_key, False):
+        return
 
     if not has_values:
         st.warning("Aucune réponse admin n’est disponible pour générer l’image SWOT.")
         return
 
     image_bytes = create_swot_image_bytes(swot_values)
-    st.image(image_bytes, caption=f"Image SWOT - {display_group_name}", use_container_width=True)
+
+    st.image(
+        image_bytes,
+        caption=f"Image SWOT - {display_group_name}",
+        width=1100
+    )
 
     st.download_button(
         label="Télécharger l’image SWOT",
         data=image_bytes,
         file_name=file_name,
         mime="image/png",
-        key=f"download_swot_image_{safe_filename(draft_code)}"
+        key=f"download_swot_image_{safe_filename(str(draft_code))}"
     )
 
 def main():
