@@ -1801,7 +1801,7 @@ def main():
             section_header("III - PRIORITES – Niveau USJ")
             render_priorities_intro()
             priorities_initiatives = render_priorities_table()
-            quick_save_after_priorities = False
+            quick_save_after_priorities = render_quick_save_button("quick_save_after_priorities")
 
             st.divider()
 
