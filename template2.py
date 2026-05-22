@@ -5,6 +5,8 @@ import sqlite3
 import json
 import base64
 import html as html_lib
+import re
+import textwrap
 from datetime import datetime
 from pathlib import Path
 from io import BytesIO
@@ -12,6 +14,7 @@ from io import BytesIO
 import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
+from PIL import Image, ImageDraw, ImageFont
 
 
 APP_TITLE = "PLAN STRATÉGIQUE USJ 2032"
@@ -1570,6 +1573,200 @@ def save_admin_version_by_code(draft_code, admin_data):
     conn.commit()
     conn.close()
 
+
+def safe_filename(value):
+    value = str(value or "").strip()
+    value = re.sub(r"[^A-Za-z0-9À-ÿ._-]+", "_", value)
+    value = value.strip("_")
+    return value or "groupe"
+
+
+def extract_admin_swot_values(admin_data):
+    def collect(section_label, field_name):
+        section = admin_data.get(section_label, []) if isinstance(admin_data, dict) else []
+        values = []
+
+        if isinstance(section, list):
+            for row in section:
+                if not isinstance(row, dict):
+                    continue
+
+                value = row.get(field_name, "")
+
+                if not value:
+                    field_lower = field_name.lower()
+                    for key, candidate in row.items():
+                        key_lower = str(key).lower()
+                        if field_lower in key_lower:
+                            value = candidate
+                            break
+
+                if not value and field_name == "Opportunités":
+                    for key, candidate in row.items():
+                        if "opportun" in str(key).lower():
+                            value = candidate
+                            break
+
+                if not value and field_name == "Menaces":
+                    for key, candidate in row.items():
+                        if "menace" in str(key).lower():
+                            value = candidate
+                            break
+
+                value = str(value or "").strip()
+                if value:
+                    values.append(value)
+
+        return values
+
+    return {
+        "strengths": collect("I - Forces et faiblesses", "Forces"),
+        "weaknesses": collect("I - Forces et faiblesses", "Faiblesses"),
+        "opportunities": collect("II - Opportunités et menaces", "Opportunités"),
+        "threats": collect("II - Opportunités et menaces", "Menaces"),
+    }
+
+
+def load_font(size, bold=False):
+    candidates = [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/liberation2/LiberationSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf",
+    ]
+
+    for font_path in candidates:
+        try:
+            return ImageFont.truetype(font_path, size)
+        except Exception:
+            pass
+
+    return ImageFont.load_default()
+
+
+def draw_wrapped_bullets(draw, items, x, y, max_width_chars, font, fill, line_gap=12, bullet_gap=24):
+    current_y = y
+
+    if not items:
+        items = ["Aucune réponse saisie"]
+
+    for item in items[:5]:
+        item = str(item).strip()
+        wrapped_lines = textwrap.wrap(item, width=max_width_chars) or [item]
+
+        for line_index, line in enumerate(wrapped_lines):
+            prefix = "• " if line_index == 0 else "  "
+            draw.text((x, current_y), prefix + line, font=font, fill=fill)
+            current_y += font.size + line_gap
+
+        current_y += bullet_gap
+
+
+def create_swot_image_bytes(swot_values):
+    width, height = 1600, 900
+    image = Image.new("RGB", (width, height), "white")
+    draw = ImageDraw.Draw(image, "RGBA")
+
+    title_font = load_font(36, bold=True)
+    bullet_font = load_font(23, bold=False)
+    letter_font = load_font(56, bold=True)
+
+    margin_x = 60
+    margin_y = 35
+    gap_x = 50
+    gap_y = 34
+    box_w = (width - 2 * margin_x - gap_x) // 2
+    box_h = (height - 2 * margin_y - gap_y) // 2
+    radius = 48
+
+    boxes = {
+        "Strengths": {
+            "xy": (margin_x, margin_y, margin_x + box_w, margin_y + box_h),
+            "color": (205, 235, 241, 255),
+            "letter": "S",
+            "items": swot_values.get("strengths", []),
+        },
+        "Weaknesses": {
+            "xy": (margin_x + box_w + gap_x, margin_y, margin_x + 2 * box_w + gap_x, margin_y + box_h),
+            "color": (255, 220, 184, 255),
+            "letter": "W",
+            "items": swot_values.get("weaknesses", []),
+        },
+        "Opportunities": {
+            "xy": (margin_x, margin_y + box_h + gap_y, margin_x + box_w, margin_y + 2 * box_h + gap_y),
+            "color": (220, 240, 200, 255),
+            "letter": "O",
+            "items": swot_values.get("opportunities", []),
+        },
+        "Threats": {
+            "xy": (margin_x + box_w + gap_x, margin_y + box_h + gap_y, margin_x + 2 * box_w + gap_x, margin_y + 2 * box_h + gap_y),
+            "color": (246, 184, 178, 255),
+            "letter": "T",
+            "items": swot_values.get("threats", []),
+        },
+    }
+
+    for title, info in boxes.items():
+        x1, y1, x2, y2 = info["xy"]
+        draw.rounded_rectangle(info["xy"], radius=radius, fill=info["color"])
+        draw.text((x1 + 62, y1 + 48), title, font=title_font, fill=(20, 20, 20, 255))
+        draw_wrapped_bullets(
+            draw=draw,
+            items=info["items"],
+            x=x1 + 62,
+            y=y1 + 130,
+            max_width_chars=46,
+            font=bullet_font,
+            fill=(25, 25, 25, 255),
+        )
+        draw.text((x2 - 140, y1 + box_h // 2 - 18), info["letter"], font=letter_font, fill=(35, 35, 35, 210))
+
+    cx, cy = width // 2, height // 2
+    draw.ellipse((cx - 145, cy - 145, cx + 145, cy + 145), fill=(120, 150, 160, 70))
+    draw.ellipse((cx - 70, cy - 70, cx + 70, cy + 70), fill=(80, 115, 125, 95))
+
+    buffer = BytesIO()
+    image.save(buffer, format="PNG")
+    buffer.seek(0)
+    return buffer.getvalue()
+
+
+def render_swot_image_download_block(updated_admin_data, selected_row):
+    swot_values = extract_admin_swot_values(updated_admin_data)
+    group_name = selected_row.get("respondent_name", "") if hasattr(selected_row, "get") else ""
+    group_unit = selected_row.get("respondent_unit", "") if hasattr(selected_row, "get") else ""
+    draft_code = selected_row.get("draft_code", "") if hasattr(selected_row, "get") else ""
+
+    display_group_name = " - ".join([part for part in [str(group_name).strip(), str(group_unit).strip()] if part])
+    if not display_group_name:
+        display_group_name = str(draft_code).strip() or "groupe"
+
+    file_name = f"SWOT_{safe_filename(display_group_name)}.png"
+
+    has_values = any(swot_values[key] for key in swot_values)
+
+    st.markdown("---")
+    html_block(f"""
+<div style="background-color:#ffffff; padding:18px 22px; border-radius:10px; border-left:7px solid {USJ_RED}; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-top:12px; margin-bottom:14px;">
+    <h3 style="font-size:24px; color:{USJ_RED}; margin:0; font-weight:700;">
+        Générer l’image SWOT à partir de la version admin modifiée
+    </h3>
+</div>
+""")
+
+    if not has_values:
+        st.warning("Aucune réponse admin n’est disponible pour générer l’image SWOT.")
+        return
+
+    image_bytes = create_swot_image_bytes(swot_values)
+    st.image(image_bytes, caption=f"Image SWOT - {display_group_name}", use_container_width=True)
+
+    st.download_button(
+        label="Télécharger l’image SWOT",
+        data=image_bytes,
+        file_name=file_name,
+        mime="image/png",
+        key=f"download_swot_image_{safe_filename(draft_code)}"
+    )
+
 def main():
     st.set_page_config(
         page_title=APP_TITLE,
@@ -1993,6 +2190,9 @@ margin-bottom:8px;
                         key=f"admin_edit_{selected_draft_code}_{section_label}",
                         height=95
                     )
+
+            if section_label == "II - Opportunités et menaces":
+                render_swot_image_download_block(updated_all_admin_data, selected_row)
 
         st.markdown("---")
 
