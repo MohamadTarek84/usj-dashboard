@@ -1880,9 +1880,7 @@ def main():
             swot_analysis = render_swot_analysis()
             quick_save_after_swot = render_quick_save_button("quick_save_after_swot")
 
-            st.divider()
 
-            st.markdown('<div class="print-page-break"></div>', unsafe_allow_html=True)
 
             section_header("VI - Priorités stratégiques et initiatives proposées – Niveau USJ")
             render_priorities_intro()
