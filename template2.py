@@ -2392,6 +2392,10 @@ margin-bottom:8px;
                 st.rerun()
 
         st.stop()
+
+if not st.session_state.get("access_granted", False):
+    # login block here
+    st.stop()
         
 mode = "Saisir une réponse"
 
