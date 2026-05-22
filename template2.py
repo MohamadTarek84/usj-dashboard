@@ -1582,10 +1582,117 @@ def safe_filename(value):
     return value or "groupe"
 
 
+def normalize_admin_field_name(value):
+    value = str(value or "").strip().lower()
+    replacements = {
+        "é": "e", "è": "e", "ê": "e", "ë": "e",
+        "à": "a", "â": "a",
+        "î": "i", "ï": "i",
+        "ô": "o",
+        "ù": "u", "û": "u", "ü": "u",
+        "ç": "c",
+    }
+    for old, new in replacements.items():
+        value = value.replace(old, new)
+    value = re.sub(r"\s+", " ", value)
+    return value
+
+
+def remove_leading_bullet_or_number(value):
+    value = str(value or "").strip()
+    value = value.replace("\ufffd", "é")
+    value = re.sub(r"^\s*[•●▪▫◦\-–—]+\s*", "", value)
+    value = re.sub(r"^\s*\d+[\.)\-:]\s*", "", value)
+    return value.strip()
+
+
+def clean_swot_answer(value):
+    value = remove_leading_bullet_or_number(value)
+    if not value:
+        return ""
+
+    # Prevent old question labels from being inserted into the SWOT image.
+    lower_value = normalize_admin_field_name(value)
+    blocked_fragments = [
+        "quels sont les elements",
+        "quels sont les initiatives",
+        "maximum cinq",
+        "merci de bien vouloir",
+    ]
+    if any(fragment in lower_value for fragment in blocked_fragments):
+        return ""
+
+    # Remove a duplicated field label if the admin text starts with it.
+    value = re.sub(r"^(Forces|Faiblesses|Opportunités|Opportunites|Menaces)\s*:\s*", "", value, flags=re.IGNORECASE)
+    return value.strip()
+
+
+def extract_admin_swot_values(admin_data):
+    """
+    Extract only the real admin-modified answers from the admin side boxes.
+    It does not use old long question labels and it does not copy answers across quadrants.
+    """
+    if not isinstance(admin_data, dict):
+        admin_data = {}
+
+    def collect(section_label, expected_field):
+        section = admin_data.get(section_label, [])
+        values = []
+
+        if not isinstance(section, list):
+            return values
+
+        expected_norm = normalize_admin_field_name(expected_field)
+
+        for row in section:
+            if not isinstance(row, dict):
+                continue
+
+            value = ""
+
+            # Strict exact match first. This is the normal structure produced by the admin editor.
+            if expected_field in row:
+                value = row.get(expected_field, "")
+            else:
+                # Accent-insensitive exact match only.
+                for key, candidate in row.items():
+                    key_norm = normalize_admin_field_name(key)
+                    if key_norm == expected_norm:
+                        value = candidate
+                        break
+
+            # Controlled fallback for accented/non-accented variants only.
+            if not str(value or "").strip():
+                for key, candidate in row.items():
+                    key_norm = normalize_admin_field_name(key)
+                    if expected_field == "Opportunités" and key_norm.startswith("opportun"):
+                        value = candidate
+                        break
+                    if expected_field == "Menaces" and key_norm.startswith("menace"):
+                        value = candidate
+                        break
+                    if expected_field == "Faiblesses" and key_norm.startswith("faiblesse"):
+                        value = candidate
+                        break
+                    if expected_field == "Forces" and key_norm == "forces":
+                        value = candidate
+                        break
+
+            value = clean_swot_answer(value)
+            if value:
+                values.append(value)
+
+        return values[:5]
+
+    return {
+        "forces": collect("I - Forces et faiblesses", "Forces"),
+        "faiblesses": collect("I - Forces et faiblesses", "Faiblesses"),
+        "opportunites": collect("II - Opportunités et menaces", "Opportunités"),
+        "menaces": collect("II - Opportunités et menaces", "Menaces"),
+    }
+
+
 def load_font(size, bold=False):
-    """
-    Uses fonts available on Azure/Linux that correctly display French accents.
-    """
     candidates = [
         "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
         "/usr/share/fonts/truetype/liberation2/LiberationSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf",
@@ -1607,11 +1714,7 @@ def get_text_width(draw, text, font):
 
 
 def wrap_text_to_pixels(draw, text, font, max_width):
-    """
-    Wraps text by pixel width, not by number of characters.
-    This prevents text from going outside the SWOT boxes.
-    """
-    words = str(text or "").replace("\n", " ").split()
+    words = str(text or "").split()
     if not words:
         return []
 
@@ -1633,100 +1736,16 @@ def wrap_text_to_pixels(draw, text, font, max_width):
     return lines
 
 
-def remove_leading_bullet_or_number(value):
-    """
-    Removes bullets/numbers typed by users/admin.
-    The generated image adds clean bullets automatically.
-    """
-    value = str(value or "").strip()
-    value = re.sub(r"^\s*[\u2022\-\*\•]\s*", "", value)
-    value = re.sub(r"^\s*\d+[\.\)\-]\s*", "", value)
-    return value.strip()
-
-
-def normalize_admin_field_name(field_name):
-    return (
-        str(field_name or "")
-        .lower()
-        .replace("é", "e")
-        .replace("è", "e")
-        .replace("ê", "e")
-        .replace("à", "a")
-        .replace("ù", "u")
-        .replace("ç", "c")
-    )
-
-
-def extract_admin_swot_values(admin_data):
-    """
-    Extracts only the admin-modified SWOT answers.
-    It does not use original participant data and it avoids old long question labels.
-    """
-    def collect(section_label, expected_field):
-        values = []
-
-        if not isinstance(admin_data, dict):
-            return values
-
-        section = admin_data.get(section_label, [])
-        if not isinstance(section, list):
-            return values
-
-        expected_norm = normalize_admin_field_name(expected_field)
-
-        for row in section:
-            if not isinstance(row, dict):
-                continue
-
-            value = ""
-
-            # Exact current key first.
-            if expected_field in row:
-                value = row.get(expected_field, "")
-
-            # Accent-insensitive exact key.
-            if not str(value or "").strip():
-                for key, candidate in row.items():
-                    if normalize_admin_field_name(key) == expected_norm:
-                        value = candidate
-                        break
-
-            # Controlled fallback only.
-            if not str(value or "").strip():
-                for key, candidate in row.items():
-                    key_norm = normalize_admin_field_name(key)
-                    if expected_norm in key_norm:
-                        value = candidate
-                        break
-
-            value = remove_leading_bullet_or_number(value)
-
-            if value:
-                values.append(value)
-
-        return values[:5]
-
-    return {
-        "forces": collect("I - Forces et faiblesses", "Forces"),
-        "faiblesses": collect("I - Forces et faiblesses", "Faiblesses"),
-        "opportunites": collect("II - Opportunités et menaces", "Opportunités"),
-        "menaces": collect("II - Opportunités et menaces", "Menaces"),
-    }
-
-
 def draw_swot_items_on_template(draw, items, *, bullet_x, text_x, start_y, max_width, max_height, bullet_color, text_color):
-    """
-    Draws clean, aligned bullets over the SWOTFG.png template.
-    The template itself must not contain bullets or numbers.
-    """
     font = load_font(28, bold=False)
-    bullet_radius = 7
+    bullet_radius = 6
     line_height = 36
-    item_gap = 16
+    item_gap = 18
     current_y = start_y
     bottom_y = start_y + max_height
 
-    clean_items = [remove_leading_bullet_or_number(item) for item in items if remove_leading_bullet_or_number(item)]
+    clean_items = [clean_swot_answer(item) for item in items]
+    clean_items = [item for item in clean_items if item]
 
     for item in clean_items[:5]:
         lines = wrap_text_to_pixels(draw, item, font, max_width)
@@ -1738,8 +1757,8 @@ def draw_swot_items_on_template(draw, items, *, bullet_x, text_x, start_y, max_w
             draw.text((text_x, current_y), "...", font=font, fill=text_color)
             break
 
-        # Bullet is aligned with the first line baseline.
-        bullet_center_y = current_y + 16
+        # Bullet aligned with the first text line, not floating above or below.
+        bullet_center_y = current_y + 17
         draw.ellipse(
             (
                 bullet_x - bullet_radius,
@@ -1760,51 +1779,53 @@ def draw_swot_items_on_template(draw, items, *, bullet_x, text_x, start_y, max_w
 
 def create_swot_image_bytes(swot_values, display_group_name):
     """
-    Generates the SWOT image by reading SWOTFG.png from GitHub/repo root,
-    then adding the admin-modified answers as clean bullets.
+    Reads SWOTFG.png from the GitHub/repo root and adds only the admin-modified answers.
+    The template image must be empty: no numbers and no bullets inside the four quadrants.
     """
     if not SWOT_IMAGE_PATH.exists():
         raise FileNotFoundError(
             "SWOTFG.png est introuvable. Ajoutez le fichier SWOTFG.png à la racine du dépôt GitHub."
         )
 
-    base = Image.open(SWOT_IMAGE_PATH).convert("RGB")
+    template = Image.open(SWOT_IMAGE_PATH).convert("RGB")
 
-    # Keep the image at a reasonable readable size.
-    # The generated output will not be excessively large in Streamlit.
-    target_width = 1500
-    ratio = target_width / base.width
-    target_height = int(base.height * ratio)
-    base = base.resize((target_width, target_height), Image.LANCZOS)
+    target_width = 1250
+    ratio = target_width / template.width
+    target_height = int(template.height * ratio)
+    template = template.resize((target_width, target_height), Image.LANCZOS)
 
-    draw = ImageDraw.Draw(base)
+    header_height = 110
+    canvas = Image.new("RGB", (target_width, target_height + header_height), "white")
+    draw = ImageDraw.Draw(canvas)
 
-    title_font = load_font(24, bold=True)
-    group_font = load_font(20, bold=False)
+    title_font = load_font(30, bold=True)
+    group_font = load_font(24, bold=False)
 
     title = "Matrice SWOT - Niveau USJ"
     group = f"Groupe : {display_group_name}"
 
-    title_w = get_text_width(draw, title, title_font)
-    group_w = get_text_width(draw, group, group_font)
-
-    # Small title, placed in the white top space of the template.
     draw.text(
-        ((target_width - title_w) / 2, 18),
+        ((target_width - get_text_width(draw, title, title_font)) / 2, 20),
         title,
         font=title_font,
         fill=(0, 31, 91)
     )
-
     draw.text(
-        ((target_width - group_w) / 2, 62),
+        ((target_width - get_text_width(draw, group, group_font)) / 2, 62),
         group,
         font=group_font,
         fill=(89, 89, 89)
     )
 
-    # Coordinates calibrated for SWOTFG.png after resizing to 1500px width.
-    # They keep bullets aligned with the text and inside each quadrant.
+    canvas.paste(template, (0, header_height))
+    draw = ImageDraw.Draw(canvas)
+
+    # Coordinates are relative to the resized SWOTFG template.
+    # They intentionally avoid the icons, headings, divider lines and central SWOT circle.
+    w = target_width
+    h = target_height
+    y0 = header_height
+
     blue = (0, 31, 91)
     red = (139, 21, 56)
     green = (47, 107, 47)
@@ -1813,11 +1834,11 @@ def create_swot_image_bytes(swot_values, display_group_name):
     draw_swot_items_on_template(
         draw,
         swot_values.get("forces", []),
-        bullet_x=132,
-        text_x=172,
-        start_y=370,
-        max_width=520,
-        max_height=300,
+        bullet_x=int(w * 0.095),
+        text_x=int(w * 0.125),
+        start_y=y0 + int(h * 0.335),
+        max_width=int(w * 0.315),
+        max_height=int(h * 0.245),
         bullet_color=blue,
         text_color=black
     )
@@ -1825,11 +1846,11 @@ def create_swot_image_bytes(swot_values, display_group_name):
     draw_swot_items_on_template(
         draw,
         swot_values.get("faiblesses", []),
-        bullet_x=870,
-        text_x=910,
-        start_y=370,
-        max_width=520,
-        max_height=300,
+        bullet_x=int(w * 0.585),
+        text_x=int(w * 0.615),
+        start_y=y0 + int(h * 0.335),
+        max_width=int(w * 0.315),
+        max_height=int(h * 0.245),
         bullet_color=red,
         text_color=black
     )
@@ -1837,11 +1858,11 @@ def create_swot_image_bytes(swot_values, display_group_name):
     draw_swot_items_on_template(
         draw,
         swot_values.get("opportunites", []),
-        bullet_x=132,
-        text_x=172,
-        start_y=745,
-        max_width=520,
-        max_height=280,
+        bullet_x=int(w * 0.095),
+        text_x=int(w * 0.125),
+        start_y=y0 + int(h * 0.695),
+        max_width=int(w * 0.315),
+        max_height=int(h * 0.245),
         bullet_color=green,
         text_color=black
     )
@@ -1849,17 +1870,17 @@ def create_swot_image_bytes(swot_values, display_group_name):
     draw_swot_items_on_template(
         draw,
         swot_values.get("menaces", []),
-        bullet_x=870,
-        text_x=910,
-        start_y=745,
-        max_width=520,
-        max_height=280,
+        bullet_x=int(w * 0.585),
+        text_x=int(w * 0.615),
+        start_y=y0 + int(h * 0.695),
+        max_width=int(w * 0.315),
+        max_height=int(h * 0.245),
         bullet_color=red,
         text_color=black
     )
 
     buffer = BytesIO()
-    base.save(buffer, format="PNG", optimize=True)
+    canvas.save(buffer, format="PNG", optimize=True)
     buffer.seek(0)
     return buffer.getvalue()
 
@@ -1880,56 +1901,28 @@ def render_swot_image_download_block(updated_admin_data, selected_row):
 
     file_name = f"SWOT_{safe_filename(display_group_name)}.png"
     has_values = any(swot_values[key] for key in swot_values)
-
     safe_code = safe_filename(str(draft_code))
-    button_key = f"generate_swot_image_{safe_code}"
-    state_key = f"show_swot_image_{safe_code}"
-    image_state_key = f"swot_image_bytes_{safe_code}"
 
     st.markdown("---")
 
-    if state_key not in st.session_state:
-        st.session_state[state_key] = False
-
-    if st.button("Générer l’image SWOT", key=button_key):
-        st.session_state[state_key] = True
-
-        if not has_values:
-            st.session_state[image_state_key] = None
-        else:
-            try:
-                st.session_state[image_state_key] = create_swot_image_bytes(
-                    swot_values=swot_values,
-                    display_group_name=display_group_name
-                )
-            except FileNotFoundError as e:
-                st.session_state[image_state_key] = None
-                st.error(str(e))
-                return
-
-    # The image appears only after the admin clicks the button.
-    if not st.session_state[state_key]:
+    # No session-state persistence here: the image appears only after the admin clicks this button.
+    if not st.button("Générer l’image SWOT", key=f"generate_swot_image_{safe_code}"):
         return
 
     if not has_values:
         st.warning("Aucune réponse admin n’est disponible pour générer l’image SWOT.")
         return
 
-    image_bytes = st.session_state.get(image_state_key)
+    try:
+        image_bytes = create_swot_image_bytes(
+            swot_values=swot_values,
+            display_group_name=display_group_name
+        )
+    except FileNotFoundError as e:
+        st.error(str(e))
+        return
 
-    if not image_bytes:
-        try:
-            image_bytes = create_swot_image_bytes(
-                swot_values=swot_values,
-                display_group_name=display_group_name
-            )
-            st.session_state[image_state_key] = image_bytes
-        except FileNotFoundError as e:
-            st.error(str(e))
-            return
-
-    # Fixed display width so it does not open too large on the admin page.
-    st.image(image_bytes, width=1100)
+    st.image(image_bytes, width=950)
 
     st.download_button(
         label="Télécharger l’image SWOT",
