@@ -2429,14 +2429,20 @@ margin-bottom:8px;
 
             col1, col2, col3 = st.columns(3)
 
-            with col1:
-                st.text_input(
-                    "Focus groupe",
-                    value=st.session_state.get("institution", ""),
-                    disabled=True,
-                    key="institution_display"
-                )
-                institution = st.session_state.get("institution", "")
+        with col1:
+            focus_group_options = [
+                "Focus groupe 1",
+                "Focus groupe 2",
+                "Focus groupe 3",
+                "Focus groupe 4",
+                "Focus groupe 5",
+            ]
+            
+            institution = st.selectbox(
+                "Focus groupe",
+                options=focus_group_options,
+                key="institution"
+            )
 
             with col2:
                 responsable = st.text_input(
