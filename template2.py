@@ -1705,153 +1705,112 @@ def main():
                 with col_admin:
                     st.markdown("#### Version admin modifiable")
 
-                existing_admin_section = admin_data.get(section_choice)
+                    existing_admin_section = admin_data.get(section_choice)
 
-                if not existing_admin_section:
-                    existing_admin_section = original_section
+                    if not existing_admin_section:
+                        existing_admin_section = original_section
 
-                updated_admin_section = []
+                    updated_admin_section = []
 
-                if isinstance(original_section, list):
+                    if isinstance(original_section, list):
 
-                    for i, row in enumerate(original_section, start=1):
-                        st.markdown(f"### Réponse admin {i}")
+                        for i, row in enumerate(original_section, start=1):
+                            st.markdown(f"### Réponse admin {i}")
 
-                        updated_row = {}
+                            updated_row = {}
 
-                        if isinstance(row, dict):
-                            saved_admin_row = {}
+                            if isinstance(row, dict):
+                                saved_admin_row = {}
 
-                            if (
-                                isinstance(existing_admin_section, list)
-                                and len(existing_admin_section) >= i
-                                and isinstance(existing_admin_section[i - 1], dict)
-                            ):
-                                saved_admin_row = existing_admin_section[i - 1]
+                                if (
+                                    isinstance(existing_admin_section, list)
+                                    and len(existing_admin_section) >= i
+                                    and isinstance(existing_admin_section[i - 1], dict)
+                                ):
+                                    saved_admin_row = existing_admin_section[i - 1]
 
-                            for key, value in row.items():
-                                default_value = saved_admin_row.get(key, value)
+                                for key, value in row.items():
+                                    default_value = saved_admin_row.get(key, value)
 
-                                updated_row[key] = st.text_area(
-                                    label=key,
-                                    value=str(default_value) if default_value else "",
-                                    height=90,
-                                    key=f"admin_edit_{selected_draft_code}_{section_choice}_{i}_{key}"
-                                )
+                                    st.markdown(
+                                        f"""
+<div style="
+background-color:#F8F3F5;
+padding:12px 16px;
+border-radius:10px;
+border-left:5px solid {USJ_RED};
+margin-bottom:0px;
+box-shadow:0 2px 6px rgba(0,0,0,0.05);
+">
+<b style="color:{USJ_RED};">{key}</b>
+</div>
+""",
+                                        unsafe_allow_html=True
+                                    )
 
-                        updated_admin_section.append(updated_row)
+                                    updated_row[key] = st.text_area(
+                                        label=key,
+                                        value=str(default_value) if default_value else "",
+                                        height=90,
+                                        key=f"admin_edit_{selected_draft_code}_{section_choice}_{i}_{key}"
+                                    )
 
-                elif isinstance(original_section, dict):
+                            updated_admin_section.append(updated_row)
 
-                    updated_admin_section = {}
+                    elif isinstance(original_section, dict):
 
-                    for key, value in original_section.items():
-                        if isinstance(existing_admin_section, dict):
-                            default_value = existing_admin_section.get(key, value)
-                        else:
-                            default_value = value
+                        updated_admin_section = {}
 
-                        updated_admin_section[key] = st.text_area(
-                            label=key,
-                            value=str(default_value) if default_value else "",
-                            height=90,
-                            key=f"admin_edit_{selected_draft_code}_{section_choice}_{key}"
+                        for key, value in original_section.items():
+                            if isinstance(existing_admin_section, dict):
+                                default_value = existing_admin_section.get(key, value)
+                            else:
+                                default_value = value
+
+                            st.markdown(
+                                f"""
+<div style="
+background-color:#F8F3F5;
+padding:12px 16px;
+border-radius:10px;
+border-left:5px solid {USJ_RED};
+margin-bottom:0px;
+box-shadow:0 2px 6px rgba(0,0,0,0.05);
+">
+<b style="color:{USJ_RED};">{key}</b>
+</div>
+""",
+                                unsafe_allow_html=True
+                            )
+
+                            updated_admin_section[key] = st.text_area(
+                                label=key,
+                                value=str(default_value) if default_value else "",
+                                height=90,
+                                key=f"admin_edit_{selected_draft_code}_{section_choice}_{key}"
+                            )
+
+                    else:
+                        updated_admin_section = st.text_area(
+                            "Synthèse / corrections admin",
+                            value=str(existing_admin_section) if existing_admin_section else "",
+                            height=350,
+                            key=f"admin_edit_{selected_draft_code}_{section_choice}"
                         )
 
-                else:
-                    updated_admin_section = st.text_area(
-                        "Synthèse / corrections admin",
-                        value=str(existing_admin_section) if existing_admin_section else "",
-                        height=350,
-                        key=f"admin_edit_{selected_draft_code}_{section_choice}"
-                    )
+                    if st.button(
+                        "Enregistrer la version admin",
+                        key=f"save_admin_{selected_draft_code}_{section_choice}"
+                    ):
+                        admin_data[section_choice] = updated_admin_section
+                        save_admin_version_by_code(selected_draft_code, admin_data)
 
-                if st.button(
-                    "Enregistrer la version admin",
-                    key=f"save_admin_{selected_draft_code}_{section_choice}"
-                ):
-                    admin_data[section_choice] = updated_admin_section
-                    save_admin_version_by_code(selected_draft_code, admin_data)
+                        st.success(
+                            "Version admin enregistrée sans modifier les réponses originales du groupe."
+                        )
 
-                    st.success(
-                        "Version admin enregistrée sans modifier les réponses originales du groupe."
-                    )
+                        st.rerun()
 
-                    st.rerun()
-
-
-        # paste admin review block here
-
-        col_unlock, col_delete = st.columns(2)
-
-        col_unlock, col_delete = st.columns(2)
-
-        with col_unlock:
-            if st.button("Redonner accès à cette personne"):
-                unlock_response_by_code(selected_draft_code)
-                st.success(
-                    f"L’accès a été redonné au code {selected_draft_code}. "
-                    "La personne peut modifier et soumettre à nouveau."
-                )
-                st.rerun()
-
-        with col_delete:
-            if st.button("Supprimer les réponses de cette personne"):
-                delete_response_by_code(selected_draft_code)
-                st.success(
-                    f"Les réponses associées au code {selected_draft_code} ont été supprimées."
-                )
-                st.rerun()
-
-        st.markdown("### Raw responses table")
-        st.dataframe(df, use_container_width=True)
-
-        try:
-            flat_df = pd.DataFrame([flatten_response(row) for _, row in df.iterrows()])
-        except Exception as e:
-            st.warning(f"Could not flatten JSON responses. Raw data is still available. Details: {e}")
-            flat_df = df.copy()
-
-        st.markdown("### Flattened responses table")
-        st.dataframe(flat_df, use_container_width=True)
-
-        raw_csv = df.to_csv(index=False).encode("utf-8-sig")
-        st.download_button(
-            label="Download raw CSV",
-            data=raw_csv,
-            file_name="etat_actuel_responses_raw.csv",
-            mime="text/csv",
-        )
-
-        flat_csv = flat_df.to_csv(index=False).encode("utf-8-sig")
-        st.download_button(
-            label="Download flattened CSV",
-            data=flat_csv,
-            file_name="etat_actuel_responses_flattened.csv",
-            mime="text/csv",
-        )
-
-        excel_buffer = BytesIO()
-        with pd.ExcelWriter(excel_buffer, engine="openpyxl") as writer:
-            df.to_excel(writer, index=False, sheet_name="Raw responses")
-            flat_df.to_excel(writer, index=False, sheet_name="Flattened responses")
-
-        st.download_button(
-            label="Download Excel",
-            data=excel_buffer.getvalue(),
-            file_name="etat_actuel_responses.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        )
-
-        with open(DB_PATH, "rb") as f:
-            st.download_button(
-                label="Download SQLite DB",
-                data=f,
-                file_name="etat_actuel_responses.db",
-                mime="application/octet-stream",
-            )
-
-        st.stop()
 
     if not st.session_state["access_granted"]:
         col_code, col_button = st.columns([2, 1])
