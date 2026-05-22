@@ -571,11 +571,11 @@ div[data-testid="stForm"] {{
 
 
 /* FINAL ADMIN ACTION BUTTON ALIGNMENT */
-.admin-action-row {
+.admin-action-row {{
     width: 100% !important;
-}
+}}
 
-.admin-action-row iframe {
+.admin-action-row iframe {{
     display: block !important;
     width: 100% !important;
     min-width: 100% !important;
@@ -583,9 +583,9 @@ div[data-testid="stForm"] {{
     min-height: 58px !important;
     margin: 0 !important;
     padding: 0 !important;
-}
+}}
 
-div[data-testid="stButton"] button[kind="secondary"] {
+div[data-testid="stButton"] button[kind="secondary"] {{
     height: 58px !important;
     min-height: 58px !important;
     width: 100% !important;
@@ -597,15 +597,15 @@ div[data-testid="stButton"] button[kind="secondary"] {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-}
+}}
 
-div[data-testid="stButton"] button[kind="secondary"] p {
+div[data-testid="stButton"] button[kind="secondary"] p {{
     font-family: Candara, Calibri, Arial, sans-serif !important;
     font-size: 18px !important;
     font-weight: 800 !important;
     color: white !important;
     margin: 0 !important;
-}
+}}
 
 /* Normal buttons */
 .stButton button,
