@@ -569,6 +569,44 @@ div[data-testid="stForm"] {{
     padding: 10px 22px !important;
 }}
 
+
+/* FINAL ADMIN ACTION BUTTON ALIGNMENT */
+.admin-action-row {
+    width: 100% !important;
+}
+
+.admin-action-row iframe {
+    display: block !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    height: 58px !important;
+    min-height: 58px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+div[data-testid="stButton"] button[kind="secondary"] {
+    height: 58px !important;
+    min-height: 58px !important;
+    width: 100% !important;
+    font-family: Candara, Calibri, Arial, sans-serif !important;
+    font-size: 18px !important;
+    font-weight: 800 !important;
+    border-radius: 8px !important;
+    padding: 10px 22px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+div[data-testid="stButton"] button[kind="secondary"] p {
+    font-family: Candara, Calibri, Arial, sans-serif !important;
+    font-size: 18px !important;
+    font-weight: 800 !important;
+    color: white !important;
+    margin: 0 !important;
+}
+
 /* Normal buttons */
 .stButton button,
 .stDownloadButton button,
@@ -1225,33 +1263,151 @@ div[data-testid="stIFrame"] {{
         line-height: 1.1 !important;
     }}
 
-    .swot-print-only {{
+    .admin-screen-only,
+    .admin-action-row,
+    .admin-action-row *,
+    div[data-testid="stButton"],
+    div[data-testid="stDownloadButton"],
+    div[data-testid="stSelectbox"],
+    iframe,
+    .swot-screen-only {{
+        display: none !important;
+        height: 0 !important;
+        min-height: 0 !important;
+        max-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+    }}
+
+    .admin-print-page-break,
+    .admin-print-field-page-break {{
+        clear: both !important;
         break-before: page !important;
         page-break-before: always !important;
         break-after: auto !important;
         page-break-after: auto !important;
+        height: 0 !important;
+        max-height: 0 !important;
+        line-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+    }}
+
+    .swot-print-only {{
+        display: block !important;
+        break-before: page !important;
+        page-break-before: always !important;
+        break-after: page !important;
+        page-break-after: always !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+        width: 100% !important;
         margin: 0 !important;
         padding: 0 !important;
     }}
 
-    .admin-print-page-break + .swot-print-only,
-    .swot-print-only + .admin-print-page-break {{
-        break-before: auto !important;
-        page-break-before: auto !important;
+    .swot-print-shell {{
+        width: 100% !important;
+        min-height: auto !important;
+        max-height: 255mm !important;
+        padding: 4mm !important;
+        margin: 0 !important;
+        border: 1px solid #D0D6E0 !important;
+        border-radius: 8px !important;
+        box-shadow: none !important;
+        background: white !important;
+        overflow: hidden !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+    }}
+
+    .swot-print-title {{
+        font-size: 18px !important;
+        line-height: 1.1 !important;
+        margin: 0 0 1.5mm 0 !important;
+        padding: 0 !important;
+    }}
+
+    .swot-print-group {{
+        font-size: 10px !important;
+        line-height: 1.1 !important;
+        margin: 0 0 3mm 0 !important;
+        padding: 0 !important;
+    }}
+
+    .swot-print-grid {{
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 3mm !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+    }}
+
+    .swot-print-card {{
+        min-height: 36mm !important;
+        max-height: 52mm !important;
+        padding: 3mm !important;
+        border: 1.5px solid var(--accent) !important;
+        border-radius: 7px !important;
+        background: var(--bg) !important;
+        overflow: hidden !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+    }}
+
+    .swot-print-card h3 {{
+        font-size: 13px !important;
+        line-height: 1.1 !important;
+        margin: 0 0 2mm 0 !important;
+        padding-bottom: 1.5mm !important;
+        border-bottom: 1.5px solid var(--accent) !important;
+    }}
+
+    .swot-print-card ul {{
+        margin: 0 !important;
+        padding-left: 4mm !important;
+    }}
+
+    .swot-print-card li {{
+        font-size: 9px !important;
+        line-height: 1.15 !important;
+        margin-bottom: 1.2mm !important;
+        color: #222222 !important;
     }}
 
     .admin-original-answer-box,
     div[data-testid="stTextArea"],
     div[data-testid="stTextArea"] > div,
     div[data-testid="stTextArea"] textarea {{
-        min-height: 24mm !important;
-        height: 24mm !important;
-        max-height: 24mm !important;
-        margin-bottom: 1.5mm !important;
+        min-height: 23mm !important;
+        height: 23mm !important;
+        max-height: 23mm !important;
+        margin-top: 0 !important;
+        margin-bottom: 1.2mm !important;
+        box-sizing: border-box !important;
+        overflow: hidden !important;
+    }}
+
+    div[data-testid="stTextArea"] textarea {{
+        font-size: 10.5px !important;
+        line-height: 1.18 !important;
+        padding: 6px !important;
     }}
 
     .admin-answer-row-wrapper {{
-        margin-bottom: 1.8mm !important;
+        margin-top: 0 !important;
+        margin-bottom: 1.5mm !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+    }}
+
+    hr {{
+        display: none !important;
+        height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
     }}
 
 }}
@@ -3180,11 +3336,19 @@ margin-bottom:8px;
             if section_label == "II - Opportunités et menaces":
                 render_swot_image_download_block(updated_all_admin_data, selected_row)
 
-        st.markdown("---")
-        html_block('<div class="admin-action-row">')
+        html_block('''
+<div class="admin-action-row">
+<style>
+.admin-action-row + div [data-testid="stIFrame"] {
+    height:58px !important;
+    min-height:58px !important;
+}
+</style>
+''')
 
         col_admin_print, col_admin_save, col_admin_spacer = st.columns(
             [1.25, 1.25, 2.50],
+            gap="large",
             vertical_alignment="center"
         )
 
@@ -3223,7 +3387,7 @@ margin-bottom:8px;
                     </button>
                 </div>
                 """,
-                height=66
+                height=58
             )
 
         # Auto-save admin modifications on every rerun
