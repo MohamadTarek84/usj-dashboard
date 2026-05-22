@@ -2466,24 +2466,24 @@ if mode == "Saisir une réponse":
         st.divider()
     
        
-                        # Section II removed for Focus Group version
-            stakeholder_rows = []
-            quick_save_after_stakeholders = False
+    # Section II removed for Focus Group version
+    stakeholder_rows = []
+    quick_save_after_stakeholders = False
 
-            # Section III removed for Focus Group version
-            internal_analysis = {}
-            quick_save_after_internal = False
+    # Section III removed for Focus Group version
+    internal_analysis = {}
+    quick_save_after_internal = False
 
-            # Section IV removed for Focus Group version
-            external_analysis = {}
-            quick_save_after_external = False
+    # Section IV removed for Focus Group version
+    external_analysis = {}
+    quick_save_after_external = False
 
-            section_header("I- FORCES ET FAIBLESSES – NIVEAU USJ")
-            render_swot_intro()
-            swot_analysis = render_swot_analysis()
-            quick_save_after_swot = False
+    section_header("I- FORCES ET FAIBLESSES – NIVEAU USJ")
+    render_swot_intro()
+    swot_analysis = render_swot_analysis()
+    quick_save_after_swot = False
 
-            st.divider()
+    st.divider()
 
             section_header("III - PRIORITES – Niveau USJ")
             render_priorities_intro()
