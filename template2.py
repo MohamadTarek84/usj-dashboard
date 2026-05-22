@@ -692,7 +692,7 @@ div[data-testid="stIFrame"] {{
     display: none;
 }}
 
-@media print {{{
+@media print {{
 
     @page {{
         size: A4 portrait;
@@ -1099,7 +1099,7 @@ div[data-testid="stIFrame"] {{
        - avoid blank pages from double page breaks
     ========================= */
 
-    .admin-print-title {
+    .admin-print-title {{
         margin-top: 0 !important;
         margin-bottom: 4mm !important;
         padding-top: 0 !important;
@@ -1107,46 +1107,46 @@ div[data-testid="stIFrame"] {{
         border-bottom: 1px solid #D0D6E0 !important;
         font-size: 21px !important;
         line-height: 1.15 !important;
-    }
+    }}
 
-    div[style*="border-left:7px"] {
+    div[style*="border-left:7px"] {{
         margin-top: 0 !important;
         margin-bottom: 4mm !important;
         padding: 7px 11px !important;
         box-shadow: none !important;
-    }
+    }}
 
-    .admin-answer-row-wrapper {
+    .admin-answer-row-wrapper {{
         margin-top: 0 !important;
         margin-bottom: 3mm !important;
         break-inside: avoid !important;
         page-break-inside: avoid !important;
-    }
+    }}
 
-    .admin-answer-row-wrapper + .admin-answer-row-wrapper {
+    .admin-answer-row-wrapper + .admin-answer-row-wrapper {{
         margin-top: 0 !important;
-    }
+    }}
 
     .admin-original-answer-box,
     div[data-testid="stTextArea"],
     div[data-testid="stTextArea"] > div,
-    div[data-testid="stTextArea"] textarea {
+    div[data-testid="stTextArea"] textarea {{
         min-height: 26mm !important;
         height: 26mm !important;
         max-height: 26mm !important;
         margin-top: 0 !important;
         margin-bottom: 2mm !important;
         box-sizing: border-box !important;
-    }
+    }}
 
-    div[data-testid="stTextArea"] textarea {
+    div[data-testid="stTextArea"] textarea {{
         font-size: 10.5px !important;
         line-height: 1.18 !important;
         padding: 6px !important;
-    }
+    }}
 
     .admin-print-page-break,
-    .admin-print-field-page-break {
+    .admin-print-field-page-break {{
         clear: both !important;
         break-before: page !important;
         page-break-before: always !important;
@@ -1157,30 +1157,30 @@ div[data-testid="stIFrame"] {{
         margin: 0 !important;
         padding: 0 !important;
         overflow: hidden !important;
-    }
+    }}
 
-    .swot-print-only {
+    .swot-print-only {{
         break-before: page !important;
         page-break-before: always !important;
         break-after: page !important;
         page-break-after: always !important;
         margin-top: 0 !important;
         margin-bottom: 0 !important;
-    }
+    }}
 
-    .swot-print-shell {
+    .swot-print-shell {{
         padding: 5mm !important;
         box-shadow: none !important;
-    }
+    }}
 
-    .swot-print-grid {
+    .swot-print-grid {{
         gap: 4mm !important;
-    }
+    }}
 
-    .swot-print-card {
+    .swot-print-card {{
         min-height: 43mm !important;
         padding: 4mm !important;
-    }
+    }}
 
 
     hr {{
