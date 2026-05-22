@@ -1702,82 +1702,82 @@ def main():
             else:
                 st.write(original_section)
 
-            with col_admin:
-                st.markdown("#### Version admin modifiable")
+                with col_admin:
+                    st.markdown("#### Version admin modifiable")
 
-            existing_admin_section = admin_data.get(section_choice)
+                existing_admin_section = admin_data.get(section_choice)
 
-            if not existing_admin_section:
-                existing_admin_section = original_section
+                if not existing_admin_section:
+                    existing_admin_section = original_section
 
-            updated_admin_section = []
+                updated_admin_section = []
 
-            if isinstance(original_section, list):
+                if isinstance(original_section, list):
 
-                for i, row in enumerate(original_section, start=1):
-                    st.markdown(f"### Réponse admin {i}")
+                    for i, row in enumerate(original_section, start=1):
+                        st.markdown(f"### Réponse admin {i}")
 
-                    updated_row = {}
+                        updated_row = {}
 
-                    if isinstance(row, dict):
-                        saved_admin_row = {}
+                        if isinstance(row, dict):
+                            saved_admin_row = {}
 
-                        if (
-                            isinstance(existing_admin_section, list)
-                            and len(existing_admin_section) >= i
-                            and isinstance(existing_admin_section[i - 1], dict)
-                        ):
-                            saved_admin_row = existing_admin_section[i - 1]
+                            if (
+                                isinstance(existing_admin_section, list)
+                                and len(existing_admin_section) >= i
+                                and isinstance(existing_admin_section[i - 1], dict)
+                            ):
+                                saved_admin_row = existing_admin_section[i - 1]
 
-                        for key, value in row.items():
-                            default_value = saved_admin_row.get(key, value)
+                            for key, value in row.items():
+                                default_value = saved_admin_row.get(key, value)
 
-                            updated_row[key] = st.text_area(
-                                label=key,
-                                value=str(default_value) if default_value else "",
-                                height=90,
-                                key=f"admin_edit_{selected_draft_code}_{section_choice}_{i}_{key}"
-                            )
+                                updated_row[key] = st.text_area(
+                                    label=key,
+                                    value=str(default_value) if default_value else "",
+                                    height=90,
+                                    key=f"admin_edit_{selected_draft_code}_{section_choice}_{i}_{key}"
+                                )
 
-                    updated_admin_section.append(updated_row)
+                        updated_admin_section.append(updated_row)
 
-            elif isinstance(original_section, dict):
+                elif isinstance(original_section, dict):
 
-                updated_admin_section = {}
+                    updated_admin_section = {}
 
-                for key, value in original_section.items():
-                    if isinstance(existing_admin_section, dict):
-                        default_value = existing_admin_section.get(key, value)
-                    else:
-                        default_value = value
+                    for key, value in original_section.items():
+                        if isinstance(existing_admin_section, dict):
+                            default_value = existing_admin_section.get(key, value)
+                        else:
+                            default_value = value
 
-                    updated_admin_section[key] = st.text_area(
-                        label=key,
-                        value=str(default_value) if default_value else "",
-                        height=90,
-                        key=f"admin_edit_{selected_draft_code}_{section_choice}_{key}"
+                        updated_admin_section[key] = st.text_area(
+                            label=key,
+                            value=str(default_value) if default_value else "",
+                            height=90,
+                            key=f"admin_edit_{selected_draft_code}_{section_choice}_{key}"
+                        )
+
+                else:
+                    updated_admin_section = st.text_area(
+                        "Synthèse / corrections admin",
+                        value=str(existing_admin_section) if existing_admin_section else "",
+                        height=350,
+                        key=f"admin_edit_{selected_draft_code}_{section_choice}"
                     )
 
-            else:
-                updated_admin_section = st.text_area(
-                    "Synthèse / corrections admin",
-                    value=str(existing_admin_section) if existing_admin_section else "",
-                    height=350,
-                    key=f"admin_edit_{selected_draft_code}_{section_choice}"
-                )
+                if st.button(
+                    "Enregistrer la version admin",
+                    key=f"save_admin_{selected_draft_code}_{section_choice}"
+                ):
+                    admin_data[section_choice] = updated_admin_section
+                    save_admin_version_by_code(selected_draft_code, admin_data)
 
-            if st.button(
-                "Enregistrer la version admin",
-                key=f"save_admin_{selected_draft_code}_{section_choice}"
-            ):
-                admin_data[section_choice] = updated_admin_section
-                save_admin_version_by_code(selected_draft_code, admin_data)
+                    st.success(
+                        "Version admin enregistrée sans modifier les réponses originales du groupe."
+                    )
 
-                st.success(
-                    "Version admin enregistrée sans modifier les réponses originales du groupe."
-                )
-
-                st.rerun()
+                    st.rerun()
 
 
         # paste admin review block here
