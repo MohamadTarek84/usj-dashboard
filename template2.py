@@ -1465,15 +1465,14 @@ def render_pour_finir():
         with col_boxes:
            
             for j in range(2):
-                with cols[j]:
-                    key = f"pour_finir_{i}_{j}"
+                key = f"pour_finir_{i}_{j}"
 
-                    pour_finir[key] = st.text_input(
-                        label=key,
-                        key=key,
-                        label_visibility="collapsed",
-                        disabled=read_only
-                    )
+                pour_finir[key] = st.text_input(
+                    label=key,
+                    key=key,
+                    label_visibility="collapsed",
+                    disabled=read_only
+                )
 
     return pour_finir
 
