@@ -1791,26 +1791,17 @@ def main():
             section_header("Introduction")
             render_fixed_introduction()
 
-            st.divider()
-
-            st.markdown('<div class="print-page-break"></div>', unsafe_allow_html=True)
-
-            # section_header("II - Identification des parties prenantes")
+            # Section II removed for Focus Group version
             stakeholder_rows = []
             quick_save_after_stakeholders = False
-
-
-            st.markdown(
-                """
-                <div id="section-iii" style="position:relative; top:-150px; height:0px;"></div>
-                """,
-                unsafe_allow_html=True
-            )
-            st.markdown('<div class="print-page-break"></div>', unsafe_allow_html=True)
 
             # Section III removed for Focus Group version
             internal_analysis = {}
             quick_save_after_internal = False
+
+            # Section IV removed for Focus Group version
+            external_analysis = {}
+            quick_save_after_external = False
 
             st.markdown(
                 """
