@@ -1864,7 +1864,7 @@ def main():
 
             st.divider()
 
-            section_header("VI - Priorités stratégiques et initiatives proposées – Niveau USJ")
+            section_header("III - PRIORITES – Niveau USJ")
             render_priorities_intro()
             priorities_initiatives = render_priorities_table()
             quick_save_after_priorities = render_quick_save_button("quick_save_after_priorities")
