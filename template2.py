@@ -114,7 +114,8 @@ def init_db():
             respondent_email TEXT,
             statut TEXT DEFAULT 'Brouillon',
             draft_code TEXT,
-            data_json TEXT NOT NULL
+            data_json TEXT NOT NULL,
+            admin_data_json TEXT
         )
     """)
 
@@ -126,9 +127,11 @@ def init_db():
     if "draft_code" not in existing_cols:
         cur.execute("ALTER TABLE responses ADD COLUMN draft_code TEXT")
 
+    if "admin_data_json" not in existing_cols:
+        cur.execute("ALTER TABLE responses ADD COLUMN admin_data_json TEXT")
+
     conn.commit()
     conn.close()
-
 
 def save_response(metadata, data):
     institution = metadata.get("institution", "").strip()
