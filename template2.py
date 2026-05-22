@@ -1667,30 +1667,18 @@ def main():
 
    
         with col_original:
-        st.markdown("#### Réponses originales du groupe")
+            st.markdown("#### Réponses originales du groupe")
 
             if isinstance(original_section, list):
-
                 for i, row in enumerate(original_section, start=1):
-
                     st.markdown(f"### Réponse {i}")
 
                     if isinstance(row, dict):
-
                         for key, value in row.items():
-
                             if value and str(value).strip():
-
                                 st.markdown(
                                     f"""
-<div style="
-background-color:#ffffff;
-padding:12px 16px;
-border-radius:10px;
-border-left:5px solid {USJ_BLUE};
-margin-bottom:10px;
-box-shadow:0 2px 6px rgba(0,0,0,0.05);
-">
+<div style="background-color:#ffffff; padding:12px 16px; border-radius:10px; border-left:5px solid {USJ_BLUE}; margin-bottom:10px; box-shadow:0 2px 6px rgba(0,0,0,0.05);">
 <b style="color:{USJ_BLUE};">{key}</b><br>
 <span style="font-size:16px;">{value}</span>
 </div>
@@ -1699,21 +1687,11 @@ box-shadow:0 2px 6px rgba(0,0,0,0.05);
                                 )
 
             elif isinstance(original_section, dict):
-
                 for key, value in original_section.items():
-
                     if value and str(value).strip():
-
                         st.markdown(
                             f"""
-<div style="
-background-color:#ffffff;
-padding:12px 16px;
-border-radius:10px;
-border-left:5px solid {USJ_BLUE};
-margin-bottom:10px;
-box-shadow:0 2px 6px rgba(0,0,0,0.05);
-">
+<div style="background-color:#ffffff; padding:12px 16px; border-radius:10px; border-left:5px solid {USJ_BLUE}; margin-bottom:10px; box-shadow:0 2px 6px rgba(0,0,0,0.05);">
 <b style="color:{USJ_BLUE};">{key}</b><br>
 <span style="font-size:16px;">{value}</span>
 </div>
@@ -1748,6 +1726,8 @@ box-shadow:0 2px 6px rgba(0,0,0,0.05);
                 )
 
                 st.rerun()
+
+
 
         # paste admin review block here
 
