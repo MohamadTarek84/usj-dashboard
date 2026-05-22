@@ -1151,45 +1151,7 @@ def word_limited_text_area(label, key, height=300, max_words=500):
 
 
 def render_internal_analysis():
-    internal_themes = [
-        "Soutenabilité financière",
-        "Gouvernance et Leadership",
-        "Stratégie académique",
-        "Recherche et Innovation",
-        "Environnement digital",
-        "Succès des étudiants",
-        "Ressources humaines",
-        "Stratégie internationale",
-        "Mission sociétale",
-        "Espace et infrastructures",
-        "Environnement de travail",
-        "Diversité et inclusion",
-        "Développement Durable",
-        "Autre",
-    ]
-
-    internal_analysis = {}
-
-    for theme in internal_themes:
-        html_block('<div class="print-answer-block">')
-
-        html_block(f"""
-<div style="padding:2px 0px; margin-top:2px; margin-bottom:4px;">
-    <p style="font-size:17px; line-height:1.25; color:{USJ_RED}; font-weight:700; margin:0;">
-        • {theme}
-    </p>
-</div>
-""")
-
-        internal_analysis[theme] = word_limited_text_area(
-            label=theme,
-            key=f"internal_{theme}",
-            height=300,
-            max_words=500
-        )
-        html_block('</div>')
-
-    return internal_analysis
+    return {}
     
 def render_external_intro():
     html_block(f"""
@@ -2038,7 +2000,7 @@ def main():
                 "stakeholders": {
                     "rows": stakeholder_rows,
                 },
-                "internal_analysis": internal_analysis,
+                "internal_analysis": {},
                 "external_analysis": external_analysis,
                 "swot_analysis": swot_analysis,
                 "priorities_initiatives": priorities_initiatives,
