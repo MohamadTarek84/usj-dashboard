@@ -1349,6 +1349,8 @@ def render_swot_analysis():
 
     st.markdown('<div class="print-page-break"></div>', unsafe_allow_html=True)
 
+    st.divider()
+
     section_header("II- OPPORTUNITES ET MENACES – NIVEAU USJ")
 
     html_block(f"""
