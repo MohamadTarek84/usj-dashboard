@@ -1237,11 +1237,11 @@ def render_swot_intro():
     html_block(f"""
 <div style="background-color:#ffffff; padding:24px 34px 10px 34px; border-radius:12px; border-left:none; border-top:none; border-bottom:none; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:6px;">
 
-    <p style="font-size:17px; line-height:1.45; color:{USJ_BLUE}; font-weight:700; margin-bottom:10px;">
+    <p style="font-size:19px; line-height:1.45; color:{USJ_BLUE}; font-weight:700; margin-bottom:10px;">
     Thématiques à prendre en considération pour répondre aux questions 1 et 2 :
     </p>
 
-    <ul style="font-size:17px; line-height:1.45; color:{USJ_BLUE}; margin-top:0; margin-bottom:18px;">
+    <ul style="font-size:19px; line-height:1.45; color:{USJ_BLUE}; margin-top:0; margin-bottom:18px;">
         <li>Soutenabilité financière</li>
         <li>Gouvernance et Leadership (Gestion, relation, représentation, etc.)</li>
         <li>Stratégie académique et qualité d’enseignement</li>
@@ -1258,17 +1258,17 @@ def render_swot_intro():
         <li>Autre</li>
     </ul>
 
-    <p style="font-size:17px; line-height:1.5; color:{USJ_BLUE}; font-weight:700; margin-bottom:12px;">
+    <p style="font-size:19px; line-height:1.5; color:{USJ_BLUE}; font-weight:700; margin-bottom:12px;">
     1. <span style="color:#C00000; font-style:italic;">Éléments de réussite – Forces :</span>
     Quels sont les initiatives, processus ou projets universitaires actuels que vous appréciez le plus ?
     </p>
 
-    <p style="font-size:17px; line-height:1.5; color:{USJ_BLUE}; font-weight:700; margin-bottom:12px;">
+    <p style="font-size:19px; line-height:1.5; color:{USJ_BLUE}; font-weight:700; margin-bottom:12px;">
     2. <span style="color:#C00000; font-style:italic;">Initiatives à abandonner – Faiblesses :</span>
     Quels sont les initiatives, processus ou projets universitaires actuels qui devraient être améliorés ou abandonnés ?
     </p>
 
-    <p style="font-size:17px; line-height:1.5; color:#0070C0; font-style:italic; margin-bottom:0;">
+    <p style="font-size:19px; line-height:1.5; color:#0070C0; font-style:italic; margin-bottom:0;">
     Nous vous remercions de bien vouloir compléter le tableau ci-dessous en indiquant au 
     <strong>maximum cinq forces et cinq faiblesses</strong>, avec un 
     <strong>maximum de 30 mots par ligne.</strong>
