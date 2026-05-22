@@ -1777,7 +1777,7 @@ def main():
 
             st.divider()
 
-            # Section II removed for Focus Group version
+                        # Section II removed for Focus Group version
             stakeholder_rows = []
             quick_save_after_stakeholders = False
 
@@ -1796,11 +1796,6 @@ def main():
 
             st.divider()
 
-            section_header("II- OPPORTUNITES ET MENACES – NIVEAU USJ")
-            quick_save_after_external_swot = render_quick_save_button("quick_save_after_external_swot")
-
-            st.divider()
-
             section_header("III - PRIORITES – Niveau USJ")
             render_priorities_intro()
             priorities_initiatives = render_priorities_table()
@@ -1809,7 +1804,6 @@ def main():
             st.divider()
 
             section_header("IV- CONCLUSION")
-
             pour_finir = render_pour_finir()
 
             st.markdown("<br>", unsafe_allow_html=True)
