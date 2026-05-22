@@ -1857,20 +1857,6 @@ def main():
             external_analysis = {}
             quick_save_after_external = False
 
-            st.markdown(
-                """
-                <div id="section-iv" style="position:relative; top:-150px; height:0px;"></div>
-                """,
-                unsafe_allow_html=True
-            )
-            st.divider()
-
-            # Section IV removed for Focus Group version
-            external_analysis = {}
-            quick_save_after_external = False
-
-            
-
             section_header("I- FORCES ET FAIBLESSES – NIVEAU USJ")
             render_swot_intro()
             swot_analysis = render_swot_analysis()
