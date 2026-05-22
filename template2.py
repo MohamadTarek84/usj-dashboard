@@ -931,11 +931,138 @@ div[data-testid="stIFrame"] {{
 }}
 
 
+/* =========================
+   ADMIN PRINT / SAVE PDF MODE
+   Applies only when the admin page is open.
+========================= */
+@media print {{
+
+    body:has(.admin-print-mode) @page {{
+        size: A4 portrait;
+        margin: 10mm 9mm 10mm 9mm;
+    }}
+
+    body:has(.admin-print-mode),
+    body:has(.admin-print-mode) .stApp {{
+        background: white !important;
+        overflow: visible !important;
+    }}
+
+    body:has(.admin-print-mode) .block-container {{
+        max-width: 190mm !important;
+        width: 190mm !important;
+        padding: 0 !important;
+        margin: 0 auto !important;
+    }}
+
+    body:has(.admin-print-mode) header,
+    body:has(.admin-print-mode) footer,
+    body:has(.admin-print-mode) #MainMenu,
+    body:has(.admin-print-mode) .stDeployButton,
+    body:has(.admin-print-mode) div[data-testid="stToolbar"],
+    body:has(.admin-print-mode) div[data-testid="stDecoration"],
+    body:has(.admin-print-mode) div[data-testid="stStatusWidget"],
+    body:has(.admin-print-mode) div[data-testid="stButton"],
+    body:has(.admin-print-mode) div[data-testid="stDownloadButton"],
+    body:has(.admin-print-mode) .admin-print-button-wrapper {{
+        display: none !important;
+        height: 0 !important;
+        min-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }}
+
+    body:has(.admin-print-mode) img {{
+        display: none !important;
+    }}
+
+    /* Keep the interactive SWOT matrix iframe visible in print. */
+    body:has(.admin-print-mode) iframe {{
+        display: block !important;
+        width: 100% !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+    }}
+
+    body:has(.admin-print-mode) .admin-print-page-break {{
+        break-before: page !important;
+        page-break-before: always !important;
+        height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }}
+
+    body:has(.admin-print-mode) .section-header-card {{
+        break-after: avoid !important;
+        page-break-after: avoid !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+        margin-top: 0 !important;
+        margin-bottom: 8px !important;
+    }}
+
+    body:has(.admin-print-mode) div[data-testid="stHorizontalBlock"],
+    body:has(.admin-print-mode) div[data-testid="column"],
+    body:has(.admin-print-mode) div[data-testid="stTextArea"],
+    body:has(.admin-print-mode) textarea,
+    body:has(.admin-print-mode) div[style*="border:1.5px solid #595959"],
+    body:has(.admin-print-mode) div[style*="background-color:#E3DED9"] {{
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+    }}
+
+    body:has(.admin-print-mode) div[data-testid="stTextArea"] {{
+        display: block !important;
+        border: 1px solid #595959 !important;
+        background-color: #E3DED9 !important;
+        margin-bottom: 8px !important;
+    }}
+
+    body:has(.admin-print-mode) div[data-testid="stTextArea"] textarea {{
+        display: block !important;
+        min-height: 70px !important;
+        height: auto !important;
+        overflow: visible !important;
+        color: #000000 !important;
+        -webkit-text-fill-color: #000000 !important;
+        background-color: #E3DED9 !important;
+        font-size: 11px !important;
+        line-height: 1.25 !important;
+        white-space: pre-wrap !important;
+    }}
+
+    body:has(.admin-print-mode) h1 {{
+        font-size: 24px !important;
+        line-height: 1.15 !important;
+        margin-bottom: 6px !important;
+    }}
+
+    body:has(.admin-print-mode) h2 {{
+        font-size: 18px !important;
+        line-height: 1.2 !important;
+    }}
+
+    body:has(.admin-print-mode) p,
+    body:has(.admin-print-mode) div,
+    body:has(.admin-print-mode) span,
+    body:has(.admin-print-mode) label {{
+        font-size: 11px !important;
+        line-height: 1.25 !important;
+    }}
+
+    body:has(.admin-print-mode) hr {{
+        margin-top: 6px !important;
+        margin-bottom: 6px !important;
+        height: 1px !important;
+    }}
+}}
+
+
 </style>
 """)
 def section_header(title):
     html_block(f"""
-<div style="background-color:{USJ_LIGHT_BLUE}; padding:12px 18px; border-radius:10px; border-left:7px solid {USJ_BLUE}; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-top:0px; margin-bottom:8px;">
+<div class="section-header-card" style="background-color:{USJ_LIGHT_BLUE}; padding:12px 18px; border-radius:10px; border-left:7px solid {USJ_BLUE}; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-top:0px; margin-bottom:8px;">
     <h2 style="font-size:26px; color:{USJ_BLUE}; margin:0; font-weight:700;">
         {title}
     </h2>
@@ -2386,6 +2513,7 @@ def main():
         st.session_state["admin_mode"] = True
 
     if st.session_state.get("admin_mode", False):
+        html_block('<div class="admin-print-mode"></div>')
         st.markdown("## Admin download")
 
         st.write("DB path:", DB_PATH.resolve())
@@ -2421,6 +2549,37 @@ def main():
         selected_draft_code = selected_response.split(" | ")[0].strip()
 
         selected_row = admin_df[admin_df["draft_code"] == selected_draft_code].iloc[0]
+
+        components.html(
+            """
+            <style>
+            @media print {
+                .admin-print-button-wrapper {
+                    display: none !important;
+                    height: 0 !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                }
+            }
+            </style>
+            <div class="admin-print-button-wrapper" style="height:72px; display:flex; align-items:center; justify-content:flex-start;">
+                <button onclick="window.parent.print()" style="
+                    background-color:#8B1538;
+                    color:white;
+                    border:none;
+                    border-radius:8px;
+                    padding:12px 24px;
+                    font-size:18px;
+                    font-weight:700;
+                    font-family:Candara, Calibri, Arial, sans-serif;
+                    cursor:pointer;
+                ">
+                    Aperçu avant impression / Enregistrer en PDF
+                </button>
+            </div>
+            """,
+            height=78
+        )
 
         original_data = json.loads(selected_row["data_json"]) if selected_row["data_json"] else {}
 
@@ -2751,7 +2910,9 @@ margin-bottom:8px;
 
             return updated_admin_section
 
-        for section_label, (main_key, sub_key) in section_map.items():
+        for section_index, (section_label, (main_key, sub_key)) in enumerate(section_map.items()):
+            if section_index > 0:
+                html_block('<div class="admin-print-page-break"></div>')
             st.markdown("---")
             section_header(section_label)
 
