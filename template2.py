@@ -1820,12 +1820,9 @@ def main():
             )
             st.markdown('<div class="print-page-break"></div>', unsafe_allow_html=True)
 
-            section_header("IV - Analyse externe de l’environnement actuel de l’Université")
-            render_external_intro()
-            external_analysis = render_external_analysis()
-            quick_save_after_external = render_quick_save_button("quick_save_after_external")
-
-            st.divider()
+            # Section IV removed for Focus Group version
+            external_analysis = {}
+            quick_save_after_external = False
 
             st.markdown('<div class="print-page-break"></div>', unsafe_allow_html=True)
 
@@ -2001,7 +1998,7 @@ def main():
                     "rows": stakeholder_rows,
                 },
                 "internal_analysis": {},
-                "external_analysis": external_analysis,
+                "external_analysis": {},
                 "swot_analysis": swot_analysis,
                 "priorities_initiatives": priorities_initiatives,
                 "pour_finir": pour_finir,
