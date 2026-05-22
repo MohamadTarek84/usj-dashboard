@@ -1397,6 +1397,8 @@ def render_swot_analysis():
         right_title="Menaces"
     )
 
+    st.session_state["quick_save_after_section_ii_clicked"] = render_quick_save_button("quick_save_after_section_ii")
+
     return swot_data
     
 def render_priorities_intro():
@@ -1752,10 +1754,6 @@ box-sizing:border-box;
                     while len(updated_admin_section) < i:
                         updated_admin_section.append({})
 
-                    if not original_value and not admin_value:
-                        updated_admin_section[i - 1][field_name] = ""
-                        continue
-
                     col_original_answer, col_admin_answer = st.columns(2)
 
                     with col_original_answer:
@@ -1794,10 +1792,6 @@ box-sizing:border-box;
                     admin_value = existing_admin_section.get(key, original_value)
                 else:
                     admin_value = original_value
-
-                if not original_value and not admin_value:
-                    updated_admin_section[key] = ""
-                    continue
 
                 col_original_answer, col_admin_answer = st.columns(2)
 
@@ -2079,6 +2073,7 @@ box-sizing:border-box;
             quick_save_after_swot,
             quick_save_after_priorities,
             st.session_state.get("quick_save_after_section_i_clicked", False),
+            st.session_state.get("quick_save_after_section_ii_clicked", False),
         ])
 
         if save_draft or submit_final or quick_save_clicked:
