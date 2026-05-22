@@ -2414,7 +2414,7 @@ def main():
         )
 
         selected_response = st.selectbox(
-            "Choisir une réponse",
+            "Choisir un sous groupe",
             options=admin_df["display_label"].tolist()
         )
 
