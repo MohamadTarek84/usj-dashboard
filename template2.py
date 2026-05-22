@@ -1084,7 +1084,6 @@ def render_fixed_introduction():
 """)
 
 
-
     
 def render_internal_intro():
     html_block(f"""
