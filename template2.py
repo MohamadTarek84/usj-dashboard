@@ -1349,14 +1349,38 @@ def render_swot_analysis():
 
     st.markdown('<div class="print-page-break"></div>', unsafe_allow_html=True)
 
-    html_block(f"""
+        html_block(f"""
 <div style="background:#ffffff; padding:8px 24px 8px 24px; border-radius:10px; border-left:none; margin-top:10px; margin-bottom:6px;">
-    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:6px;">
-    <strong>2. Facteurs externes :</strong> Identification des <strong>opportunités</strong> de développement et des <strong>menaces</strong> émanant de l'environnement extérieur (Exemples d’Opportunités et de Menaces en {annexe_c_hover_html}).
+
+    <p style="font-size:22px; line-height:1.4; color:{USJ_BLUE}; font-weight:700; margin-bottom:10px;">
+    Thématiques à prendre en considération pour répondre aux questions 3 et 4 :
     </p>
-    <p style="text-align:left; font-size:17px; line-height:1.55; color:#0070C0; font-weight:700; font-style:italic; margin-bottom:0;">
-    Nous vous remercions de bien vouloir compléter le tableau ci-dessous en indiquant au maximum <span style="text-decoration:underline; font-weight:700; font-style:italic;">cinq opportunités et cinq menaces</span>. Vos réponses seront déduites de l’analyse de l’état actuel externe (<a href="#section-iv" style="text-decoration:underline; color:#0000FF; font-weight:700; font-style:italic;">section IV</a> principalement).
+
+    <ul style="font-size:22px; line-height:1.45; color:{USJ_BLUE}; margin-top:0; margin-bottom:18px;">
+        <li>Marché du travail et Associations professionnelles</li>
+        <li>Concurrence avec les autres universités</li>
+        <li>Intelligence artificielle</li>
+        <li>Réputation et image</li>
+        <li>Environnement politique et économique, émigration</li>
+        <li>Autres</li>
+    </ul>
+
+    <p style="font-size:22px; line-height:1.5; color:{USJ_BLUE}; font-weight:700; margin-bottom:12px;">
+    3. <span style="color:#C00000; font-style:italic;">Opportunités :</span>
+    Quels sont les éléments, facteurs, tendances, pratiques externes qui pourraient améliorer votre expérience à l’université et contribuer à votre succès ?
     </p>
+
+    <p style="font-size:22px; line-height:1.5; color:{USJ_BLUE}; font-weight:700; margin-bottom:12px;">
+    4. <span style="color:#C00000; font-style:italic;">Menaces :</span>
+    Quels sont les éléments, facteurs, tendances, pratiques externes qui pourraient menacer l’évolution de l’université ?
+    </p>
+
+    <p style="font-size:22px; line-height:1.5; color:#0070C0; font-style:italic; margin-bottom:0;">
+    Nous vous remercions de bien vouloir compléter le tableau ci-dessous en indiquant au 
+    <strong>maximum cinq opportunités et cinq menaces</strong>, avec un 
+    <strong>maximum de 30 mots par ligne.</strong>
+    </p>
+
 </div>
 """)
 
