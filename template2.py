@@ -1833,10 +1833,9 @@ def main():
 
             st.markdown('<div class="print-page-break"></div>', unsafe_allow_html=True)
 
-            section_header("II - Identification des parties prenantes")
-            render_stakeholder_intro()
-            stakeholder_rows = render_stakeholder_table()
-            quick_save_after_stakeholders = render_quick_save_button("quick_save_after_stakeholders")
+            # section_header("II - Identification des parties prenantes")
+            stakeholder_rows = []
+            quick_save_after_stakeholders = False
 
             st.divider()
 
