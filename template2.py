@@ -1835,6 +1835,477 @@ def create_swot_image_bytes(swot_values, group_name="groupe"):
     return buffer.getvalue()
 
 
+
+def _split_admin_items_for_display(items):
+    cleaned_items = _deduplicate_keep_order(items)
+
+    display_items = []
+    for item in cleaned_items:
+        item = _clean_swot_answer(item)
+        if item:
+            display_items.append(item)
+
+    return display_items[:5]
+
+
+def _swot_items_html(items, accent_color):
+    display_items = _split_admin_items_for_display(items)
+
+    if not display_items:
+        return f"""
+        <div class="swot-empty">
+            Aucune réponse admin saisie pour cette rubrique.
+        </div>
+        """
+
+    html_items = []
+
+    for index, item in enumerate(display_items, start=1):
+        safe_item = html_lib.escape(item)
+        html_items.append(f"""
+        <div class="swot-item" title="{safe_item}">
+            <div class="swot-item-index" style="background:{accent_color};">{index}</div>
+            <div class="swot-item-text">{safe_item}</div>
+        </div>
+        """)
+
+    return "\n".join(html_items)
+
+
+def _swot_card_html(title, subtitle, items, accent_color, background, icon):
+    count = len(_split_admin_items_for_display(items))
+    count_label = f"{count} élément" if count == 1 else f"{count} éléments"
+
+    return f"""
+    <div class="swot-card" style="--accent:{accent_color}; --bg:{background};">
+        <div class="swot-card-top">
+            <div class="swot-icon" style="background:{accent_color};">{icon}</div>
+            <div>
+                <div class="swot-title">{title}</div>
+                <div class="swot-subtitle">{subtitle}</div>
+            </div>
+            <div class="swot-count">{count_label}</div>
+        </div>
+
+        <div class="swot-line"></div>
+
+        <div class="swot-items">
+            {_swot_items_html(items, accent_color)}
+        </div>
+    </div>
+    """
+
+
+def create_interactive_swot_html(swot_values, group_name="groupe"):
+    """
+    Creates an interactive, dynamic, professional SWOT matrix as HTML.
+    It reads the admin-edited answers already extracted in swot_values.
+    The cards expand/animate on hover, items show full text on hover, and a small
+    JavaScript control allows the admin to focus on one quadrant.
+    """
+    safe_group_name = html_lib.escape(str(group_name or "groupe"))
+
+    forces = swot_values.get("forces", [])
+    faiblesses = swot_values.get("faiblesses", [])
+    opportunites = swot_values.get("opportunites", [])
+    menaces = swot_values.get("menaces", [])
+
+    total_items = (
+        len(_split_admin_items_for_display(forces)) +
+        len(_split_admin_items_for_display(faiblesses)) +
+        len(_split_admin_items_for_display(opportunites)) +
+        len(_split_admin_items_for_display(menaces))
+    )
+
+    html = f"""
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<style>
+    * {{
+        box-sizing: border-box;
+    }}
+
+    body {{
+        margin: 0;
+        padding: 0;
+        font-family: Candara, Calibri, Arial, sans-serif;
+        background: #ffffff;
+        color: #1B2A41;
+    }}
+
+    .swot-shell {{
+        width: 100%;
+        min-height: 760px;
+        padding: 28px 30px 32px 30px;
+        background:
+            radial-gradient(circle at 50% 47%, rgba(201,162,39,0.15) 0, rgba(201,162,39,0.00) 22%),
+            linear-gradient(135deg, #FFFFFF 0%, #F7FAFD 48%, #FFFFFF 100%);
+        border: 1px solid #E2E8F0;
+        border-radius: 22px;
+        box-shadow: 0 16px 38px rgba(0,31,91,0.12);
+        overflow: hidden;
+        position: relative;
+    }}
+
+    .swot-header {{
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 18px;
+        margin-bottom: 20px;
+    }}
+
+    .swot-heading {{
+        flex: 1;
+    }}
+
+    .swot-heading h1 {{
+        margin: 0;
+        color: #001F5B;
+        font-size: 34px;
+        line-height: 1.05;
+        letter-spacing: 0.2px;
+        font-weight: 800;
+    }}
+
+    .swot-heading p {{
+        margin: 7px 0 0 0;
+        color: #4F5B6B;
+        font-size: 17px;
+        font-weight: 600;
+    }}
+
+    .swot-badge {{
+        background: #001F5B;
+        color: white;
+        border-radius: 999px;
+        padding: 10px 18px;
+        font-size: 15px;
+        font-weight: 800;
+        box-shadow: 0 8px 18px rgba(0,31,91,0.18);
+        white-space: nowrap;
+    }}
+
+    .swot-toolbar {{
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+    }}
+
+    .swot-filter {{
+        border: 1px solid #D6DEE8;
+        background: white;
+        color: #001F5B;
+        font-family: Candara, Calibri, Arial, sans-serif;
+        font-weight: 800;
+        border-radius: 999px;
+        padding: 8px 14px;
+        cursor: pointer;
+        transition: all 0.22s ease;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.04);
+    }}
+
+    .swot-filter:hover,
+    .swot-filter.active {{
+        background: #001F5B;
+        color: white;
+        transform: translateY(-1px);
+        box-shadow: 0 8px 18px rgba(0,31,91,0.18);
+    }}
+
+    .swot-grid {{
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        position: relative;
+    }}
+
+    .swot-card {{
+        min-height: 268px;
+        background: var(--bg);
+        border: 2.5px solid var(--accent);
+        border-radius: 22px;
+        padding: 22px 24px;
+        box-shadow: 0 12px 24px rgba(0,0,0,0.08);
+        transition: transform 0.22s ease, box-shadow 0.22s ease, opacity 0.22s ease;
+        position: relative;
+        overflow: hidden;
+    }}
+
+    .swot-card::after {{
+        content: "";
+        position: absolute;
+        width: 210px;
+        height: 210px;
+        right: -80px;
+        bottom: -90px;
+        border-radius: 50%;
+        background: color-mix(in srgb, var(--accent) 14%, transparent);
+        pointer-events: none;
+    }}
+
+    .swot-card:hover {{
+        transform: translateY(-5px) scale(1.01);
+        box-shadow: 0 20px 36px rgba(0,31,91,0.15);
+        z-index: 2;
+    }}
+
+    .swot-card.dimmed {{
+        opacity: 0.25;
+        transform: scale(0.985);
+    }}
+
+    .swot-card.focused {{
+        transform: translateY(-5px) scale(1.015);
+        box-shadow: 0 22px 42px rgba(0,31,91,0.20);
+        z-index: 3;
+    }}
+
+    .swot-card-top {{
+        display: grid;
+        grid-template-columns: 58px 1fr auto;
+        gap: 14px;
+        align-items: center;
+        position: relative;
+        z-index: 1;
+    }}
+
+    .swot-icon {{
+        width: 58px;
+        height: 58px;
+        border-radius: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 30px;
+        font-weight: 900;
+        box-shadow: 0 10px 18px rgba(0,0,0,0.16);
+    }}
+
+    .swot-title {{
+        color: var(--accent);
+        font-size: 31px;
+        font-weight: 900;
+        letter-spacing: 0.5px;
+        line-height: 1;
+    }}
+
+    .swot-subtitle {{
+        color: #4F5B6B;
+        font-size: 14px;
+        font-weight: 700;
+        margin-top: 5px;
+    }}
+
+    .swot-count {{
+        color: var(--accent);
+        background: rgba(255,255,255,0.72);
+        border: 1px solid rgba(255,255,255,0.90);
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 13px;
+        font-weight: 900;
+        white-space: nowrap;
+    }}
+
+    .swot-line {{
+        height: 3px;
+        background: var(--accent);
+        border-radius: 999px;
+        margin: 18px 0 16px 72px;
+        position: relative;
+        z-index: 1;
+    }}
+
+    .swot-items {{
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        position: relative;
+        z-index: 1;
+    }}
+
+    .swot-item {{
+        display: grid;
+        grid-template-columns: 32px 1fr;
+        gap: 10px;
+        align-items: start;
+        background: rgba(255,255,255,0.62);
+        border: 1px solid rgba(255,255,255,0.80);
+        border-radius: 14px;
+        padding: 10px 12px;
+        transition: all 0.20s ease;
+        cursor: default;
+    }}
+
+    .swot-item:hover {{
+        background: white;
+        transform: translateX(4px);
+        box-shadow: 0 8px 18px rgba(0,0,0,0.10);
+    }}
+
+    .swot-item-index {{
+        width: 26px;
+        height: 26px;
+        color: white;
+        border-radius: 50%;
+        font-size: 14px;
+        font-weight: 900;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: 1px;
+        flex-shrink: 0;
+    }}
+
+    .swot-item-text {{
+        color: #202A35;
+        font-size: 18px;
+        line-height: 1.26;
+        font-weight: 650;
+        overflow-wrap: anywhere;
+    }}
+
+    .swot-empty {{
+        color: #6B7280;
+        background: rgba(255,255,255,0.62);
+        border: 1px dashed #B7C0CC;
+        border-radius: 14px;
+        padding: 16px;
+        font-size: 17px;
+        font-weight: 700;
+        font-style: italic;
+    }}
+
+    .swot-center {{
+        position: absolute;
+        left: 50%;
+        top: 52%;
+        transform: translate(-50%, -50%);
+        width: 118px;
+        height: 118px;
+        background: white;
+        border: 4px solid #D0D6E0;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #001F5B;
+        font-size: 27px;
+        font-weight: 900;
+        letter-spacing: 0.5px;
+        z-index: 5;
+        box-shadow: 0 12px 30px rgba(0,31,91,0.18);
+    }}
+
+    .swot-footer {{
+        margin-top: 18px;
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        color: #5B6777;
+        font-size: 13px;
+        font-weight: 700;
+    }}
+
+    @media (max-width: 900px) {{
+        .swot-grid {{
+            grid-template-columns: 1fr;
+        }}
+
+        .swot-center {{
+            display: none;
+        }}
+
+        .swot-card-top {{
+            grid-template-columns: 50px 1fr;
+        }}
+
+        .swot-count {{
+            grid-column: 2;
+            width: fit-content;
+        }}
+    }}
+</style>
+</head>
+<body>
+<div class="swot-shell">
+    <div class="swot-header">
+        <div class="swot-heading">
+            <h1>Matrice SWOT - Niveau USJ</h1>
+            <p>Groupe : {safe_group_name}</p>
+        </div>
+        <div class="swot-badge">{total_items} éléments validés</div>
+    </div>
+
+    <div class="swot-toolbar">
+        <button class="swot-filter active" onclick="filterCards('all', this)">Vue complète</button>
+        <button class="swot-filter" onclick="filterCards('forces', this)">Forces</button>
+        <button class="swot-filter" onclick="filterCards('faiblesses', this)">Faiblesses</button>
+        <button class="swot-filter" onclick="filterCards('opportunites', this)">Opportunités</button>
+        <button class="swot-filter" onclick="filterCards('menaces', this)">Menaces</button>
+    </div>
+
+    <div class="swot-grid">
+        <div data-card="forces">
+            {_swot_card_html("FORCES", "Atouts internes à consolider", forces, USJ_BLUE, "#DDEFF7", "✓")}
+        </div>
+
+        <div data-card="faiblesses">
+            {_swot_card_html("FAIBLESSES", "Points internes à améliorer", faiblesses, USJ_RED, "#FBE3C3", "!")}
+        </div>
+
+        <div data-card="opportunites">
+            {_swot_card_html("OPPORTUNITÉS", "Leviers externes à saisir", opportunites, "#2F6B2F", "#E2F2D3", "↗")}
+        </div>
+
+        <div data-card="menaces">
+            {_swot_card_html("MENACES", "Risques externes à anticiper", menaces, USJ_RED, "#F4C6C4", "⚠")}
+        </div>
+
+        <div class="swot-center">SWOT</div>
+    </div>
+
+    <div class="swot-footer">
+        <div>Survolez une carte ou un élément pour le mettre en évidence.</div>
+        <div>Source : versions admin modifiées.</div>
+    </div>
+</div>
+
+<script>
+function filterCards(target, button) {{
+    const wrappers = document.querySelectorAll('[data-card]');
+    const buttons = document.querySelectorAll('.swot-filter');
+
+    buttons.forEach(btn => btn.classList.remove('active'));
+    button.classList.add('active');
+
+    wrappers.forEach(wrapper => {{
+        const card = wrapper.querySelector('.swot-card');
+        const key = wrapper.getAttribute('data-card');
+
+        card.classList.remove('dimmed', 'focused');
+
+        if (target !== 'all') {{
+            if (key === target) {{
+                card.classList.add('focused');
+            }} else {{
+                card.classList.add('dimmed');
+            }}
+        }}
+    }});
+}}
+</script>
+</body>
+</html>
+"""
+    return html
+
+
 def render_swot_image_download_block(updated_admin_data, selected_row):
     swot_values = extract_admin_swot_values(updated_admin_data)
 
@@ -1849,19 +2320,19 @@ def render_swot_image_download_block(updated_admin_data, selected_row):
     if not display_group_name:
         display_group_name = str(draft_code).strip() or "groupe"
 
-    file_name = f"SWOT_{safe_filename(display_group_name)}.png"
     has_values = any(swot_values[key] for key in swot_values)
 
     safe_code = safe_filename(str(draft_code))
-    button_key = f"generate_swot_image_{safe_code}"
-    state_key = f"show_swot_image_{safe_code}"
+    button_key = f"generate_interactive_swot_{safe_code}"
+    state_key = f"show_interactive_swot_{safe_code}"
+    html_file_name = f"SWOT_interactive_{safe_filename(display_group_name)}.html"
 
     st.markdown("---")
 
     if state_key not in st.session_state:
         st.session_state[state_key] = False
 
-    if st.button("Générer l’image SWOT", key=button_key):
+    if st.button("Générer la matrice SWOT interactive", key=button_key):
         st.session_state[state_key] = True
 
     # Nothing appears before the admin clicks the button.
@@ -1869,25 +2340,27 @@ def render_swot_image_download_block(updated_admin_data, selected_row):
         return
 
     if not has_values:
-        st.warning("Aucune réponse admin n’est disponible pour générer l’image SWOT.")
+        st.warning("Aucune réponse admin n’est disponible pour générer la matrice SWOT interactive.")
         return
 
-    image_bytes = create_swot_image_bytes(
+    interactive_html = create_interactive_swot_html(
         swot_values=swot_values,
         group_name=display_group_name
     )
 
-    # Reduced display size inside the admin page.
-    st.image(image_bytes, width=1050)
-
-    st.download_button(
-        label="Télécharger l’image SWOT",
-        data=image_bytes,
-        file_name=file_name,
-        mime="image/png",
-        key=f"download_swot_image_{safe_code}"
+    components.html(
+        interactive_html,
+        height=820,
+        scrolling=False
     )
 
+    st.download_button(
+        label="Télécharger la matrice SWOT interactive",
+        data=interactive_html.encode("utf-8"),
+        file_name=html_file_name,
+        mime="text/html",
+        key=f"download_interactive_swot_{safe_code}"
+    )
 
 def main():
     st.set_page_config(
