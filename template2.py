@@ -2351,25 +2351,13 @@ def render_swot_image_download_block(updated_admin_data, selected_row):
         scrolling=False
     )
 
-col_download_html, col_download_png = st.columns(2)
-
-with col_download_html:
-    st.download_button(
-        label="Télécharger en HTML",
-        data=interactive_html.encode("utf-8"),
-        file_name=html_file_name,
-        mime="text/html",
-        key=f"download_interactive_swot_html_{safe_code}"
-    )
-
-with col_download_png:
-    st.download_button(
-        label="Télécharger en PNG",
-        data=png_bytes,
-        file_name=png_file_name,
-        mime="image/png",
-        key=f"download_interactive_swot_png_{safe_code}"
-    )
+st.download_button(
+    label="Télécharger la matrice SWOT interactive en HTML",
+    data=interactive_html.encode("utf-8"),
+    file_name=html_file_name,
+    mime="text/html",
+    key=f"download_interactive_swot_html_{safe_code}"
+)
 
     
 def main():
