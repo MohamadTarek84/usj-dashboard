@@ -1862,7 +1862,7 @@ def main():
             swot_analysis = render_swot_analysis()
             quick_save_after_swot = False
 
-
+            st.divider()
 
             section_header("VI - Priorités stratégiques et initiatives proposées – Niveau USJ")
             render_priorities_intro()
