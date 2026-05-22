@@ -950,6 +950,42 @@ div[data-testid="stIFrame"] {{
 }}
 
 
+/* Admin editable answers: same card geometry as original answers, red theme */
+div[class*="st-key-admin_edit_"] {
+    background-color: #FFF6F8 !important;
+    border-left: 5px solid #8B1538 !important;
+    border-radius: 0 0 10px 10px !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05) !important;
+    margin-bottom: 10px !important;
+    padding: 0 12px 8px 12px !important;
+}
+
+div[class*="st-key-admin_edit_"] div[data-testid="stTextArea"] {
+    background-color: #FFF6F8 !important;
+    border: none !important;
+    border-radius: 0 0 10px 10px !important;
+}
+
+div[class*="st-key-admin_edit_"] div[data-testid="stTextArea"] textarea {
+    background-color: #FFF6F8 !important;
+    color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
+    border: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+    font-size: 16px !important;
+    line-height: 1.35 !important;
+    padding: 0 !important;
+    min-height: 38px !important;
+}
+
+div[class*="st-key-admin_edit_"] div[data-testid="stTextArea"] textarea:focus {
+    border: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+}
+
+
 </style>
 """)
 def section_header(title):
@@ -1665,14 +1701,32 @@ def main():
 
         col_original, col_admin = st.columns(2)
 
+        admin_section_token = f"{main_key}_{sub_key or 'root'}"
+        admin_section_token = "".join(
+            ch if ch.isalnum() else "_"
+            for ch in admin_section_token
+        )
+
+        existing_admin_section = admin_data.get(section_choice)
+        if not existing_admin_section:
+            existing_admin_section = original_section
+
         with col_original:
             st.markdown("#### Réponses originales du groupe")
 
             if isinstance(original_section, list):
                 for i, row in enumerate(original_section, start=1):
-                    st.markdown(f"### Réponse {i}")
+                    row_has_value = False
 
                     if isinstance(row, dict):
+                        for value in row.values():
+                            if value and str(value).strip():
+                                row_has_value = True
+                                break
+
+                    if row_has_value:
+                        st.markdown(f"### Réponse {i}")
+
                         for key, value in row.items():
                             if value and str(value).strip():
                                 st.markdown(
@@ -1704,17 +1758,56 @@ def main():
         with col_admin:
             st.markdown("#### Version admin modifiable")
 
-            existing_admin_section = admin_data.get(section_choice)
+            st.markdown(
+                f"""
+<style>
+/* Admin editable fields only: make them compact and close to the original answer cards */
+div[class*="st-key-admin_edit_"] {{
+    margin-top: -10px !important;
+    margin-bottom: 10px !important;
+}}
 
+div[class*="st-key-admin_edit_"] input {{
+    background-color: #FFF6F8 !important;
+    color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
+    border: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+    border-radius: 0 0 10px 10px !important;
+    height: 34px !important;
+    min-height: 34px !important;
+    padding: 0px 16px 10px 16px !important;
+    font-size: 16px !important;
+    font-family: Candara, Calibri, Arial, sans-serif !important;
+}}
+
+div[class*="st-key-admin_edit_"] input:focus {{
+    background-color: #FFF6F8 !important;
+    border: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+}}
+</style>
+""",
+                unsafe_allow_html=True
+            )
+
+            existing_admin_section = admin_data.get(section_choice)
             if not existing_admin_section:
                 existing_admin_section = original_section
 
             updated_admin_section = []
 
             if isinstance(original_section, list):
-
                 for i, row in enumerate(original_section, start=1):
-                    st.markdown(f"### Réponse {i}")
+                    row_has_value = False
+
+                    if isinstance(row, dict):
+                        for value in row.values():
+                            if value and str(value).strip():
+                                row_has_value = True
+                                break
 
                     updated_row = {}
                     saved_admin_row = {}
@@ -1726,16 +1819,23 @@ def main():
                     ):
                         saved_admin_row = existing_admin_section[i - 1]
 
+                    if row_has_value:
+                        st.markdown(f"### Réponse {i}")
+
                     if isinstance(row, dict):
                         for key, value in row.items():
-                            admin_value = saved_admin_row.get(key, value)
+                            saved_value = saved_admin_row.get(key, value)
+
+                            if not value or not str(value).strip():
+                                updated_row[key] = saved_value
+                                continue
 
                             st.markdown(
                                 f"""
 <div style="
-background-color:#F8F3F5;
-padding:12px 16px;
-border-radius:10px 10px 0px 0px;
+background-color:#FFF6F8;
+padding:12px 16px 2px 16px;
+border-radius:10px 10px 0 0;
 border-left:5px solid {USJ_RED};
 margin-bottom:0px;
 box-shadow:0 2px 6px rgba(0,0,0,0.05);
@@ -1746,33 +1846,34 @@ box-shadow:0 2px 6px rgba(0,0,0,0.05);
                                 unsafe_allow_html=True
                             )
 
-                            updated_row[key] = st.text_area(
+                            updated_row[key] = st.text_input(
                                 label=f"{key}_{i}",
-                                value=str(admin_value) if admin_value else "",
-                                height=80,
-                                key=f"admin_edit_{selected_draft_code}_{section_choice}_{i}_{key}",
+                                value=str(saved_value) if saved_value else "",
+                                key=f"admin_edit_{selected_draft_code}_{admin_section_token}_{i}_{key}",
                                 label_visibility="collapsed"
                             )
 
                     updated_admin_section.append(updated_row)
 
             elif isinstance(original_section, dict):
-
                 updated_admin_section = {}
 
                 for key, value in original_section.items():
-
                     if isinstance(existing_admin_section, dict):
-                        admin_value = existing_admin_section.get(key, value)
+                        saved_value = existing_admin_section.get(key, value)
                     else:
-                        admin_value = value
+                        saved_value = value
+
+                    if not value or not str(value).strip():
+                        updated_admin_section[key] = saved_value
+                        continue
 
                     st.markdown(
                         f"""
 <div style="
-background-color:#F8F3F5;
-padding:12px 16px;
-border-radius:10px 10px 0px 0px;
+background-color:#FFF6F8;
+padding:12px 16px 2px 16px;
+border-radius:10px 10px 0 0;
 border-left:5px solid {USJ_RED};
 margin-bottom:0px;
 box-shadow:0 2px 6px rgba(0,0,0,0.05);
@@ -1783,11 +1884,10 @@ box-shadow:0 2px 6px rgba(0,0,0,0.05);
                         unsafe_allow_html=True
                     )
 
-                    updated_admin_section[key] = st.text_area(
+                    updated_admin_section[key] = st.text_input(
                         label=key,
-                        value=str(admin_value) if admin_value else "",
-                        height=80,
-                        key=f"admin_edit_{selected_draft_code}_{section_choice}_{key}",
+                        value=str(saved_value) if saved_value else "",
+                        key=f"admin_edit_{selected_draft_code}_{admin_section_token}_{key}",
                         label_visibility="collapsed"
                     )
 
@@ -1795,13 +1895,13 @@ box-shadow:0 2px 6px rgba(0,0,0,0.05);
                 updated_admin_section = st.text_area(
                     "Synthèse / corrections admin",
                     value=str(existing_admin_section) if existing_admin_section else "",
-                    height=350,
-                    key=f"admin_edit_{selected_draft_code}_{section_choice}"
+                    height=150,
+                    key=f"admin_edit_{selected_draft_code}_{admin_section_token}"
                 )
 
             if st.button(
                 "Enregistrer la version admin",
-                key=f"save_admin_{selected_draft_code}_{section_choice}"
+                key=f"save_admin_{selected_draft_code}_{admin_section_token}"
             ):
                 admin_data[section_choice] = updated_admin_section
                 save_admin_version_by_code(selected_draft_code, admin_data)
