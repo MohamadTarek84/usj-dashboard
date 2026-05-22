@@ -175,7 +175,7 @@ def save_response(metadata, data):
                 data_json = ?
             WHERE id = ?
         """, (
-            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "2026-06-04",
             responsable,
             institution,
             email,
