@@ -1697,24 +1697,25 @@ def draw_wrapped_bullets(draw, items, x, y, max_width, max_height, font, fill, l
 
 
 def create_swot_image_bytes(swot_values):
-    width, height = 2000, 1180
+    """Create a clear, professional SWOT PNG from the admin-modified answers."""
+    width, height = 1800, 1120
     image = Image.new("RGB", (width, height), "white")
     draw = ImageDraw.Draw(image, "RGBA")
 
-    title_font = load_font(60, bold=True)
-    bullet_font = load_font(42, bold=False)
-    letter_font = load_font(98, bold=True)
+    title_font = load_font(58, bold=True)
+    bullet_font = load_font(38, bold=False)
+    letter_font = load_font(120, bold=True)
 
-    margin_x = 70
+    margin_x = 58
     margin_y = 55
-    gap_x = 70
-    gap_y = 58
+    gap_x = 56
+    gap_y = 48
     box_w = (width - 2 * margin_x - gap_x) // 2
     box_h = (height - 2 * margin_y - gap_y) // 2
-    radius = 60
+    radius = 52
 
-    text_color = (20, 20, 20, 255)
-    letter_color = (35, 35, 35, 215)
+    text_color = (30, 35, 38, 255)
+    letter_color = (45, 45, 45, 205)
 
     boxes = {
         "Strengths": {
@@ -1747,16 +1748,14 @@ def create_swot_image_bytes(swot_values):
         x1, y1, x2, y2 = info["xy"]
         draw.rounded_rectangle(info["xy"], radius=radius, fill=info["color"])
 
-        title_x = x1 + 80
-        title_y = y1 + 60
-        draw.text((title_x, title_y), title, font=title_font, fill=text_color)
+        draw.text((x1 + 70, y1 + 58), title, font=title_font, fill=text_color)
 
         letter_text = info["letter"]
         letter_bbox = draw.textbbox((0, 0), letter_text, font=letter_font)
         letter_w = letter_bbox[2] - letter_bbox[0]
         letter_h = letter_bbox[3] - letter_bbox[1]
         draw.text(
-            (x2 - 175 - letter_w / 2, y1 + box_h / 2 - letter_h / 2),
+            (x2 - 145 - letter_w / 2, y1 + box_h / 2 - letter_h / 2),
             letter_text,
             font=letter_font,
             fill=letter_color,
@@ -1765,24 +1764,25 @@ def create_swot_image_bytes(swot_values):
         draw_wrapped_bullets(
             draw=draw,
             items=info["items"],
-            x=x1 + 82,
-            y=y1 + 175,
-            max_width=box_w - 270,
-            max_height=box_h - 215,
+            x=x1 + 75,
+            y=y1 + 165,
+            max_width=box_w - 240,
+            max_height=box_h - 210,
             font=bullet_font,
             fill=text_color,
-            line_gap=12,
-            bullet_gap=18,
+            line_gap=10,
+            bullet_gap=20,
         )
 
     cx, cy = width // 2, height // 2
-    draw.ellipse((cx - 180, cy - 180, cx + 180, cy + 180), fill=(115, 150, 165, 68))
-    draw.ellipse((cx - 92, cy - 92, cx + 92, cy + 92), fill=(80, 115, 125, 96))
+    draw.ellipse((cx - 165, cy - 165, cx + 165, cy + 165), fill=(115, 150, 165, 62))
+    draw.ellipse((cx - 85, cy - 85, cx + 85, cy + 85), fill=(80, 115, 125, 90))
 
     buffer = BytesIO()
     image.save(buffer, format="PNG", optimize=True)
     buffer.seek(0)
     return buffer.getvalue()
+
 
 def render_swot_image_download_block(updated_admin_data, selected_row):
     swot_values = extract_admin_swot_values(updated_admin_data)
@@ -1796,18 +1796,19 @@ def render_swot_image_download_block(updated_admin_data, selected_row):
 
     file_name = f"SWOT_{safe_filename(display_group_name)}.png"
     has_values = any(swot_values[key] for key in swot_values)
-    button_key = f"generate_swot_image_{safe_filename(str(draft_code))}"
-    state_key = f"show_swot_image_{safe_filename(str(draft_code))}"
+    safe_code = safe_filename(str(draft_code))
+    button_key = f"generate_swot_image_{safe_code}"
+    state_key = f"show_swot_image_{safe_code}"
 
     st.markdown("---")
 
-    if st.button(
-        "Générer l’image SWOT",
-        key=button_key
-    ):
+    if state_key not in st.session_state:
+        st.session_state[state_key] = False
+
+    if st.button("Générer l’image SWOT", key=button_key):
         st.session_state[state_key] = True
 
-    if not st.session_state.get(state_key, False):
+    if not st.session_state[state_key]:
         return
 
     if not has_values:
@@ -1816,17 +1817,14 @@ def render_swot_image_download_block(updated_admin_data, selected_row):
 
     image_bytes = create_swot_image_bytes(swot_values)
 
-    st.image(
-        image_bytes,
-        width=1350
-    )
+    st.image(image_bytes, width=1500)
 
     st.download_button(
         label="Télécharger l’image SWOT",
         data=image_bytes,
         file_name=file_name,
         mime="image/png",
-        key=f"download_swot_image_{safe_filename(str(draft_code))}"
+        key=f"download_swot_image_{safe_code}"
     )
 
 def main():
