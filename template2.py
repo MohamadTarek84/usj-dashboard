@@ -1832,6 +1832,10 @@ def main():
 
             st.markdown('<div class="print-page-break"></div>', unsafe_allow_html=True)
 
+            st.divider()
+
+            section_header("IV- CONCLUSION")
+
             pour_finir = render_pour_finir()
 
             st.markdown("<br>", unsafe_allow_html=True)
