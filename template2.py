@@ -551,12 +551,12 @@ div[data-testid="stForm"] {{
 
 
 
-.admin-action-row iframe {
+.admin-action-row iframe {{
     width: 100% !important;
-}
+}}
 
 .admin-action-row button,
-.admin-action-row div[data-testid="stButton"] button {
+.admin-action-row div[data-testid="stButton"] button {{
     height: 58px !important;
     min-height: 58px !important;
     width: 100% !important;
@@ -567,7 +567,7 @@ div[data-testid="stForm"] {{
     font-weight: 800 !important;
     border-radius: 8px !important;
     padding: 10px 22px !important;
-}
+}}
 
 /* Normal buttons */
 .stButton button,
