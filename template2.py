@@ -1070,7 +1070,45 @@ def render_fixed_introduction():
 
     {image_html}
 
-    
+    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
+    Ce rapport vise ainsi à produire <strong>deux résultats principaux</strong>. Le premier consiste en une <strong>analyse SWOT</strong> (Strengths, Weaknesses, Opportunities, Threats) <strong>de l’Université</strong>, fondée sur la réalité vécue au sein de votre institution. Sur la base de cette analyse, vous serez amenés à proposer <strong>des priorités stratégiques ainsi que des initiatives (ou projets), toujours à l’échelle de l’Université</strong>, constituant ainsi le second résultat attendu.
+    </p>
+
+<div class="intro-parts-print-block">
+    <p style="font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:5px;">
+    Le document comprend 6 parties :
+    </p>
+
+    <div style="font-size:17px; line-height:1.75; color:{USJ_BLUE}; margin-top:5px;">
+
+        I. Introduction<br>
+
+        II. Identification des parties prenantes à consulter pour écrire le rapport<br>
+
+        III. Analyse interne : cette analyse mène à produire les éléments Forces et Faiblesses de l’analyse SWOT<br>
+
+        IV. Analyse externe : cette analyse mène à produire les éléments Opportunités et Menaces de l’analyse SWOT<br>
+
+        V. Analyse SWOT<br>
+
+        VI. Propositions de Priorités stratégiques et Initiatives
+
+    </div>
+</div>
+    <p style="font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-top:22px; margin-bottom:8px;">
+    Pour toute information supplémentaire ou support, contacter :
+</p>
+
+<p style="font-size:16px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:0;">
+    <p style="font-size:17px; line-height:1.75; color:{USJ_BLUE}; margin-top:22px; margin-bottom:0;">
+    M. Hadi Sawaya – Coordinateur de l’Unité Assurance Qualité : hadi.sawaya@usj.edu.lb<br>
+    Mme Irma Majdalani – Expert qualité – Unité Assurance qualité : irma.majdalani@usj.edu.lb<br>
+    Mme Nadine Riachi Haddad – Secrétaire général : secg@usj.edu.lb<br>
+    Mme Ursula El Hage – Directeur du Service de l’insertion professionnelle : ursula.hage@usj.edu.lb<br>
+    Mme Lina Koleilat Ghalayini – Chef de projets – Unité Assurance qualité : lina.koleilat@usj.edu.lb
+</p>
+</div>
+""")
 
 
 def render_stakeholder_intro():
@@ -1081,7 +1119,17 @@ def render_stakeholder_intro():
     html_block(f"""
 <div style="background-color:#ffffff; padding:20px 34px 12px 34px; border-radius:12px; border-left:none; border-top:none; border-bottom:none; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:12px;">
 
+    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:16px;">
+    Le rapport d’analyse des données existantes est le fruit d’une consultation menée auprès de l’ensemble des parties prenantes de l’institution. L’identification et la prise en compte de leurs attentes constituent un levier essentiel pour la réussite du processus de planification stratégique. En raison de la diversité de leurs rôles, de leurs intérêts et de leur degré d’influence, les parties prenantes apportent des perspectives complémentaires, qui enrichissent l’analyse stratégique et favorisent l’adhésion aux orientations retenues. L’analyse de leurs attentes vise à mieux comprendre leurs besoins, leurs priorités et leur niveau d’influence, afin d’éclairer les choix stratégiques de l’USJ. Cette démarche participative est essentielle pour garantir une vision partagée, réaliste et représentative de la diversité de la communauté universitaire.
+    </p>
 
+    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:16px;">
+    Il est proposé aux institutions de consulter notamment les parties prenantes suivantes : le conseil de l’institution, le conseil d’orientation stratégique, les employeurs, les étudiants, les enseignants, le PSG, les anciens, ainsi que toute autre partie jugée pertinente et engagée dans l’institution (Exemple de parties prenantes en {annexe_hover_html}).
+    </p>
+
+    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:16px;">
+    L’institution est libre d’organiser, selon les modalités qu’elle juge les plus appropriées, une ou plusieurs réunions avec les parties prenantes, ou, dans certains cas, de recourir à des questionnaires.
+    </p>
 
     <p style="font-size:17px; line-height:1.55; color:#0070C0; font-weight:700; font-style:italic; margin-bottom:16px;">
     Le tableau ci-dessous doit être dûment complété.
