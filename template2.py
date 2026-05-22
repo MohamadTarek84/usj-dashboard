@@ -542,12 +542,11 @@ div[data-testid="stTextArea"] > div {{
 }}
 
 div[data-testid="stTextArea"] textarea {{
+    background-color: #E3DED9 !important;
+    border: none !important;
+    border-radius: 6px !important;
     color: #000000 !important;
     -webkit-text-fill-color: #000000 !important;
-    opacity: 1 !important;
-    border: 1.5px solid #595959 !important;
-    border-radius: 0px !important;
-    background-color: #E3DED9 !important;
     box-shadow: none !important;
 }}
 
@@ -2460,8 +2459,9 @@ if mode == "Saisir une réponse":
             responsable = st.text_area(
                 "Nom des participants",
                 key="responsable",
-                height=90,
-                placeholder="Saisir les noms des participants, un nom par ligne"
+                height=68,
+                placeholder="Saisir les noms des participants, un nom par ligne",
+                label_visibility="visible"
             )
 
         with col3:
