@@ -1796,6 +1796,13 @@ def main():
 
             st.divider()
 
+            section_header("II- OPPORTUNITES ET MENACES – NIVEAU USJ")
+            render_external_swot_intro()
+            external_swot_analysis = render_external_swot_analysis()
+            quick_save_after_external_swot = render_quick_save_button("quick_save_after_external_swot")
+
+            st.divider()
+
             section_header("III - PRIORITES – Niveau USJ")
             render_priorities_intro()
             priorities_initiatives = render_priorities_table()
