@@ -1353,7 +1353,7 @@ def render_swot_analysis():
 
     html_block(f"""
         
-<div style="background:#ffffff; padding:8px 24px 8px 24px; border-radius:10px; border-left:none; margin-top:10px; margin-bottom:6px;">
+<div style="background-color:#ffffff; padding:24px 34px 10px 34px; border-radius:12px; border:1px solid #E0E0E0; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:6px;">
 
         
     <p style="font-size:19px; line-height:1.4; color:{USJ_BLUE}; font-weight:700; margin-bottom:10px;">
