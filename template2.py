@@ -1070,45 +1070,7 @@ def render_fixed_introduction():
 
     {image_html}
 
-    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE};">
-    Ce rapport vise ainsi à produire <strong>deux résultats principaux</strong>. Le premier consiste en une <strong>analyse SWOT</strong> (Strengths, Weaknesses, Opportunities, Threats) <strong>de l’Université</strong>, fondée sur la réalité vécue au sein de votre institution. Sur la base de cette analyse, vous serez amenés à proposer <strong>des priorités stratégiques ainsi que des initiatives (ou projets), toujours à l’échelle de l’Université</strong>, constituant ainsi le second résultat attendu.
-    </p>
-
-<div class="intro-parts-print-block">
-    <p style="font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:5px;">
-    Le document comprend 6 parties :
-    </p>
-
-    <div style="font-size:17px; line-height:1.75; color:{USJ_BLUE}; margin-top:5px;">
-
-        I. Introduction<br>
-
-        II. Identification des parties prenantes à consulter pour écrire le rapport<br>
-
-        III. Analyse interne : cette analyse mène à produire les éléments Forces et Faiblesses de l’analyse SWOT<br>
-
-        IV. Analyse externe : cette analyse mène à produire les éléments Opportunités et Menaces de l’analyse SWOT<br>
-
-        V. Analyse SWOT<br>
-
-        VI. Propositions de Priorités stratégiques et Initiatives
-
-    </div>
-</div>
-    <p style="font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-top:22px; margin-bottom:8px;">
-    Pour toute information supplémentaire ou support, contacter :
-</p>
-
-<p style="font-size:16px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:0;">
-    <p style="font-size:17px; line-height:1.75; color:{USJ_BLUE}; margin-top:22px; margin-bottom:0;">
-    M. Hadi Sawaya – Coordinateur de l’Unité Assurance Qualité : hadi.sawaya@usj.edu.lb<br>
-    Mme Irma Majdalani – Expert qualité – Unité Assurance qualité : irma.majdalani@usj.edu.lb<br>
-    Mme Nadine Riachi Haddad – Secrétaire général : secg@usj.edu.lb<br>
-    Mme Ursula El Hage – Directeur du Service de l’insertion professionnelle : ursula.hage@usj.edu.lb<br>
-    Mme Lina Koleilat Ghalayini – Chef de projets – Unité Assurance qualité : lina.koleilat@usj.edu.lb
-</p>
-</div>
-""")
+    
 
 
 def render_stakeholder_intro():
