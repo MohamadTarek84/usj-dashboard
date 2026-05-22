@@ -1824,7 +1824,7 @@ def main():
             external_analysis = {}
             quick_save_after_external = False
 
-            st.markdown('<div class="print-page-break"></div>', unsafe_allow_html=True)
+            
 
             section_header("V - Analyse SWOT – Niveau USJ")
             render_swot_intro()
