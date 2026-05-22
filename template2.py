@@ -1236,9 +1236,44 @@ def render_external_analysis():
 def render_swot_intro():
     html_block(f"""
 <div style="background-color:#ffffff; padding:24px 34px 10px 34px; border-radius:12px; border-left:none; border-top:none; border-bottom:none; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:6px;">
-    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:0;">
-    L&apos;Analyse SWOT est un levier de planification stratégique qui permet de synthétiser les constats majeurs afin d&apos;améliorer les processus de planification et d&apos;optimiser la prise de décision au niveau de l&apos;Université.
+
+    <p style="font-size:17px; line-height:1.45; color:{USJ_BLUE}; font-weight:700; margin-bottom:10px;">
+    Thématiques à prendre en considération pour répondre aux questions 1 et 2 :
     </p>
+
+    <ul style="font-size:17px; line-height:1.45; color:{USJ_BLUE}; margin-top:0; margin-bottom:18px;">
+        <li>Soutenabilité financière</li>
+        <li>Gouvernance et Leadership (Gestion, relation, représentation, etc.)</li>
+        <li>Stratégie académique et qualité d’enseignement</li>
+        <li>Recherche et Innovation</li>
+        <li>Ressources documentaires et Environnement digital</li>
+        <li>Succès des étudiants (recrutement, accompagnement, services de support, employabilité, etc.)</li>
+        <li>Ressources humaines</li>
+        <li>Stratégie et mobilité internationales</li>
+        <li>Mission sociétale</li>
+        <li>Espace et infrastructures</li>
+        <li>Environnement de travail</li>
+        <li>Diversité et inclusion</li>
+        <li>Développement Durable (ODD)</li>
+        <li>Autre</li>
+    </ul>
+
+    <p style="font-size:17px; line-height:1.5; color:{USJ_BLUE}; font-weight:700; margin-bottom:12px;">
+    1. <span style="color:#C00000; font-style:italic;">Éléments de réussite – Forces :</span>
+    Quels sont les initiatives, processus ou projets universitaires actuels que vous appréciez le plus ?
+    </p>
+
+    <p style="font-size:17px; line-height:1.5; color:{USJ_BLUE}; font-weight:700; margin-bottom:12px;">
+    2. <span style="color:#C00000; font-style:italic;">Initiatives à abandonner – Faiblesses :</span>
+    Quels sont les initiatives, processus ou projets universitaires actuels qui devraient être améliorés ou abandonnés ?
+    </p>
+
+    <p style="font-size:17px; line-height:1.5; color:#0070C0; font-style:italic; margin-bottom:0;">
+    Nous vous remercions de bien vouloir compléter le tableau ci-dessous en indiquant au 
+    <strong>maximum cinq forces et cinq faiblesses</strong>, avec un 
+    <strong>maximum de 30 mots par ligne.</strong>
+    </p>
+
 </div>
 """)
 
@@ -1819,7 +1854,7 @@ def main():
 
             
 
-            section_header("V - Analyse SWOT – Niveau USJ")
+            section_header("I- FORCES ET FAIBLESSES – NIVEAU USJ")
             render_swot_intro()
             swot_analysis = render_swot_analysis()
             quick_save_after_swot = render_quick_save_button("quick_save_after_swot")
