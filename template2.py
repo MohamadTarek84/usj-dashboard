@@ -1349,7 +1349,8 @@ def render_swot_analysis():
 
     st.markdown('<div class="print-page-break"></div>', unsafe_allow_html=True)
 
-        html_block(f"""
+    html_block(f"""
+        
 <div style="background:#ffffff; padding:8px 24px 8px 24px; border-radius:10px; border-left:none; margin-top:10px; margin-bottom:6px;">
 
     <p style="font-size:22px; line-height:1.4; color:{USJ_BLUE}; font-weight:700; margin-bottom:10px;">
