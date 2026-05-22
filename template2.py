@@ -683,6 +683,15 @@ div[data-testid="stIFrame"] {{
     display: none;
 }}
 
+
+/* =========================
+   ADMIN PRINT HELPERS
+========================= */
+.admin-print-title,
+.swot-print-only {{
+    display: none;
+}}
+
 @media print {{
 
     @page {{
@@ -923,68 +932,45 @@ div[data-testid="stIFrame"] {{
         page-break-inside: avoid !important;
     }}
 
-    hr {{
-        margin-top: 6px !important;
-        margin-bottom: 6px !important;
-        height: 1px !important;
-    }}
-}}
 
 
-/* =========================
-   ADMIN PRINT / SAVE PDF MODE
-   Applies only when the admin page is open.
-========================= */
-@media print {{
+    /* =========================
+       ADMIN PRINT VERSION
+       - hide technical controls
+       - keep edited content printable
+       - keep each section on a separate page
+       - keep SWOT matrix on one complete page
+    ========================= */
 
-    body:has(.admin-print-mode) @page {{
-        size: A4 portrait;
-        margin: 10mm 9mm 10mm 9mm;
-    }}
-
-    body:has(.admin-print-mode),
-    body:has(.admin-print-mode) .stApp {{
-        background: white !important;
-        overflow: visible !important;
-    }}
-
-    body:has(.admin-print-mode) .block-container {{
-        max-width: 190mm !important;
-        width: 190mm !important;
-        padding: 0 !important;
-        margin: 0 auto !important;
-    }}
-
-    body:has(.admin-print-mode) header,
-    body:has(.admin-print-mode) footer,
-    body:has(.admin-print-mode) #MainMenu,
-    body:has(.admin-print-mode) .stDeployButton,
-    body:has(.admin-print-mode) div[data-testid="stToolbar"],
-    body:has(.admin-print-mode) div[data-testid="stDecoration"],
-    body:has(.admin-print-mode) div[data-testid="stStatusWidget"],
-    body:has(.admin-print-mode) div[data-testid="stButton"],
-    body:has(.admin-print-mode) div[data-testid="stDownloadButton"],
-    body:has(.admin-print-mode) .admin-print-button-wrapper {{
+    .admin-screen-only,
+    .admin-debug-info,
+    div[data-testid="stButton"],
+    div[data-testid="stDownloadButton"],
+    iframe,
+    .swot-screen-only {{
         display: none !important;
         height: 0 !important;
         min-height: 0 !important;
         margin: 0 !important;
         padding: 0 !important;
+        overflow: hidden !important;
     }}
 
-    body:has(.admin-print-mode) img {{
-        display: none !important;
-    }}
-
-    /* Keep the interactive SWOT matrix iframe visible in print. */
-    body:has(.admin-print-mode) iframe {{
+    .admin-print-title {{
         display: block !important;
-        width: 100% !important;
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
+        text-align: center !important;
+        color: #001F5B !important;
+        font-size: 24px !important;
+        font-weight: 800 !important;
+        margin: 0 0 12mm 0 !important;
+        padding: 0 0 5mm 0 !important;
+        border-bottom: 2px solid #D0D6E0 !important;
+        page-break-after: avoid !important;
+        break-after: avoid !important;
     }}
 
-    body:has(.admin-print-mode) .admin-print-page-break {{
+    .admin-print-page-break {{
+        display: block !important;
         break-before: page !important;
         page-break-before: always !important;
         height: 0 !important;
@@ -992,65 +978,116 @@ div[data-testid="stIFrame"] {{
         padding: 0 !important;
     }}
 
-    body:has(.admin-print-mode) .section-header-card {{
-        break-after: avoid !important;
-        page-break-after: avoid !important;
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
-        margin-top: 0 !important;
-        margin-bottom: 8px !important;
-    }}
-
-    body:has(.admin-print-mode) div[data-testid="stHorizontalBlock"],
-    body:has(.admin-print-mode) div[data-testid="column"],
-    body:has(.admin-print-mode) div[data-testid="stTextArea"],
-    body:has(.admin-print-mode) textarea,
-    body:has(.admin-print-mode) div[style*="border:1.5px solid #595959"],
-    body:has(.admin-print-mode) div[style*="background-color:#E3DED9"] {{
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
-    }}
-
-    body:has(.admin-print-mode) div[data-testid="stTextArea"] {{
+    .admin-original-answer-box,
+    div[data-testid="stTextArea"],
+    div[data-testid="stTextArea"] > div,
+    div[data-testid="stTextArea"] textarea {{
         display: block !important;
-        border: 1px solid #595959 !important;
+        min-height: 32mm !important;
+        height: 32mm !important;
+        max-height: 32mm !important;
+        box-sizing: border-box !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+        overflow: hidden !important;
+    }}
+
+    div[data-testid="stTextArea"] textarea {{
         background-color: #E3DED9 !important;
-        margin-bottom: 8px !important;
-    }}
-
-    body:has(.admin-print-mode) div[data-testid="stTextArea"] textarea {{
-        display: block !important;
-        min-height: 70px !important;
-        height: auto !important;
-        overflow: visible !important;
+        border: 1.5px solid #595959 !important;
         color: #000000 !important;
         -webkit-text-fill-color: #000000 !important;
-        background-color: #E3DED9 !important;
         font-size: 11px !important;
         line-height: 1.25 !important;
-        white-space: pre-wrap !important;
+        padding: 8px !important;
+        resize: none !important;
     }}
 
-    body:has(.admin-print-mode) h1 {{
-        font-size: 24px !important;
-        line-height: 1.15 !important;
-        margin-bottom: 6px !important;
+    .admin-answer-row,
+    div[data-testid="stHorizontalBlock"] {{
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
     }}
 
-    body:has(.admin-print-mode) h2 {{
-        font-size: 18px !important;
-        line-height: 1.2 !important;
+    .swot-print-only {{
+        display: block !important;
+        break-before: page !important;
+        page-break-before: always !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+        width: 100% !important;
+        margin: 0 auto !important;
+        padding: 0 !important;
     }}
 
-    body:has(.admin-print-mode) p,
-    body:has(.admin-print-mode) div,
-    body:has(.admin-print-mode) span,
-    body:has(.admin-print-mode) label {{
+    .swot-print-shell {{
+        width: 100% !important;
+        border: 1px solid #D0D6E0 !important;
+        border-radius: 10px !important;
+        padding: 8mm !important;
+        background: white !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+    }}
+
+    .swot-print-title {{
+        text-align: center !important;
+        color: #001F5B !important;
+        font-size: 20px !important;
+        font-weight: 800 !important;
+        margin-bottom: 2mm !important;
+    }}
+
+    .swot-print-group {{
+        text-align: center !important;
+        color: #555555 !important;
         font-size: 11px !important;
-        line-height: 1.25 !important;
+        font-weight: 700 !important;
+        margin-bottom: 6mm !important;
     }}
 
-    body:has(.admin-print-mode) hr {{
+    .swot-print-grid {{
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 6mm !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+    }}
+
+    .swot-print-card {{
+        min-height: 48mm !important;
+        border: 2px solid var(--accent) !important;
+        border-radius: 8px !important;
+        padding: 5mm !important;
+        background: var(--bg) !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+    }}
+
+    .swot-print-card h3 {{
+        color: var(--accent) !important;
+        font-size: 15px !important;
+        font-weight: 900 !important;
+        margin: 0 0 3mm 0 !important;
+        border-bottom: 2px solid var(--accent) !important;
+        padding-bottom: 2mm !important;
+    }}
+
+    .swot-print-card ul {{
+        margin: 0 !important;
+        padding-left: 5mm !important;
+    }}
+
+    .swot-print-card li {{
+        font-size: 10px !important;
+        line-height: 1.25 !important;
+        margin-bottom: 2mm !important;
+        color: #222222 !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+    }}
+
+    hr {{
         margin-top: 6px !important;
         margin-bottom: 6px !important;
         height: 1px !important;
@@ -1062,7 +1099,7 @@ div[data-testid="stIFrame"] {{
 """)
 def section_header(title):
     html_block(f"""
-<div class="section-header-card" style="background-color:{USJ_LIGHT_BLUE}; padding:12px 18px; border-radius:10px; border-left:7px solid {USJ_BLUE}; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-top:0px; margin-bottom:8px;">
+<div style="background-color:{USJ_LIGHT_BLUE}; padding:12px 18px; border-radius:10px; border-left:7px solid {USJ_BLUE}; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-top:0px; margin-bottom:8px;">
     <h2 style="font-size:26px; color:{USJ_BLUE}; margin:0; font-weight:700;">
         {title}
     </h2>
@@ -2430,6 +2467,43 @@ def estimate_interactive_swot_height(swot_values):
     return int(max(820, 165 + top_row + bottom_row + 26 + 65 + 70))
 
 
+
+def _swot_print_static_html(swot_values, group_name="groupe"):
+    def items_to_li(items):
+        cleaned = _split_admin_items_for_display(items)
+        if not cleaned:
+            return "<li>Aucune réponse admin saisie.</li>"
+        return "".join(f"<li>{html_lib.escape(str(item))}</li>" for item in cleaned[:5])
+
+    safe_group = html_lib.escape(str(group_name or "groupe"))
+
+    return f"""
+<div class="swot-print-only">
+    <div class="swot-print-shell">
+        <div class="swot-print-title">Matrice SWOT - Niveau USJ</div>
+        <div class="swot-print-group">Groupe : {safe_group}</div>
+        <div class="swot-print-grid">
+            <div class="swot-print-card" style="--accent:{USJ_BLUE}; --bg:#DDEFF7;">
+                <h3>FORCES</h3>
+                <ul>{items_to_li(swot_values.get('forces', []))}</ul>
+            </div>
+            <div class="swot-print-card" style="--accent:{USJ_RED}; --bg:#FBE3C3;">
+                <h3>FAIBLESSES</h3>
+                <ul>{items_to_li(swot_values.get('faiblesses', []))}</ul>
+            </div>
+            <div class="swot-print-card" style="--accent:#2F6B2F; --bg:#E2F2D3;">
+                <h3>OPPORTUNITÉS</h3>
+                <ul>{items_to_li(swot_values.get('opportunites', []))}</ul>
+            </div>
+            <div class="swot-print-card" style="--accent:{USJ_RED}; --bg:#F4C6C4;">
+                <h3>MENACES</h3>
+                <ul>{items_to_li(swot_values.get('menaces', []))}</ul>
+            </div>
+        </div>
+    </div>
+</div>
+"""
+
 def render_swot_image_download_block(updated_admin_data, selected_row):
     swot_values = extract_admin_swot_values(updated_admin_data)
 
@@ -2472,11 +2546,17 @@ def render_swot_image_download_block(updated_admin_data, selected_row):
         group_name=display_group_name
     )
 
+    html_block('<div class="swot-screen-only">')
+
     components.html(
         interactive_html,
         height=estimate_interactive_swot_height(swot_values),
         scrolling=False
     )
+
+    html_block('</div>')
+
+    html_block(_swot_print_static_html(swot_values, display_group_name))
 
     st.download_button(
         label="Télécharger la matrice SWOT interactive en HTML",
@@ -2513,11 +2593,7 @@ def main():
         st.session_state["admin_mode"] = True
 
     if st.session_state.get("admin_mode", False):
-        html_block('<div class="admin-print-mode"></div>')
-        st.markdown("## Admin download")
-
-        st.write("DB path:", DB_PATH.resolve())
-        st.write("DB exists:", DB_PATH.exists())
+        html_block('<div class="admin-screen-only"><h2 style="color:#001F5B; margin-top:0;">Gestion des réponses</h2></div>')
 
         if not DB_PATH.exists():
             st.error("Database not found in this app environment.")
@@ -2529,9 +2605,8 @@ def main():
             st.warning("Database exists, but no responses are saved.")
             st.stop()
 
-        st.success(f"{len(df)} response(s) found.")
+        html_block(f'<div class="admin-screen-only" style="background:#E9F8EF; padding:12px 18px; border-radius:8px; margin-bottom:18px;">{len(df)} réponse(s) enregistrée(s).</div>')
 
-        st.markdown("### Gestion des réponses")
 
         admin_df = df.copy()
         admin_df["display_label"] = (
@@ -2550,36 +2625,10 @@ def main():
 
         selected_row = admin_df[admin_df["draft_code"] == selected_draft_code].iloc[0]
 
-        components.html(
-            """
-            <style>
-            @media print {
-                .admin-print-button-wrapper {
-                    display: none !important;
-                    height: 0 !important;
-                    margin: 0 !important;
-                    padding: 0 !important;
-                }
-            }
-            </style>
-            <div class="admin-print-button-wrapper" style="height:72px; display:flex; align-items:center; justify-content:flex-start;">
-                <button onclick="window.parent.print()" style="
-                    background-color:#8B1538;
-                    color:white;
-                    border:none;
-                    border-radius:8px;
-                    padding:12px 24px;
-                    font-size:18px;
-                    font-weight:700;
-                    font-family:Candara, Calibri, Arial, sans-serif;
-                    cursor:pointer;
-                ">
-                    Aperçu avant impression / Enregistrer en PDF
-                </button>
-            </div>
-            """,
-            height=78
-        )
+        print_group_name = " - ".join(
+            [part for part in [str(selected_row.get("respondent_name", "")).strip(), str(selected_row.get("respondent_unit", "")).strip()] if part]
+        ) or selected_draft_code
+        html_block(f'<div class="admin-print-title">{html_lib.escape(print_group_name)}</div>')
 
         original_data = json.loads(selected_row["data_json"]) if selected_row["data_json"] else {}
 
@@ -2661,7 +2710,7 @@ box-shadow:0 2px 6px rgba(0,0,0,0.05);
 
             st.markdown(
                 f'''
-<div style="
+<div class="admin-original-answer-box" style="
 background-color:#E3DED9;
 padding:12px 16px;
 border-radius:0px;
@@ -2950,6 +2999,26 @@ margin-bottom:8px;
 
         st.markdown("---")
 
+        components.html(
+            """
+            <div class="admin-screen-only" style="height:72px; display:flex; align-items:center;">
+                <button onclick="window.parent.print()" style="
+                    background-color:#8B1538;
+                    color:white;
+                    border:none;
+                    border-radius:8px;
+                    padding:12px 24px;
+                    font-size:18px;
+                    font-weight:700;
+                    cursor:pointer;
+                    font-family:Candara, Calibri, Arial, sans-serif;
+                ">
+                    Aperçu avant impression / Enregistrer en PDF
+                </button>
+            </div>
+            """,
+            height=80
+        )
 
         # Auto-save admin modifications on every rerun
         save_admin_version_by_code(selected_draft_code, updated_all_admin_data)
