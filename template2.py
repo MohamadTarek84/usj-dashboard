@@ -1697,24 +1697,24 @@ def draw_wrapped_bullets(draw, items, x, y, max_width, max_height, font, fill, l
 
 
 def create_swot_image_bytes(swot_values):
-    width, height = 1800, 1050
+    width, height = 2000, 1180
     image = Image.new("RGB", (width, height), "white")
     draw = ImageDraw.Draw(image, "RGBA")
 
-    title_font = load_font(44, bold=True)
-    bullet_font = load_font(29, bold=False)
-    letter_font = load_font(76, bold=True)
+    title_font = load_font(60, bold=True)
+    bullet_font = load_font(42, bold=False)
+    letter_font = load_font(98, bold=True)
 
     margin_x = 70
-    margin_y = 45
-    gap_x = 58
-    gap_y = 42
+    margin_y = 55
+    gap_x = 70
+    gap_y = 58
     box_w = (width - 2 * margin_x - gap_x) // 2
     box_h = (height - 2 * margin_y - gap_y) // 2
-    radius = 62
+    radius = 60
 
-    text_color = (18, 22, 25, 255)
-    letter_color = (35, 35, 35, 205)
+    text_color = (20, 20, 20, 255)
+    letter_color = (35, 35, 35, 215)
 
     boxes = {
         "Strengths": {
@@ -1747,8 +1747,8 @@ def create_swot_image_bytes(swot_values):
         x1, y1, x2, y2 = info["xy"]
         draw.rounded_rectangle(info["xy"], radius=radius, fill=info["color"])
 
-        title_x = x1 + 68
-        title_y = y1 + 50
+        title_x = x1 + 80
+        title_y = y1 + 60
         draw.text((title_x, title_y), title, font=title_font, fill=text_color)
 
         letter_text = info["letter"]
@@ -1756,7 +1756,7 @@ def create_swot_image_bytes(swot_values):
         letter_w = letter_bbox[2] - letter_bbox[0]
         letter_h = letter_bbox[3] - letter_bbox[1]
         draw.text(
-            (x2 - 155 - letter_w / 2, y1 + box_h / 2 - letter_h / 2),
+            (x2 - 175 - letter_w / 2, y1 + box_h / 2 - letter_h / 2),
             letter_text,
             font=letter_font,
             fill=letter_color,
@@ -1765,19 +1765,19 @@ def create_swot_image_bytes(swot_values):
         draw_wrapped_bullets(
             draw=draw,
             items=info["items"],
-            x=x1 + 70,
-            y=y1 + 145,
-            max_width=box_w - 250,
-            max_height=box_h - 190,
+            x=x1 + 82,
+            y=y1 + 175,
+            max_width=box_w - 270,
+            max_height=box_h - 215,
             font=bullet_font,
             fill=text_color,
-            line_gap=8,
-            bullet_gap=13,
+            line_gap=12,
+            bullet_gap=18,
         )
 
     cx, cy = width // 2, height // 2
-    draw.ellipse((cx - 168, cy - 168, cx + 168, cy + 168), fill=(115, 150, 165, 65))
-    draw.ellipse((cx - 84, cy - 84, cx + 84, cy + 84), fill=(80, 115, 125, 92))
+    draw.ellipse((cx - 180, cy - 180, cx + 180, cy + 180), fill=(115, 150, 165, 68))
+    draw.ellipse((cx - 92, cy - 92, cx + 92, cy + 92), fill=(80, 115, 125, 96))
 
     buffer = BytesIO()
     image.save(buffer, format="PNG", optimize=True)
@@ -1800,16 +1800,6 @@ def render_swot_image_download_block(updated_admin_data, selected_row):
     state_key = f"show_swot_image_{safe_filename(str(draft_code))}"
 
     st.markdown("---")
-    html_block(f"""
-<div style="background-color:#ffffff; padding:18px 22px; border-radius:10px; border-left:7px solid {USJ_RED}; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-top:12px; margin-bottom:14px;">
-    <h3 style="font-size:24px; color:{USJ_RED}; margin:0; font-weight:700;">
-        Image SWOT à partir de la version admin modifiée
-    </h3>
-    <p style="font-size:16px; color:{USJ_TEXT}; margin:8px 0 0 0;">
-        Cliquez sur le bouton ci-dessous pour générer l’image SWOT et la télécharger au nom du groupe sélectionné.
-    </p>
-</div>
-""")
 
     if st.button(
         "Générer l’image SWOT",
@@ -1828,8 +1818,7 @@ def render_swot_image_download_block(updated_admin_data, selected_row):
 
     st.image(
         image_bytes,
-        caption=f"Image SWOT - {display_group_name}",
-        width=1100
+        width=1350
     )
 
     st.download_button(
