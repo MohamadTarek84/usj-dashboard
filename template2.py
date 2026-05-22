@@ -1702,77 +1702,45 @@ def main():
             else:
                 st.write(original_section)
 
-                with col_admin:
-                    st.markdown("#### Version admin modifiable")
+            with col_admin:
+            st.markdown("#### Version admin modifiable")
 
-                    existing_admin_section = admin_data.get(section_choice)
+            existing_admin_section = admin_data.get(section_choice)
 
-                    if not existing_admin_section:
-                        existing_admin_section = original_section
+            if not existing_admin_section:
+                existing_admin_section = original_section
 
-                    updated_admin_section = []
+            updated_admin_section = []
 
-                    if isinstance(original_section, list):
+            if isinstance(original_section, list):
 
-                        for i, row in enumerate(original_section, start=1):
-                            st.markdown(f"### Réponse admin {i}")
+                for i, row in enumerate(original_section, start=1):
 
-                            updated_row = {}
+                    st.markdown(f"### Réponse {i}")
 
-                            if isinstance(row, dict):
-                                saved_admin_row = {}
+                    updated_row = {}
 
-                                if (
-                                    isinstance(existing_admin_section, list)
-                                    and len(existing_admin_section) >= i
-                                    and isinstance(existing_admin_section[i - 1], dict)
-                                ):
-                                    saved_admin_row = existing_admin_section[i - 1]
+                    saved_admin_row = {}
 
-                                for key, value in row.items():
-                                    default_value = saved_admin_row.get(key, value)
+                    if (
+                        isinstance(existing_admin_section, list)
+                        and len(existing_admin_section) >= i
+                        and isinstance(existing_admin_section[i - 1], dict)
+                    ):
+                        saved_admin_row = existing_admin_section[i - 1]
 
-                                    st.markdown(
-                                        f"""
-<div style="
-background-color:#F8F3F5;
-padding:12px 16px;
-border-radius:10px;
-border-left:5px solid {USJ_RED};
-margin-bottom:0px;
-box-shadow:0 2px 6px rgba(0,0,0,0.05);
-">
-<b style="color:{USJ_RED};">{key}</b>
-</div>
-""",
-                                        unsafe_allow_html=True
-                                    )
+                    if isinstance(row, dict):
 
-                                    updated_row[key] = st.text_area(
-                                        label=key,
-                                        value=str(default_value) if default_value else "",
-                                        height=90,
-                                        key=f"admin_edit_{selected_draft_code}_{section_choice}_{i}_{key}"
-                                    )
+                        for key, value in row.items():
 
-                            updated_admin_section.append(updated_row)
-
-                    elif isinstance(original_section, dict):
-
-                        updated_admin_section = {}
-
-                        for key, value in original_section.items():
-                            if isinstance(existing_admin_section, dict):
-                                default_value = existing_admin_section.get(key, value)
-                            else:
-                                default_value = value
+                            admin_value = saved_admin_row.get(key, value)
 
                             st.markdown(
                                 f"""
 <div style="
 background-color:#F8F3F5;
 padding:12px 16px;
-border-radius:10px;
+border-radius:10px 10px 0px 0px;
 border-left:5px solid {USJ_RED};
 margin-bottom:0px;
 box-shadow:0 2px 6px rgba(0,0,0,0.05);
@@ -1783,34 +1751,66 @@ box-shadow:0 2px 6px rgba(0,0,0,0.05);
                                 unsafe_allow_html=True
                             )
 
-                            updated_admin_section[key] = st.text_area(
-                                label=key,
-                                value=str(default_value) if default_value else "",
-                                height=90,
-                                key=f"admin_edit_{selected_draft_code}_{section_choice}_{key}"
+                            updated_row[key] = st.text_area(
+                                label=f"{key}_{i}",
+                                value=str(admin_value) if admin_value else "",
+                                height=80,
+                                key=f"admin_edit_{selected_draft_code}_{section_choice}_{i}_{key}",
+                                label_visibility="collapsed"
                             )
 
+                    updated_admin_section.append(updated_row)
+
+            elif isinstance(original_section, dict):
+
+                updated_admin_section = {}
+
+                for key, value in original_section.items():
+
+                    if isinstance(existing_admin_section, dict):
+                        admin_value = existing_admin_section.get(key, value)
                     else:
-                        updated_admin_section = st.text_area(
-                            "Synthèse / corrections admin",
-                            value=str(existing_admin_section) if existing_admin_section else "",
-                            height=350,
-                            key=f"admin_edit_{selected_draft_code}_{section_choice}"
-                        )
+                        admin_value = value
 
-                    if st.button(
-                        "Enregistrer la version admin",
-                        key=f"save_admin_{selected_draft_code}_{section_choice}"
-                    ):
-                        admin_data[section_choice] = updated_admin_section
-                        save_admin_version_by_code(selected_draft_code, admin_data)
+                    st.markdown(
+                        f"""
+<div style="
+background-color:#F8F3F5;
+padding:12px 16px;
+border-radius:10px 10px 0px 0px;
+border-left:5px solid {USJ_RED};
+margin-bottom:0px;
+box-shadow:0 2px 6px rgba(0,0,0,0.05);
+">
+<b style="color:{USJ_RED};">{key}</b>
+</div>
+""",
+                        unsafe_allow_html=True
+                    )
 
-                        st.success(
-                            "Version admin enregistrée sans modifier les réponses originales du groupe."
-                        )
+                    updated_admin_section[key] = st.text_area(
+                        label=key,
+                        value=str(admin_value) if admin_value else "",
+                        height=80,
+                        key=f"admin_edit_{selected_draft_code}_{section_choice}_{key}",
+                        label_visibility="collapsed"
+                    )
 
-                        st.rerun()
+            if st.button(
+                "Enregistrer la version admin",
+                key=f"save_admin_{selected_draft_code}_{section_choice}"
+            ):
 
+                admin_data[section_choice] = updated_admin_section
+
+                save_admin_version_by_code(
+                    selected_draft_code,
+                    admin_data
+                )
+
+                st.success("Version admin enregistrée.")
+
+                st.rerun()
 
     if not st.session_state["access_granted"]:
         col_code, col_button = st.columns([2, 1])
