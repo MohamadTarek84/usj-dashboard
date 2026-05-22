@@ -1081,13 +1081,7 @@ def render_stakeholder_intro():
     html_block(f"""
 <div style="background-color:#ffffff; padding:20px 34px 12px 34px; border-radius:12px; border-left:none; border-top:none; border-bottom:none; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:12px;">
 
-    
 
-    
-
-    <p style="text-align:justify; font-size:17px; line-height:1.55; color:{USJ_BLUE}; margin-bottom:16px;">
-    L’institution est libre d’organiser, selon les modalités qu’elle juge les plus appropriées, une ou plusieurs réunions avec les parties prenantes, ou, dans certains cas, de recourir à des questionnaires.
-    </p>
 
     <p style="font-size:17px; line-height:1.55; color:#0070C0; font-weight:700; font-style:italic; margin-bottom:16px;">
     Le tableau ci-dessous doit être dûment complété.
