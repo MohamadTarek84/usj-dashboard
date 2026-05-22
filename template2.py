@@ -2431,7 +2431,7 @@ margin-bottom:8px;
 
             with col1:
                 st.text_input(
-                    "Institution",
+                    "Focus groupe",
                     value=st.session_state.get("institution", ""),
                     disabled=True,
                     key="institution_display"
