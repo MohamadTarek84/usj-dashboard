@@ -1347,6 +1347,8 @@ def render_swot_analysis():
         right_title="Faiblesses"
     )
 
+    render_quick_save_button("quick_save_after_section_i")
+    
     st.markdown("<br>", unsafe_allow_html=True)
     st.divider()
 
