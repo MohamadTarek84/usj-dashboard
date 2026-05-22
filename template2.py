@@ -2789,6 +2789,12 @@ margin-bottom:8px;
 
         st.markdown("---")
 
+
+        # Auto-save admin modifications on every rerun
+        save_admin_version_by_code(selected_draft_code, updated_all_admin_data)
+
+        st.caption("Les modifications admin sont enregistrées automatiquement.")
+
         if st.button(
             "Enregistrer toutes les versions admin",
             key=f"save_admin_all_{selected_draft_code}"
