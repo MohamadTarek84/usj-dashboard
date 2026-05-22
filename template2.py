@@ -1343,8 +1343,8 @@ def render_swot_analysis():
 
     swot_data["facteurs_internes"] = render_swot_table(
         section_key="swot_internal",
-        left_title="Forces (Saisir une force par case)",
-        right_title="Faiblesses (Saisir une faiblesse par case)"
+        left_title="Forces",
+        right_title="Faiblesses"
     )
 
     st.markdown("<br>", unsafe_allow_html=True)
@@ -1388,8 +1388,8 @@ def render_swot_analysis():
 
     swot_data["facteurs_externes"] = render_swot_table(
         section_key="swot_external",
-        left_title="Opportunités (Saisir une opportunité par case)",
-        right_title="Menaces (Saisir une menace par case)"
+        left_title="Opportunités",
+        right_title="Menaces"
     )
 
     return swot_data
