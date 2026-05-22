@@ -1350,7 +1350,7 @@ def render_swot_analysis():
         right_title="Faiblesses"
     )
 
-    render_quick_save_button("quick_save_after_section_i")
+    st.session_state["quick_save_after_section_i_clicked"] = render_quick_save_button("quick_save_after_section_i")
     
     st.markdown("<br>", unsafe_allow_html=True)
     st.divider()
@@ -1820,7 +1820,7 @@ def main():
             section_header("I- FORCES ET FAIBLESSES – NIVEAU USJ")
             render_swot_intro()
             swot_analysis = render_swot_analysis()
-            quick_save_after_swot = render_quick_save_button("quick_save_after_swot")
+            quick_save_after_swot = False
 
             st.divider()
 
@@ -1920,6 +1920,7 @@ def main():
             quick_save_after_external,
             quick_save_after_swot,
             quick_save_after_priorities,
+            st.session_state.get("quick_save_after_section_i_clicked", False),
         ])
 
         if save_draft or submit_final or quick_save_clicked:
