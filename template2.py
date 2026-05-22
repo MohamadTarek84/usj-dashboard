@@ -549,6 +549,26 @@ div[data-testid="stForm"] {{
 }}
 
 
+
+
+.admin-action-row iframe {
+    width: 100% !important;
+}
+
+.admin-action-row button,
+.admin-action-row div[data-testid="stButton"] button {
+    height: 58px !important;
+    min-height: 58px !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    font-family: Candara, Calibri, Arial, sans-serif !important;
+    font-size: 18px !important;
+    font-weight: 800 !important;
+    border-radius: 8px !important;
+    padding: 10px 22px !important;
+}
+
 /* Normal buttons */
 .stButton button,
 .stDownloadButton button,
@@ -1162,8 +1182,8 @@ div[data-testid="stIFrame"] {{
     .swot-print-only {{
         break-before: page !important;
         page-break-before: always !important;
-        break-after: page !important;
-        page-break-after: always !important;
+        break-after: auto !important;
+        page-break-after: auto !important;
         margin-top: 0 !important;
         margin-bottom: 0 !important;
     }}
@@ -1194,6 +1214,46 @@ div[data-testid="stIFrame"] {{
         break-inside: avoid !important;
         page-break-inside: avoid !important;
     }}
+
+    /* FINAL ADMIN PRINT CORRECTIONS */
+    .admin-print-title {{
+        margin-top: 0 !important;
+        margin-bottom: 2mm !important;
+        padding-top: 0 !important;
+        padding-bottom: 1.5mm !important;
+        font-size: 20px !important;
+        line-height: 1.1 !important;
+    }}
+
+    .swot-print-only {{
+        break-before: page !important;
+        page-break-before: always !important;
+        break-after: auto !important;
+        page-break-after: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }}
+
+    .admin-print-page-break + .swot-print-only,
+    .swot-print-only + .admin-print-page-break {{
+        break-before: auto !important;
+        page-break-before: auto !important;
+    }}
+
+    .admin-original-answer-box,
+    div[data-testid="stTextArea"],
+    div[data-testid="stTextArea"] > div,
+    div[data-testid="stTextArea"] textarea {{
+        min-height: 24mm !important;
+        height: 24mm !important;
+        max-height: 24mm !important;
+        margin-bottom: 1.5mm !important;
+    }}
+
+    .admin-answer-row-wrapper {{
+        margin-bottom: 1.8mm !important;
+    }}
+
 }}
 
 
@@ -3121,6 +3181,7 @@ margin-bottom:8px;
                 render_swot_image_download_block(updated_all_admin_data, selected_row)
 
         st.markdown("---")
+        html_block('<div class="admin-action-row">')
 
         col_admin_print, col_admin_save, col_admin_spacer = st.columns(
             [1.25, 1.25, 2.50],
@@ -3134,14 +3195,14 @@ margin-bottom:8px;
                     height:58px;
                     display:flex;
                     align-items:center;
-                    justify-content:flex-start;
+                    justify-content:center;
                     padding:0;
                     margin:0;
                 ">
                     <button onclick="window.parent.print()" style="
-                        width:360px;
-                        min-width:360px;
-                        max-width:360px;
+                        width:100%;
+                        min-width:100%;
+                        max-width:100%;
                         height:58px;
                         min-height:58px;
                         background-color:#8B1538;
@@ -3178,6 +3239,7 @@ margin-bottom:8px;
                 st.success("Versions admin enregistrées sans modifier les réponses originales du groupe.")
                 st.rerun()
 
+        html_block('</div>')
         st.stop()
 
     if not st.session_state["access_granted"]:
@@ -3243,6 +3305,7 @@ margin-bottom:8px;
                 st.info("Nouveau formulaire ouvert. Vous pouvez commencer à remplir vos réponses.")
                 st.rerun()
 
+        html_block('</div>')
         st.stop()
 
     mode = "Saisir une réponse"
