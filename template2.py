@@ -1437,11 +1437,10 @@ def render_priorities_table():
 
 def render_pour_finir():
     pour_finir = {}
-    read_only = st.session_state.get("read_only_submitted", False)
 
     html_block(f"""
 <div style="background-color:#ffffff; padding:4px 0 2px 0; margin-bottom:2px;">
-    <p style="font-size:18px; line-height:1.25; color:{USJ_RED}; font-weight:700; font-style:italic; margin-bottom:2px;">
+    <p style="font-size:18px; line-height:1.25; color:{USJ_RED}; font-weight:700; font-style:italic; margin-bottom:8px;">
     POUR FINIR. Nous vous remercions de compléter les phrases suivantes :
     </p>
 </div>
@@ -1454,53 +1453,24 @@ def render_pour_finir():
     ]
 
     for i, phrase in enumerate(phrases, start=1):
-        col_label, col_boxes, col_empty = st.columns([260, 520, 1], gap="small")
+        col_label, col_answer = st.columns([1.3, 2], gap="small")
 
         with col_label:
             html_block(f"""
-<div class="pour-finir-screen-label" style="font-size:17px; line-height:1.35; color:{USJ_BLUE}; font-weight:700; margin-top:8px; white-space:nowrap;">
-    &bull; {phrase}
+<div style="border:1px solid #595959; min-height:58px; padding:10px 12px; color:{USJ_BLUE}; font-size:19px; font-weight:700; display:flex; align-items:center;">
+    • {phrase}
 </div>
 """)
 
-        with col_boxes:
-            r1 = st.text_input(
-                f"{phrase} 1",
-                key=f"pour_finir_{i}_1",
+        with col_answer:
+            pour_finir[f"phrase_{i}"] = st.text_area(
+                label=f"Réponse {i}",
+                key=f"pour_finir_phrase_{i}",
+                height=58,
                 label_visibility="collapsed",
-                disabled=read_only
+                placeholder="",
+                disabled=st.session_state.get("read_only_submitted", False)
             )
-            r2 = st.text_input(
-                f"{phrase} 2",
-                key=f"pour_finir_{i}_2",
-                label_visibility="collapsed",
-                disabled=read_only
-            )
-            r3 = st.text_input(
-                f"{phrase} 3",
-                key=f"pour_finir_{i}_3",
-                label_visibility="collapsed",
-                disabled=read_only
-            )
-
-        printable_r1 = html_lib.escape(r1 or "") or "&nbsp;"
-        printable_r2 = html_lib.escape(r2 or "") or "&nbsp;"
-        printable_r3 = html_lib.escape(r3 or "") or "&nbsp;"
-
-        html_block(f"""
-<div class="pour-finir-print-row">
-    <div class="pour-finir-print-label">&bull; {phrase}</div>
-    <div class="pour-finir-print-box">{printable_r1}</div>
-    <div class="pour-finir-print-box">{printable_r2}</div>
-    <div class="pour-finir-print-box">{printable_r3}</div>
-</div>
-""")
-
-        pour_finir[phrase] = {
-            "reponse_1": r1,
-            "reponse_2": r2,
-            "reponse_3": r3,
-        }
 
     return pour_finir
 
