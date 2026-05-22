@@ -1414,65 +1414,26 @@ def render_priorities_intro():
 """)
 
 def render_priorities_table():
-    priorities_rows = []
+    priorities_initiatives = {}
 
-    col1, col2 = st.columns([1.2, 1.8])
-
-    with col1:
-        html_block(f"""
-<div style="background:{USJ_BLUE}; color:white; padding:10px 12px; min-height:42px; display:flex; align-items:center; justify-content:center; font-weight:700; border-radius:6px;">
-    Priorités stratégiques au niveau de l’USJ
+    html_block(f"""
+<div style="margin-top:10px; margin-bottom:0;">
+    <div style="background-color:{USJ_BLUE}; color:white; padding:10px 14px; font-size:18px; font-weight:700; border:1px solid #595959;">
+        PRIORITÉS – NIVEAU USJ
+    </div>
 </div>
 """)
 
-    with col2:
-        html_block(f"""
-<div style="background:{USJ_BLUE}; color:white; padding:10px 12px; min-height:42px; display:flex; align-items:center; justify-content:center; font-weight:700; border-radius:6px;">
-    Initiatives
-</div>
-""")
+    for i in range(1, 6):
+        priorities_initiatives[f"priorite_{i}"] = word_limited_text_area(
+            label=f"Priorité {i}",
+            key=f"priority_only_{i}",
+            height=75,
+            max_words=30
+        )
 
-    for i in range(1, 4):
-        col1, col2 = st.columns([1.2, 1.8], gap="small")
+    return priorities_initiatives
 
-        with col1:
-            priority_value = word_limited_text_area(
-                label=f"Priorité stratégique {i}",
-                key=f"priority_{i}",
-                height=350,
-                max_words=30
-            )
-
-        with col2:
-            initiative_1 = word_limited_text_area(
-                label=f"Initiative {i}.1",
-                key=f"initiative_{i}_1",
-                height=70,
-                max_words=30
-            )
-
-            initiative_2 = word_limited_text_area(
-                label=f"Initiative {i}.2",
-                key=f"initiative_{i}_2",
-                height=70,
-                max_words=30
-            )
-
-            initiative_3 = word_limited_text_area(
-                label=f"Initiative {i}.3",
-                key=f"initiative_{i}_3",
-                height=70,
-                max_words=30
-            )
-
-        priorities_rows.append({
-            "priorite_strategique": priority_value,
-            "initiative_1": initiative_1,
-            "initiative_2": initiative_2,
-            "initiative_3": initiative_3,
-        })
-
-    return priorities_rows
 
 def render_pour_finir():
     pour_finir = {}
