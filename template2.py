@@ -607,6 +607,53 @@ div[data-testid="stButton"] button[kind="secondary"] p {{
     margin: 0 !important;
 }}
 
+
+/* FINAL ADMIN BUTTON FIX - same width, same height, same font */
+.admin-action-row-fix {{
+    width: 100% !important;
+}}
+
+.admin-action-row-fix iframe {{
+    display: block !important;
+    width: 100% !important;
+    height: 58px !important;
+    min-height: 58px !important;
+    border: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}}
+
+.st-key-save_admin_all_button button {{
+    height: 58px !important;
+    min-height: 58px !important;
+    max-height: 58px !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    background-color: #0070C0 !important;
+    border: 1px solid #0070C0 !important;
+    border-radius: 8px !important;
+    padding: 10px 22px !important;
+    margin: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-family: Candara, Calibri, Arial, sans-serif !important;
+    font-size: 18px !important;
+    font-weight: 800 !important;
+    line-height: 1 !important;
+}}
+
+.st-key-save_admin_all_button button p {{
+    color: white !important;
+    font-family: Candara, Calibri, Arial, sans-serif !important;
+    font-size: 18px !important;
+    font-weight: 800 !important;
+    line-height: 1 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}}
+
 /* Normal buttons */
 .stButton button,
 .stDownloadButton button,
@@ -3428,36 +3475,84 @@ margin-bottom:8px;
 
         st.markdown("---")
 
+        html_block('<div class="admin-action-row-fix">')
+
         col_admin_print, col_admin_save, col_admin_spacer = st.columns(
-            [1.25, 1.25, 2.50],
+            [1.35, 1.35, 2.30],
             gap="large",
             vertical_alignment="center"
         )
 
         with col_admin_print:
-            st.markdown(
+            components.html(
                 """
-                <button class="admin-print-button" onclick="window.print()">
-                    Imprimer / Enregistrer en PDF
-                </button>
+                <!DOCTYPE html>
+                <html>
+                <head>
+                <meta charset="UTF-8">
+                <style>
+                    html, body {
+                        margin: 0;
+                        padding: 0;
+                        width: 100%;
+                        height: 58px;
+                        overflow: hidden;
+                        background: transparent;
+                        font-family: Candara, Calibri, Arial, sans-serif;
+                    }
+                    button {
+                        width: 100%;
+                        height: 58px;
+                        min-height: 58px;
+                        max-height: 58px;
+                        background-color: #8B1538;
+                        color: #ffffff;
+                        border: 1px solid #8B1538;
+                        border-radius: 8px;
+                        padding: 10px 22px;
+                        margin: 0;
+                        font-family: Candara, Calibri, Arial, sans-serif;
+                        font-size: 18px;
+                        font-weight: 800;
+                        line-height: 1;
+                        cursor: pointer;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        white-space: nowrap;
+                        box-sizing: border-box;
+                    }
+                    button:hover {
+                        background-color: #761130;
+                        border-color: #761130;
+                    }
+                </style>
+                </head>
+                <body>
+                    <button type="button" onclick="try { window.parent.print(); } catch(e) { try { window.top.print(); } catch(e2) { window.print(); } }">
+                        Imprimer / Enregistrer en PDF
+                    </button>
+                </body>
+                </html>
                 """,
-                unsafe_allow_html=True
+                height=58,
+                scrolling=False
             )
 
         # Auto-save admin modifications on every rerun
         save_admin_version_by_code(selected_draft_code, updated_all_admin_data)
 
         with col_admin_save:
-            st.markdown('<div class="admin-save-button-wrapper">', unsafe_allow_html=True)
             if st.button(
                 "Enregistrer toutes les versions admin",
-                key=f"save_admin_all_{selected_draft_code}",
+                key="save_admin_all_button",
                 use_container_width=True
             ):
                 save_admin_version_by_code(selected_draft_code, updated_all_admin_data)
                 st.success("Versions admin enregistrées sans modifier les réponses originales du groupe.")
                 st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
+
+        html_block('</div>')
 
         st.stop()
 
