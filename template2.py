@@ -1560,36 +1560,69 @@ div[data-testid="stIFrame"] {{
 @media print {{
 
     .admin-print-cover-header {{
-        display: block !important;
+        display: none !important;
+        height: 0 !important;
+        min-height: 0 !important;
+        max-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+    }}
+
+    .admin-print-cover-header img,
+    .admin-print-cover-title {{
+        display: none !important;
+    }}
+
+    .usj-main-header {{
+        display: flex !important;
+        align-items: flex-start !important;
+        justify-content: space-between !important;
+        gap: 20mm !important;
         width: 100% !important;
-        text-align: center !important;
-        margin: 0 0 4mm 0 !important;
-        padding: 0 0 3mm 0 !important;
+        margin: 0 0 8mm 0 !important;
+        padding: 0 0 7mm 0 !important;
         border-bottom: 1px solid #D0D6E0 !important;
         break-after: avoid !important;
         page-break-after: avoid !important;
     }}
 
-    .admin-print-cover-header img {{
-        display: block !important;
-        visibility: visible !important;
-        height: auto !important;
-        max-height: 22mm !important;
-        width: auto !important;
-        max-width: 58mm !important;
-        margin: 0 auto 2mm auto !important;
-        padding: 0 !important;
-        object-fit: contain !important;
+    .usj-main-header h1 {{
+        font-size: 30px !important;
+        line-height: 1.12 !important;
+        margin: 0 0 7mm 0 !important;
+        color: #001F5B !important;
+        font-weight: 800 !important;
     }}
 
-    .admin-print-cover-title {{
-        display: block !important;
-        color: #001F5B !important;
-        font-size: 18px !important;
-        font-weight: 800 !important;
-        line-height: 1.15 !important;
-        margin: 0 !important;
+    .usj-main-header p,
+    .usj-main-header p span {{
+        font-size: 13px !important;
+        line-height: 1.25 !important;
+        color: #1F3C88 !important;
+        font-weight: 700 !important;
+    }}
+
+    .usj-main-header-logo {{
+        width: 58mm !important;
+        min-width: 58mm !important;
+        max-width: 58mm !important;
+        display: flex !important;
+        justify-content: flex-end !important;
+        align-items: flex-start !important;
         padding: 0 !important;
+        margin: 0 !important;
+    }}
+
+    .usj-main-header-logo img {{
+        display: block !important;
+        visibility: visible !important;
+        width: 58mm !important;
+        max-width: 58mm !important;
+        height: auto !important;
+        max-height: 26mm !important;
+        object-fit: contain !important;
+        opacity: 1 !important;
     }}
 
     .admin-print-title {{
@@ -1657,6 +1690,39 @@ div[data-testid="stIFrame"] {{
     }}
 }}
 
+
+
+/* FINAL OVERRIDE: print logo/header and no blank page between SWOT and Section III */
+@media print {{
+    .admin-print-cover-header,
+    .admin-print-cover-header img,
+    .admin-print-cover-title,
+    .admin-section-iii-page-break {{
+        display: none !important;
+        height: 0 !important;
+        min-height: 0 !important;
+        max-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+        break-before: auto !important;
+        page-break-before: auto !important;
+        break-after: auto !important;
+        page-break-after: auto !important;
+    }}
+
+    .swot-print-only {{
+        display: block !important;
+        break-before: page !important;
+        page-break-before: always !important;
+        break-after: page !important;
+        page-break-after: always !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }}
+}}
 </style>
 """)
 def section_header(title):
@@ -1719,37 +1785,53 @@ def render_print_icon_button():
         st.warning("Print.png non trouvé. Placez Print.png dans le même dossier que le script.")
 
 def render_first_page_header():
-    col_left, col_right = st.columns([2.2, 1])
+    logo_src = image_to_base64(LOGO_PATH)
 
-    with col_left:
-        html_block(f"""
-<div style="padding-top:0px;">
-    <h1 style="font-size:42px; margin-bottom:18px; color:{USJ_BLUE}; line-height:1.1;">
-        PLAN STRATÉGIQUE USJ 2032
-    </h1>
+    if logo_src:
+        logo_html = f"""
+        <img src="{logo_src}" alt="USJ - Unité Assurance Qualité" style="
+            width:350px;
+            max-width:100%;
+            height:auto;
+            object-fit:contain;
+            display:block;
+        ">
+        """
+    else:
+        logo_html = '<div style="color:#8B1538; font-weight:700;">LogoUAQ.png non trouvé</div>'
 
-    <p style="font-size:18px; font-weight:700; color:{USJ_BLUE_2}; margin-top:0px; margin-bottom:0px; line-height:1.4;">
-        Analyse de l’état actuel et propositions <span style="font-size:18px; font-weight:700; color:{USJ_BLUE_2};">(pré-planification stratégique USJ)</span>
-    </p>
+    html_block(f"""
+<div class="usj-main-header" style="
+    width:100%;
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:32px;
+    padding-top:0px;
+    margin-bottom:26px;
+">
+    <div style="flex:1; padding-top:0px;">
+        <h1 style="font-size:42px; margin:0 0 18px 0; color:{USJ_BLUE}; line-height:1.1;">
+            PLAN STRATÉGIQUE USJ 2032
+        </h1>
+
+        <p style="font-size:18px; font-weight:700; color:{USJ_BLUE_2}; margin:0; line-height:1.4;">
+            Analyse de l’état actuel et propositions <span style="font-size:18px; font-weight:700; color:{USJ_BLUE_2};">(pré-planification stratégique USJ)</span>
+        </p>
+    </div>
+
+    <div class="usj-main-header-logo" style="
+        width:350px;
+        min-width:350px;
+        display:flex;
+        justify-content:flex-end;
+        align-items:flex-start;
+        padding-top:0px;
+    ">
+        {logo_html}
+    </div>
 </div>
 """)
-
-    with col_right:
-        if LOGO_PATH.exists():
-            st.image(str(LOGO_PATH), width=350)
-        else:
-            st.warning("LogoUAQ.png non trouvé. Placez le logo dans le même dossier que le script.")
-
-    st.markdown(
-        """
-        <style>
-        [data-testid="stImage"] {
-            margin-bottom: -30px !important;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
 
     st.markdown("---")
 
@@ -3569,7 +3651,10 @@ margin-bottom:8px;
 
         for section_index, (section_label, (main_key, sub_key)) in enumerate(section_map.items()):
             if section_label == "III - Priorités":
-                html_block('<div class="admin-section-iii-page-break"></div>')
+                # No extra forced page break here.
+                # The printable SWOT block already ends with one page break,
+                # which prevents the blank page between Matrice SWOT and Section III.
+                pass
             elif section_index > 0:
                 html_block('<div class="admin-print-page-break"></div>')
 
