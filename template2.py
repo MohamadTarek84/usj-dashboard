@@ -1551,41 +1551,72 @@ div[data-testid="stIFrame"] {{
 }}
 
 
-/* FINAL PRINT FIXES - no blank page after SWOT, clean logo/header in print */
+
+/* FINAL SAFE PRINT FIXES */
+.admin-print-cover-header {{
+    display: none;
+}}
+
 @media print {{
 
-    img,
-    [data-testid="stImage"] {{
-        display: none !important;
-        visibility: hidden !important;
-        height: 0 !important;
-        min-height: 0 !important;
-        max-height: 0 !important;
+    .admin-print-cover-header {{
+        display: block !important;
+        width: 100% !important;
+        text-align: center !important;
+        margin: 0 0 4mm 0 !important;
+        padding: 0 0 3mm 0 !important;
+        border-bottom: 1px solid #D0D6E0 !important;
+        break-after: avoid !important;
+        page-break-after: avoid !important;
+    }}
+
+    .admin-print-cover-header img {{
+        display: block !important;
+        visibility: visible !important;
+        height: auto !important;
+        max-height: 22mm !important;
+        width: auto !important;
+        max-width: 58mm !important;
+        margin: 0 auto 2mm auto !important;
+        padding: 0 !important;
+        object-fit: contain !important;
+    }}
+
+    .admin-print-cover-title {{
+        display: block !important;
+        color: #001F5B !important;
+        font-size: 18px !important;
+        font-weight: 800 !important;
+        line-height: 1.15 !important;
         margin: 0 !important;
         padding: 0 !important;
-        overflow: hidden !important;
+    }}
+
+    .admin-print-title {{
+        display: none !important;
     }}
 
     .swot-print-only {{
-        break-before: auto !important;
-        page-break-before: auto !important;
-        break-after: auto !important;
-        page-break-after: auto !important;
+        display: block !important;
+        break-before: page !important;
+        page-break-before: always !important;
+        break-after: avoid !important;
+        page-break-after: avoid !important;
         break-inside: avoid !important;
         page-break-inside: avoid !important;
-        margin: 0 0 4mm 0 !important;
+        margin: 0 !important;
         padding: 0 !important;
     }}
 
     .swot-print-shell {{
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
         margin: 0 !important;
         padding: 4mm !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
     }}
 
     .swot-print-card {{
-        min-height: 39mm !important;
+        min-height: 38mm !important;
         padding: 3.5mm !important;
     }}
 
@@ -1599,8 +1630,10 @@ div[data-testid="stIFrame"] {{
         padding: 0 !important;
     }}
 
-    .admin-print-page-break,
-    .admin-print-field-page-break {{
+    .admin-section-iii-page-break {{
+        display: block !important;
+        break-before: page !important;
+        page-break-before: always !important;
         height: 0 !important;
         min-height: 0 !important;
         max-height: 0 !important;
@@ -1610,17 +1643,19 @@ div[data-testid="stIFrame"] {{
         overflow: hidden !important;
     }}
 
-    h1, h2, h3, h4, h5, h6 {{
-        break-after: avoid !important;
-        page-break-after: avoid !important;
+    .admin-section-iii-page-break + div,
+    .admin-section-iii-page-break + section {{
+        margin-top: 0 !important;
+        padding-top: 0 !important;
     }}
 
-    div[style*="border-left:7px"] {{
+    div[data-testid="stVerticalBlock"],
+    div[data-testid="stElementContainer"],
+    div[data-testid="element-container"] {{
         margin-top: 0 !important;
-        margin-bottom: 3mm !important;
+        padding-top: 0 !important;
     }}
 }}
-
 
 </style>
 """)
@@ -3156,6 +3191,17 @@ def main():
         print_group_name = " - ".join(
             [part for part in [str(selected_row.get("respondent_name", "")).strip(), str(selected_row.get("respondent_unit", "")).strip()] if part]
         ) or selected_draft_code
+
+        print_logo_src = image_to_base64(LOGO_PATH)
+        print_logo_html = f'<img src="{print_logo_src}" alt="USJ">' if print_logo_src else ""
+
+        html_block(
+            f'<div class="admin-print-cover-header">'
+            f'{print_logo_html}'
+            f'<div class="admin-print-cover-title">{html_lib.escape(print_group_name)}</div>'
+            f'</div>'
+        )
+
         html_block(f'<div class="admin-print-title">{html_lib.escape(print_group_name)}</div>')
 
         original_data = json.loads(selected_row["data_json"]) if selected_row["data_json"] else {}
@@ -3522,8 +3568,11 @@ margin-bottom:8px;
             return updated_admin_section
 
         for section_index, (section_label, (main_key, sub_key)) in enumerate(section_map.items()):
-            if section_index > 0 and section_label != "III - Priorités":
+            if section_label == "III - Priorités":
+                html_block('<div class="admin-section-iii-page-break"></div>')
+            elif section_index > 0:
                 html_block('<div class="admin-print-page-break"></div>')
+
             st.markdown("---")
             section_header(section_label)
 
