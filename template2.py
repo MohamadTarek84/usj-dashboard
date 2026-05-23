@@ -1413,6 +1413,96 @@ div[data-testid="stIFrame"] {{
 }}
 
 
+
+/* FINAL FIX 2026-05-24: admin print page breaks and button alignment */
+.admin-print-button {{
+    width: 100% !important;
+    height: 58px !important;
+    min-height: 58px !important;
+    background-color: #8B1538 !important;
+    color: #ffffff !important;
+    border: 1px solid #8B1538 !important;
+    border-radius: 8px !important;
+    padding: 10px 22px !important;
+    font-family: Candara, Calibri, Arial, sans-serif !important;
+    font-size: 18px !important;
+    font-weight: 800 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    white-space: nowrap !important;
+    cursor: pointer !important;
+}}
+
+.admin-save-button-wrapper div[data-testid="stButton"] button {{
+    width: 100% !important;
+    height: 58px !important;
+    min-height: 58px !important;
+    background-color: #0070C0 !important;
+    color: #ffffff !important;
+    border: 1px solid #0070C0 !important;
+    border-radius: 8px !important;
+    padding: 10px 22px !important;
+    font-family: Candara, Calibri, Arial, sans-serif !important;
+    font-size: 18px !important;
+    font-weight: 800 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    white-space: nowrap !important;
+}}
+
+.admin-save-button-wrapper div[data-testid="stButton"] button p {{
+    color: #ffffff !important;
+    font-family: Candara, Calibri, Arial, sans-serif !important;
+    font-size: 18px !important;
+    font-weight: 800 !important;
+    margin: 0 !important;
+}}
+
+@media print {{
+    /* Do not create an extra blank page after the SWOT matrix */
+    .swot-print-only {{
+        display: block !important;
+        break-before: page !important;
+        page-break-before: always !important;
+        break-after: auto !important;
+        page-break-after: auto !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }}
+
+    .swot-print-shell {{
+        max-height: none !important;
+        min-height: 0 !important;
+        height: auto !important;
+        padding: 4mm !important;
+        margin: 0 !important;
+        overflow: visible !important;
+    }}
+
+    /* Section III must not force another page immediately after SWOT */
+    .swot-print-only + .admin-print-page-break,
+    .swot-print-only + div .admin-print-page-break {{
+        break-before: auto !important;
+        page-break-before: auto !important;
+        display: none !important;
+    }}
+
+    .admin-action-row,
+    .admin-print-button,
+    .admin-save-button-wrapper {{
+        display: none !important;
+        height: 0 !important;
+        min-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+    }}
+}}
+
 </style>
 """)
 def section_header(title):
@@ -3336,15 +3426,7 @@ margin-bottom:8px;
             if section_label == "II - Opportunités et menaces":
                 render_swot_image_download_block(updated_all_admin_data, selected_row)
 
-        html_block('''
-<div class="admin-action-row">
-<style>
-.admin-action-row + div [data-testid="stIFrame"] {
-    height:58px !important;
-    min-height:58px !important;
-}
-</style>
-''')
+        st.markdown("---")
 
         col_admin_print, col_admin_save, col_admin_spacer = st.columns(
             [1.25, 1.25, 2.50],
@@ -3353,47 +3435,20 @@ margin-bottom:8px;
         )
 
         with col_admin_print:
-            components.html(
+            st.markdown(
                 """
-                <div class="admin-screen-only" style="
-                    height:58px;
-                    display:flex;
-                    align-items:center;
-                    justify-content:center;
-                    padding:0;
-                    margin:0;
-                ">
-                    <button onclick="window.parent.print()" style="
-                        width:100%;
-                        min-width:100%;
-                        max-width:100%;
-                        height:58px;
-                        min-height:58px;
-                        background-color:#8B1538;
-                        color:white;
-                        border:1px solid #8B1538;
-                        border-radius:8px;
-                        padding:10px 22px;
-                        font-size:18px;
-                        font-weight:800;
-                        cursor:pointer;
-                        font-family:Candara, Calibri, Arial, sans-serif;
-                        display:flex;
-                        align-items:center;
-                        justify-content:center;
-                        white-space:nowrap;
-                    ">
-                        Imprimer / Enregistrer en PDF
-                    </button>
-                </div>
+                <button class="admin-print-button" onclick="window.print()">
+                    Imprimer / Enregistrer en PDF
+                </button>
                 """,
-                height=58
+                unsafe_allow_html=True
             )
 
         # Auto-save admin modifications on every rerun
         save_admin_version_by_code(selected_draft_code, updated_all_admin_data)
 
         with col_admin_save:
+            st.markdown('<div class="admin-save-button-wrapper">', unsafe_allow_html=True)
             if st.button(
                 "Enregistrer toutes les versions admin",
                 key=f"save_admin_all_{selected_draft_code}",
@@ -3402,8 +3457,8 @@ margin-bottom:8px;
                 save_admin_version_by_code(selected_draft_code, updated_all_admin_data)
                 st.success("Versions admin enregistrées sans modifier les réponses originales du groupe.")
                 st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
 
-        html_block('</div>')
         st.stop()
 
     if not st.session_state["access_granted"]:
