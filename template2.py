@@ -1560,27 +1560,38 @@ div[data-testid="stIFrame"] {{
 @media print {{
 
     .admin-print-cover-header {{
-        display: none !important;
-        height: 0 !important;
-        min-height: 0 !important;
-        max-height: 0 !important;
+        display: block !important;
+        position: relative !important;
+        height: 95vh !important;
+        min-height: 95vh !important;
+        max-height: none !important;
         margin: 0 !important;
         padding: 0 !important;
-        overflow: hidden !important;
+        overflow: visible !important;
     }}
 
-        .admin-print-cover-header img {{
+    .admin-print-cover-header img {{
         display: block !important;
+        visibility: visible !important;
+        max-height: 22mm !important;
+        max-width: 58mm !important;
+        margin: 0 auto !important;
     }}
 
     .admin-print-cover-title {{
         display: block !important;
+        visibility: visible !important;
+        position: absolute !important;
+        top: 52% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        width: 100% !important;
         color: #001F5B !important;
-        font-size: 30px !important;
+        font-size: 28px !important;
         font-weight: 800 !important;
         line-height: 1.15 !important;
         text-align: center !important;
-        margin-top: 95mm !important;
+        margin: 0 !important;
         padding: 0 !important;
     }}
 
@@ -1704,9 +1715,6 @@ div[data-testid="stIFrame"] {{
 
 /* FINAL OVERRIDE: print logo/header and no blank page between SWOT and Section III */
 @media print {{
-    .admin-print-cover-header,
-    .admin-print-cover-header img,
-    .admin-print-cover-title,
     .admin-section-iii-page-break {{
         display: none !important;
         height: 0 !important;
@@ -1720,6 +1728,38 @@ div[data-testid="stIFrame"] {{
         break-after: auto !important;
         page-break-after: auto !important;
     }}
+
+    .admin-print-cover-header {{
+        display: block !important;
+        position: relative !important;
+        height: 95vh !important;
+        min-height: 95vh !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: visible !important;
+    }}
+
+    .admin-print-cover-header img {{
+        display: block !important;
+        visibility: visible !important;
+    }}
+
+    .admin-print-cover-title {{
+        display: block !important;
+        visibility: visible !important;
+        position: absolute !important;
+        top: 52% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        width: 100% !important;
+        color: #001F5B !important;
+        font-size: 28px !important;
+        font-weight: 800 !important;
+        text-align: center !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }}
+}}
 
     .swot-print-only {{
         display: block !important;
