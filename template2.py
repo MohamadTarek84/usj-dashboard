@@ -1118,8 +1118,8 @@ div[data-testid="stIFrame"] {{
 
     .swot-print-only {{
         display: block !important;
-        break-before: page !important;
-        page-break-before: always !important;
+        break-before: auto !important;
+        page-break-before: auto !important;
         break-inside: avoid !important;
         page-break-inside: avoid !important;
         width: 100% !important;
@@ -1344,8 +1344,8 @@ div[data-testid="stIFrame"] {{
 
     .swot-print-only {{
         display: block !important;
-        break-before: page !important;
-        page-break-before: always !important;
+        break-before: auto !important;
+        page-break-before: auto !important;
         break-after: page !important;
         page-break-after: always !important;
         break-inside: avoid !important;
@@ -1511,8 +1511,8 @@ div[data-testid="stIFrame"] {{
     /* Do not create an extra blank page after the SWOT matrix */
     .swot-print-only {{
         display: block !important;
-        break-before: page !important;
-        page-break-before: always !important;
+        break-before: auto !important;
+        page-break-before: auto !important;
         break-after: auto !important;
         page-break-after: auto !important;
         break-inside: avoid !important;
@@ -1549,6 +1549,78 @@ div[data-testid="stIFrame"] {{
         overflow: hidden !important;
     }}
 }}
+
+
+/* FINAL PRINT FIXES - no blank page after SWOT, clean logo/header in print */
+@media print {{
+
+    img,
+    [data-testid="stImage"] {{
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+        min-height: 0 !important;
+        max-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+    }}
+
+    .swot-print-only {{
+        break-before: auto !important;
+        page-break-before: auto !important;
+        break-after: auto !important;
+        page-break-after: auto !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+        margin: 0 0 4mm 0 !important;
+        padding: 0 !important;
+    }}
+
+    .swot-print-shell {{
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+        margin: 0 !important;
+        padding: 4mm !important;
+    }}
+
+    .swot-print-card {{
+        min-height: 39mm !important;
+        padding: 3.5mm !important;
+    }}
+
+    .swot-print-title {{
+        margin: 0 0 1mm 0 !important;
+        padding: 0 !important;
+    }}
+
+    .swot-print-group {{
+        margin: 0 0 3mm 0 !important;
+        padding: 0 !important;
+    }}
+
+    .admin-print-page-break,
+    .admin-print-field-page-break {{
+        height: 0 !important;
+        min-height: 0 !important;
+        max-height: 0 !important;
+        line-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+    }}
+
+    h1, h2, h3, h4, h5, h6 {{
+        break-after: avoid !important;
+        page-break-after: avoid !important;
+    }}
+
+    div[style*="border-left:7px"] {{
+        margin-top: 0 !important;
+        margin-bottom: 3mm !important;
+    }}
+}}
+
 
 </style>
 """)
@@ -3159,6 +3231,20 @@ box-shadow:0 2px 6px rgba(0,0,0,0.05);
                 unsafe_allow_html=True
             )
 
+
+        def clean_admin_display_label(label):
+            label = str(label or "")
+            m = re.match(r"^priorite_(\d+)$", label)
+            if m:
+                return f"Priorité {m.group(1)}"
+            m = re.match(r"^priority_only_(\d+)$", label)
+            if m:
+                return f"Priorité {m.group(1)}"
+            m = re.match(r"^pour_finir_(\d+)_(\d+)$", label)
+            if m:
+                return f"Réponse {m.group(2)}"
+            return label
+
         def render_original_answer_box(value):
             safe_value = html_lib.escape(str(value or "")).replace("\n", "<br>")
             if not safe_value.strip():
@@ -3362,11 +3448,11 @@ box-sizing:border-box;
                 col_original_answer, col_admin_answer = st.columns(2)
 
                 with col_original_answer:
-                    render_admin_title_bar(key, USJ_BLUE)
+                    render_admin_title_bar(clean_admin_display_label(key), USJ_BLUE)
                     render_original_answer_box(original_value)
 
                 with col_admin_answer:
-                    render_admin_title_bar(key, USJ_RED)
+                    render_admin_title_bar(clean_admin_display_label(key), USJ_RED)
                     updated_admin_section[key] = render_admin_edit_box(
                         label=f"{section_label}_{key}",
                         value=admin_value,
