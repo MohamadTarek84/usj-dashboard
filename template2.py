@@ -1569,9 +1569,19 @@ div[data-testid="stIFrame"] {{
         overflow: hidden !important;
     }}
 
-    .admin-print-cover-header img,
+        .admin-print-cover-header img {{
+        display: block !important;
+    }}
+
     .admin-print-cover-title {{
-        display: none !important;
+        display: block !important;
+        color: #001F5B !important;
+        font-size: 30px !important;
+        font-weight: 800 !important;
+        line-height: 1.15 !important;
+        text-align: center !important;
+        margin-top: 95mm !important;
+        padding: 0 !important;
     }}
 
     .usj-main-header {{
@@ -1583,8 +1593,8 @@ div[data-testid="stIFrame"] {{
         margin: 0 0 8mm 0 !important;
         padding: 0 0 7mm 0 !important;
         border-bottom: 1px solid #D0D6E0 !important;
-        break-after: avoid !important;
-        page-break-after: avoid !important;
+        break-after: auto !important;
+        page-break-after: auto !important;
     }}
 
     .usj-main-header h1 {{
@@ -3270,9 +3280,7 @@ def main():
 
         selected_row = admin_df[admin_df["draft_code"] == selected_draft_code].iloc[0]
 
-        print_group_name = " - ".join(
-            [part for part in [str(selected_row.get("respondent_name", "")).strip(), str(selected_row.get("respondent_unit", "")).strip()] if part]
-        ) or selected_draft_code
+        print_group_name = str(selected_row.get("respondent_unit", "")).strip() or selected_draft_code
 
         print_logo_src = image_to_base64(LOGO_PATH)
         print_logo_html = f'<img src="{print_logo_src}" alt="USJ">' if print_logo_src else ""
@@ -3649,14 +3657,13 @@ margin-bottom:8px;
 
             return updated_admin_section
 
+
+
         for section_index, (section_label, (main_key, sub_key)) in enumerate(section_map.items()):
-            if section_label == "III - Priorités":
-                # No extra forced page break here.
-                # The printable SWOT block already ends with one page break,
-                # which prevents the blank page between Matrice SWOT and Section III.
-                pass
-            elif section_index > 0:
+            if section_index > 0 and section_label != "III - Priorités":
                 html_block('<div class="admin-print-page-break"></div>')
+
+        
 
             st.markdown("---")
             section_header(section_label)
