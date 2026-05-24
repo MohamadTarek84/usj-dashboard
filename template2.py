@@ -1578,7 +1578,7 @@ div[data-testid="stIFrame"] {{
         display: block !important;
         visibility: visible !important;
         position: absolute !important;
-        top: 36mm !important;
+        top: 6mm !important;
         left: 50% !important;
         transform: translateX(-50%) !important;
         width: 100% !important;
@@ -1647,8 +1647,8 @@ div[data-testid="stIFrame"] {{
 
     .swot-print-only {{
         display: block !important;
-        break-before: page !important;
-        page-break-before: always !important;
+        break-before: auto !important;
+        page-break-before: auto !important;
         break-after: avoid !important;
         page-break-after: avoid !important;
         break-inside: avoid !important;
@@ -1680,9 +1680,9 @@ div[data-testid="stIFrame"] {{
     }}
 
     .admin-section-iii-page-break {{
-        display: block !important;
-        break-before: page !important;
-        page-break-before: always !important;
+        display: none !important;
+        break-before: auto !important;
+        page-break-before: auto !important;
         height: 0 !important;
         min-height: 0 !important;
         max-height: 0 !important;
