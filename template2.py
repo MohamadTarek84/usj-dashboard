@@ -3370,7 +3370,7 @@ margin-bottom:8px;
                 </body>
                 </html>
                 """,
-                height=44,
+                height=58,
                 scrolling=False
             )
 
