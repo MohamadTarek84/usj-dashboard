@@ -676,7 +676,7 @@ div[data-testid="stFormSubmitButton"] button p {{
 }}
 
 .st-key-access_report_button button {{
-    width: 100% !important;
+    width: 120% !important;
     height: 50px !important;
     min-height: 50px !important;
     padding: 8px 14px !important;
