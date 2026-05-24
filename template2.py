@@ -618,42 +618,6 @@ div[data-testid="stButton"] button[kind="secondary"] p {{
 }}
 
 
-/* FINAL ADMIN BUTTON FIX - same width, same height, same font */
-.admin-action-row-fix {{
-    width: 100% !important;
-}}
-
-.admin-action-row-fix iframe {{
-    display: block !important;
-    width: 100% !important;
-    height: 58px !important;
-    min-height: 58px !important;
-    border: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-}}
-
-.st-key-save_admin_all_button button {{
-    height: 58px !important;
-    min-height: 58px !important;
-    max-height: 58px !important;
-    width: 100% !important;
-    min-width: 100% !important;
-    max-width: 100% !important;
-    background-color: #0070C0 !important;
-    border: 1px solid #0070C0 !important;
-    border-radius: 8px !important;
-    padding: 10px 22px !important;
-    margin: 0 !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    font-family: Candara, Calibri, Arial, sans-serif !important;
-    font-size: 18px !important;
-    font-weight: 800 !important;
-    line-height: 1 !important;
-}}
-
 .st-key-save_admin_all_button button p {{
     color: white !important;
     font-family: Candara, Calibri, Arial, sans-serif !important;
