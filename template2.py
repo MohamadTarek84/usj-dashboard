@@ -1562,9 +1562,9 @@ div[data-testid="stIFrame"] {{
     .admin-print-cover-header {{
         display: block !important;
         position: relative !important;
-        height: 58mm !important;
-        min-height: 58mm !important;
-        max-height: 58mm !important;
+        height: 22mm !important;
+        min-height: 22mm !important;
+        max-height: 22mm !important;
         margin: 0 0 4mm 0 !important;
         padding: 0 !important;
         overflow: visible !important;
