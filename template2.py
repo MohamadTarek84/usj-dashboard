@@ -676,9 +676,9 @@ div[data-testid="stFormSubmitButton"] button p {{
 }}
 
 .st-key-access_report_button button {{
-    width: 100% !important;
-    min-width: 100% !important;
-    max-width: 100% !important;
+    width: 220px !important;
+    min-width: 220px !important;
+    max-width: 220px !important;
     height: 50px !important;
     min-height: 50px !important;
     padding: 8px 14px !important;
@@ -3384,7 +3384,7 @@ margin-bottom:8px;
     if not st.session_state["access_granted"]:
         # Login row: wide password field + compact button, like the reference layout.
         # The last empty column prevents the button from stretching across the page.
-        col_code, col_button = st.columns([1, 1], gap="small")
+        col_code, col_button, col_empty = st.columns([4.7, 1.2, 1.25], gap="small")
 
         def submit_login_code():
             st.session_state["enter_form_clicked"] = True
