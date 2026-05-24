@@ -3371,7 +3371,7 @@ margin-bottom:8px;
         st.stop()
 
     if not st.session_state["access_granted"]:
-        col_code, col_button = st.columns([2, 1])
+        col_code, col_button = st.columns([1, 1], gap="medium")
 
         def submit_login_code():
             st.session_state["enter_form_clicked"] = True
