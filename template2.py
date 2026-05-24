@@ -3418,12 +3418,15 @@ margin-bottom:8px;
 
                 st.success("Vos réponses enregistrées ont été chargées.")
                 st.rerun()
+
             else:
                 st.session_state["current_draft_code"] = cleaned_code
                 st.session_state["access_granted"] = True
                 st.session_state["read_only_submitted"] = False
-                st.session_state["responsable"] = AUTHORIZED_TEST_CODES[cleaned_code]["responsable"]
+
                 st.session_state["institution"] = AUTHORIZED_TEST_CODES[cleaned_code]["institution"]
+                st.session_state["responsable"] = AUTHORIZED_TEST_CODES[cleaned_code]["responsable"]
+            
                 st.info("Nouveau formulaire ouvert. Vous pouvez commencer à remplir vos réponses.")
                 st.rerun()
 
@@ -3449,9 +3452,16 @@ margin-bottom:8px;
                     "Sous groupe 5",
                 ]
 
+
+                institution_default = st.session_state.get("institution", "Sous groupe 1")
+
+                if institution_default not in focus_group_options:
+                    institution_default = "Sous groupe 1"
+
                 institution = st.selectbox(
                     "Focus groupe",
                     options=focus_group_options,
+                    index=focus_group_options.index(institution_default),
                     key="institution"
                 )
 
