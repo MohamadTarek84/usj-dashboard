@@ -679,6 +679,15 @@ div[data-testid="stFormSubmitButton"] button p {{
     width: 100% !important;
     height: 50px !important;
     min-height: 50px !important;
+    padding: 8px 14px !important;
+    font-size: 18px !important;
+    white-space: nowrap !important;
+}}
+
+.st-key-access_report_button button p {{
+    font-size: 18px !important;
+    white-space: nowrap !important;
+    margin: 0 !important;
 }}
 
 /* ONLY these two stakeholder add-row buttons */
@@ -3371,7 +3380,9 @@ margin-bottom:8px;
         st.stop()
 
     if not st.session_state["access_granted"]:
-        col_code, col_button, col_empty = st.columns([2.4, 0.45, 0.8], gap="small")
+        # Login row: wide password field + compact button, like the reference layout.
+        # The last empty column prevents the button from stretching across the page.
+        col_code, col_button, col_empty = st.columns([4.7, 0.95, 1.25], gap="small")
 
         def submit_login_code():
             st.session_state["enter_form_clicked"] = True
@@ -3389,7 +3400,11 @@ margin-bottom:8px;
             st.markdown("<br>", unsafe_allow_html=True)
 
             enter_form = (
-                st.button("Accéder au rapport", key="access_report_button", use_container_width=True)
+                st.button(
+                    "Accéder au rapport",
+                    key="access_report_button",
+                    use_container_width=True
+                )
                 or st.session_state.pop("enter_form_clicked", False)
             )
 
