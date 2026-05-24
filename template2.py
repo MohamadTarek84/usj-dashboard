@@ -1581,12 +1581,12 @@ div[data-testid="stIFrame"] {{
     width: 100% !important;
     text-align: center !important;
     color: #001F5B !important;
-    font-size: 18px !important;
+    font-size: 16px !important;
     font-weight: 800 !important;
-    margin: 0 0 2mm 0 !important;
+    margin: -6mm 0 1mm 0 !important;
     padding: 0 !important;
 }}
-    }}
+
 
     .usj-main-header {{
         display: flex !important;
@@ -1594,8 +1594,8 @@ div[data-testid="stIFrame"] {{
         justify-content: space-between !important;
         gap: 20mm !important;
         width: 100% !important;
-        margin: 0 0 2mm 0 !important;
-        padding: 0 0 2mm 0 !important;
+        margin: 0 !important;
+        padding: 0 0 1mm 0 !important;
         border-bottom: 1px solid #D0D6E0 !important;
         break-after: avoid !important;
         page-break-after: avoid !important;
