@@ -678,8 +678,8 @@ div[data-testid="stFormSubmitButton"] button p {{
     width: 200px !important;
     min-width: 200px !important;
     max-width: 200px !important;
-    height: 50px !important;
-    min-height: 50px !important;
+    height: 40px !important;
+    min-height: 40px !important;
     padding: 8px 14px !important;
     font-size: 18px !important;
     white-space: nowrap !important;
