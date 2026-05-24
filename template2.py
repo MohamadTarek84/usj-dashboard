@@ -675,6 +675,12 @@ div[data-testid="stFormSubmitButton"] button p {{
     white-space: nowrap !important;
 }}
 
+.st-key-access_report_button button {{
+    width: 100% !important;
+    height: 50px !important;
+    min-height: 50px !important;
+}}
+
 /* ONLY these two stakeholder add-row buttons */
 .st-key-add_stakeholder_standard button,
 .st-key-add_stakeholder_autres button {{
@@ -3383,7 +3389,7 @@ margin-bottom:8px;
             st.markdown("<br>", unsafe_allow_html=True)
 
             enter_form = (
-                st.button("Accéder au rapport")
+                st.button("Accéder au rapport", key="access_report_button")
                 or st.session_state.pop("enter_form_clicked", False)
             )
 
