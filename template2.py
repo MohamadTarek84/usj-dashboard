@@ -1722,18 +1722,6 @@ div[data-testid="stIFrame"] {{
         margin: 0 !important;
         padding: 0 !important;
     }}
-
-    /* Hide the Introduction section (text + image) in print — not needed in PDF */
-    .print-hide-intro,
-    .print-hide-intro * {{
-        display: none !important;
-        height: 0 !important;
-        min-height: 0 !important;
-        max-height: 0 !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        overflow: hidden !important;
-    }}
 }}
 </style>
 """)
@@ -1859,7 +1847,7 @@ def render_fixed_introduction():
         """
 
     html_block(f"""
-    <div class="print-hide-intro" style="background-color:#ffffff; padding:24px 34px; border-radius:12px; border-left:none; border-top:none; border-bottom:none; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:25px;">
+    <div style="background-color:#ffffff; padding:24px 34px; border-radius:12px; border-left:none; border-top:none; border-bottom:none; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:25px;">
         <p style="text-align:justify; font-size:19px; line-height:1.55; color:{USJ_BLUE};">
         L’enseignement supérieur est aujourd’hui confronté à des transformations rapides, à des contraintes économiques croissantes et à une intensification de la concurrence, tant nationale qu’internationale. Les évolutions technologiques, les attentes accrues des étudiants et des parties prenantes, ainsi que les exigences renforcées en matière de qualité et de performance, imposent une réflexion stratégique à la fois rigoureuse et collective. Les universités sont ainsi appelées à réinterroger en profondeur leurs modèles académiques, organisationnels et opérationnels.
         </p>
@@ -3896,10 +3884,8 @@ margin-bottom:8px;
 
             st.markdown("---")
 
-            html_block('<div class="print-hide-intro">')
             section_header("Introduction")
             render_fixed_introduction()
-            html_block('</div>')
 
             st.divider()
     
