@@ -598,6 +598,17 @@ div[data-testid="stButton"] button[kind="secondary"] {{
     justify-content: center !important;
 }}
 
+.st-key-access_report_button button {{
+    width: 190px !important;
+    min-width: 190px !important;
+    max-width: 190px !important;
+    height: 42px !important;
+    min-height: 42px !important;
+    max-height: 42px !important;
+    padding: 4px 12px !important;
+    font-size: 18px !important;
+}}
+
 div[data-testid="stButton"] button[kind="secondary"] p {{
     font-family: Candara, Calibri, Arial, sans-serif !important;
     font-size: 18px !important;
