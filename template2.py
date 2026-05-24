@@ -1560,18 +1560,34 @@ div[data-testid="stIFrame"] {{
 @media print {{
 
     .admin-print-cover-header {{
-        display: none !important;
-        height: 0 !important;
-        min-height: 0 !important;
-        max-height: 0 !important;
-        margin: 0 !important;
+        display: block !important;
+        position: relative !important;
+        height: 58mm !important;
+        min-height: 58mm !important;
+        max-height: 58mm !important;
+        margin: 0 0 4mm 0 !important;
         padding: 0 !important;
-        overflow: hidden !important;
+        overflow: visible !important;
     }}
 
-    .admin-print-cover-header img,
-    .admin-print-cover-title {{
+    .admin-print-cover-header img {{
         display: none !important;
+    }}
+
+    .admin-print-cover-title {{
+        display: block !important;
+        visibility: visible !important;
+        position: absolute !important;
+        top: 36mm !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        width: 100% !important;
+        color: #001F5B !important;
+        font-size: 24px !important;
+        font-weight: 800 !important;
+        text-align: center !important;
+        margin: 0 !important;
+        padding: 0 !important;
     }}
 
     .usj-main-header {{
