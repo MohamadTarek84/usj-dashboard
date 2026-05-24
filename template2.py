@@ -859,6 +859,18 @@ div[data-testid="stIFrame"] {{
     padding: 0 !important;
 }}
 
+/* Admin print cover must be hidden on screen. It is shown only during print. */
+.admin-print-cover-header {{
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    max-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+}}
+
 @media print {{
 
     @page {{
@@ -965,6 +977,7 @@ div[data-testid="stIFrame"] {{
 
     .admin-print-cover-header {{
         display: block !important;
+        visibility: visible !important;
         height: auto !important;
         min-height: 0 !important;
         max-height: none !important;
