@@ -1005,7 +1005,7 @@ div[data-testid="stIFrame"] {{
         font-size: 22px !important;
         line-height: 1.05 !important;
         font-weight: 800 !important;
-        margin: -7mm 0 1mm 0 !important;
+        margin: -7mm 0 -5mm 0 !important;
         padding: 0 !important;
     }}
 
