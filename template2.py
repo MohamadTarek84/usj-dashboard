@@ -805,19 +805,7 @@ div[data-testid="stIFrame"] {{
     cursor: pointer !important;
 }}
 
-.admin-action-row-fix {{
-    width: 100% !important;
-}}
 
-.admin-action-row-fix iframe {{
-    display: block !important;
-    width: 100% !important;
-    height: 58px !important;
-    min-height: 58px !important;
-    border: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-}}
 
 .st-key-save_admin_all_button button {{
     height: 58px !important;
