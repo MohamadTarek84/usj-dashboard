@@ -778,6 +778,7 @@ div[data-testid="stIFrame"] {{
 
 /* =========================
    CLEAN PRINT / PDF MODE
+   Cleaned: one print block only.
 ========================= */
 
 .print-answer-text {{
@@ -788,20 +789,81 @@ div[data-testid="stIFrame"] {{
     display: none;
 }}
 
-
-/* =========================
-   ADMIN PRINT HELPERS
-========================= */
 .admin-print-title,
 .swot-print-only {{
-    display: none;
+    display: none !important;
+}}
+
+/* FINAL ADMIN BUTTON FIX - same width, same height, same font */
+.admin-print-button {{
+    width: 100% !important;
+    height: 58px !important;
+    min-height: 58px !important;
+    background-color: #8B1538 !important;
+    color: #ffffff !important;
+    border: 1px solid #8B1538 !important;
+    border-radius: 8px !important;
+    padding: 10px 22px !important;
+    font-family: Candara, Calibri, Arial, sans-serif !important;
+    font-size: 18px !important;
+    font-weight: 800 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    white-space: nowrap !important;
+    cursor: pointer !important;
+}}
+
+.admin-action-row-fix {{
+    width: 100% !important;
+}}
+
+.admin-action-row-fix iframe {{
+    display: block !important;
+    width: 100% !important;
+    height: 58px !important;
+    min-height: 58px !important;
+    border: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}}
+
+.st-key-save_admin_all_button button {{
+    height: 58px !important;
+    min-height: 58px !important;
+    max-height: 58px !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    background-color: #0070C0 !important;
+    border: 1px solid #0070C0 !important;
+    border-radius: 8px !important;
+    padding: 10px 22px !important;
+    margin: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-family: Candara, Calibri, Arial, sans-serif !important;
+    font-size: 18px !important;
+    font-weight: 800 !important;
+    line-height: 1 !important;
+}}
+
+.st-key-save_admin_all_button button p {{
+    color: white !important;
+    font-family: Candara, Calibri, Arial, sans-serif !important;
+    font-size: 18px !important;
+    font-weight: 800 !important;
+    line-height: 1 !important;
+    margin: 0 !important;
+    padding: 0 !important;
 }}
 
 @media print {{
 
     @page {{
         size: A4 portrait;
-        margin: 10mm 9mm 10mm 9mm;
+        margin: 8mm 9mm 8mm 9mm;
     }}
 
     html, body, .stApp {{
@@ -827,47 +889,139 @@ div[data-testid="stIFrame"] {{
     .print-button-wrapper,
     div[data-testid="stButton"],
     div[data-testid="stDownloadButton"],
-    iframe {{
+    div[data-testid="stSelectbox"],
+    iframe,
+    .admin-screen-only,
+    .admin-debug-info,
+    .admin-action-row,
+    .admin-action-row-fix,
+    .admin-action-row-fix *,
+    .admin-print-button,
+    .admin-save-button-wrapper,
+    .swot-screen-only {{
         display: none !important;
         height: 0 !important;
         min-height: 0 !important;
+        max-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+    }}
+
+    .usj-main-header {{
+        display: flex !important;
+        align-items: flex-start !important;
+        justify-content: space-between !important;
+        gap: 12mm !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 0 1mm 0 !important;
+        border-bottom: 1px solid #D0D6E0 !important;
+        min-height: 0 !important;
+        height: auto !important;
+        break-after: avoid !important;
+        page-break-after: avoid !important;
+    }}
+
+    .usj-main-header h1 {{
+        font-size: 22px !important;
+        line-height: 1.05 !important;
+        margin: 0 0 1mm 0 !important;
+        color: #001F5B !important;
+        font-weight: 800 !important;
+    }}
+
+    .usj-main-header p,
+    .usj-main-header p span {{
+        font-size: 10px !important;
+        line-height: 1.05 !important;
+        color: #1F3C88 !important;
+        font-weight: 700 !important;
         margin: 0 !important;
         padding: 0 !important;
     }}
 
-    .print-page-break {{
-        break-before: page !important;
-        page-break-before: always !important;
+    .usj-main-header-logo {{
+        width: 36mm !important;
+        min-width: 36mm !important;
+        max-width: 36mm !important;
+        display: flex !important;
+        justify-content: flex-end !important;
+        align-items: flex-start !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }}
+
+    .usj-main-header-logo img {{
+        display: block !important;
+        visibility: visible !important;
+        width: 36mm !important;
+        max-width: 36mm !important;
+        height: auto !important;
+        max-height: 15mm !important;
+        object-fit: contain !important;
+        opacity: 1 !important;
+    }}
+
+    .admin-print-cover-header {{
+        display: block !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: visible !important;
+        break-before: auto !important;
+        page-break-before: auto !important;
+        break-after: avoid !important;
+        page-break-after: avoid !important;
+    }}
+
+    .admin-print-cover-header img {{
+        display: none !important;
+    }}
+
+    .admin-print-cover-title {{
+        display: block !important;
+        visibility: visible !important;
+        position: static !important;
+        transform: none !important;
+        width: 100% !important;
+        text-align: center !important;
+        color: #001F5B !important;
+        font-size: 16px !important;
+        line-height: 1.05 !important;
+        font-weight: 800 !important;
+        margin: 1mm 0 2mm 0 !important;
+        padding: 0 !important;
+    }}
+
+    .admin-print-title {{
+        display: none !important;
+    }}
+
+    hr {{
+        display: none !important;
         height: 0 !important;
         margin: 0 !important;
         padding: 0 !important;
     }}
 
-    .print-answer-block {{
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
-        margin-bottom: 3px !important;
-    }}
-
-    div[data-testid="stHorizontalBlock"] {{
-        width: 100% !important;
-    }}
-
     h1 {{
-        font-size: 28px !important;
-        line-height: 1.15 !important;
+        font-size: 22px !important;
+        line-height: 1.05 !important;
         margin-top: 0 !important;
-        margin-bottom: 6px !important;
+        margin-bottom: 2mm !important;
     }}
 
     h2 {{
         font-size: 18px !important;
-        line-height: 1.2 !important;
+        line-height: 1.15 !important;
     }}
 
     h3, h4, p, div, span, label {{
         font-size: 11px !important;
-        line-height: 1.3 !important;
+        line-height: 1.25 !important;
     }}
 
     div[style*="border-left:7px"] {{
@@ -875,13 +1029,68 @@ div[data-testid="stIFrame"] {{
         page-break-after: avoid !important;
         break-inside: avoid !important;
         page-break-inside: avoid !important;
-        margin-top: 6px !important;
-        margin-bottom: 8px !important;
-        padding: 8px 12px !important;
+        margin-top: 1mm !important;
+        margin-bottom: 4mm !important;
+        padding: 7px 11px !important;
+        box-shadow: none !important;
     }}
 
-    div[data-testid="stTextArea"] {{
-        display: none !important;
+    .print-page-break,
+    .admin-print-page-break,
+    .admin-print-field-page-break {{
+        clear: both !important;
+        break-before: page !important;
+        page-break-before: always !important;
+        break-after: auto !important;
+        page-break-after: auto !important;
+        height: 0 !important;
+        max-height: 0 !important;
+        line-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+    }}
+
+    .print-answer-block,
+    .print-answer-text,
+    .print-answer-content,
+    .admin-answer-row-wrapper,
+    .admin-answer-row,
+    div[data-testid="stHorizontalBlock"] {{
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+    }}
+
+    div[data-testid="stTextArea"],
+    div[data-testid="stTextArea"] > div,
+    div[data-testid="stTextArea"] textarea,
+    .admin-original-answer-box {{
+        display: block !important;
+        min-height: 23mm !important;
+        height: 23mm !important;
+        max-height: 23mm !important;
+        margin-top: 0 !important;
+        margin-bottom: 1.2mm !important;
+        box-sizing: border-box !important;
+        overflow: hidden !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+    }}
+
+    div[data-testid="stTextArea"] textarea {{
+        background-color: #E3DED9 !important;
+        border: 1.5px solid #595959 !important;
+        color: #000000 !important;
+        -webkit-text-fill-color: #000000 !important;
+        font-size: 10.5px !important;
+        line-height: 1.18 !important;
+        padding: 6px !important;
+        resize: none !important;
+    }}
+
+    .admin-answer-row-wrapper {{
+        margin-top: 0 !important;
+        margin-bottom: 1.5mm !important;
     }}
 
     .print-answer-text {{
@@ -889,8 +1098,6 @@ div[data-testid="stIFrame"] {{
         width: 100% !important;
         margin-top: 2px !important;
         margin-bottom: 3px !important;
-        break-inside: auto !important;
-        page-break-inside: auto !important;
     }}
 
     .print-answer-content {{
@@ -904,7 +1111,7 @@ div[data-testid="stIFrame"] {{
         line-height: 1.2 !important;
         padding: 6px !important;
         white-space: pre-wrap !important;
-        overflow: visible !important;
+        overflow: hidden !important;
     }}
 
     .print-answer-content-empty {{
@@ -917,58 +1124,9 @@ div[data-testid="stIFrame"] {{
         height: auto !important;
     }}
 
+    .word-counter-status,
+    div[data-testid="InputInstructions"],
     div[style*="min-height:24px"] {{
-        min-height: 10px !important;
-        margin-top: -2px !important;
-        margin-bottom: 2px !important;
-        font-size: 9px !important;
-        line-height: 1.1 !important;
-    }}
-
-    div[data-testid="stTextInput"] input {{
-        height: 30px !important;
-        min-height: 30px !important;
-        border: none !important;
-        background-color: #E3DED9 !important;
-        font-size: 10px !important;
-    }}
-
-    div[data-testid="stSelectbox"] {{
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
-    }}
-
-    div[data-testid="stSelectbox"] > div {{
-        min-height: 30px !important;
-        height: auto !important;
-        overflow: visible !important;
-        font-size: 10px !important;
-    }}
-
-    div[data-testid="InputInstructions"] {{
-        display: none !important;
-    }}
-
-    .intro-parts-print-block {{
-        break-before: page !important;
-        page-break-before: always !important;
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
-        margin-top: 0 !important;
-    }}
-
-    .print-answer-block,
-    .print-answer-text,
-    .print-answer-content {{
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
-    }}
-
-    .print-answer-content {{
-        overflow: hidden !important;
-    }}
-
-    .word-counter-status {{
         display: none !important;
         height: 0 !important;
         min-height: 0 !important;
@@ -984,14 +1142,7 @@ div[data-testid="stIFrame"] {{
     .st-key-pour_finir_2_3,
     .st-key-pour_finir_3_1,
     .st-key-pour_finir_3_2,
-    .st-key-pour_finir_3_3 {{
-        display: none !important;
-        height: 0 !important;
-        min-height: 0 !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }}
-
+    .st-key-pour_finir_3_3,
     .pour-finir-screen-label {{
         display: none !important;
         height: 0 !important;
@@ -1037,317 +1188,12 @@ div[data-testid="stIFrame"] {{
         page-break-inside: avoid !important;
     }}
 
-
-
-    /* =========================
-       ADMIN PRINT VERSION
-       - hide technical controls
-       - keep edited content printable
-       - keep each section on a separate page
-       - keep SWOT matrix on one complete page
-    ========================= */
-
-    .admin-screen-only,
-    .admin-debug-info,
-    div[data-testid="stButton"],
-    div[data-testid="stDownloadButton"],
-    div[data-testid="stSelectbox"],
-    iframe,
-    .swot-screen-only {{
-        display: none !important;
-        height: 0 !important;
-        min-height: 0 !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        overflow: hidden !important;
-    }}
-
-    .admin-print-title {{
-        display: block !important;
-        text-align: center !important;
-        color: #001F5B !important;
-        font-size: 24px !important;
-        font-weight: 800 !important;
-        margin: 0 0 12mm 0 !important;
-        padding: 0 0 5mm 0 !important;
-        border-bottom: 2px solid #D0D6E0 !important;
-        page-break-after: avoid !important;
-        break-after: avoid !important;
-    }}
-
-    .admin-print-page-break,
-    .admin-print-field-page-break {{
-        display: block !important;
-        break-before: page !important;
-        page-break-before: always !important;
-        height: 0 !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }}
-
-    .admin-original-answer-box,
-    div[data-testid="stTextArea"],
-    div[data-testid="stTextArea"] > div,
-    div[data-testid="stTextArea"] textarea {{
-        display: block !important;
-        min-height: 32mm !important;
-        height: 32mm !important;
-        max-height: 32mm !important;
-        box-sizing: border-box !important;
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
-        overflow: hidden !important;
-    }}
-
-    div[data-testid="stTextArea"] textarea {{
-        background-color: #E3DED9 !important;
-        border: 1.5px solid #595959 !important;
-        color: #000000 !important;
-        -webkit-text-fill-color: #000000 !important;
-        font-size: 11px !important;
-        line-height: 1.25 !important;
-        padding: 8px !important;
-        resize: none !important;
-    }}
-
-    .admin-answer-row,
-    div[data-testid="stHorizontalBlock"] {{
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
-    }}
-
     .swot-print-only {{
         display: block !important;
-        break-before: auto !important;
-        page-break-before: auto !important;
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
-        width: 100% !important;
-        margin: 0 auto !important;
-        padding: 0 !important;
-    }}
-
-    .swot-print-shell {{
-        width: 100% !important;
-        border: 1px solid #D0D6E0 !important;
-        border-radius: 10px !important;
-        padding: 8mm !important;
-        background: white !important;
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
-    }}
-
-    .swot-print-title {{
-        text-align: center !important;
-        color: #001F5B !important;
-        font-size: 20px !important;
-        font-weight: 800 !important;
-        margin-bottom: 2mm !important;
-    }}
-
-    .swot-print-group {{
-        text-align: center !important;
-        color: #555555 !important;
-        font-size: 11px !important;
-        font-weight: 700 !important;
-        margin-bottom: 6mm !important;
-    }}
-
-    .swot-print-grid {{
-        display: grid !important;
-        grid-template-columns: 1fr 1fr !important;
-        gap: 6mm !important;
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
-    }}
-
-    .swot-print-card {{
-        min-height: 48mm !important;
-        border: 2px solid var(--accent) !important;
-        border-radius: 8px !important;
-        padding: 5mm !important;
-        background: var(--bg) !important;
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
-    }}
-
-    .swot-print-card h3 {{
-        color: var(--accent) !important;
-        font-size: 15px !important;
-        font-weight: 900 !important;
-        margin: 0 0 3mm 0 !important;
-        border-bottom: 2px solid var(--accent) !important;
-        padding-bottom: 2mm !important;
-    }}
-
-    .swot-print-card ul {{
-        margin: 0 !important;
-        padding-left: 5mm !important;
-    }}
-
-    .swot-print-card li {{
-        font-size: 10px !important;
-        line-height: 1.25 !important;
-        margin-bottom: 2mm !important;
-        color: #222222 !important;
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
-    }}
-
-
-
-    /* =========================
-       TIGHT ADMIN PRINT OVERRIDES
-       - less top spacing
-       - no comparison title cards in PDF
-       - equal compact boxes
-       - avoid blank pages from double page breaks
-    ========================= */
-
-    .admin-print-title {{
-        margin-top: 0 !important;
-        margin-bottom: 4mm !important;
-        padding-top: 0 !important;
-        padding-bottom: 2mm !important;
-        border-bottom: 1px solid #D0D6E0 !important;
-        font-size: 21px !important;
-        line-height: 1.15 !important;
-    }}
-
-    div[style*="border-left:7px"] {{
-        margin-top: 0 !important;
-        margin-bottom: 4mm !important;
-        padding: 7px 11px !important;
-        box-shadow: none !important;
-    }}
-
-    .admin-answer-row-wrapper {{
-        margin-top: 0 !important;
-        margin-bottom: 3mm !important;
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
-    }}
-
-    .admin-answer-row-wrapper + .admin-answer-row-wrapper {{
-        margin-top: 0 !important;
-    }}
-
-    .admin-original-answer-box,
-    div[data-testid="stTextArea"],
-    div[data-testid="stTextArea"] > div,
-    div[data-testid="stTextArea"] textarea {{
-        min-height: 26mm !important;
-        height: 26mm !important;
-        max-height: 26mm !important;
-        margin-top: 0 !important;
-        margin-bottom: 2mm !important;
-        box-sizing: border-box !important;
-    }}
-
-    div[data-testid="stTextArea"] textarea {{
-        font-size: 10.5px !important;
-        line-height: 1.18 !important;
-        padding: 6px !important;
-    }}
-
-    .admin-print-page-break,
-    .admin-print-field-page-break {{
-        clear: both !important;
         break-before: page !important;
         page-break-before: always !important;
         break-after: auto !important;
         page-break-after: auto !important;
-        height: 0 !important;
-        line-height: 0 !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        overflow: hidden !important;
-    }}
-
-    .swot-print-only {{
-        break-before: page !important;
-        page-break-before: always !important;
-        break-after: auto !important;
-        page-break-after: auto !important;
-        margin-top: 0 !important;
-        margin-bottom: 0 !important;
-    }}
-
-    .swot-print-shell {{
-        padding: 5mm !important;
-        box-shadow: none !important;
-    }}
-
-    .swot-print-grid {{
-        gap: 4mm !important;
-    }}
-
-    .swot-print-card {{
-        min-height: 43mm !important;
-        padding: 4mm !important;
-    }}
-
-
-    hr {{
-        display: none !important;
-        height: 0 !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }}
-
-    .admin-answer-row-wrapper {{
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
-    }}
-
-    /* FINAL ADMIN PRINT CORRECTIONS */
-    .admin-print-title {{
-        margin-top: 0 !important;
-        margin-bottom: 2mm !important;
-        padding-top: 0 !important;
-        padding-bottom: 1.5mm !important;
-        font-size: 20px !important;
-        line-height: 1.1 !important;
-    }}
-
-    .admin-screen-only,
-    .admin-action-row,
-    .admin-action-row *,
-    div[data-testid="stButton"],
-    div[data-testid="stDownloadButton"],
-    div[data-testid="stSelectbox"],
-    iframe,
-    .swot-screen-only {{
-        display: none !important;
-        height: 0 !important;
-        min-height: 0 !important;
-        max-height: 0 !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        overflow: hidden !important;
-    }}
-
-    .admin-print-page-break,
-    .admin-print-field-page-break {{
-        clear: both !important;
-        break-before: page !important;
-        page-break-before: always !important;
-        break-after: auto !important;
-        page-break-after: auto !important;
-        height: 0 !important;
-        max-height: 0 !important;
-        line-height: 0 !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        overflow: hidden !important;
-    }}
-
-    .swot-print-only {{
-        display: block !important;
-        break-before: auto !important;
-        page-break-before: auto !important;
-        break-after: page !important;
-        page-break-after: always !important;
         break-inside: avoid !important;
         page-break-inside: avoid !important;
         width: 100% !important;
@@ -1358,28 +1204,35 @@ div[data-testid="stIFrame"] {{
     .swot-print-shell {{
         width: 100% !important;
         min-height: auto !important;
-        max-height: 255mm !important;
+        max-height: none !important;
+        height: auto !important;
         padding: 4mm !important;
         margin: 0 !important;
         border: 1px solid #D0D6E0 !important;
         border-radius: 8px !important;
         box-shadow: none !important;
         background: white !important;
-        overflow: hidden !important;
+        overflow: visible !important;
         break-inside: avoid !important;
         page-break-inside: avoid !important;
     }}
 
     .swot-print-title {{
+        text-align: center !important;
+        color: #001F5B !important;
         font-size: 18px !important;
         line-height: 1.1 !important;
+        font-weight: 800 !important;
         margin: 0 0 1.5mm 0 !important;
         padding: 0 !important;
     }}
 
     .swot-print-group {{
+        text-align: center !important;
+        color: #555555 !important;
         font-size: 10px !important;
         line-height: 1.1 !important;
+        font-weight: 700 !important;
         margin: 0 0 3mm 0 !important;
         padding: 0 !important;
     }}
@@ -1405,8 +1258,10 @@ div[data-testid="stIFrame"] {{
     }}
 
     .swot-print-card h3 {{
+        color: var(--accent) !important;
         font-size: 13px !important;
         line-height: 1.1 !important;
+        font-weight: 900 !important;
         margin: 0 0 2mm 0 !important;
         padding-bottom: 1.5mm !important;
         border-bottom: 1.5px solid var(--accent) !important;
@@ -1424,276 +1279,20 @@ div[data-testid="stIFrame"] {{
         color: #222222 !important;
     }}
 
-    .admin-original-answer-box,
-    div[data-testid="stTextArea"],
-    div[data-testid="stTextArea"] > div,
-    div[data-testid="stTextArea"] textarea {{
-        min-height: 23mm !important;
-        height: 23mm !important;
-        max-height: 23mm !important;
-        margin-top: 0 !important;
-        margin-bottom: 1.2mm !important;
-        box-sizing: border-box !important;
-        overflow: hidden !important;
-    }}
-
-    div[data-testid="stTextArea"] textarea {{
-        font-size: 10.5px !important;
-        line-height: 1.18 !important;
-        padding: 6px !important;
-    }}
-
-    .admin-answer-row-wrapper {{
-        margin-top: 0 !important;
-        margin-bottom: 1.5mm !important;
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
-    }}
-
-    hr {{
+    .admin-section-iii-page-break,
+    .swot-print-only + .admin-print-page-break,
+    .swot-print-only + div .admin-print-page-break {{
         display: none !important;
         height: 0 !important;
+        min-height: 0 !important;
+        max-height: 0 !important;
         margin: 0 !important;
         padding: 0 !important;
-    }}
-
-}}
-
-
-
-/* FINAL FIX 2026-05-24: admin print page breaks and button alignment */
-.admin-print-button {{
-    width: 100% !important;
-    height: 58px !important;
-    min-height: 58px !important;
-    background-color: #8B1538 !important;
-    color: #ffffff !important;
-    border: 1px solid #8B1538 !important;
-    border-radius: 8px !important;
-    padding: 10px 22px !important;
-    font-family: Candara, Calibri, Arial, sans-serif !important;
-    font-size: 18px !important;
-    font-weight: 800 !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    white-space: nowrap !important;
-    cursor: pointer !important;
-}}
-
-.admin-save-button-wrapper div[data-testid="stButton"] button {{
-    width: 100% !important;
-    height: 58px !important;
-    min-height: 58px !important;
-    background-color: #0070C0 !important;
-    color: #ffffff !important;
-    border: 1px solid #0070C0 !important;
-    border-radius: 8px !important;
-    padding: 10px 22px !important;
-    font-family: Candara, Calibri, Arial, sans-serif !important;
-    font-size: 18px !important;
-    font-weight: 800 !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    white-space: nowrap !important;
-}}
-
-.admin-save-button-wrapper div[data-testid="stButton"] button p {{
-    color: #ffffff !important;
-    font-family: Candara, Calibri, Arial, sans-serif !important;
-    font-size: 18px !important;
-    font-weight: 800 !important;
-    margin: 0 !important;
-}}
-
-@media print {{
-    /* Do not create an extra blank page after the SWOT matrix */
-    .swot-print-only {{
-        display: block !important;
+        overflow: hidden !important;
         break-before: auto !important;
         page-break-before: auto !important;
         break-after: auto !important;
         page-break-after: auto !important;
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }}
-
-    .swot-print-shell {{
-        max-height: none !important;
-        min-height: 0 !important;
-        height: auto !important;
-        padding: 4mm !important;
-        margin: 0 !important;
-        overflow: visible !important;
-    }}
-
-    /* Section III must not force another page immediately after SWOT */
-    .swot-print-only + .admin-print-page-break,
-    .swot-print-only + div .admin-print-page-break {{
-        break-before: auto !important;
-        page-break-before: auto !important;
-        display: none !important;
-    }}
-
-    .admin-action-row,
-    .admin-print-button,
-    .admin-save-button-wrapper {{
-        display: none !important;
-        height: 0 !important;
-        min-height: 0 !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        overflow: hidden !important;
-    }}
-}}
-
-
-
-/* FINAL SAFE PRINT FIXES */
-.admin-print-cover-header {{
-    display: none;
-}}
-
-@media print {{
-
-.admin-print-cover-header {{
-    display: block !important;
-    height: auto !important;
-    min-height: 0 !important;
-    max-height: none !important;
-    margin: 0 0 2mm 0 !important;
-    padding: 0 !important;
-    overflow: visible !important;
-}}
-
-.admin-print-cover-header img {{
-    display: none !important;
-}}
-
-.admin-print-cover-title {{
-    display: block !important;
-    visibility: visible !important;
-    position: static !important;
-    transform: none !important;
-    width: 100% !important;
-    text-align: center !important;
-    color: #001F5B !important;
-    font-size: 16px !important;
-    font-weight: 800 !important;
-    margin: -6mm 0 1mm 0 !important;
-    padding: 0 !important;
-}}
-
-
-    .usj-main-header {{
-        display: flex !important;
-        align-items: flex-start !important;
-        justify-content: space-between !important;
-        gap: 20mm !important;
-        width: 100% !important;
-        margin: 0 !important;
-        padding: 0 0 1mm 0 !important;
-        border-bottom: 1px solid #D0D6E0 !important;
-        break-after: avoid !important;
-        page-break-after: avoid !important;
-    }}
-
-    .usj-main-header h1 {{
-        font-size: 24px !important;
-        line-height: 1.12 !important;
-        margin: 0 0 2mm 0 !important;
-        color: #001F5B !important;
-        font-weight: 800 !important;
-    }}
-
-    .usj-main-header p,
-    .usj-main-header p span {{
-        font-size: 11px !important;
-        line-height: 1.1 !important;
-        color: #1F3C88 !important;
-        font-weight: 700 !important;
-    }}
-
-    .usj-main-header-logo {{
-        width: 58mm !important;
-        min-width: 58mm !important;
-        max-width: 58mm !important;
-        display: flex !important;
-        justify-content: flex-end !important;
-        align-items: flex-start !important;
-        padding: 0 !important;
-        margin: 0 !important;
-    }}
-
-    .usj-main-header-logo img {{
-        display: block !important;
-        visibility: visible !important;
-        width: 58mm !important;
-        max-width: 58mm !important;
-        height: auto !important;
-        max-height: 26mm !important;
-        object-fit: contain !important;
-        opacity: 1 !important;
-    }}
-
-    .admin-print-title {{
-        display: none !important;
-    }}
-
-    .swot-print-only {{
-        display: block !important;
-        break-before: page !important;
-        page-break-before: always !important;
-        break-after: avoid !important;
-        page-break-after: avoid !important;
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }}
-
-    .swot-print-shell {{
-        margin: 0 !important;
-        padding: 4mm !important;
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
-    }}
-
-    .swot-print-card {{
-        min-height: 38mm !important;
-        padding: 3.5mm !important;
-    }}
-
-    .swot-print-title {{
-        margin: 0 0 1mm 0 !important;
-        padding: 0 !important;
-    }}
-
-    .swot-print-group {{
-        margin: 0 0 3mm 0 !important;
-        padding: 0 !important;
-    }}
-
-    .admin-section-iii-page-break {{
-        display: block !important;
-        break-before: page !important;
-        page-break-before: always !important;
-        height: 0 !important;
-        min-height: 0 !important;
-        max-height: 0 !important;
-        line-height: 0 !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        overflow: hidden !important;
-    }}
-
-    .admin-section-iii-page-break + div,
-    .admin-section-iii-page-break + section {{
-        margin-top: 0 !important;
-        padding-top: 0 !important;
     }}
 
     div[data-testid="stVerticalBlock"],
@@ -1701,51 +1300,6 @@ div[data-testid="stIFrame"] {{
     div[data-testid="element-container"] {{
         margin-top: 0 !important;
         padding-top: 0 !important;
-    }}
-}}
-
-
-
-/* FINAL OVERRIDE: print logo/header and no blank page between SWOT and Section III */
-@media print {{
-    .admin-print-cover-header,
-    .admin-print-cover-header img,
-    .admin-print-cover-title,
-    .admin-section-iii-page-break {{
-        display: none !important;
-        height: 0 !important;
-        min-height: 0 !important;
-        max-height: 0 !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        overflow: hidden !important;
-        break-before: auto !important;
-        page-break-before: auto !important;
-        break-after: auto !important;
-        page-break-after: auto !important;
-    }}
-
-    .swot-print-only {{
-        display: block !important;
-        break-before: page !important;
-        page-break-before: always !important;
-        break-after: page !important;
-        page-break-after: always !important;
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }}
-}}
-
-/* HIDE STATIC SWOT PRINT VERSION ON SCREEN */
-.swot-print-only {{
-    display: none !important;
-}}
-
-@media print {{
-    .swot-print-only {{
-        display: block !important;
     }}
 }}
 </style>
@@ -4127,4 +3681,5 @@ margin-bottom:8px;
 
 if __name__ == "__main__":
     main()
+
 
