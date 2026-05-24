@@ -1002,10 +1002,10 @@ div[data-testid="stIFrame"] {{
         width: 100% !important;
         text-align: center !important;
         color: #001F5B !important;
-        font-size: 16px !important;
+        font-size: 22px !important;
         line-height: 1.05 !important;
         font-weight: 800 !important;
-        margin: 1mm 0 2mm 0 !important;
+        margin: -4mm 0 1mm 0 !important;
         padding: 0 !important;
     }}
 
