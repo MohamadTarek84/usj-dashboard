@@ -1737,6 +1737,17 @@ div[data-testid="stIFrame"] {{
         padding: 0 !important;
     }}
 }}
+
+/* HIDE STATIC SWOT PRINT VERSION ON SCREEN */
+.swot-print-only {{
+    display: none !important;
+}}
+
+@media print {{
+    .swot-print-only {{
+        display: block !important;
+    }}
+}}
 </style>
 """)
 def section_header(title):
