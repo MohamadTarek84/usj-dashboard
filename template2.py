@@ -3294,16 +3294,16 @@ margin-bottom:8px;
                         margin: 0;
                         padding: 0;
                         width: 100%;
-                        height: 58px;
+                        height: 50px;
                         overflow: hidden;
                         background: transparent;
                         font-family: Candara, Calibri, Arial, sans-serif;
                     }
                     button {
                         width: 100%;
-                        height: 58px;
-                        min-height: 58px;
-                        max-height: 58px;
+                        height: 50px;
+                        min-height: 50px;
+                        max-height: 50px;
                         background-color: #8B1538;
                         color: #ffffff;
                         border: 1px solid #8B1538;
