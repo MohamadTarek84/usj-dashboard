@@ -3286,6 +3286,8 @@ margin-bottom:8px;
                         overflow: hidden;
                         background: transparent;
                         font-family: Candara, Calibri, Arial, sans-serif;
+                        display: flex;
+                        align-items: center;
                     }
                     button {
                         width: 100%;
@@ -3310,6 +3312,7 @@ margin-bottom:8px;
                         justify-content: center;
                         white-space: nowrap;
                         box-sizing: border-box;
+                        transform: translateY(-5px);
                     }
                     button:hover {
                         background-color: #761130;
