@@ -588,7 +588,6 @@ div[data-testid="stForm"] {{
 div[data-testid="stButton"] button[kind="secondary"] {{
     height: 58px !important;
     min-height: 58px !important;
-    width: 100% !important;
     font-family: Candara, Calibri, Arial, sans-serif !important;
     font-size: 18px !important;
     font-weight: 800 !important;
@@ -676,9 +675,9 @@ div[data-testid="stFormSubmitButton"] button p {{
 }}
 
 .st-key-access_report_button button {{
-    width: 220px !important;
-    min-width: 220px !important;
-    max-width: 220px !important;
+    width: 190px !important;
+    min-width: 190px !important;
+    max-width: 190px !important;
     height: 50px !important;
     min-height: 50px !important;
     padding: 8px 14px !important;
