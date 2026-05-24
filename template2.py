@@ -3371,7 +3371,7 @@ margin-bottom:8px;
         st.stop()
 
     if not st.session_state["access_granted"]:
-        col_code, col_button = st.columns([1, 1], gap="medium")
+        col_code, col_button = st.columns([2, 1])
 
         def submit_login_code():
             st.session_state["enter_form_clicked"] = True
@@ -3389,7 +3389,7 @@ margin-bottom:8px;
             st.markdown("<br>", unsafe_allow_html=True)
 
             enter_form = (
-                st.button("Accéder au rapport", key="access_report_button")
+                st.button("Accéder au rapport", key="access_report_button", use_container_width=True)
                 or st.session_state.pop("enter_form_clicked", False)
             )
 
