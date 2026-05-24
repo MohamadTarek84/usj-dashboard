@@ -3241,13 +3241,9 @@ margin-bottom:8px;
 
             return updated_admin_section
 
+
         for section_index, (section_label, (main_key, sub_key)) in enumerate(section_map.items()):
-            if section_label == "III - Priorités":
-                # No extra forced page break here.
-                # The printable SWOT block already ends with one page break,
-                # which prevents the blank page between Matrice SWOT and Section III.
-                pass
-            elif section_index > 0:
+            if section_index > 0:
                 html_block('<div class="admin-print-page-break"></div>')
 
             st.markdown("---")
