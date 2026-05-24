@@ -586,8 +586,8 @@ div[data-testid="stForm"] {{
 }}
 
 div[data-testid="stButton"] button[kind="secondary"] {{
-    height: 58px !important;
-    min-height: 58px !important;
+    height: 42px !important;
+    min-height: 42px !important;
     font-family: Candara, Calibri, Arial, sans-serif !important;
     font-size: 18px !important;
     font-weight: 800 !important;
