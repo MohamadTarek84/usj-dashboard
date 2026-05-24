@@ -1559,19 +1559,33 @@ div[data-testid="stIFrame"] {{
 
 @media print {{
 
-    .admin-print-cover-header {{
-        display: none !important;
-        height: 0 !important;
-        min-height: 0 !important;
-        max-height: 0 !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        overflow: hidden !important;
-    }}
+.admin-print-cover-header {{
+    display: block !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    margin: 0 0 2mm 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+}}
 
-    .admin-print-cover-header img,
-    .admin-print-cover-title {{
-        display: none !important;
+.admin-print-cover-header img {{
+    display: none !important;
+}}
+
+.admin-print-cover-title {{
+    display: block !important;
+    visibility: visible !important;
+    position: static !important;
+    transform: none !important;
+    width: 100% !important;
+    text-align: center !important;
+    color: #001F5B !important;
+    font-size: 18px !important;
+    font-weight: 800 !important;
+    margin: 0 0 2mm 0 !important;
+    padding: 0 !important;
+}}
     }}
 
     .usj-main-header {{
@@ -1580,25 +1594,25 @@ div[data-testid="stIFrame"] {{
         justify-content: space-between !important;
         gap: 20mm !important;
         width: 100% !important;
-        margin: 0 0 8mm 0 !important;
-        padding: 0 0 7mm 0 !important;
+        margin: 0 0 2mm 0 !important;
+        padding: 0 0 2mm 0 !important;
         border-bottom: 1px solid #D0D6E0 !important;
         break-after: avoid !important;
         page-break-after: avoid !important;
     }}
 
     .usj-main-header h1 {{
-        font-size: 30px !important;
+        font-size: 24px !important;
         line-height: 1.12 !important;
-        margin: 0 0 7mm 0 !important;
+        margin: 0 0 2mm 0 !important;
         color: #001F5B !important;
         font-weight: 800 !important;
     }}
 
     .usj-main-header p,
     .usj-main-header p span {{
-        font-size: 13px !important;
-        line-height: 1.25 !important;
+        font-size: 11px !important;
+        line-height: 1.1 !important;
         color: #1F3C88 !important;
         font-weight: 700 !important;
     }}
