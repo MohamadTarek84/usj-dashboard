@@ -1005,7 +1005,7 @@ div[data-testid="stIFrame"] {{
         font-size: 22px !important;
         line-height: 1.05 !important;
         font-weight: 800 !important;
-        margin: -4mm 0 1mm 0 !important;
+        margin: -7mm 0 1mm 0 !important;
         padding: 0 !important;
     }}
 
@@ -1288,7 +1288,7 @@ div[data-testid="stIFrame"] {{
     .swot-print-card li {{
         font-size: 9px !important;
         line-height: 1.15 !important;
-        margin-bottom: 1.2mm !important;
+        margin-bottom: 1mm !important;
         color: #222222 !important;
     }}
 
