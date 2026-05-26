@@ -333,19 +333,19 @@ def apply_usj_style():
     visibility: hidden !important;
 }}
 
-.stDownloadButton button {
+.stDownloadButton button {{
     background-color: #C9A227 !important;
     border: 1px solid #C9A227 !important;
     color: white !important;
     height: 42px !important;
     min-height: 42px !important;
     max-height: 42px !important;
-}
+}}
 
-.stDownloadButton button:hover {
+.stDownloadButton button:hover {{
     background-color: #A9851F !important;
     border: 1px solid #A9851F !important;
-}
+}}
 
 header {{
     display: none !important;
