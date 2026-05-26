@@ -2817,6 +2817,26 @@ def main():
 
         df = load_responses()
 
+        def build_admin_export(df):
+            export_rows = []
+
+            for _, row in df.iterrows():
+                original_data = json.loads(row["data_json"]) if row["data_json"] else {}
+                admin_data = json.loads(row["admin_data_json"]) if pd.notna(row.get("admin_data_json", None)) and row.get("admin_data_json") else {}
+        
+                export_rows.append({
+                    "id": row.get("id", ""),
+                    "submitted_at": row.get("submitted_at", ""),
+                    "draft_code": row.get("draft_code", ""),
+                    "statut": row.get("statut", ""),
+                    "groupe": row.get("respondent_unit", ""),
+                    "participants": row.get("respondent_name", ""),
+                    "original_answers_json": json.dumps(original_data, ensure_ascii=False),
+                    "admin_modified_answers_json": json.dumps(admin_data, ensure_ascii=False),
+                })
+        
+            return pd.DataFrame(export_rows)
+
         if df.empty:
             st.warning("Database exists, but no responses are saved.")
             st.stop()
@@ -2824,6 +2844,36 @@ def main():
         html_block(f'<div class="admin-screen-only" style="background:#E9F8EF; padding:12px 18px; border-radius:8px; margin-bottom:18px;">{len(df)} réponse(s) enregistrée(s).</div>')
 
 
+        export_df = build_admin_export(df)
+
+        csv_data = export_df.to_csv(index=False, encoding="utf-8-sig")
+
+        excel_buffer = BytesIO()
+        with pd.ExcelWriter(excel_buffer, engine="openpyxl") as writer:
+            export_df.to_excel(writer, index=False, sheet_name="Export_Admin")
+
+        col_export_csv, col_export_xlsx, col_export_empty = st.columns([1.2, 1.2, 2.6])
+
+        with col_export_csv:
+            st.download_button(
+                label="Télécharger CSV",
+                data=csv_data,
+                file_name="export_reponses_focus_groupes_admin.csv",
+                mime="text/csv",
+                use_container_width=True
+            )
+
+        with col_export_xlsx:
+            st.download_button(
+                label="Télécharger Excel",
+                data=excel_buffer.getvalue(),
+                file_name="export_reponses_focus_groupes_admin.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True
+            )
+
+        st.markdown("---")
+        
         admin_df = df.copy()
         admin_df["display_label"] = (
             admin_df["draft_code"].fillna("") + " | " +
