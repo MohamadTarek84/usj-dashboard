@@ -899,6 +899,13 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button {{
     font-size: 18px !important;
 }}
 
+div.st-key-download_export_csv button p,
+div.st-key-download_export_excel button p {{
+    font-weight: 800 !important;
+    font-size: 18px !important;
+    color: #ffffff !important;
+}}
+
 div.st-key-download_export_csv button:hover,
 div.st-key-download_export_excel button:hover,
 div.st-key-download_export_csv div[data-testid="stDownloadButton"] button:hover,
