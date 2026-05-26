@@ -3312,7 +3312,6 @@ margin-bottom:8px;
                         justify-content: center;
                         white-space: nowrap;
                         box-sizing: border-box;
-                        transform: translateY(-5px);
                     }
                     button:hover {
                         background-color: #761130;
