@@ -877,6 +877,36 @@ div[data-testid="stIFrame"] {{
     overflow: hidden !important;
 }}
 
+.admin-print-cover-header {{
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    max-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+}}
+
+div.st-key-download_export_csv button,
+div.st-key-download_export_excel button,
+div.st-key-download_export_csv div[data-testid="stDownloadButton"] button,
+div.st-key-download_export_excel div[data-testid="stDownloadButton"] button {{
+    background-color: #6A1B9A !important;
+    border-color: #6A1B9A !important;
+    color: #ffffff !important;
+}}
+
+div.st-key-download_export_csv button:hover,
+div.st-key-download_export_excel button:hover,
+div.st-key-download_export_csv div[data-testid="stDownloadButton"] button:hover,
+div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hover {{
+    background-color: #4A0F73 !important;
+    border-color: #4A0F73 !important;
+}}
+
+@media print {{
+
 @media print {{
 
     @page {{
