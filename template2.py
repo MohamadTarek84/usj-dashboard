@@ -328,6 +328,19 @@ def apply_usj_style():
     html_block(f"""
 <style>
 
+.st-key-download_export_csv button,
+.st-key-download_export_excel button {{
+    background-color: #6A1B9A !important;
+    border: 1px solid #6A1B9A !important;
+    color: white !important;
+}}
+
+.st-key-download_export_csv button:hover,
+.st-key-download_export_excel button:hover {{
+    background-color: #4A0F73 !important;
+    border: 1px solid #4A0F73 !important;
+}}
+
 #MainMenu {{
     display: none !important;
     visibility: hidden !important;
@@ -3401,7 +3414,8 @@ margin-bottom:8px;
                 data=csv_data,
                 file_name="export_reponses_focus_groupes_admin.csv",
                 mime="text/csv",
-                use_container_width=True
+                use_container_width=True,
+                key="download_export_csv"
             )
 
         with col_export_xlsx:
@@ -3410,7 +3424,8 @@ margin-bottom:8px;
                 data=excel_buffer.getvalue(),
                 file_name="export_reponses_focus_groupes_admin.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                use_container_width=True
+                use_container_width=True,
+                key="download_export_excel"
             )
 
         html_block('</div>')
