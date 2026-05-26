@@ -333,6 +333,20 @@ def apply_usj_style():
     visibility: hidden !important;
 }}
 
+.stDownloadButton button {
+    background-color: #C9A227 !important;
+    border: 1px solid #C9A227 !important;
+    color: white !important;
+    height: 42px !important;
+    min-height: 42px !important;
+    max-height: 42px !important;
+}
+
+.stDownloadButton button:hover {
+    background-color: #A9851F !important;
+    border: 1px solid #A9851F !important;
+}
+
 header {{
     display: none !important;
     visibility: hidden !important;
@@ -3375,7 +3389,11 @@ margin-bottom:8px;
         with pd.ExcelWriter(excel_buffer, engine="openpyxl") as writer:
             export_df.to_excel(writer, index=False, sheet_name="Export_Admin")
 
-        col_export_csv, col_export_xlsx, col_export_empty = st.columns([1.2, 1.2, 2.6])
+        col_export_csv, col_export_xlsx, col_export_empty = st.columns(
+            [1.35, 1.35, 2.30],
+            gap="large",
+            vertical_alignment="center"
+        )
 
         with col_export_csv:
             st.download_button(
