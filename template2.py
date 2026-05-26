@@ -334,8 +334,8 @@ def apply_usj_style():
 }}
 
 .stDownloadButton button {{
-    background-color: #C9A227 !important;
-    border: 1px solid #C9A227 !important;
+    background-color: #6A1B9A !important;
+    border: 1px solid #6A1B9A !important;
     color: white !important;
     height: 42px !important;
     min-height: 42px !important;
