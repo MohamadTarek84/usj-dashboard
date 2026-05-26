@@ -2844,33 +2844,7 @@ def main():
         html_block(f'<div class="admin-screen-only" style="background:#E9F8EF; padding:12px 18px; border-radius:8px; margin-bottom:18px;">{len(df)} réponse(s) enregistrée(s).</div>')
 
 
-        export_df = build_admin_export(df)
-
-        csv_data = export_df.to_csv(index=False, encoding="utf-8-sig")
-
-        excel_buffer = BytesIO()
-        with pd.ExcelWriter(excel_buffer, engine="openpyxl") as writer:
-            export_df.to_excel(writer, index=False, sheet_name="Export_Admin")
-
-        col_export_csv, col_export_xlsx, col_export_empty = st.columns([1.2, 1.2, 2.6])
-
-        with col_export_csv:
-            st.download_button(
-                label="Télécharger CSV",
-                data=csv_data,
-                file_name="export_reponses_focus_groupes_admin.csv",
-                mime="text/csv",
-                use_container_width=True
-            )
-
-        with col_export_xlsx:
-            st.download_button(
-                label="Télécharger Excel",
-                data=excel_buffer.getvalue(),
-                file_name="export_reponses_focus_groupes_admin.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                use_container_width=True
-            )
+      
 
         st.markdown("---")
         
@@ -3392,6 +3366,34 @@ margin-bottom:8px;
                 save_admin_version_by_code(selected_draft_code, updated_all_admin_data)
                 st.success("Versions admin enregistrées sans modifier les réponses originales du groupe.")
                 st.rerun()
+
+        export_df = build_admin_export(df)
+
+        csv_data = export_df.to_csv(index=False, encoding="utf-8-sig")
+
+        excel_buffer = BytesIO()
+        with pd.ExcelWriter(excel_buffer, engine="openpyxl") as writer:
+            export_df.to_excel(writer, index=False, sheet_name="Export_Admin")
+
+        col_export_csv, col_export_xlsx, col_export_empty = st.columns([1.2, 1.2, 2.6])
+
+        with col_export_csv:
+            st.download_button(
+                label="Télécharger CSV",
+                data=csv_data,
+                file_name="export_reponses_focus_groupes_admin.csv",
+                mime="text/csv",
+                use_container_width=True
+            )
+
+        with col_export_xlsx:
+            st.download_button(
+                label="Télécharger Excel",
+                data=excel_buffer.getvalue(),
+                file_name="export_reponses_focus_groupes_admin.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True
+            )
 
         html_block('</div>')
 
