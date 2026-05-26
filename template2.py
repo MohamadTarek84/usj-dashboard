@@ -3282,7 +3282,7 @@ margin-bottom:8px;
                         margin: 0;
                         padding: 0;
                         width: 100%;
-                        height: 42px;
+                        height: 58px;
                         overflow: hidden;
                         background: transparent;
                         font-family: Candara, Calibri, Arial, sans-serif;
