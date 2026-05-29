@@ -1002,6 +1002,7 @@ page = st.radio(
         "Comparaison historique",
         "Facteurs clés d’amélioration",
         "Résultats descriptifs par section",
+        "Autres questions du questionnaire",
         "Statistiques inférentielles",
         "Méthodologie des composantes",
         "Rapport synthétique imprimable"
@@ -2242,6 +2243,245 @@ def html_escape(value):
     return html_lib.escape(str(value))
 
 
+# =====================================================
+# Additional survey questions helpers
+# =====================================================
+
+def get_excluded_non_question_columns():
+    base_cols = {
+        "Year", "Année", "Genre", "Faculté_Institut_g", "Faculté", "Cursus", "Niveau", "Niveau_Lib",
+        "startlanguage", "StartLanguage", "Language", "Langue", "Age", "Date", "Horodateur", "Timestamp",
+        "Institution", "Responsable", "Email", "Adresse e-mail", "ID", "Id", "id", "Code", "Nom", "Prénom"
+    }
+    base_cols.update(SCORE_COLUMNS)
+    return base_cols
+
+
+def get_used_dashboard_question_columns():
+    used = set()
+    for item_list in components.values():
+        used.update(item_list)
+    for q in [q42, q43, q26, q27]:
+        if q:
+            used.add(q)
+    return used
+
+
+def get_other_question_columns(original_data):
+    """Return questionnaire variables not already used in components/KPIs.
+
+    The function is intentionally conservative: it removes demographic/filter columns,
+    internal score columns and variables already used in the dashboard components.
+    """
+    excluded = get_excluded_non_question_columns().union(get_used_dashboard_question_columns())
+    candidate_cols = []
+    for col in original_data.columns:
+        col_str = str(col).strip()
+        if col_str in excluded:
+            continue
+        if col_str.startswith("Score "):
+            continue
+        if original_data[col].dropna().empty:
+            continue
+        # Keep real questionnaire items. Most questionnaire columns contain a number/question wording.
+        # Also keep any categorical variable with useful response content.
+        candidate_cols.append(col_str)
+    return candidate_cols
+
+
+def clean_response_value(value):
+    if pd.isna(value):
+        return np.nan
+    text = str(value).strip()
+    if text.lower() in ["nan", "none", "nat", "", "<na>"]:
+        return np.nan
+    return text
+
+
+def build_other_question_distribution(original_data, coded_filter_data, question_col):
+    if question_col not in original_data.columns:
+        return pd.DataFrame()
+    temp = pd.DataFrame({
+        "Année": coded_filter_data["Year"].astype(str).values,
+        "Réponse": original_data.loc[coded_filter_data.index, question_col].map(clean_response_value).values,
+    })
+    temp = temp.dropna(subset=["Réponse"])
+    if temp.empty:
+        return pd.DataFrame()
+    dist = temp.groupby(["Année", "Réponse"]).size().reset_index(name="N")
+    dist["Pourcentage"] = dist.groupby("Année")["N"].transform(lambda x: x / x.sum() * 100)
+    return dist
+
+
+def summarize_other_questions_for_report(original_data, coded_filter_data, max_questions=6):
+    rows = []
+    other_cols = get_other_question_columns(original_data)
+    for col in other_cols:
+        if col not in original_data.columns:
+            continue
+        series = original_data.loc[coded_filter_data.index, col].map(clean_response_value).dropna()
+        if series.empty:
+            continue
+        n_valid = int(series.shape[0])
+        unique_n = int(series.nunique())
+        # Prefer closed questions for a concise executive report.
+        if unique_n < 2 or unique_n > 20:
+            continue
+        counts = series.value_counts(dropna=True)
+        top_resp = counts.index[0]
+        top_pct = counts.iloc[0] / counts.sum() * 100
+        rows.append({
+            "Question": col,
+            "N valide": n_valid,
+            "Réponse dominante": top_resp,
+            "Pourcentage": top_pct,
+            "Nombre de modalités": unique_n,
+        })
+    if not rows:
+        return pd.DataFrame()
+    out = pd.DataFrame(rows)
+    out = out.sort_values(["N valide", "Pourcentage"], ascending=[False, False]).head(max_questions)
+    return out
+
+
+def page_other_questions():
+    section_header(
+        "Autres questions du questionnaire",
+        "Exploration des variables non intégrées dans les composantes principales, avec distributions et comparaisons par année."
+    )
+
+    summary_box(
+        """
+        Cette page complète les analyses principales en affichant les questions du questionnaire qui ne sont pas utilisées dans les scores de composantes.
+        Elle permet de ne pas perdre d’information utile pour la décision, notamment les questions contextuelles, administratives ou complémentaires.
+        Les résultats ci-dessous respectent les filtres actifs du tableau de bord.
+        """,
+        color=USJ_BLUE,
+        background="#F7F9FC"
+    )
+
+    other_cols = get_other_question_columns(df_original)
+    if not other_cols:
+        st.warning("Aucune question complémentaire n’a été détectée en dehors des composantes déjà analysées.")
+        return
+
+    col_a, col_b, col_c = st.columns(3)
+    with col_a:
+        insight_card("Questions complémentaires", len(other_cols), "Variables disponibles", USJ_BLUE)
+    with col_b:
+        insight_card("Répondants filtrés", len(df_filtered), "Base active", USJ_GREEN if len(df_filtered) > 0 else USJ_RED)
+    with col_c:
+        insight_card("Années représentées", df_filtered["Year"].nunique(), "Selon les filtres", USJ_GOLD)
+
+    selected_other_question = st.selectbox(
+        "Choisir une question complémentaire",
+        other_cols,
+        format_func=lambda x: score_question_label(x)
+    )
+
+    selected_series = df_original.loc[df_filtered.index, selected_other_question].map(clean_response_value)
+    valid_series = selected_series.dropna()
+    n_valid = int(valid_series.shape[0])
+    missing_pct = selected_series.isna().mean() * 100 if len(selected_series) > 0 else np.nan
+    unique_n = int(valid_series.nunique()) if n_valid > 0 else 0
+
+    k1, k2, k3 = st.columns(3)
+    with k1:
+        insight_card("Réponses valides", n_valid, "Après filtres", USJ_BLUE)
+    with k2:
+        insight_card("Données manquantes", safe_pct(missing_pct), "Taux de non-réponse", USJ_ORANGE if pd.notna(missing_pct) and missing_pct > 10 else USJ_GREEN)
+    with k3:
+        insight_card("Modalités distinctes", unique_n, "Diversité des réponses", USJ_GOLD)
+
+    if n_valid == 0:
+        st.warning("Aucune réponse valide pour cette question dans les filtres sélectionnés.")
+        return
+
+    st.markdown(
+        f"""
+        <div style='background:#FFFFFF;border:1px solid #DDE5F0;border-left:7px solid {USJ_BLUE};border-radius:18px;padding:18px 20px;margin:18px 0;box-shadow:0 5px 16px rgba(0,0,0,0.05);'>
+            <div style='font-size:14px;font-weight:800;color:#667085;margin-bottom:6px;'>Question analysée</div>
+            <div style='font-size:20px;font-weight:900;color:{USJ_BLUE};line-height:1.35;'>{html_escape(selected_other_question)}</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    # Closed/categorical questions: professional distributions.
+    if unique_n <= 30:
+        dist_year = build_other_question_distribution(df_original, df_filtered, selected_other_question)
+        overall = valid_series.value_counts(dropna=True).reset_index()
+        overall.columns = ["Réponse", "N"]
+        overall["Pourcentage"] = overall["N"] / overall["N"].sum() * 100
+        overall = overall.sort_values("Pourcentage", ascending=True)
+
+        fig_overall = px.bar(
+            overall,
+            x="Pourcentage",
+            y="Réponse",
+            orientation="h",
+            text="Pourcentage",
+            color="Pourcentage",
+            color_continuous_scale=[[0, "#EAF2FF"], [0.5, "#6C8DC7"], [1, USJ_BLUE]],
+            hover_data={"N": True, "Pourcentage": ":.2f"},
+            title="Distribution globale des réponses"
+        )
+        fig_overall.update_traces(texttemplate="%{text:.2f}%", textposition="outside", marker_line_color="white", marker_line_width=1)
+        fig_overall.update_layout(xaxis_title="Pourcentage des réponses", yaxis_title="", coloraxis_showscale=False)
+        theme_layout(fig_overall, height=max(420, 38 * len(overall)), showlegend=False)
+        st.plotly_chart(fig_overall, use_container_width=True, config={"displayModeBar": False})
+
+        if not dist_year.empty and dist_year["Année"].nunique() > 1:
+            fig_stack = px.bar(
+                dist_year,
+                x="Année",
+                y="Pourcentage",
+                color="Réponse",
+                text="Pourcentage",
+                barmode="stack",
+                color_discrete_sequence=PLOTLY_SEQ,
+                hover_data={"N": True, "Pourcentage": ":.2f"},
+                title="Évolution de la distribution par année"
+            )
+            fig_stack.update_traces(texttemplate="%{text:.1f}%", textposition="inside")
+            fig_stack.update_layout(yaxis_title="Pourcentage des réponses", xaxis_title="Année", legend_title="Réponse")
+            theme_layout(fig_stack, height=520)
+            st.plotly_chart(fig_stack, use_container_width=True, config={"displayModeBar": False})
+
+        top_resp = overall.sort_values("Pourcentage", ascending=False).iloc[0]
+        summary_box(
+            f"""
+            <span style='font-size:20px; font-weight:800; color:{USJ_BLUE};'>Lecture décisionnelle</span><br>
+            La réponse la plus fréquente à cette question est <b>{html_escape(top_resp['Réponse'])}</b>, avec
+            <b>{top_resp['Pourcentage']:.2f}%</b> des réponses valides. Cette information doit être lue comme un indicateur complémentaire
+            aux scores de satisfaction, utile pour contextualiser les priorités d’action.
+            """,
+            color=USJ_BLUE,
+            background="#F7F9FC"
+        )
+
+        display_overall = overall.sort_values("Pourcentage", ascending=False).copy()
+        display_overall["Pourcentage"] = display_overall["Pourcentage"].map(lambda x: f"{x:.2f}%")
+        st.dataframe(display_overall, use_container_width=True, hide_index=True)
+
+    else:
+        # Open/high-cardinality questions: avoid unreadable charts, provide frequency table and samples.
+        freq = valid_series.value_counts().head(20).reset_index()
+        freq.columns = ["Réponse", "N"]
+        freq["Pourcentage"] = freq["N"] / n_valid * 100
+        freq["Pourcentage"] = freq["Pourcentage"].map(lambda x: f"{x:.2f}%")
+        st.markdown(f"<h3 style='color:{USJ_BLUE};'>Réponses les plus fréquentes</h3>", unsafe_allow_html=True)
+        st.dataframe(freq, use_container_width=True, hide_index=True)
+        summary_box(
+            """
+            Cette question présente un nombre élevé de réponses distinctes. Elle est donc traitée comme une question ouverte ou quasi ouverte.
+            Le tableau affiche les réponses les plus fréquentes afin de repérer les tendances sans surcharger le rapport.
+            """,
+            color=USJ_ORANGE,
+            background="#FFF8F0"
+        )
+
+
 
 def build_printable_report_html():
     """Build a detailed, decision-oriented printable HTML report.
@@ -2629,6 +2869,38 @@ def build_printable_report_html():
     """
 
     # -------------------------------------------------
+    # Complementary questions not included in components
+    # -------------------------------------------------
+    other_report_df = summarize_other_questions_for_report(df_original, report_data, max_questions=6)
+    other_questions_html = ""
+    if not other_report_df.empty:
+        other_rows = []
+        for _, row in other_report_df.iterrows():
+            other_rows.append({
+                "Question": f"<td>{clean_text(score_question_label(row['Question']))}</td>",
+                "N valide": f"<td style='text-align:right;'>{int(row['N valide'])}</td>",
+                "Réponse dominante": f"<td>{clean_text(row['Réponse dominante'])}</td>",
+                "Poids": f"<td style='text-align:right; font-weight:800; color:{USJ_BLUE};'>{fmt_pct2(row['Pourcentage'])}</td>",
+            })
+        other_questions_html = f"""
+        <div class='report-card'>
+            <h3>Questions complémentaires non intégrées aux composantes</h3>
+            <p>
+                Cette section valorise les variables du questionnaire qui ne sont pas incluses dans les scores principaux. Elles apportent un éclairage
+                complémentaire pour interpréter la situation du périmètre analysé et repérer des signaux opérationnels utiles à la décision.
+            </p>
+            {html_table(other_rows, ["Question", "N valide", "Réponse dominante", "Poids"])}
+        </div>
+        """
+    else:
+        other_questions_html = """
+        <div class='report-card'>
+            <h3>Questions complémentaires non intégrées aux composantes</h3>
+            <p>Aucune question complémentaire fermée suffisamment exploitable n’a été détectée pour les filtres sélectionnés.</p>
+        </div>
+        """
+
+    # -------------------------------------------------
     # Recommendations
     # -------------------------------------------------
     rec_items = []
@@ -2782,6 +3054,7 @@ def build_printable_report_html():
         table {{
             width: 100%;
             border-collapse: collapse;
+            table-layout: fixed;
             font-size: 14.2px;
             margin-top: 10px;
         }}
@@ -2790,11 +3063,27 @@ def build_printable_report_html():
             color: white;
             text-align: left;
             padding: 10px;
+            vertical-align: middle;
         }}
         td {{
             border-bottom: 1px solid #E6ECF3;
             padding: 9px 10px;
             vertical-align: top;
+            overflow-wrap: anywhere;
+        }}
+        th:nth-child(1), td:nth-child(1) {{ width: 42%; }}
+        th:nth-child(2), td:nth-child(2) {{ width: 19%; }}
+        th:nth-child(3), td:nth-child(3) {{ width: 19%; }}
+        th:nth-child(4), td:nth-child(4) {{ width: 20%; }}
+        .zone-explain {{
+            margin-top: 12px;
+            background: #F7F9FC;
+            border: 1px solid #DDE5F0;
+            border-left: 6px solid {badge_color};
+            border-radius: 14px;
+            padding: 12px 14px;
+            font-size: 14px;
+            line-height: 1.55;
         }}
         .mini-badge {{
             display:inline-block;
@@ -2826,6 +3115,11 @@ def build_printable_report_html():
                 <h1 class='report-title'>{clean_text(report_title)}</h1>
                 <div class='report-subtitle'>Période : {clean_text(period_label)} | {clean_text(generated_filters)}</div>
                 <div class='badge'>{clean_text(badge_text)}</div>
+                <div class='zone-explain'>
+                    <b>Comment lire cette classification ?</b> La mention <b>{clean_text(badge_text)}</b> est calculée à partir de la satisfaction globale du périmètre sélectionné.
+                    <b>Zone de force</b> signifie que le résultat est supérieur à 75% et peut être considéré comme un acquis solide à préserver.
+                    <b>Zone de consolidation</b> indique un résultat entre 50% et 75%, nécessitant un suivi régulier. <b>Zone d’alerte</b> signale un résultat inférieur à 50%, nécessitant une action prioritaire.
+                </div>
             </div>
 
             <div class='kpi-grid'>
@@ -2859,6 +3153,7 @@ def build_printable_report_html():
             {importance_html}
             {stats_html}
             {question_html}
+            {other_questions_html}
 
             <div class='report-card'>
                 <h3>Classement complet des dimensions</h3>
@@ -3014,6 +3309,9 @@ elif page == "Facteurs clés d’amélioration":
 
 elif page == "Résultats descriptifs par section":
     page_descriptive_sections()
+
+elif page == "Autres questions du questionnaire":
+    page_other_questions()
 
 elif page == "Statistiques inférentielles":
     page_inferential_statistics()
