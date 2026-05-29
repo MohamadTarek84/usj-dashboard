@@ -1964,27 +1964,42 @@ def build_inferential_results(data, group_col, variables_dict):
 def page_inferential_statistics():
     section_header(
         "Statistiques inférentielles par variables démographiques",
-        "Comparaison des moyennes des dimensions et des questions selon le genre, la faculté, le niveau et la langue de démarrage."
+        "Comparaison des moyennes des dimensions et des questions selon le genre, la faculté, le niveau, le cursus et la langue de démarrage."
     )
 
     summary_box(
         f"""
         Cette section permet de tester si les résultats moyens diffèrent significativement entre les groupes démographiques.
         Les moyennes sont présentées en pourcentage afin de rester cohérentes avec les autres pages du tableau de bord.
-        Pour deux groupes, le tableau utilise un <b>Welch t-test</b>. Pour trois groupes ou plus, il utilise une <b>ANOVA</b>.
+        Pour deux groupes, le tableau utilise un <b>Welch t-test</b>. Pour trois groupes ou plus, il utilise une <b>ANOVA</b>. Les comparaisons couvrent aussi le <b>Cursus</b> et la <b>Langue de démarrage</b> lorsque ces colonnes existent dans le fichier.
         Une p-value inférieure à <b>0.050</b> indique une différence statistiquement significative entre les groupes comparés.
         """,
         color=USJ_BLUE,
         background="#F7F9FC"
     )
 
+    # Variables requested for inferential comparisons.
+    # The language variable can have different names depending on the Excel export,
+    # so the code detects the available column automatically.
     demographic_candidates = {
         "Genre": "Genre",
         "Faculté_Institut_g": "Faculté / Institut",
         "Niveau_Lib": "Niveau",
+        "Cursus": "Cursus",
         "startlanguage": "Langue de démarrage",
+        "StartLanguage": "Langue de démarrage",
+        "start_language": "Langue de démarrage",
+        "Langue": "Langue de démarrage",
+        "Language": "Langue de démarrage",
     }
-    available_demo = {col: label for col, label in demographic_candidates.items() if col in df_filtered.columns}
+
+    available_demo = {}
+    for col, label in demographic_candidates.items():
+        if col in df_filtered.columns:
+            # Avoid displaying duplicated language entries if several aliases exist.
+            if label == "Langue de démarrage" and "Langue de démarrage" in available_demo.values():
+                continue
+            available_demo[col] = label
 
     if "Niveau_Lib" not in available_demo and "Niveau" in df_filtered.columns:
         available_demo["Niveau"] = "Niveau"
