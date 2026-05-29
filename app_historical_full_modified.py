@@ -42,13 +42,56 @@ USJ_GOLD = "#C9A227"
 USJ_GRAY = "#F5F7FB"
 USJ_TEXT = "#1B2A41"
 
-PLOTLY_SEQ = [USJ_BLUE, USJ_RED, USJ_GREEN, USJ_ORANGE, USJ_GOLD, "#5E35B1", "#0097A7", "#6D4C41"]
-PLOTLY_CONT = [
-    [0.00, "#C0003B"],
-    [0.50, "#F57C00"],
-    [0.75, "#001B75"],
-    [1.00, "#2E7D32"],
+# Professional institutional palettes
+PLOTLY_SEQ = [
+    USJ_BLUE,
+    USJ_DARK_RED,
+    USJ_GREEN,
+    USJ_GOLD,
+    USJ_BLUE_2,
+    "#6D4C41",
+    "#5E6C84",
+    "#00838F",
+    "#7E57C2",
+    "#455A64",
 ]
+
+# Continuous scale used for satisfaction percentages.
+# Low results are burgundy, mid results are gold/light blue, high results are institutional blue/green.
+PLOTLY_CONT = [
+    [0.00, USJ_DARK_RED],
+    [0.35, USJ_RED],
+    [0.55, USJ_GOLD],
+    [0.72, USJ_LIGHT_BLUE],
+    [0.86, USJ_BLUE_2],
+    [1.00, USJ_GREEN],
+]
+
+PLOTLY_DIVERGING = [
+    [0.00, USJ_DARK_RED],
+    [0.25, USJ_RED],
+    [0.50, "#F4F6FA"],
+    [0.75, USJ_BLUE_2],
+    [1.00, USJ_GREEN],
+]
+
+RESPONSE_COLORS = {
+    "Très insatisfaisante": USJ_DARK_RED,
+    "Très insatisfaisant": USJ_DARK_RED,
+    "Insatisfaisante": USJ_RED,
+    "Insatisfait": USJ_RED,
+    "Pas du tout d’accord": USJ_DARK_RED,
+    "Pas d’accord": USJ_RED,
+    "Satisfaisante": USJ_BLUE_2,
+    "Satisfait": USJ_BLUE_2,
+    "D’accord": USJ_BLUE_2,
+    "Très satisfaisante": USJ_GREEN,
+    "Très satisfait": USJ_GREEN,
+    "Tout à fait d’accord": USJ_GREEN,
+    "Pas au courant": "#8A94A6",
+    "Oui": USJ_GREEN,
+    "Non": USJ_DARK_RED,
+}
 
 # =====================================================
 # Global CSS
@@ -200,6 +243,7 @@ def summary_box(text, color=USJ_BLUE, background="#F7F9FC"):
             border-radius:16px;
             margin-top:18px;
             margin-bottom:20px;
+            font-family:Candara, Arial, sans-serif;
             font-size:16px;
             line-height:1.65;
             color:{USJ_TEXT};
@@ -376,6 +420,8 @@ def theme_layout(fig, height=480, showlegend=True):
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1) if showlegend else dict(),
         paper_bgcolor="white",
         plot_bgcolor="white",
+        hoverlabel=dict(bgcolor="white", font_size=13, font_family="Candara, Arial"),
+        coloraxis_colorbar=dict(tickfont=dict(family="Candara, Arial", color=USJ_TEXT)),
     )
     fig.update_xaxes(showgrid=False, linecolor="#D9E1EC")
     fig.update_yaxes(gridcolor="#E6ECF3", linecolor="#D9E1EC")
@@ -758,6 +804,20 @@ def score_question_label(question):
     return q
 
 
+def wrap_label(label, width=46):
+    label = str(label).strip()
+    return "<br>".join(textwrap.wrap(label, width=width)) if label else label
+
+
+def question_display_label(question, width=70):
+    # Display the real question wording instead of technical item codes such as 1_a or 1_b.
+    return wrap_label(score_question_label(question), width=width)
+
+
+def plain_question_label(question):
+    return score_question_label(question)
+
+
 def section_question_summary(data, items):
     rows = []
     for item in items:
@@ -765,7 +825,8 @@ def section_question_summary(data, items):
             series = data[item]
             rows.append({
                 "Question": item,
-                "Libellé court": question_short_label(item),
+                "Libellé question": plain_question_label(item),
+                "Libellé affiché": question_display_label(item, width=58),
                 "Résultat (%)": pct_from_mean(series.mean()),
                 "Moyenne /4": series.mean(),
                 "N valide": series.notna().sum(),
@@ -781,8 +842,8 @@ def section_trend(data, items):
             for year, g in data.groupby("Year"):
                 rows.append({
                     "Année": year,
-                    "Question": question_short_label(item),
-                    "Question complète": item,
+                    "Question": question_display_label(item, width=42),
+                    "Question complète": plain_question_label(item),
                     "Résultat (%)": pct_from_mean(g[item].mean())
                 })
     return pd.DataFrame(rows)
@@ -793,8 +854,8 @@ def response_distribution(original_data, coded_data, items):
     for item in items:
         if item in original_data.columns and item in coded_data.columns:
             temp = pd.DataFrame({
-                "Question": question_short_label(item),
-                "Question complète": item,
+                "Question": question_display_label(item, width=62),
+                "Question complète": plain_question_label(item),
                 "Réponse": original_data[item].astype(str).str.strip().replace({"nan": np.nan}),
                 "Year": coded_data["Year"]
             })
@@ -828,7 +889,7 @@ def correlation_with_section_mean(data, items):
         .reset_index()
     )
     ranking.columns = ["Question", "Corrélation avec la moyenne"]
-    ranking["Question courte"] = ranking["Question"].apply(question_short_label)
+    ranking["Question affichée"] = ranking["Question"].apply(lambda x: question_display_label(x, width=58))
     ranking = ranking.sort_values("Corrélation avec la moyenne", ascending=False)
 
     return corr, ranking
@@ -1178,8 +1239,11 @@ def page_historical_comparison():
             text_auto=".1f",
             aspect="auto",
             color_continuous_scale=PLOTLY_CONT,
+            zmin=70,
+            zmax=85,
             title="Carte thermique des dimensions par année"
         )
+        fig_heat.update_traces(textfont=dict(size=13, family="Candara, Arial"), hovertemplate="Dimension=%{y}<br>Année=%{x}<br>Résultat=%{z:.1f}%<extra></extra>")
         fig_heat.update_layout(
             xaxis_title="Année",
             yaxis_title="Dimension",
@@ -1187,6 +1251,22 @@ def page_historical_comparison():
         )
         theme_layout(fig_heat, height=540, showlegend=False)
         st.plotly_chart(fig_heat, use_container_width=True, config={"displayModeBar": False})
+
+        latest_hm_year = heatmap_pivot.columns[-1]
+        latest_hm = heatmap_pivot[latest_hm_year].dropna().sort_values(ascending=False)
+        if not latest_hm.empty:
+            summary_box(
+                f"""
+                <span style="font-size:20px; font-weight:800; color:{USJ_BLUE};">Lecture de la carte thermique</span><br>
+                En <b>{latest_hm_year}</b>, la dimension la mieux positionnée est
+                <b>{latest_hm.index[0]}</b> avec <b>{latest_hm.iloc[0]:.1f}%</b>, tandis que la dimension
+                la plus fragile est <b>{latest_hm.index[-1]}</b> avec <b>{latest_hm.iloc[-1]:.1f}%</b>.
+                Les couleurs permettent de repérer rapidement les zones de performance élevée et les zones
+                où un suivi institutionnel plus ciblé est recommandé.
+                """,
+                color=USJ_BLUE,
+                background="#F7F9FC"
+            )
 
         # Year-over-year changes
         diff_df = heatmap_pivot.copy()
@@ -1203,10 +1283,10 @@ def page_historical_comparison():
                 orientation="h",
                 text="Évolution",
                 color="Évolution",
-                color_continuous_scale=["#C0003B", "#F57C00", "#2E7D32"],
+                color_continuous_scale=PLOTLY_DIVERGING,
                 title=f"Évolution des dimensions entre {first_year} et {last_year}"
             )
-            fig_diff.update_traces(texttemplate="%{text:+.1f} pts", textposition="outside")
+            fig_diff.update_traces(texttemplate="%{text:+.2f} pts", textposition="outside", cliponaxis=False)
             fig_diff.update_layout(xaxis_title="Évolution en points de pourcentage", yaxis_title="")
             theme_layout(fig_diff, height=520, showlegend=False)
             st.plotly_chart(fig_diff, use_container_width=True, config={"displayModeBar": False})
@@ -1236,16 +1316,14 @@ def page_historical_comparison():
             p_value, test_name = anova_or_kruskal(df_filtered, col)
             stat_rows.append({
                 "Indicateur": SCORE_LABELS[col],
-                "Test": test_name,
-                "p-value": round(p_value, 5) if pd.notna(p_value) else np.nan,
+                "p-value": round(p_value, 3) if pd.notna(p_value) else np.nan,
                 "Interprétation": p_interpretation(p_value)
             })
 
     p_rec = chi_square_recommendation(df_filtered, q43)
     stat_rows.append({
         "Indicateur": "Taux de recommandation",
-        "Test": "Chi-square",
-        "p-value": round(p_rec, 5) if pd.notna(p_rec) else np.nan,
+        "p-value": round(p_rec, 3) if pd.notna(p_rec) else np.nan,
         "Interprétation": p_interpretation(p_rec)
     })
 
@@ -1284,8 +1362,11 @@ def page_historical_comparison():
             text_auto=".1f",
             aspect="auto",
             color_continuous_scale=PLOTLY_CONT,
+            zmin=65,
+            zmax=100,
             title="Satisfaction globale par faculté et par année"
         )
+        fig_fac.update_traces(textfont=dict(size=12, family="Candara, Arial"), hovertemplate="Faculté=%{y}<br>Année=%{x}<br>Satisfaction=%{z:.1f}%<extra></extra>")
         fig_fac.update_layout(xaxis_title="Année", yaxis_title="Faculté", coloraxis_colorbar=dict(title="%"))
         theme_layout(fig_fac, height=max(520, 26 * len(fac_pivot)), showlegend=False)
         st.plotly_chart(fig_fac, use_container_width=True, config={"displayModeBar": False})
@@ -1500,10 +1581,10 @@ def page_descriptive_sections():
         insight_card("Nombre de questions", len(items), selected_section, USJ_BLUE)
 
     with c2:
-        insight_card("Question la mieux évaluée", safe_pct(top_q["Résultat (%)"]), question_short_label(top_q["Question"]), USJ_GREEN)
+        insight_card("Question la mieux évaluée", safe_pct(top_q["Résultat (%)"]), plain_question_label(top_q["Question"]), USJ_GREEN)
 
     with c3:
-        insight_card("Question la plus faible", safe_pct(weak_q["Résultat (%)"]), question_short_label(weak_q["Question"]), USJ_RED if weak_q["Résultat (%)"] < 50 else USJ_ORANGE)
+        insight_card("Question la plus faible", safe_pct(weak_q["Résultat (%)"]), plain_question_label(weak_q["Question"]), USJ_RED if weak_q["Résultat (%)"] < 50 else USJ_ORANGE)
 
     summary_box(
         f"""
@@ -1522,7 +1603,7 @@ def page_descriptive_sections():
     fig_rank = px.bar(
         question_summary.sort_values("Résultat (%)"),
         x="Résultat (%)",
-        y="Libellé court",
+        y="Libellé affiché",
         orientation="h",
         text="Résultat (%)",
         color="Résultat (%)",
@@ -1544,7 +1625,7 @@ def page_descriptive_sections():
     display_q["Moyenne /4"] = display_q["Moyenne /4"].map(lambda x: f"{x:.2f}" if pd.notna(x) else "")
     display_q["Taux de données manquantes (%)"] = display_q["Taux de données manquantes (%)"].map(lambda x: f"{x:.1f}%" if pd.notna(x) else "")
     st.dataframe(
-        display_q[["Question", "Résultat (%)", "Moyenne /4", "N valide", "Taux de données manquantes (%)"]],
+        display_q[["Libellé question", "Résultat (%)", "Moyenne /4", "N valide", "Taux de données manquantes (%)"]].rename(columns={"Libellé question": "Question"}),
         use_container_width=True,
         hide_index=True
     )
@@ -1589,8 +1670,8 @@ def page_descriptive_sections():
             color="Réponse",
             text="Pourcentage",
             barmode="stack",
-            color_discrete_sequence=PLOTLY_SEQ,
-            hover_data={"N": True}
+            color_discrete_map=RESPONSE_COLORS,
+            hover_data={"Question complète": True, "N": True}
         )
         fig_dist.update_traces(texttemplate="%{text:.1f}%", textposition="inside")
         fig_dist.update_layout(
@@ -1605,7 +1686,7 @@ def page_descriptive_sections():
     corr, ranking = correlation_with_section_mean(df_filtered, items)
 
     if not corr.empty:
-        labels = [question_short_label(c) if c != "Moyenne de la section" else c for c in corr.columns]
+        labels = [question_display_label(c, width=34) if c != "Moyenne de la section" else c for c in corr.columns]
         corr_display = corr.copy()
         corr_display.index = labels
         corr_display.columns = labels
@@ -1614,7 +1695,7 @@ def page_descriptive_sections():
             corr_display,
             text_auto=".2f",
             aspect="auto",
-            color_continuous_scale="RdBu",
+            color_continuous_scale=PLOTLY_DIVERGING,
             zmin=-1,
             zmax=1,
             title=f"Heatmap de corrélation – {selected_section}"
@@ -1630,7 +1711,7 @@ def page_descriptive_sections():
         fig_corr_rank = px.bar(
             ranking.sort_values("Corrélation avec la moyenne"),
             x="Corrélation avec la moyenne",
-            y="Question courte",
+            y="Question affichée",
             orientation="h",
             text="Corrélation avec la moyenne",
             color="Corrélation avec la moyenne",
