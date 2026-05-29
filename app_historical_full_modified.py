@@ -2,12 +2,14 @@
 import os
 import textwrap
 import warnings
+import html as html_lib
 
 import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
+import streamlit.components.v1 as components
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 
 try:
@@ -1001,7 +1003,8 @@ page = st.radio(
         "Facteurs clés d’amélioration",
         "Résultats descriptifs par section",
         "Statistiques inférentielles",
-        "Méthodologie des composantes"
+        "Méthodologie des composantes",
+        "Rapport synthétique imprimable"
     ],
     horizontal=True
 )
@@ -1964,14 +1967,14 @@ def build_inferential_results(data, group_col, variables_dict):
 def page_inferential_statistics():
     section_header(
         "Statistiques inférentielles par variables démographiques",
-        "Comparaison des moyennes des dimensions et des questions selon le genre, la faculté, le niveau, le cursus et la langue de démarrage."
+        "Comparaison des moyennes des dimensions et des questions selon le genre, la faculté, le niveau et la langue de démarrage."
     )
 
     summary_box(
         f"""
         Cette section permet de tester si les résultats moyens diffèrent significativement entre les groupes démographiques.
         Les moyennes sont présentées en pourcentage afin de rester cohérentes avec les autres pages du tableau de bord.
-        Pour deux groupes, le tableau utilise un <b>Welch t-test</b>. Pour trois groupes ou plus, il utilise une <b>ANOVA</b>. Les comparaisons couvrent aussi le <b>Cursus</b> et la <b>Langue de démarrage</b> lorsque ces colonnes existent dans le fichier.
+        Pour deux groupes, le tableau utilise un <b>Welch t-test</b>. Pour trois groupes ou plus, il utilise une <b>ANOVA</b>. Les comparaisons couvrent aussi la <b>Langue de démarrage</b> lorsque cette colonne existe dans le fichier.
         Une p-value inférieure à <b>0.050</b> indique une différence statistiquement significative entre les groupes comparés.
         """,
         color=USJ_BLUE,
@@ -1985,7 +1988,6 @@ def page_inferential_statistics():
         "Genre": "Genre",
         "Faculté_Institut_g": "Faculté / Institut",
         "Niveau_Lib": "Niveau",
-        "Cursus": "Cursus",
         "startlanguage": "Langue de démarrage",
         "StartLanguage": "Langue de démarrage",
         "start_language": "Langue de démarrage",
@@ -2198,6 +2200,362 @@ def page_inferential_statistics():
             )
 
 
+
+# =====================================================
+# Page 6 - Printable synthetic faculty report
+# =====================================================
+
+def apply_current_filters_without_faculty(data):
+    base = data.copy()
+    if year != "Tous":
+        base = base[base["Year"].astype(str) == str(year)]
+    if genre != "Tous" and "Genre" in base.columns:
+        base = base[base["Genre"].astype(str) == str(genre)]
+    if cursus != "Tous" and "Cursus" in base.columns:
+        base = base[base["Cursus"].astype(str) == str(cursus)]
+    if niveau != "Tous" and "Niveau" in base.columns:
+        base = base[base["Niveau"].astype(str) == str(niveau)]
+    return base
+
+
+def build_report_dimension_table(data):
+    rows = []
+    for col in SCORE_COLUMNS:
+        if col in data.columns and col != "Score satisfaction globale":
+            value = pct_from_mean(data[col].mean())
+            if pd.notna(value):
+                rows.append({"Dimension": SCORE_LABELS.get(col, col), "Résultat": value})
+    return pd.DataFrame(rows).sort_values("Résultat", ascending=False)
+
+
+def report_badge(value):
+    if pd.isna(value):
+        return "Non disponible", "#777777"
+    if value < 50:
+        return "Zone d’alerte", USJ_RED
+    if value <= 75:
+        return "Zone de consolidation", USJ_BLUE
+    return "Zone de force", USJ_GREEN
+
+
+def html_escape(value):
+    return html_lib.escape(str(value))
+
+
+def build_printable_report_html():
+    report_data = df_filtered.copy()
+    comparison_data = apply_current_filters_without_faculty(df_coded)
+
+    faculty_label = faculte if faculte != "Tous" else "Ensemble de l’Université"
+    period_label = year if year != "Tous" else "Toutes les années disponibles"
+    report_title = f"Rapport synthétique Exit Survey - {faculty_label}"
+
+    n_resp = len(report_data)
+    sat = pct_from_mean(report_data["Score satisfaction globale"].mean()) if "Score satisfaction globale" in report_data.columns else np.nan
+    rec = calculate_recommendation_rate(report_data, q43)
+    exp = pct_from_mean(report_data["Score expérience globale USJ"].mean()) if "Score expérience globale USJ" in report_data.columns else np.nan
+
+    badge_text, badge_color = report_badge(sat)
+    dim_table = build_report_dimension_table(report_data)
+
+    if not dim_table.empty:
+        best = dim_table.iloc[0]
+        weak = dim_table.iloc[-1]
+        dim_rows_html = "".join(
+            f"""
+            <tr>
+                <td>{html_escape(row['Dimension'])}</td>
+                <td style='text-align:right; font-weight:700;'>{row['Résultat']:.2f}%</td>
+            </tr>
+            """
+            for _, row in dim_table.iterrows()
+        )
+    else:
+        best = {"Dimension": "Non disponible", "Résultat": np.nan}
+        weak = {"Dimension": "Non disponible", "Résultat": np.nan}
+        dim_rows_html = "<tr><td colspan='2'>Aucune dimension disponible.</td></tr>"
+
+    benchmark_html = ""
+    if faculte != "Tous" and "Faculté_Institut_g" in comparison_data.columns:
+        usj_sat = pct_from_mean(comparison_data["Score satisfaction globale"].mean())
+        usj_rec = calculate_recommendation_rate(comparison_data, q43)
+        sat_gap = sat - usj_sat if pd.notna(sat) and pd.notna(usj_sat) else np.nan
+        rec_gap = rec - usj_rec if pd.notna(rec) and pd.notna(usj_rec) else np.nan
+        benchmark_html = f"""
+        <div class='report-card'>
+            <h3>Positionnement par rapport à l’ensemble USJ filtré</h3>
+            <p>
+                La satisfaction globale de la faculté est de <b>{safe_pct(sat)}</b>, contre <b>{safe_pct(usj_sat)}</b>
+                pour l’ensemble USJ avec les mêmes filtres hors faculté, soit un écart de
+                <b>{'NA' if pd.isna(sat_gap) else f'{sat_gap:+.2f} points'}</b>.
+                Le taux de recommandation est de <b>{safe_pct(rec)}</b>, contre <b>{safe_pct(usj_rec)}</b>,
+                soit un écart de <b>{'NA' if pd.isna(rec_gap) else f'{rec_gap:+.2f} points'}</b>.
+            </p>
+        </div>
+        """
+    else:
+        benchmark_html = """
+        <div class='report-card'>
+            <h3>Positionnement institutionnel</h3>
+            <p>
+                Le rapport présente ici une lecture globale de l’Université. Pour générer un rapport propre à une faculté,
+                sélectionnez une faculté dans le filtre <b>Faculté</b>, puis revenez à cette page.
+            </p>
+        </div>
+        """
+
+    trend_html = ""
+    ys = build_year_summary(report_data, q43)
+    if len(ys) >= 2 and "Satisfaction globale" in ys.columns:
+        first_year = ys["Année"].iloc[0]
+        last_year = ys["Année"].iloc[-1]
+        first_sat = ys["Satisfaction globale"].iloc[0]
+        last_sat = ys["Satisfaction globale"].iloc[-1]
+        delta = last_sat - first_sat if pd.notna(first_sat) and pd.notna(last_sat) else np.nan
+        trend_html = f"""
+        <div class='report-card'>
+            <h3>Évolution historique</h3>
+            <p>
+                Entre <b>{html_escape(first_year)}</b> et <b>{html_escape(last_year)}</b>, la satisfaction globale évolue de
+                <b>{safe_pct(first_sat)}</b> à <b>{safe_pct(last_sat)}</b>, soit
+                <b>{'NA' if pd.isna(delta) else f'{delta:+.2f} points'}</b>.
+            </p>
+        </div>
+        """
+
+    action_text = ""
+    if not dim_table.empty:
+        action_text = f"""
+        <p>
+            La priorité d’amélioration immédiate concerne <b>{html_escape(weak['Dimension'])}</b>, qui présente le résultat le plus faible
+            (<b>{weak['Résultat']:.2f}%</b>). À l’inverse, <b>{html_escape(best['Dimension'])}</b> constitue un point fort à préserver
+            et à valoriser (<b>{best['Résultat']:.2f}%</b>).
+        </p>
+        """
+
+    generated_filters = f"Année : {year} | Genre : {genre} | Faculté : {faculte} | Cursus : {cursus} | Niveau : {niveau}"
+
+    return f"""
+    <html>
+    <head>
+    <meta charset='utf-8'>
+    <style>
+        body {{
+            font-family: Candara, Arial, sans-serif;
+            color: {USJ_TEXT};
+            background: #ffffff;
+            margin: 0;
+            padding: 0;
+        }}
+        .report-container {{
+            max-width: 1050px;
+            margin: 0 auto;
+            padding: 28px 34px;
+            border: 1px solid #DDE5F0;
+            border-radius: 22px;
+            background: linear-gradient(180deg, #FFFFFF 0%, #F7F9FC 100%);
+        }}
+        .report-header {{
+            border-bottom: 4px solid {USJ_BLUE};
+            padding-bottom: 16px;
+            margin-bottom: 20px;
+        }}
+        .report-title {{
+            font-size: 31px;
+            font-weight: 900;
+            color: {USJ_BLUE};
+            margin: 0;
+        }}
+        .report-subtitle {{
+            font-size: 16px;
+            color: #5F6B7A;
+            margin-top: 7px;
+        }}
+        .badge {{
+            display: inline-block;
+            background: {badge_color};
+            color: white;
+            padding: 8px 14px;
+            border-radius: 999px;
+            font-size: 14px;
+            font-weight: 800;
+            margin-top: 10px;
+        }}
+        .kpi-grid {{
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
+            margin: 20px 0;
+        }}
+        .kpi-box {{
+            background: #ffffff;
+            border: 1px solid #DDE5F0;
+            border-left: 7px solid {USJ_BLUE};
+            border-radius: 18px;
+            padding: 16px;
+            box-shadow: 0 5px 16px rgba(0,0,0,0.06);
+        }}
+        .kpi-label {{
+            font-size: 13px;
+            font-weight: 800;
+            color: #303742;
+        }}
+        .kpi-value {{
+            font-size: 28px;
+            font-weight: 900;
+            color: {USJ_BLUE};
+            margin-top: 6px;
+        }}
+        .report-card {{
+            background: #ffffff;
+            border: 1px solid #DDE5F0;
+            border-radius: 18px;
+            padding: 18px 20px;
+            margin-top: 16px;
+            box-shadow: 0 5px 16px rgba(0,0,0,0.05);
+        }}
+        .report-card h3 {{
+            color: {USJ_BLUE};
+            margin-top: 0;
+            margin-bottom: 8px;
+            font-size: 20px;
+        }}
+        .report-card p {{
+            font-size: 15.5px;
+            line-height: 1.65;
+            text-align: justify;
+            margin: 0;
+        }}
+        table {{
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14.5px;
+        }}
+        th {{
+            background: {USJ_BLUE};
+            color: white;
+            text-align: left;
+            padding: 10px;
+        }}
+        td {{
+            border-bottom: 1px solid #E6ECF3;
+            padding: 9px 10px;
+        }}
+        .print-note {{
+            margin-top: 16px;
+            font-size: 13px;
+            color: #667085;
+        }}
+        @media print {{
+            body {{ margin: 0; }}
+            .no-print {{ display: none !important; }}
+            .report-container {{ border: none; box-shadow: none; padding: 10px; }}
+        }}
+    </style>
+    </head>
+    <body>
+        <div class='report-container'>
+            <div class='report-header'>
+                <h1 class='report-title'>{html_escape(report_title)}</h1>
+                <div class='report-subtitle'>Période : {html_escape(period_label)} | {html_escape(generated_filters)}</div>
+                <div class='badge'>{html_escape(badge_text)}</div>
+            </div>
+
+            <div class='kpi-grid'>
+                <div class='kpi-box'><div class='kpi-label'>Répondants</div><div class='kpi-value'>{n_resp}</div></div>
+                <div class='kpi-box'><div class='kpi-label'>Satisfaction globale</div><div class='kpi-value'>{safe_pct(sat)}</div></div>
+                <div class='kpi-box'><div class='kpi-label'>Recommandation</div><div class='kpi-value'>{safe_pct(rec)}</div></div>
+                <div class='kpi-box'><div class='kpi-label'>Expérience globale</div><div class='kpi-value'>{safe_pct(exp)}</div></div>
+            </div>
+
+            <div class='report-card'>
+                <h3>Synthèse exécutive</h3>
+                <p>
+                    Ce rapport présente une lecture synthétique des résultats de l’Exit Survey pour <b>{html_escape(faculty_label)}</b>.
+                    La satisfaction globale atteint <b>{safe_pct(sat)}</b> et le taux de recommandation atteint <b>{safe_pct(rec)}</b>.
+                    {action_text}
+                </p>
+            </div>
+
+            {benchmark_html}
+            {trend_html}
+
+            <div class='report-card'>
+                <h3>Classement des dimensions</h3>
+                <table>
+                    <thead><tr><th>Dimension</th><th style='text-align:right;'>Résultat</th></tr></thead>
+                    <tbody>{dim_rows_html}</tbody>
+                </table>
+            </div>
+
+            <div class='report-card'>
+                <h3>Message de lecture</h3>
+                <p>
+                    Les résultats doivent être lus comme un outil d’aide à la décision. Les dimensions les plus élevées indiquent
+                    des acquis à maintenir, tandis que les dimensions les plus faibles signalent des domaines où des actions ciblées
+                    peuvent améliorer l’expérience étudiante. La comparaison avec les filtres sélectionnés permet d’adapter la lecture
+                    à chaque faculté ou population analysée.
+                </p>
+            </div>
+
+            <div class='print-note'>Université Saint-Joseph de Beyrouth - Unité Assurance Qualité / CCAD</div>
+        </div>
+    </body>
+    </html>
+    """
+
+
+def page_printable_report():
+    section_header(
+        "Rapport synthétique imprimable",
+        "Rapport court, personnalisé selon les filtres sélectionnés, destiné à être lu ou imprimé par chaque faculté."
+    )
+
+    summary_box(
+        """
+        Ce rapport est généré automatiquement à partir des filtres actifs en haut du tableau de bord.
+        Pour obtenir un rapport propre à une faculté, sélectionnez d’abord la faculté souhaitée dans le filtre <b>Faculté</b>,
+        puis revenez à cette page. Le rapport peut être imprimé depuis le navigateur ou téléchargé au format HTML.
+        """,
+        color=USJ_BLUE,
+        background="#F7F9FC"
+    )
+
+    report_html = build_printable_report_html()
+
+    col_print, col_download = st.columns([1, 1])
+    with col_print:
+        components.html(
+            """
+            <button onclick="window.print()" style="
+                width:100%;
+                padding:13px 18px;
+                border-radius:14px;
+                border:0;
+                background:#001B75;
+                color:white;
+                font-family:Candara, Arial, sans-serif;
+                font-size:16px;
+                font-weight:800;
+                cursor:pointer;
+            ">Imprimer le rapport</button>
+            """,
+            height=58,
+        )
+    with col_download:
+        faculty_part = faculte if faculte != "Tous" else "USJ"
+        file_name = f"rapport_exit_survey_{str(faculty_part).replace(' ', '_')}.html"
+        st.download_button(
+            "Télécharger le rapport HTML",
+            data=report_html.encode("utf-8"),
+            file_name=file_name,
+            mime="text/html",
+            use_container_width=True,
+        )
+
+    st.markdown(report_html, unsafe_allow_html=True)
+
+
 # =====================================================
 # Page 6 - Methodology
 # =====================================================
@@ -2293,6 +2651,9 @@ elif page == "Statistiques inférentielles":
 
 elif page == "Méthodologie des composantes":
     page_methodology()
+
+elif page == "Rapport synthétique imprimable":
+    page_printable_report()
 
 
 # =====================================================
