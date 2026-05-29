@@ -1,14 +1,24 @@
-import streamlit as st
-import pandas as pd
-import numpy as np
+
 import os
+import textwrap
+import warnings
+
+import numpy as np
+import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
-from scipy import stats
+import streamlit as st
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+
+try:
+    from scipy import stats
+except Exception:
+    stats = None
+
+warnings.filterwarnings("ignore")
 
 # =====================================================
-# Configuration
+# Page configuration
 # =====================================================
 
 st.set_page_config(
@@ -17,17 +27,74 @@ st.set_page_config(
     layout="wide"
 )
 
+# =====================================================
+# Institutional colors close to USJ / UAQ identity
+# =====================================================
+
 USJ_BLUE = "#001B75"
+USJ_BLUE_2 = "#003A8C"
+USJ_LIGHT_BLUE = "#EAF2FF"
 USJ_RED = "#C0003B"
+USJ_DARK_RED = "#8B1538"
 USJ_GREEN = "#2E7D32"
 USJ_ORANGE = "#F57C00"
 USJ_GOLD = "#C9A227"
-USJ_PURPLE = "#5B2E91"
-USJ_LIGHT_BLUE = "#EAF2F8"
-USJ_SOFT_GRAY = "#F7F9FC"
+USJ_GRAY = "#F5F7FB"
+USJ_TEXT = "#1B2A41"
+
+PLOTLY_SEQ = [USJ_BLUE, USJ_RED, USJ_GREEN, USJ_ORANGE, USJ_GOLD, "#5E35B1", "#0097A7", "#6D4C41"]
+PLOTLY_CONT = [
+    [0.00, "#C0003B"],
+    [0.50, "#F57C00"],
+    [0.75, "#001B75"],
+    [1.00, "#2E7D32"],
+]
 
 # =====================================================
-# Useful functions
+# Global CSS
+# =====================================================
+
+st.markdown(
+    f"""
+    <style>
+    .main {{
+        background-color: #FFFFFF;
+    }}
+
+    h1, h2, h3 {{
+        color: {USJ_BLUE};
+        font-family: Candara, Arial, sans-serif;
+    }}
+
+    div[data-testid="stMetric"] {{
+        background-color: white;
+        padding: 18px;
+        border-radius: 18px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+    }}
+
+    .stRadio > div {{
+        background: #F7F9FC;
+        padding: 8px 12px;
+        border-radius: 16px;
+    }}
+
+    button[kind="secondary"] {{
+        border-radius: 18px !important;
+        border: 1px solid #D0D7E2 !important;
+    }}
+
+    .block-container {{
+        padding-top: 1.2rem;
+        padding-bottom: 1.5rem;
+    }}
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+# =====================================================
+# General helpers
 # =====================================================
 
 @st.cache_data(show_spinner=False)
@@ -35,10 +102,9 @@ def load_data():
     possible_files = [
         "Exit_Survey_all-data.xlsx",
         "Exit_Survey_all_data.xlsx",
-        "Exit_Survey_all-data.xls",
-        "Exit_Survey_all_data.xls",
         "Exit_Survey_Historical_Common_Questions.xlsx",
-        "Exit Survey Historical Common Questions.xlsx"
+        "Exit survey all-data.xlsx",
+        "Exit survey all data.xlsx",
     ]
 
     for file in possible_files:
@@ -47,8 +113,8 @@ def load_data():
             df.columns = df.columns.astype(str).str.strip()
             return df
 
-    st.error("Historical Excel file not found.")
-    st.write("Available files in the app folder:")
+    st.error("Excel file not found. Please upload the historical file to GitHub.")
+    st.write("Available files:")
     st.write(os.listdir("."))
     st.stop()
 
@@ -60,6 +126,17 @@ def recode_series(series, mapping):
         .replace(mapping)
         .replace({"nan": np.nan, "None": np.nan, "NaT": np.nan, "<NA>": np.nan})
     )
+
+
+def normalize_year_column(df):
+    df = df.copy()
+    if "Année" in df.columns and "Year" not in df.columns:
+        df = df.rename(columns={"Année": "Year"})
+    if "Year" not in df.columns:
+        st.error("The historical dataset must contain a 'Year' or 'Année' column.")
+        st.stop()
+    df["Year"] = df["Year"].astype(str).str.strip()
+    return df
 
 
 def kpi_color_percentage(value_pct):
@@ -77,6 +154,14 @@ def pct_from_mean(value):
     if pd.isna(value):
         return np.nan
     return value / 4 * 100
+
+
+def safe_pct(value):
+    return "NA" if pd.isna(value) else f"{value:.1f}%"
+
+
+def safe_num(value, digits=1):
+    return "NA" if pd.isna(value) else f"{value:.{digits}f}"
 
 
 def calculate_recommendation_rate(data, column):
@@ -105,9 +190,154 @@ def filter_options(data, column):
     return ["Tous"] + values
 
 
+def summary_box(text, color=USJ_BLUE, background="#F7F9FC"):
+    st.html(
+        f"""
+        <div style="
+            background-color:{background};
+            border-left:6px solid {color};
+            padding:18px 20px;
+            border-radius:16px;
+            margin-top:18px;
+            margin-bottom:20px;
+            font-size:16px;
+            line-height:1.65;
+            color:{USJ_TEXT};
+            box-shadow:0 4px 14px rgba(0,0,0,0.04);
+        ">
+            {text}
+        </div>
+        """
+    )
+
+
+def section_header(title, subtitle=None):
+    subtitle_html = f"<p style='margin-top:4px;color:#5F6B7A;font-size:16px;'>{subtitle}</p>" if subtitle else ""
+    st.markdown(
+        f"""
+        <div style="margin-top:12px;margin-bottom:14px;">
+            <h2 style="color:{USJ_BLUE}; margin-bottom:0;">{title}</h2>
+            {subtitle_html}
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+def kpi_card(title, value, subtitle="Score de satisfaction", delta=None):
+    value_pct = np.nan if pd.isna(value) else value / 4 * 100
+    color = kpi_color_percentage(value_pct)
+    display_value = "NA" if pd.isna(value_pct) else f"{value_pct:.1f}%"
+
+    delta_html = ""
+    if delta is not None and pd.notna(delta):
+        arrow = "▲" if delta > 0 else ("▼" if delta < 0 else "●")
+        delta_color = USJ_GREEN if delta > 0 else (USJ_RED if delta < 0 else "#777777")
+        delta_html = f"""
+        <div style="font-size:13px; color:{delta_color}; font-weight:700; margin-top:6px;">
+            {arrow} {delta:+.1f} pts vs année précédente
+        </div>
+        """
+
+    st.markdown(
+        f"""
+        <div style="
+            background-color:white;
+            border-radius:20px;
+            padding:22px;
+            box-shadow:0 6px 20px rgba(0,0,0,0.08);
+            border-left:8px solid {color};
+            min-height:155px;
+        ">
+            <div style="font-size:15px; color:#303742; font-weight:700;">{title}</div>
+            <div style="font-size:40px; color:{color}; font-weight:900; margin-top:8px;">{display_value}</div>
+            <div style="font-size:13px; color:#667085; margin-top:4px;">{subtitle}</div>
+            {delta_html}
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+def percent_card(title, value, subtitle="Pourcentage", delta=None):
+    color = kpi_color_percentage(value)
+    display_value = "NA" if pd.isna(value) else f"{value:.1f}%"
+
+    delta_html = ""
+    if delta is not None and pd.notna(delta):
+        arrow = "▲" if delta > 0 else ("▼" if delta < 0 else "●")
+        delta_color = USJ_GREEN if delta > 0 else (USJ_RED if delta < 0 else "#777777")
+        delta_html = f"""
+        <div style="font-size:13px; color:{delta_color}; font-weight:700; margin-top:6px;">
+            {arrow} {delta:+.1f} pts vs année précédente
+        </div>
+        """
+
+    st.markdown(
+        f"""
+        <div style="
+            background-color:white;
+            border-radius:20px;
+            padding:22px;
+            box-shadow:0 6px 20px rgba(0,0,0,0.08);
+            border-left:8px solid {color};
+            min-height:155px;
+        ">
+            <div style="font-size:15px; color:#303742; font-weight:700;">{title}</div>
+            <div style="font-size:40px; color:{color}; font-weight:900; margin-top:8px;">{display_value}</div>
+            <div style="font-size:13px; color:#667085; margin-top:4px;">{subtitle}</div>
+            {delta_html}
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+def insight_card(title, value, subtitle, color=USJ_BLUE):
+    st.markdown(
+        f"""
+        <div style="
+            background:linear-gradient(135deg, #FFFFFF 0%, #F7F9FC 100%);
+            border:1px solid #DDE5F0;
+            border-radius:20px;
+            padding:20px;
+            min-height:135px;
+            box-shadow:0 5px 18px rgba(0,0,0,0.06);
+        ">
+            <div style="font-size:14px; font-weight:800; color:{USJ_TEXT};">{title}</div>
+            <div style="font-size:32px; font-weight:900; color:{color}; margin-top:8px;">{value}</div>
+            <div style="font-size:13px; color:#667085; margin-top:5px;">{subtitle}</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+def importance_card(title, value, subtitle):
+    color = kpi_color_percentage(value)
+    display_value = "NA" if pd.isna(value) else f"{value:.1f}%"
+
+    st.markdown(
+        f"""
+        <div style="
+            background-color:white;
+            border-radius:18px;
+            padding:22px;
+            box-shadow:0 4px 14px rgba(0,0,0,0.08);
+            border-left:7px solid {color};
+            min-height:155px;
+        ">
+            <div style="font-size:15px; color:#444; font-weight:700;">{title}</div>
+            <div style="font-size:36px; color:{color}; font-weight:900; margin-top:8px;">{display_value}</div>
+            <div style="font-size:13px; color:#777; margin-top:4px;">{subtitle}</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
 def cronbach_alpha(data):
     data = data.dropna()
-
     if data.shape[0] < 5 or data.shape[1] < 2:
         return np.nan
 
@@ -136,113 +366,30 @@ def alpha_interpretation(alpha):
         return "Cohérence interne faible"
 
 
-def kpi_card(title, value, subtitle="Score de satisfaction"):
-    value_pct = np.nan if pd.isna(value) else value / 4 * 100
-    color = kpi_color_percentage(value_pct)
-    display_value = "NA" if pd.isna(value_pct) else f"{value_pct:.1f}%"
-
-    st.markdown(
-        f"""
-        <div style="background-color:white; border-radius:18px; padding:22px;
-                    box-shadow:0 4px 14px rgba(0,0,0,0.08);
-                    border-left:7px solid {color}; min-height:145px;">
-            <div style="font-size:15px; color:#444; font-weight:600;">{title}</div>
-            <div style="font-size:38px; color:{color}; font-weight:800; margin-top:8px;">{display_value}</div>
-            <div style="font-size:13px; color:#777; margin-top:4px;">{subtitle}</div>
-        </div>
-        """,
-        unsafe_allow_html=True
+def theme_layout(fig, height=480, showlegend=True):
+    fig.update_layout(
+        template="plotly_white",
+        height=height,
+        font=dict(family="Candara, Arial", size=13, color=USJ_TEXT),
+        title=dict(font=dict(size=20, color=USJ_BLUE), x=0.01),
+        margin=dict(l=30, r=30, t=70, b=40),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1) if showlegend else dict(),
+        paper_bgcolor="white",
+        plot_bgcolor="white",
     )
-
-
-def percent_card(title, value, subtitle="Pourcentage"):
-    color = kpi_color_percentage(value)
-    display_value = "NA" if pd.isna(value) else f"{value:.1f}%"
-
-    st.markdown(
-        f"""
-        <div style="background-color:white; border-radius:18px; padding:22px;
-                    box-shadow:0 4px 14px rgba(0,0,0,0.08);
-                    border-left:7px solid {color}; min-height:145px;">
-            <div style="font-size:15px; color:#444; font-weight:600;">{title}</div>
-            <div style="font-size:38px; color:{color}; font-weight:800; margin-top:8px;">{display_value}</div>
-            <div style="font-size:13px; color:#777; margin-top:4px;">{subtitle}</div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-
-def importance_card(title, value, subtitle):
-    color = kpi_color_percentage(value)
-    display_value = "NA" if pd.isna(value) else f"{value:.1f}%"
-
-    st.markdown(
-        f"""
-        <div style="background-color:white; border-radius:18px; padding:22px;
-                    box-shadow:0 4px 14px rgba(0,0,0,0.08);
-                    border-left:7px solid {color}; min-height:155px;">
-            <div style="font-size:15px; color:#444; font-weight:700;">{title}</div>
-            <div style="font-size:36px; color:{color}; font-weight:900; margin-top:8px;">{display_value}</div>
-            <div style="font-size:13px; color:#777; margin-top:4px;">{subtitle}</div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-
-def summary_box(text, color=USJ_BLUE, background="#F7F9FC"):
-    st.html(
-        f"""
-        <div style="
-            background-color:{background};
-            border-left:6px solid {color};
-            padding:18px;
-            border-radius:14px;
-            margin-top:20px;
-            margin-bottom:20px;
-            font-size:16px;
-            line-height:1.6;
-        ">
-            {text}
-        </div>
-        """
-    )
-
-
-def component_columns_available(df):
-    cols = [
-        "Score satisfaction globale",
-        "Score expérience globale USJ",
-        "Score enseignement et apprentissage",
-        "Score accompagnement et encadrement",
-        "Score développement des compétences",
-        "Score services USJ",
-        "Score vie étudiante et activités",
-        "Score infrastructures et équipements",
-        "Score frais / qualité enseignement",
-        "Score frais / autres universités"
-    ]
-    return [c for c in cols if c in df.columns]
+    fig.update_xaxes(showgrid=False, linecolor="#D9E1EC")
+    fig.update_yaxes(gridcolor="#E6ECF3", linecolor="#D9E1EC")
+    return fig
 
 
 # =====================================================
-# Cached preprocessing
+# Survey sections and preprocessing
 # =====================================================
 
 @st.cache_data(show_spinner=False)
 def prepare_data():
-    df_original = load_data()
+    df_original = normalize_year_column(load_data())
     df_coded = df_original.copy()
-
-    # Make sure the historical year column is standardized.
-    if "Year" not in df_coded.columns and "Année" in df_coded.columns:
-        df_coded = df_coded.rename(columns={"Année": "Year"})
-        df_original = df_original.rename(columns={"Année": "Year"})
-
-    if "Year" in df_coded.columns:
-        df_coded["Year"] = df_coded["Year"].astype(str).str.strip()
-        df_original["Year"] = df_original["Year"].astype(str).str.strip()
 
     if "Faculté_Institut_g" in df_coded.columns:
         df_coded["Faculté_Institut_g"] = df_coded["Faculté_Institut_g"].replace({"ELFS": "ESTS"})
@@ -275,6 +422,11 @@ def prepare_data():
         "Insatisfaisante": 2,
         "Satisfaisante": 3,
         "Très satisfaisante": 4
+    }
+
+    binary_mapping = {
+        "Non": 0,
+        "Oui": 1
     }
 
     enseignement_items = [
@@ -359,40 +511,33 @@ def prepare_data():
         "40_m- Parking"
     ]
 
-    def recode_items(items, mapping):
-        existing = [col for col in items if col in df_coded.columns]
+    financial_items = [
+        "26- satisfait par les frais de scolarité à l’USJ par rapport à la qualité de l’enseignement ?",
+        "27- satisfait par les frais de scolarité à l’USJ par rapport à ceux d’autres universités ?"
+    ]
+
+    section_definitions = {
+        "Enseignement et apprentissage": {"items": enseignement_items, "mapping": satisfaction_mapping_f, "score": "Score enseignement et apprentissage"},
+        "Accompagnement et encadrement": {"items": accompagnement_items, "mapping": satisfaction_mapping_f, "score": "Score accompagnement et encadrement"},
+        "Développement des compétences": {"items": competences_items, "mapping": accord_mapping, "score": "Score développement des compétences"},
+        "Expérience globale USJ": {"items": experience_items, "mapping": satisfaction_mapping_f, "score": "Score expérience globale USJ"},
+        "Services de l’USJ": {"items": services_items, "mapping": satisfaction_mapping_f, "score": "Score services USJ"},
+        "Vie étudiante et activités": {"items": vie_items, "mapping": vie_mapping, "score": "Score vie étudiante et activités"},
+        "Infrastructures et équipements": {"items": infrastructures_items, "mapping": satisfaction_mapping_f, "score": "Score infrastructures et équipements"},
+        "Perception financière": {"items": financial_items, "mapping": satisfaction_mapping_m, "score": None},
+    }
+
+    components = {}
+
+    for section, details in section_definitions.items():
+        existing = [col for col in details["items"] if col in df_coded.columns]
         for col in existing:
-            df_coded[col] = pd.to_numeric(
-                recode_series(df_original[col], mapping),
-                errors="coerce"
-            )
-        return existing
+            df_coded[col] = pd.to_numeric(recode_series(df_original[col], details["mapping"]), errors="coerce")
 
-    enseignement_existing = recode_items(enseignement_items, satisfaction_mapping_f)
-    accompagnement_existing = recode_items(accompagnement_items, satisfaction_mapping_f)
-    competences_existing = recode_items(competences_items, accord_mapping)
-    experience_existing = recode_items(experience_items, satisfaction_mapping_f)
-    services_existing = recode_items(services_items, satisfaction_mapping_f)
-    infrastructures_existing = recode_items(infrastructures_items, satisfaction_mapping_f)
+        if details["score"] is not None and existing:
+            df_coded[details["score"]] = df_coded[existing].mean(axis=1, skipna=True)
 
-    for col in vie_items:
-        df_coded[col] = pd.to_numeric(
-            recode_series(df_original[col], vie_mapping),
-            errors="coerce"
-        )
-
-    def mean_or_nan(existing_items):
-        if len(existing_items) == 0:
-            return np.nan
-        return df_coded[existing_items].mean(axis=1, skipna=True)
-
-    df_coded["Score enseignement et apprentissage"] = mean_or_nan(enseignement_existing)
-    df_coded["Score accompagnement et encadrement"] = mean_or_nan(accompagnement_existing)
-    df_coded["Score développement des compétences"] = mean_or_nan(competences_existing)
-    df_coded["Score expérience globale USJ"] = mean_or_nan(experience_existing)
-    df_coded["Score services USJ"] = mean_or_nan(services_existing)
-    df_coded["Score vie étudiante et activités"] = mean_or_nan(vie_items)
-    df_coded["Score infrastructures et équipements"] = mean_or_nan(infrastructures_existing)
+        components[section] = existing
 
     q42 = "42-Quel est le niveau de votre satisfaction globale à l’Université ?"
     q43 = "43-Recommanderiez-vous l’USJ à un proche ou à un ami ?"
@@ -409,6 +554,8 @@ def prepare_data():
 
     if q43 in df_original.columns:
         df_coded[q43] = df_original[q43].astype(str).str.strip().replace({"nan": np.nan})
+    else:
+        df_coded[q43] = np.nan
 
     if q26 in df_original.columns:
         df_coded["Score frais / qualité enseignement"] = pd.to_numeric(
@@ -426,22 +573,25 @@ def prepare_data():
     else:
         df_coded["Score frais / autres universités"] = np.nan
 
-    components = {
-        "Enseignement et apprentissage": enseignement_existing,
-        "Accompagnement et encadrement": accompagnement_existing,
-        "Développement des compétences": competences_existing,
-        "Expérience globale USJ": experience_existing,
-        "Services de l’USJ": services_existing,
-        "Vie étudiante et activités": vie_items,
-        "Infrastructures et équipements": infrastructures_existing
-    }
+    score_columns = [
+        "Score satisfaction globale",
+        "Score enseignement et apprentissage",
+        "Score accompagnement et encadrement",
+        "Score développement des compétences",
+        "Score expérience globale USJ",
+        "Score services USJ",
+        "Score vie étudiante et activités",
+        "Score infrastructures et équipements",
+        "Score frais / qualité enseignement",
+        "Score frais / autres universités"
+    ]
+
+    for col in score_columns:
+        if col not in df_coded.columns:
+            df_coded[col] = np.nan
 
     return df_original, df_coded, components, q42, q43, q26, q27
 
-
-# =====================================================
-# Cached machine learning functions
-# =====================================================
 
 @st.cache_data(show_spinner=False)
 def train_satisfaction_importance(model_sat, feature_columns):
@@ -449,7 +599,7 @@ def train_satisfaction_importance(model_sat, feature_columns):
     y = model_sat["Score satisfaction globale"]
 
     rf = RandomForestRegressor(
-        n_estimators=150,
+        n_estimators=250,
         random_state=42,
         max_depth=5,
         n_jobs=-1
@@ -465,7 +615,7 @@ def train_recommendation_importance(model_rec, feature_columns):
     y = model_rec["Recommandation"]
 
     rf = RandomForestClassifier(
-        n_estimators=150,
+        n_estimators=250,
         random_state=42,
         max_depth=5,
         class_weight="balanced",
@@ -477,44 +627,244 @@ def train_recommendation_importance(model_rec, feature_columns):
 
 
 # =====================================================
-# Load prepared data
+# Analysis helpers
+# =====================================================
+
+SCORE_COLUMNS = [
+    "Score satisfaction globale",
+    "Score enseignement et apprentissage",
+    "Score accompagnement et encadrement",
+    "Score développement des compétences",
+    "Score expérience globale USJ",
+    "Score services USJ",
+    "Score vie étudiante et activités",
+    "Score infrastructures et équipements",
+    "Score frais / qualité enseignement",
+    "Score frais / autres universités"
+]
+
+SCORE_LABELS = {
+    "Score satisfaction globale": "Satisfaction globale",
+    "Score enseignement et apprentissage": "Enseignement et apprentissage",
+    "Score accompagnement et encadrement": "Accompagnement et encadrement",
+    "Score développement des compétences": "Développement des compétences",
+    "Score expérience globale USJ": "Expérience globale USJ",
+    "Score services USJ": "Services de l’USJ",
+    "Score vie étudiante et activités": "Vie étudiante et activités",
+    "Score infrastructures et équipements": "Infrastructures et équipements",
+    "Score frais / qualité enseignement": "Frais / qualité enseignement",
+    "Score frais / autres universités": "Frais / autres universités",
+}
+
+
+def build_year_summary(data, q43):
+    rows = []
+    for year, g in data.groupby("Year"):
+        row = {"Année": year, "N": len(g)}
+        for col in SCORE_COLUMNS:
+            if col in g.columns:
+                row[SCORE_LABELS[col]] = pct_from_mean(g[col].mean())
+        row["Taux de recommandation"] = calculate_recommendation_rate(g, q43)
+        rows.append(row)
+    out = pd.DataFrame(rows).sort_values("Année")
+    return out
+
+
+def build_component_long(data):
+    rows = []
+    for col in SCORE_COLUMNS:
+        if col in data.columns:
+            for year, g in data.groupby("Year"):
+                rows.append({
+                    "Année": year,
+                    "Dimension": SCORE_LABELS[col],
+                    "Pourcentage": pct_from_mean(g[col].mean()),
+                    "N valide": g[col].notna().sum()
+                })
+    return pd.DataFrame(rows)
+
+
+def compute_previous_delta(year_summary, selected_year, column):
+    if selected_year == "Tous" or column not in year_summary.columns:
+        return None
+    years = year_summary["Année"].tolist()
+    if selected_year not in years:
+        return None
+    idx = years.index(selected_year)
+    if idx == 0:
+        return None
+    current = year_summary.loc[year_summary["Année"] == selected_year, column].iloc[0]
+    previous = year_summary.loc[year_summary["Année"] == years[idx - 1], column].iloc[0]
+    if pd.isna(current) or pd.isna(previous):
+        return None
+    return current - previous
+
+
+def anova_or_kruskal(data, value_col):
+    temp = data[["Year", value_col]].dropna()
+    groups = [g[value_col].values for _, g in temp.groupby("Year") if len(g) > 1]
+    if len(groups) < 2 or stats is None:
+        return np.nan, "Non calculable"
+    try:
+        f_stat, p_value = stats.f_oneway(*groups)
+        return p_value, "ANOVA"
+    except Exception:
+        try:
+            h_stat, p_value = stats.kruskal(*groups)
+            return p_value, "Kruskal-Wallis"
+        except Exception:
+            return np.nan, "Non calculable"
+
+
+def chi_square_recommendation(data, q43):
+    if q43 not in data.columns or stats is None:
+        return np.nan
+    temp = data[["Year", q43]].copy()
+    temp[q43] = temp[q43].astype(str).str.strip()
+    temp = temp[temp[q43].isin(["Oui", "Non"])]
+    if temp["Year"].nunique() < 2 or temp[q43].nunique() < 2:
+        return np.nan
+    table = pd.crosstab(temp["Year"], temp[q43])
+    try:
+        chi2, p, dof, expected = stats.chi2_contingency(table)
+        return p
+    except Exception:
+        return np.nan
+
+
+def p_interpretation(p):
+    if pd.isna(p):
+        return "Non calculable"
+    if p < 0.001:
+        return "Différence hautement significative"
+    if p < 0.01:
+        return "Différence très significative"
+    if p < 0.05:
+        return "Différence significative"
+    return "Différence non significative"
+
+
+def question_short_label(question):
+    q = str(question)
+    if "-" in q:
+        return q.split("-", 1)[0].strip()
+    return q[:35]
+
+
+def score_question_label(question):
+    q = str(question)
+    if "-" in q:
+        return q.split("-", 1)[1].strip()
+    return q
+
+
+def section_question_summary(data, items):
+    rows = []
+    for item in items:
+        if item in data.columns:
+            series = data[item]
+            rows.append({
+                "Question": item,
+                "Libellé court": question_short_label(item),
+                "Résultat (%)": pct_from_mean(series.mean()),
+                "Moyenne /4": series.mean(),
+                "N valide": series.notna().sum(),
+                "Taux de données manquantes (%)": series.isna().mean() * 100
+            })
+    return pd.DataFrame(rows).sort_values("Résultat (%)", ascending=False)
+
+
+def section_trend(data, items):
+    rows = []
+    for item in items:
+        if item in data.columns:
+            for year, g in data.groupby("Year"):
+                rows.append({
+                    "Année": year,
+                    "Question": question_short_label(item),
+                    "Question complète": item,
+                    "Résultat (%)": pct_from_mean(g[item].mean())
+                })
+    return pd.DataFrame(rows)
+
+
+def response_distribution(original_data, coded_data, items):
+    rows = []
+    for item in items:
+        if item in original_data.columns and item in coded_data.columns:
+            temp = pd.DataFrame({
+                "Question": question_short_label(item),
+                "Question complète": item,
+                "Réponse": original_data[item].astype(str).str.strip().replace({"nan": np.nan}),
+                "Year": coded_data["Year"]
+            })
+            temp = temp.dropna(subset=["Réponse"])
+            for (year, q, resp), g in temp.groupby(["Year", "Question", "Réponse"]):
+                rows.append({
+                    "Année": year,
+                    "Question": q,
+                    "Réponse": resp,
+                    "N": len(g)
+                })
+    dist = pd.DataFrame(rows)
+    if dist.empty:
+        return dist
+    dist["Pourcentage"] = dist.groupby(["Année", "Question"])["N"].transform(lambda x: x / x.sum() * 100)
+    return dist
+
+
+def correlation_with_section_mean(data, items):
+    valid_items = [i for i in items if i in data.columns]
+    if len(valid_items) < 2:
+        return pd.DataFrame(), pd.DataFrame()
+
+    temp = data[valid_items].copy()
+    temp["Moyenne de la section"] = temp[valid_items].mean(axis=1, skipna=True)
+    corr = temp.corr(numeric_only=True)
+
+    ranking = (
+        corr["Moyenne de la section"]
+        .drop(labels=["Moyenne de la section"], errors="ignore")
+        .reset_index()
+    )
+    ranking.columns = ["Question", "Corrélation avec la moyenne"]
+    ranking["Question courte"] = ranking["Question"].apply(question_short_label)
+    ranking = ranking.sort_values("Corrélation avec la moyenne", ascending=False)
+
+    return corr, ranking
+
+
+# =====================================================
+# Load data
 # =====================================================
 
 with st.spinner("Chargement du tableau de bord..."):
     df_original, df_coded, components, q42, q43, q26, q27 = prepare_data()
 
 # =====================================================
-# Header with USJ / UAQ logo
+# Header
 # =====================================================
 
-logo_candidates = [
-    "LogoUAQ.png",
-    "usj_uaq_logo.png",
-    "USJ_UAQ_logo.png",
-    "usj_logo.png",
-    "image.png"
-]
-
-logo_path = next((logo for logo in logo_candidates if os.path.exists(logo)), None)
-
-header_left, header_right = st.columns([4.5, 1.5], vertical_alignment="center")
+header_left, header_right = st.columns([4.5, 1.5])
 
 with header_left:
     st.markdown(
         f"""
-        <h1 style="color:{USJ_BLUE}; margin-bottom:0; font-size:36px; font-weight:800;">
+        <h1 style="color:{USJ_BLUE}; margin-bottom:0;">
             Tableau de bord – Exit Survey USJ 2022-2025
         </h1>
         <p style="font-size:18px; color:#555; margin-top:4px;">
-            Indicateurs clés de satisfaction, tendances historiques et facteurs d’amélioration
+            Analyse historique, indicateurs clés, comparaisons et leviers d’amélioration
         </p>
         """,
         unsafe_allow_html=True
     )
 
 with header_right:
-    if logo_path is not None:
-        st.image(logo_path, width=300)
+    if os.path.exists("LogoUAQ.png"):
+        st.image("LogoUAQ.png", width=260)
+    elif os.path.exists("usj_logo.png"):
+        st.image("usj_logo.png", width=170)
 
 st.divider()
 
@@ -544,28 +894,28 @@ with filter_cols[1]:
     genre = st.selectbox("Genre", filter_options(df_after_year, "Genre"), key="filter_genre")
 
 df_after_genre = df_after_year.copy()
-if genre != "Tous" and "Genre" in df_after_genre.columns:
+if genre != "Tous":
     df_after_genre = df_after_genre[df_after_genre["Genre"].astype(str) == genre]
 
 with filter_cols[2]:
     faculte = st.selectbox("Faculté", filter_options(df_after_genre, "Faculté_Institut_g"), key="filter_faculte")
 
 df_after_faculte = df_after_genre.copy()
-if faculte != "Tous" and "Faculté_Institut_g" in df_after_faculte.columns:
+if faculte != "Tous":
     df_after_faculte = df_after_faculte[df_after_faculte["Faculté_Institut_g"].astype(str) == faculte]
 
 with filter_cols[3]:
     cursus = st.selectbox("Cursus", filter_options(df_after_faculte, "Cursus"), key="filter_cursus")
 
 df_after_cursus = df_after_faculte.copy()
-if cursus != "Tous" and "Cursus" in df_after_cursus.columns:
+if cursus != "Tous":
     df_after_cursus = df_after_cursus[df_after_cursus["Cursus"].astype(str) == cursus]
 
 with filter_cols[4]:
     niveau = st.selectbox("Niveau", filter_options(df_after_cursus, "Niveau"), key="filter_niveau")
 
 df_filtered = df_after_cursus.copy()
-if niveau != "Tous" and "Niveau" in df_filtered.columns:
+if niveau != "Tous":
     df_filtered = df_filtered[df_filtered["Niveau"].astype(str) == niveau]
 
 st.markdown(
@@ -586,33 +936,59 @@ page = st.radio(
     [
         "Vue générale des indicateurs",
         "Comparaison historique",
-        "Résultats descriptifs par section",
         "Facteurs clés d’amélioration",
+        "Résultats descriptifs par section",
         "Méthodologie des composantes"
     ],
     horizontal=True
 )
 
+year_summary_all = build_year_summary(df_coded, q43)
+year_summary_filtered = build_year_summary(df_filtered, q43)
+component_long_filtered = build_component_long(df_filtered)
+
 # =====================================================
-# Page 1
+# Page 1 - Overview
 # =====================================================
 
 def page_indicators():
-    st.markdown(f"<h2 style='color:{USJ_BLUE};'>Satisfaction globale et expérience</h2>", unsafe_allow_html=True)
+    section_header(
+        "Vue générale des indicateurs",
+        "Synthèse dynamique des principaux indicateurs de satisfaction et de recommandation."
+    )
 
-    c1, c2, c3 = st.columns(3)
+    selected_year = year
 
     satisfaction_pct = pct_from_mean(df_filtered["Score satisfaction globale"].mean())
     recommandation_pct = calculate_recommendation_rate(df_filtered, q43)
 
+    delta_sat = compute_previous_delta(year_summary_filtered, selected_year, "Satisfaction globale")
+    delta_rec = compute_previous_delta(year_summary_filtered, selected_year, "Taux de recommandation")
+
+    c1, c2, c3 = st.columns(3)
+
     with c1:
-        kpi_card("Satisfaction globale à l’Université", df_filtered["Score satisfaction globale"].mean())
+        kpi_card(
+            "Satisfaction globale à l’Université",
+            df_filtered["Score satisfaction globale"].mean(),
+            "Pourcentage de satisfaction",
+            delta=delta_sat
+        )
 
     with c2:
-        percent_card("Taux de recommandation de l’USJ", recommandation_pct)
+        percent_card(
+            "Taux de recommandation de l’USJ",
+            recommandation_pct,
+            "Réponses Oui",
+            delta=delta_rec
+        )
 
     with c3:
-        kpi_card("Expérience globale USJ", df_filtered["Score expérience globale USJ"].mean())
+        kpi_card(
+            "Expérience globale USJ",
+            df_filtered["Score expérience globale USJ"].mean(),
+            "Expérience académique et personnelle"
+        )
 
     c4, c5, c6 = st.columns(3)
 
@@ -624,10 +1000,6 @@ def page_indicators():
 
     with c6:
         kpi_card("Développement des compétences", df_filtered["Score développement des compétences"].mean())
-
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    st.markdown(f"<h2 style='color:{USJ_BLUE};'>Vie étudiante, services et environnement</h2>", unsafe_allow_html=True)
 
     c7, c8, c9 = st.columns(3)
 
@@ -643,10 +1015,6 @@ def page_indicators():
 
     with c9:
         kpi_card("Infrastructures et équipements", df_filtered["Score infrastructures et équipements"].mean())
-
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    st.markdown(f"<h2 style='color:{USJ_BLUE};'>Perception financière</h2>", unsafe_allow_html=True)
 
     c10, c11 = st.columns(2)
 
@@ -681,788 +1049,257 @@ def page_indicators():
         ]
     }).dropna()
 
-    if not component_summary.empty and not pd.isna(satisfaction_pct) and not pd.isna(recommandation_pct):
+    if not component_summary.empty and pd.notna(satisfaction_pct):
         best_dimension = component_summary.sort_values("Pourcentage", ascending=False).iloc[0]
         weakest_dimension = component_summary.sort_values("Pourcentage", ascending=True).iloc[0]
 
-        selected_year_text = "toutes les années" if year == "Tous" else year
-
         summary_box(
             f"""
-            <b>Lecture synthétique :</b><br>
-            Pour les filtres sélectionnés sur <b>{selected_year_text}</b>, la satisfaction globale atteint
-            <b>{satisfaction_pct:.1f}%</b>, tandis que le taux de recommandation de l’USJ est de
-            <b>{recommandation_pct:.1f}%</b>. La dimension la mieux évaluée est
+            <span style="font-size:20px; font-weight:800; color:{USJ_BLUE};">Lecture synthétique</span><br>
+            Pour les filtres sélectionnés, la satisfaction globale atteint
+            <b>{safe_pct(satisfaction_pct)}</b>, tandis que le taux de recommandation de l’USJ est de
+            <b>{safe_pct(recommandation_pct)}</b>. La dimension la mieux évaluée est
             <b>{best_dimension["Dimension"]}</b> avec <b>{best_dimension["Pourcentage"]:.1f}%</b>.
             La dimension la plus faible est <b>{weakest_dimension["Dimension"]}</b> avec
-            <b>{weakest_dimension["Pourcentage"]:.1f}%</b>, ce qui en fait un axe prioritaire
-            à suivre dans les actions d’amélioration.
+            <b>{weakest_dimension["Pourcentage"]:.1f}%</b>. Cette lecture permet d’identifier rapidement
+            les forces institutionnelles et les dimensions à prioriser.
             """,
             color=USJ_BLUE,
             background="#F7F9FC"
         )
+
+    if year == "Tous" and len(year_summary_filtered) > 1:
+        section_header("Évolution synthétique", "Tendance globale des indicateurs principaux sur les années disponibles.")
+
+        trend = year_summary_filtered[["Année", "Satisfaction globale", "Taux de recommandation"]].melt(
+            id_vars="Année",
+            var_name="Indicateur",
+            value_name="Pourcentage"
+        )
+
+        fig = px.line(
+            trend,
+            x="Année",
+            y="Pourcentage",
+            color="Indicateur",
+            markers=True,
+            text="Pourcentage",
+            color_discrete_sequence=[USJ_BLUE, "#7BC4FF"]
+        )
+
+        fig.update_traces(texttemplate="%{text:.1f}%", textposition="top center", mode="lines+markers+text")
+        fig.update_layout(
+            title="Évolution de la satisfaction globale et de la recommandation",
+            yaxis_title="Pourcentage",
+            xaxis_title="Année"
+        )
+        theme_layout(fig, height=430)
+        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+
 
 # =====================================================
 # Page 2 - Historical comparison
 # =====================================================
 
 def page_historical_comparison():
-    st.markdown(f"<h2 style='color:{USJ_BLUE};'>Comparaison historique des résultats</h2>", unsafe_allow_html=True)
-
-    summary_box(
-        """
-        Cette page présente une analyse comparative des résultats de l’Exit Survey sur les années disponibles.
-        Elle permet d’identifier les tendances, les écarts entre années, les dimensions en progression ou en recul,
-        ainsi que les différences statistiquement significatives. Les résultats sont calculés selon les filtres actifs.
-        """,
-        color=USJ_BLUE,
-        background="#F7F9FC"
+    section_header(
+        "Comparaison historique",
+        "Analyse de l’évolution des indicateurs par année, avec écarts, tableaux comparatifs et tests statistiques."
     )
 
-    if "Year" not in df_filtered.columns:
-        st.error("La colonne Year est introuvable dans le fichier historique.")
+    if len(year_summary_filtered) == 0:
+        st.warning("Aucune donnée disponible pour les filtres sélectionnés.")
         return
-
-    years_available = sorted(df_filtered["Year"].dropna().astype(str).unique())
-
-    if len(years_available) < 2:
-        st.warning("Pour comparer les années, sélectionnez Année = Tous ou gardez au moins deux années dans les données filtrées.")
-        return
-
-    component_map = {
-        "Satisfaction globale": "Score satisfaction globale",
-        "Expérience globale USJ": "Score expérience globale USJ",
-        "Enseignement et apprentissage": "Score enseignement et apprentissage",
-        "Accompagnement et encadrement": "Score accompagnement et encadrement",
-        "Développement des compétences": "Score développement des compétences",
-        "Services de l’USJ": "Score services USJ",
-        "Vie étudiante et activités": "Score vie étudiante et activités",
-        "Infrastructures et équipements": "Score infrastructures et équipements",
-        "Frais / qualité de l’enseignement": "Score frais / qualité enseignement",
-        "Frais / autres universités": "Score frais / autres universités"
-    }
-
-    component_map = {k: v for k, v in component_map.items() if v in df_filtered.columns}
-
-    # -------------------------------------------------
-    # Yearly comparison table
-    # -------------------------------------------------
-
-    rows = []
-
-    for y in years_available:
-        sub = df_filtered[df_filtered["Year"].astype(str) == y]
-        row = {"Année": y, "Nombre de répondants": len(sub)}
-
-        for label, col in component_map.items():
-            row[label] = pct_from_mean(sub[col].mean())
-
-        row["Taux de recommandation"] = calculate_recommendation_rate(sub, q43)
-        rows.append(row)
-
-    trend_df = pd.DataFrame(rows)
-
-    # Ensure chronological order when labels are standard strings.
-    trend_df["Année"] = trend_df["Année"].astype(str)
-    trend_df = trend_df.sort_values("Année")
-
-    last_year = trend_df["Année"].iloc[-1]
-    previous_year = trend_df["Année"].iloc[-2] if len(trend_df) >= 2 else trend_df["Année"].iloc[-1]
-
-    def get_year_value(indicator, year_value):
-        vals = trend_df.loc[trend_df["Année"] == year_value, indicator]
-        return vals.iloc[0] if len(vals) > 0 else np.nan
-
-    sat_last = get_year_value("Satisfaction globale", last_year) if "Satisfaction globale" in trend_df.columns else np.nan
-    sat_prev = get_year_value("Satisfaction globale", previous_year) if "Satisfaction globale" in trend_df.columns else np.nan
-    rec_last = get_year_value("Taux de recommandation", last_year) if "Taux de recommandation" in trend_df.columns else np.nan
-    rec_prev = get_year_value("Taux de recommandation", previous_year) if "Taux de recommandation" in trend_df.columns else np.nan
-
-    diff_sat = sat_last - sat_prev if pd.notna(sat_last) and pd.notna(sat_prev) else np.nan
-    diff_rec = rec_last - rec_prev if pd.notna(rec_last) and pd.notna(rec_prev) else np.nan
-
-    # Identify strongest improvement and strongest decline.
-    diff_rows_for_cards = []
-    for col in trend_df.columns:
-        if col in ["Année", "Nombre de répondants"]:
-            continue
-        v_last = get_year_value(col, last_year)
-        v_prev = get_year_value(col, previous_year)
-        if pd.notna(v_last) and pd.notna(v_prev):
-            diff_rows_for_cards.append({"Indicateur": col, "Écart": v_last - v_prev})
-
-    diff_card_df = pd.DataFrame(diff_rows_for_cards)
-    if not diff_card_df.empty:
-        strongest_up = diff_card_df.sort_values("Écart", ascending=False).iloc[0]
-        strongest_down = diff_card_df.sort_values("Écart", ascending=True).iloc[0]
-    else:
-        strongest_up = {"Indicateur": "NA", "Écart": np.nan}
-        strongest_down = {"Indicateur": "NA", "Écart": np.nan}
-
-    st.subheader("Résumé exécutif de l’évolution")
 
     c1, c2, c3, c4 = st.columns(4)
+    years_available = year_summary_filtered["Année"].nunique()
 
     with c1:
-        importance_card(
-            f"Satisfaction globale {last_year}",
-            sat_last,
-            f"Écart vs {previous_year}: {diff_sat:+.1f} pts" if pd.notna(diff_sat) else "Écart non disponible"
-        )
+        insight_card("Années couvertes", years_available, "Période historique", USJ_BLUE)
 
     with c2:
-        importance_card(
-            f"Recommandation {last_year}",
-            rec_last,
-            f"Écart vs {previous_year}: {diff_rec:+.1f} pts" if pd.notna(diff_rec) else "Écart non disponible"
-        )
+        latest_year = year_summary_filtered["Année"].max()
+        latest_sat = year_summary_filtered.loc[year_summary_filtered["Année"] == latest_year, "Satisfaction globale"].iloc[0]
+        insight_card("Dernière satisfaction", safe_pct(latest_sat), latest_year, kpi_color_percentage(latest_sat))
 
     with c3:
-        importance_card(
-            "Plus forte progression",
-            abs(strongest_up["Écart"]) if pd.notna(strongest_up["Écart"]) else np.nan,
-            f"{strongest_up['Indicateur']} ({strongest_up['Écart']:+.1f} pts)" if pd.notna(strongest_up["Écart"]) else "Non disponible"
-        )
+        if years_available > 1:
+            first_sat = year_summary_filtered.sort_values("Année")["Satisfaction globale"].iloc[0]
+            last_sat = year_summary_filtered.sort_values("Année")["Satisfaction globale"].iloc[-1]
+            evolution = last_sat - first_sat
+            insight_card("Évolution globale", f"{evolution:+.1f} pts", "Première vs dernière année", USJ_GREEN if evolution >= 0 else USJ_RED)
+        else:
+            insight_card("Évolution globale", "NA", "Sélectionnez plusieurs années", "#777777")
 
     with c4:
-        importance_card(
-            "Plus fort recul",
-            abs(strongest_down["Écart"]) if pd.notna(strongest_down["Écart"]) else np.nan,
-            f"{strongest_down['Indicateur']} ({strongest_down['Écart']:+.1f} pts)" if pd.notna(strongest_down["Écart"]) else "Non disponible"
-        )
+        latest_rec = year_summary_filtered.loc[year_summary_filtered["Année"] == latest_year, "Taux de recommandation"].iloc[0]
+        insight_card("Dernière recommandation", safe_pct(latest_rec), latest_year, kpi_color_percentage(latest_rec))
 
-    # -------------------------------------------------
-    # Detailed comparison table
-    # -------------------------------------------------
+    st.markdown("<br>", unsafe_allow_html=True)
 
-    st.subheader("Tableau comparatif détaillé par année")
-
-    format_dict = {col: "{:.1f}%" for col in trend_df.columns if col not in ["Année", "Nombre de répondants"]}
-    st.dataframe(
-        trend_df.style.format(format_dict),
-        use_container_width=True,
-        hide_index=True
-    )
-
-    # -------------------------------------------------
-    # Main trend chart with labels
-    # -------------------------------------------------
-
-    st.subheader("Évolution de la satisfaction globale et de la recommandation")
-
-    main_cols = [col for col in ["Satisfaction globale", "Taux de recommandation"] if col in trend_df.columns]
-    main_trend = trend_df[["Année"] + main_cols].melt(
+    # Main trend chart
+    trend_cols = ["Satisfaction globale", "Taux de recommandation"]
+    trend = year_summary_filtered[["Année"] + trend_cols].melt(
         id_vars="Année",
         var_name="Indicateur",
         value_name="Pourcentage"
     )
 
-    fig_main = px.line(
-        main_trend,
+    fig_trend = px.line(
+        trend,
         x="Année",
         y="Pourcentage",
         color="Indicateur",
         markers=True,
         text="Pourcentage",
-        title="Évolution de la satisfaction globale et de la recommandation"
+        color_discrete_sequence=[USJ_BLUE, "#7BC4FF"]
     )
-
-    fig_main.update_traces(
-        mode="lines+markers+text",
-        texttemplate="%{text:.1f}%",
-        textposition="top center",
-        line=dict(width=4),
-        marker=dict(size=10)
-    )
-
-    fig_main.update_layout(
+    fig_trend.update_traces(texttemplate="%{text:.1f}%", textposition="top center", mode="lines+markers+text")
+    fig_trend.update_layout(
+        title="Évolution de la satisfaction globale et de la recommandation",
         yaxis_title="Pourcentage",
-        xaxis_title="Année",
-        height=460,
-        legend_title="",
-        hovermode="x unified",
-        margin=dict(l=20, r=20, t=70, b=40)
+        xaxis_title="Année"
     )
+    theme_layout(fig_trend, height=450)
+    st.plotly_chart(fig_trend, use_container_width=True, config={"displayModeBar": False})
 
-    st.plotly_chart(fig_main, use_container_width=True, config={"displayModeBar": False})
-
-    # -------------------------------------------------
-    # Heatmap of dimensions by year
-    # -------------------------------------------------
-
-    st.subheader("Carte de chaleur des dimensions par année")
-
-    dimensions_for_heatmap = [label for label in component_map.keys() if label != "Satisfaction globale"]
-    heatmap_df = trend_df[["Année"] + dimensions_for_heatmap].copy()
-    heatmap_long = heatmap_df.melt(
-        id_vars="Année",
-        var_name="Dimension",
-        value_name="Pourcentage"
-    )
-
-    fig_heat = px.imshow(
-        heatmap_df.set_index("Année")[dimensions_for_heatmap].T,
-        text_auto=".1f",
-        aspect="auto",
-        color_continuous_scale=[USJ_RED, USJ_BLUE, USJ_GREEN],
-        title="Niveau des dimensions par année (%)"
-    )
-
-    fig_heat.update_layout(
-        height=540,
-        xaxis_title="Année",
-        yaxis_title="Dimension",
-        coloraxis_colorbar_title="%",
-        margin=dict(l=20, r=20, t=70, b=40)
-    )
-
-    st.plotly_chart(fig_heat, use_container_width=True, config={"displayModeBar": False})
-
-    # -------------------------------------------------
-    # Grouped bar chart of components
-    # -------------------------------------------------
-
-    st.subheader("Comparaison visuelle des dimensions")
-
-    fig_comp = px.bar(
-        heatmap_long,
-        x="Dimension",
-        y="Pourcentage",
-        color="Année",
-        barmode="group",
-        text="Pourcentage",
-        title="Comparaison des dimensions par année"
-    )
-
-    fig_comp.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
-    fig_comp.update_layout(
-        yaxis_title="Pourcentage",
-        xaxis_title="",
-        height=620,
-        xaxis_tickangle=-35,
-        legend_title="Année",
-        margin=dict(l=20, r=20, t=70, b=150)
-    )
-
-    st.plotly_chart(fig_comp, use_container_width=True, config={"displayModeBar": False})
-
-    # -------------------------------------------------
-    # Year-over-year differences with colors
-    # -------------------------------------------------
-
-    st.subheader(f"Écarts entre {previous_year} et {last_year}")
-
-    diff_rows = []
-    for col in trend_df.columns:
-        if col in ["Année", "Nombre de répondants"]:
-            continue
-
-        val_last = get_year_value(col, last_year)
-        val_prev = get_year_value(col, previous_year)
-
-        if pd.notna(val_last) and pd.notna(val_prev):
-            diff_rows.append({
-                "Indicateur": col,
-                previous_year: round(val_prev, 1),
-                last_year: round(val_last, 1),
-                "Écart en points": round(val_last - val_prev, 1)
-            })
-
-    diff_df = pd.DataFrame(diff_rows).sort_values("Écart en points", ascending=False)
-
-    fig_diff = px.bar(
-        diff_df,
-        x="Écart en points",
-        y="Indicateur",
-        orientation="h",
-        text="Écart en points",
-        color="Écart en points",
-        color_continuous_scale=[USJ_RED, "#E8E8E8", USJ_GREEN],
-        title=f"Variation en points entre {previous_year} et {last_year}"
-    )
-
-    fig_diff.update_traces(texttemplate="%{text:+.1f} pts", textposition="outside")
-    fig_diff.update_layout(
-        yaxis=dict(autorange="reversed"),
-        xaxis_title="Écart en points",
-        yaxis_title="",
-        height=560,
-        coloraxis_showscale=False,
-        margin=dict(l=20, r=40, t=70, b=40)
-    )
-
-    st.plotly_chart(fig_diff, use_container_width=True, config={"displayModeBar": False})
-
-    st.dataframe(
-        diff_df.style.format({previous_year: "{:.1f}%", last_year: "{:.1f}%", "Écart en points": "{:+.1f}"}),
-        use_container_width=True,
-        hide_index=True
-    )
-
-    # -------------------------------------------------
-    # Statistical tests
-    # -------------------------------------------------
-
-    st.subheader("Tests statistiques de comparaison entre les années")
-
-    test_rows = []
-
-    for label, col in component_map.items():
-        groups = []
-        valid_years = []
-        ns_by_year = []
-        means_by_year = []
-
-        for y in years_available:
-            vals = df_filtered[df_filtered["Year"].astype(str) == y][col].dropna()
-            if len(vals) >= 5:
-                groups.append(vals)
-                valid_years.append(y)
-                ns_by_year.append(len(vals))
-                means_by_year.append(vals.mean())
-
-        if len(groups) >= 2:
-            try:
-                f_stat, p_value = stats.f_oneway(*groups)
-            except Exception:
-                f_stat, p_value = np.nan, np.nan
-
-            try:
-                all_vals = pd.concat(groups)
-                grand_mean = all_vals.mean()
-                ss_between = sum(len(g) * (g.mean() - grand_mean) ** 2 for g in groups)
-                ss_total = ((all_vals - grand_mean) ** 2).sum()
-                eta_sq = ss_between / ss_total if ss_total != 0 else np.nan
-            except Exception:
-                eta_sq = np.nan
-        else:
-            f_stat, p_value, eta_sq = np.nan, np.nan, np.nan
-
-        test_rows.append({
-            "Dimension": label,
-            "Test": "ANOVA",
-            "Années comparées": ", ".join(valid_years),
-            "N valide total": int(sum(ns_by_year)) if ns_by_year else 0,
-            "p-value": p_value,
-            "Taille d’effet": eta_sq,
-            "Résultat": "Différence significative" if pd.notna(p_value) and p_value < 0.05 else "Non significatif"
-        })
-
-    # Chi-square for recommendation
-    if q43 in df_filtered.columns:
-        rec_data = df_filtered[["Year", q43]].copy()
-        rec_data[q43] = rec_data[q43].astype(str).str.strip()
-        rec_data = rec_data[rec_data[q43].isin(["Oui", "Non"])]
-
-        if rec_data["Year"].nunique() >= 2 and rec_data[q43].nunique() >= 2:
-            contingency = pd.crosstab(rec_data["Year"], rec_data[q43])
-            try:
-                chi2, p_rec, dof, expected = stats.chi2_contingency(contingency)
-                n_total = contingency.values.sum()
-                min_dim = min(contingency.shape) - 1
-                cramers_v = np.sqrt(chi2 / (n_total * min_dim)) if n_total > 0 and min_dim > 0 else np.nan
-            except Exception:
-                p_rec, cramers_v = np.nan, np.nan
-
-            test_rows.append({
-                "Dimension": "Taux de recommandation",
-                "Test": "Chi-square",
-                "Années comparées": ", ".join(sorted(rec_data["Year"].astype(str).unique())),
-                "N valide total": len(rec_data),
-                "p-value": p_rec,
-                "Taille d’effet": cramers_v,
-                "Résultat": "Différence significative" if pd.notna(p_rec) and p_rec < 0.05 else "Non significatif"
-            })
-
-    tests_df = pd.DataFrame(test_rows)
-    tests_df["p-value"] = tests_df["p-value"].apply(lambda x: np.nan if pd.isna(x) else round(x, 4))
-    tests_df["Taille d’effet"] = tests_df["Taille d’effet"].apply(lambda x: np.nan if pd.isna(x) else round(x, 4))
-
-    st.dataframe(tests_df, use_container_width=True, hide_index=True)
-
-    significant = tests_df[tests_df["Résultat"] == "Différence significative"]
-
-    if len(significant) > 0:
-        sig_list = ", ".join(significant["Dimension"].tolist())
-        summary_box(
-            f"""
-            <b>Lecture statistique :</b><br>
-            Les différences entre les années sont statistiquement significatives pour :
-            <b>{sig_list}</b>. Cela signifie que les écarts observés ne sont pas uniquement descriptifs
-            et peuvent être considérés comme statistiquement confirmés au seuil de 5%.
-            """,
-            color=USJ_GREEN,
-            background="#F3FAF5"
-        )
-    else:
-        summary_box(
-            """
-            <b>Lecture statistique :</b><br>
-            Aucun écart statistiquement significatif n’a été détecté entre les années pour les dimensions analysées.
-            Les variations observées doivent donc être interprétées avec prudence comme des différences descriptives.
-            """,
-            color=USJ_ORANGE,
-            background="#FFF8F0"
+    # Component heatmap
+    heatmap_data = component_long_filtered.copy()
+    if not heatmap_data.empty:
+        heatmap_pivot = heatmap_data.pivot_table(
+            index="Dimension",
+            columns="Année",
+            values="Pourcentage",
+            aggfunc="mean"
         )
 
-    # -------------------------------------------------
-    # Optional faculty heatmap when all faculties are shown
-    # -------------------------------------------------
-
-    if "Faculté_Institut_g" in df_filtered.columns and faculte == "Tous":
-        st.subheader("Comparaison par faculté et par année")
-
-        faculty_metric = st.selectbox(
-            "Choisir l’indicateur à comparer par faculté",
-            ["Satisfaction globale", "Taux de recommandation"] + dimensions_for_heatmap,
-            key="faculty_metric_comparison"
+        fig_heat = px.imshow(
+            heatmap_pivot,
+            text_auto=".1f",
+            aspect="auto",
+            color_continuous_scale=PLOTLY_CONT,
+            title="Carte thermique des dimensions par année"
         )
+        fig_heat.update_layout(
+            xaxis_title="Année",
+            yaxis_title="Dimension",
+            coloraxis_colorbar=dict(title="%")
+        )
+        theme_layout(fig_heat, height=540, showlegend=False)
+        st.plotly_chart(fig_heat, use_container_width=True, config={"displayModeBar": False})
 
-        if faculty_metric == "Taux de recommandation":
-            fac_rows = []
-            for (fac, y), sub in df_filtered.groupby(["Faculté_Institut_g", "Year"]):
-                fac_rows.append({
-                    "Faculté": fac,
-                    "Année": y,
-                    "Pourcentage": calculate_recommendation_rate(sub, q43),
-                    "N": len(sub)
-                })
-            fac_df = pd.DataFrame(fac_rows)
-        else:
-            metric_col = component_map.get(faculty_metric)
-            fac_df = (
-                df_filtered.groupby(["Faculté_Institut_g", "Year"])[metric_col]
-                .mean()
-                .reset_index()
-                .rename(columns={"Faculté_Institut_g": "Faculté", metric_col: "Moyenne"})
+        # Year-over-year changes
+        diff_df = heatmap_pivot.copy()
+        if diff_df.shape[1] >= 2:
+            first_year = diff_df.columns[0]
+            last_year = diff_df.columns[-1]
+            diff_df["Évolution"] = diff_df[last_year] - diff_df[first_year]
+            diff_plot = diff_df["Évolution"].reset_index().sort_values("Évolution")
+
+            fig_diff = px.bar(
+                diff_plot,
+                x="Évolution",
+                y="Dimension",
+                orientation="h",
+                text="Évolution",
+                color="Évolution",
+                color_continuous_scale=["#C0003B", "#F57C00", "#2E7D32"],
+                title=f"Évolution des dimensions entre {first_year} et {last_year}"
             )
-            fac_df["Pourcentage"] = fac_df["Moyenne"].apply(pct_from_mean)
-            fac_df["N"] = df_filtered.groupby(["Faculté_Institut_g", "Year"]).size().values
+            fig_diff.update_traces(texttemplate="%{text:+.1f} pts", textposition="outside")
+            fig_diff.update_layout(xaxis_title="Évolution en points de pourcentage", yaxis_title="")
+            theme_layout(fig_diff, height=520, showlegend=False)
+            st.plotly_chart(fig_diff, use_container_width=True, config={"displayModeBar": False})
 
-        fac_pivot = fac_df.pivot(index="Faculté", columns="Année", values="Pourcentage")
-        fac_pivot = fac_pivot.dropna(how="all")
+            best_gain = diff_plot.sort_values("Évolution", ascending=False).iloc[0]
+            largest_decline = diff_plot.sort_values("Évolution", ascending=True).iloc[0]
+            summary_box(
+                f"""
+                <span style="font-size:20px; font-weight:800; color:{USJ_BLUE};">Lecture comparative</span><br>
+                Entre <b>{first_year}</b> et <b>{last_year}</b>, la plus forte progression concerne
+                <b>{best_gain["Dimension"]}</b> avec <b>{best_gain["Évolution"]:+.1f} points</b>.
+                La dimension la plus en recul est <b>{largest_decline["Dimension"]}</b> avec
+                <b>{largest_decline["Évolution"]:+.1f} points</b>. Ces écarts permettent d’identifier
+                les domaines où les actions semblent produire une amélioration et ceux qui nécessitent
+                une attention prioritaire.
+                """,
+                color=USJ_BLUE,
+                background="#F7F9FC"
+            )
+
+    # Statistical tests table
+    st.markdown(f"<h3 style='color:{USJ_BLUE};'>Tests statistiques de comparaison entre années</h3>", unsafe_allow_html=True)
+
+    stat_rows = []
+    for col in SCORE_COLUMNS:
+        if col in df_filtered.columns:
+            p_value, test_name = anova_or_kruskal(df_filtered, col)
+            stat_rows.append({
+                "Indicateur": SCORE_LABELS[col],
+                "Test": test_name,
+                "p-value": round(p_value, 5) if pd.notna(p_value) else np.nan,
+                "Interprétation": p_interpretation(p_value)
+            })
+
+    p_rec = chi_square_recommendation(df_filtered, q43)
+    stat_rows.append({
+        "Indicateur": "Taux de recommandation",
+        "Test": "Chi-square",
+        "p-value": round(p_rec, 5) if pd.notna(p_rec) else np.nan,
+        "Interprétation": p_interpretation(p_rec)
+    })
+
+    stat_df = pd.DataFrame(stat_rows)
+    st.dataframe(stat_df, use_container_width=True, hide_index=True)
+
+    # Table details
+    display_table = year_summary_filtered.copy()
+    for col in display_table.columns:
+        if col not in ["Année", "N"]:
+            display_table[col] = display_table[col].map(lambda x: "" if pd.isna(x) else f"{x:.1f}%")
+    st.markdown(f"<h3 style='color:{USJ_BLUE};'>Tableau comparatif par année</h3>", unsafe_allow_html=True)
+    st.dataframe(display_table, use_container_width=True, hide_index=True)
+
+    # Faculty heatmap
+    if faculte == "Tous" and "Faculté_Institut_g" in df_filtered.columns:
+        st.markdown(f"<h3 style='color:{USJ_BLUE};'>Comparaison par faculté et par année</h3>", unsafe_allow_html=True)
+
+        fac_year = (
+            df_filtered
+            .groupby(["Faculté_Institut_g", "Year"])["Score satisfaction globale"]
+            .mean()
+            .reset_index()
+        )
+        fac_year["Satisfaction globale (%)"] = fac_year["Score satisfaction globale"].apply(pct_from_mean)
+
+        fac_pivot = fac_year.pivot_table(
+            index="Faculté_Institut_g",
+            columns="Year",
+            values="Satisfaction globale (%)",
+            aggfunc="mean"
+        )
 
         fig_fac = px.imshow(
             fac_pivot,
             text_auto=".1f",
             aspect="auto",
-            color_continuous_scale=[USJ_RED, USJ_BLUE, USJ_GREEN],
-            title=f"{faculty_metric} par faculté et par année (%)"
+            color_continuous_scale=PLOTLY_CONT,
+            title="Satisfaction globale par faculté et par année"
         )
-
-        fig_fac.update_layout(
-            height=max(450, 28 * len(fac_pivot)),
-            xaxis_title="Année",
-            yaxis_title="Faculté",
-            coloraxis_colorbar_title="%"
-        )
-
+        fig_fac.update_layout(xaxis_title="Année", yaxis_title="Faculté", coloraxis_colorbar=dict(title="%"))
+        theme_layout(fig_fac, height=max(520, 26 * len(fac_pivot)), showlegend=False)
         st.plotly_chart(fig_fac, use_container_width=True, config={"displayModeBar": False})
 
-        with st.expander("Voir le tableau détaillé par faculté"):
-            st.dataframe(fac_df.sort_values(["Faculté", "Année"]), use_container_width=True, hide_index=True)
-
-
 
 # =====================================================
-# Page 3 - Descriptive results by survey section
-# =====================================================
-
-def short_question_label(question, max_len=78):
-    question = str(question).strip()
-    if len(question) <= max_len:
-        return question
-    return question[:max_len - 3] + "..."
-
-
-def section_score_column(section_name):
-    mapping = {
-        "Enseignement et apprentissage": "Score enseignement et apprentissage",
-        "Accompagnement et encadrement": "Score accompagnement et encadrement",
-        "Développement des compétences": "Score développement des compétences",
-        "Expérience globale USJ": "Score expérience globale USJ",
-        "Services de l’USJ": "Score services USJ",
-        "Vie étudiante et activités": "Score vie étudiante et activités",
-        "Infrastructures et équipements": "Score infrastructures et équipements",
-        "Perception financière": None,
-        "Satisfaction globale et recommandation": None
-    }
-    return mapping.get(section_name)
-
-
-def descriptive_section_items():
-    sections = dict(components)
-    financial_items = [col for col in [q26, q27] if col in df_coded.columns]
-    if financial_items:
-        sections["Perception financière"] = financial_items
-    global_items = [col for col in [q42, q43] if col in df_original.columns]
-    if global_items:
-        sections["Satisfaction globale et recommandation"] = global_items
-    return sections
-
-
-def make_item_summary(data, items, section_name):
-    rows = []
-    for item in items:
-        if item == q43:
-            rate = calculate_recommendation_rate(data, q43)
-            rows.append({
-                "Question": item,
-                "Libellé court": short_question_label(item),
-                "Indicateur (%)": rate,
-                "Moyenne /4": np.nan,
-                "N valide": data[item].notna().sum() if item in data.columns else 0,
-                "Manquants (%)": round(data[item].isna().mean() * 100, 1) if item in data.columns else np.nan,
-                "Type": "Recommandation"
-            })
-        elif item in data.columns:
-            numeric = pd.to_numeric(data[item], errors="coerce")
-            mean_value = numeric.mean()
-            rows.append({
-                "Question": item,
-                "Libellé court": short_question_label(item),
-                "Indicateur (%)": pct_from_mean(mean_value),
-                "Moyenne /4": mean_value,
-                "N valide": numeric.notna().sum(),
-                "Manquants (%)": round(numeric.isna().mean() * 100, 1),
-                "Type": "Moyenne"
-            })
-    return pd.DataFrame(rows)
-
-
-def make_distribution_table(raw_data, coded_data, item):
-    rows = []
-    if item not in raw_data.columns and item not in coded_data.columns:
-        return pd.DataFrame()
-
-    base = raw_data[item] if item in raw_data.columns else coded_data[item]
-    years = sorted(coded_data["Year"].dropna().astype(str).unique()) if "Year" in coded_data.columns else ["Tous"]
-
-    for y in years:
-        if "Year" in coded_data.columns:
-            idx = coded_data[coded_data["Year"].astype(str) == y].index
-            s = base.loc[idx]
-        else:
-            s = base
-        s = s.dropna().astype(str).str.strip()
-        total = len(s)
-        if total == 0:
-            continue
-        counts = s.value_counts().reset_index()
-        counts.columns = ["Réponse", "Effectif"]
-        counts["Pourcentage"] = counts["Effectif"] / total * 100
-        counts["Année"] = y
-        rows.append(counts)
-
-    if rows:
-        return pd.concat(rows, ignore_index=True)
-    return pd.DataFrame()
-
-
-def page_descriptive_sections():
-    st.markdown(f"<h2 style='color:{USJ_BLUE};'>Résultats descriptifs par section</h2>", unsafe_allow_html=True)
-
-    summary_box(
-        """
-        Cette page présente les résultats détaillés des questions regroupées par section du questionnaire.
-        Elle permet de visualiser les moyennes, les pourcentages, les distributions de réponses et les corrélations
-        entre les items d’une même section et leur moyenne globale. Les résultats restent dynamiques selon les filtres actifs.
-        """,
-        color=USJ_BLUE,
-        background=USJ_LIGHT_BLUE
-    )
-
-    sections = descriptive_section_items()
-    section_names = list(sections.keys())
-
-    c_left, c_right = st.columns([2.2, 1])
-    with c_left:
-        selected_section = st.selectbox(
-            "Choisir une section du questionnaire",
-            section_names,
-            key="descriptive_section_selector"
-        )
-    with c_right:
-        show_raw_distribution = st.toggle(
-            "Afficher la distribution détaillée d’une question",
-            value=True
-        )
-
-    items = [col for col in sections[selected_section] if col in df_coded.columns or col in df_original.columns]
-    numeric_items = [col for col in items if col in df_coded.columns and pd.to_numeric(df_coded[col], errors="coerce").notna().sum() > 0]
-    raw_filtered = df_original.loc[df_filtered.index].copy()
-
-    if not items:
-        st.warning("Aucune question disponible pour cette section dans les données filtrées.")
-        return
-
-    section_col = section_score_column(selected_section)
-    if section_col is not None and section_col in df_filtered.columns:
-        section_pct = pct_from_mean(df_filtered[section_col].mean())
-    elif selected_section == "Perception financière":
-        finance_cols = ["Score frais / qualité enseignement", "Score frais / autres universités"]
-        finance_cols = [c for c in finance_cols if c in df_filtered.columns]
-        section_pct = pct_from_mean(df_filtered[finance_cols].mean(axis=1).mean()) if finance_cols else np.nan
-    elif selected_section == "Satisfaction globale et recommandation":
-        section_pct = pct_from_mean(df_filtered["Score satisfaction globale"].mean()) if "Score satisfaction globale" in df_filtered.columns else np.nan
-    else:
-        section_pct = np.nan
-
-    valid_n_section = int(df_filtered[numeric_items].notna().any(axis=1).sum()) if numeric_items else len(df_filtered)
-
-    k1, k2, k3 = st.columns(3)
-    with k1:
-        percent_card("Résultat moyen de la section", section_pct, selected_section)
-    with k2:
-        importance_card("Questions analysées", len(items) / max(len(items), 1) * 100, f"{len(items)} questions")
-    with k3:
-        importance_card("Répondants valides", valid_n_section / max(len(df_filtered), 1) * 100, f"{valid_n_section} sur {len(df_filtered)}")
-
-    item_summary = make_item_summary(df_filtered, items, selected_section)
-
-    if not item_summary.empty:
-        item_summary_display = item_summary.copy()
-        item_summary_display["Indicateur (%)"] = item_summary_display["Indicateur (%)"].round(1)
-        item_summary_display["Moyenne /4"] = item_summary_display["Moyenne /4"].round(2)
-
-        st.markdown(f"<h3 style='color:{USJ_BLUE};'>Synthèse des questions de la section</h3>", unsafe_allow_html=True)
-        st.dataframe(
-            item_summary_display[["Libellé court", "Indicateur (%)", "Moyenne /4", "N valide", "Manquants (%)", "Type"]],
-            use_container_width=True,
-            hide_index=True
-        )
-
-        fig_items = px.bar(
-            item_summary.sort_values("Indicateur (%)", ascending=True),
-            x="Indicateur (%)",
-            y="Libellé court",
-            orientation="h",
-            text="Indicateur (%)",
-            color="Indicateur (%)",
-            color_continuous_scale=[USJ_RED, USJ_BLUE, USJ_GOLD, USJ_GREEN],
-            title=f"Résultats détaillés des questions – {selected_section}"
-        )
-        fig_items.update_layout(
-            height=max(430, 45 * len(item_summary)),
-            xaxis_title="Pourcentage /4",
-            yaxis_title="",
-            coloraxis_showscale=False,
-            plot_bgcolor="white",
-            paper_bgcolor="white"
-        )
-        fig_items.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
-        st.plotly_chart(fig_items, use_container_width=True, config={"displayModeBar": False})
-
-    # -------------------------------------------------
-    # Historical view for section items
-    # -------------------------------------------------
-    if "Year" in df_filtered.columns and len(df_filtered["Year"].dropna().unique()) > 1 and numeric_items:
-        st.markdown(f"<h3 style='color:{USJ_BLUE};'>Évolution par année dans la section</h3>", unsafe_allow_html=True)
-        year_rows = []
-        for y in sorted(df_filtered["Year"].dropna().astype(str).unique()):
-            sub = df_filtered[df_filtered["Year"].astype(str) == y]
-            for item in numeric_items:
-                year_rows.append({
-                    "Année": y,
-                    "Question": short_question_label(item),
-                    "Résultat (%)": pct_from_mean(pd.to_numeric(sub[item], errors="coerce").mean())
-                })
-        year_item_df = pd.DataFrame(year_rows).dropna()
-        if not year_item_df.empty:
-            fig_year = px.line(
-                year_item_df,
-                x="Année",
-                y="Résultat (%)",
-                color="Question",
-                markers=True,
-                text="Résultat (%)",
-                title=f"Évolution des questions – {selected_section}",
-                color_discrete_sequence=[USJ_BLUE, USJ_RED, USJ_GREEN, USJ_ORANGE, USJ_PURPLE, USJ_GOLD]
-            )
-            fig_year.update_traces(mode="lines+markers+text", texttemplate="%{text:.1f}%", textposition="top center")
-            fig_year.update_layout(height=520, yaxis_title="Résultat (%)", xaxis_title="Année", plot_bgcolor="white", paper_bgcolor="white")
-            st.plotly_chart(fig_year, use_container_width=True, config={"displayModeBar": False})
-
-    # -------------------------------------------------
-    # Distribution of one question
-    # -------------------------------------------------
-    if show_raw_distribution:
-        st.markdown(f"<h3 style='color:{USJ_BLUE};'>Distribution interactive des réponses</h3>", unsafe_allow_html=True)
-        selected_question = st.selectbox(
-            "Choisir une question pour afficher la distribution des réponses",
-            items,
-            format_func=lambda x: short_question_label(x, 120),
-            key="distribution_question_selector"
-        )
-        dist_df = make_distribution_table(raw_filtered, df_filtered, selected_question)
-        if not dist_df.empty:
-            fig_dist = px.bar(
-                dist_df,
-                x="Réponse",
-                y="Pourcentage",
-                color="Année",
-                barmode="group",
-                text="Pourcentage",
-                title="Distribution des réponses par année",
-                color_discrete_sequence=[USJ_BLUE, USJ_RED, USJ_GREEN, USJ_ORANGE, USJ_PURPLE, USJ_GOLD]
-            )
-            fig_dist.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
-            fig_dist.update_layout(height=480, xaxis_title="Réponse", yaxis_title="Pourcentage", plot_bgcolor="white", paper_bgcolor="white")
-            st.plotly_chart(fig_dist, use_container_width=True, config={"displayModeBar": False})
-            st.dataframe(dist_df.sort_values(["Année", "Réponse"]), use_container_width=True, hide_index=True)
-        else:
-            st.info("Aucune distribution disponible pour cette question avec les filtres actuels.")
-
-    # -------------------------------------------------
-    # Correlation heatmap
-    # -------------------------------------------------
-    st.markdown(f"<h3 style='color:{USJ_BLUE};'>Corrélation entre les questions et la moyenne de la section</h3>", unsafe_allow_html=True)
-
-    if len(numeric_items) < 2:
-        st.info("La heatmap de corrélation nécessite au moins deux questions numériques dans la section.")
-    else:
-        corr_data = df_filtered[numeric_items].apply(pd.to_numeric, errors="coerce").copy()
-        corr_data["Moyenne de la section"] = corr_data[numeric_items].mean(axis=1, skipna=True)
-        corr_matrix = corr_data.corr().round(2)
-
-        labels = [short_question_label(c, 38) if c != "Moyenne de la section" else c for c in corr_matrix.columns]
-        fig_corr = px.imshow(
-            corr_matrix,
-            text_auto=True,
-            color_continuous_scale=[USJ_RED, "#FFFFFF", USJ_BLUE],
-            zmin=-1,
-            zmax=1,
-            title=f"Heatmap des corrélations – {selected_section}"
-        )
-        fig_corr.update_xaxes(ticktext=labels, tickvals=list(range(len(labels))))
-        fig_corr.update_yaxes(ticktext=labels, tickvals=list(range(len(labels))))
-        fig_corr.update_layout(height=max(520, 55 * len(labels)), plot_bgcolor="white", paper_bgcolor="white")
-        st.plotly_chart(fig_corr, use_container_width=True, config={"displayModeBar": False})
-
-        corr_with_mean = corr_matrix["Moyenne de la section"].drop("Moyenne de la section").sort_values(ascending=False).reset_index()
-        corr_with_mean.columns = ["Question", "Corrélation avec la moyenne"]
-        corr_with_mean["Question"] = corr_with_mean["Question"].apply(lambda x: short_question_label(x, 110))
-
-        fig_corr_bar = px.bar(
-            corr_with_mean.sort_values("Corrélation avec la moyenne", ascending=True),
-            x="Corrélation avec la moyenne",
-            y="Question",
-            orientation="h",
-            text="Corrélation avec la moyenne",
-            color="Corrélation avec la moyenne",
-            color_continuous_scale=[USJ_ORANGE, USJ_BLUE, USJ_GREEN],
-            title="Questions les plus liées à la moyenne de la section"
-        )
-        fig_corr_bar.update_traces(texttemplate="%{text:.2f}", textposition="outside")
-        fig_corr_bar.update_layout(height=max(420, 42 * len(corr_with_mean)), xaxis_title="Corrélation", yaxis_title="", coloraxis_showscale=False, plot_bgcolor="white", paper_bgcolor="white")
-        st.plotly_chart(fig_corr_bar, use_container_width=True, config={"displayModeBar": False})
-
-# =====================================================
-# Page 4
+# Page 3 - Variable importance
 # =====================================================
 
 def page_importance():
-    st.markdown(f"<h2 style='color:{USJ_BLUE};'>Facteurs clés d’amélioration</h2>", unsafe_allow_html=True)
+    section_header(
+        "Facteurs clés d’amélioration",
+        "Modèles explicatifs pour identifier les dimensions qui influencent le plus la satisfaction globale et la recommandation."
+    )
 
     summary_box(
         """
@@ -1528,24 +1365,18 @@ def page_importance():
             orientation="h",
             text="Importance (%)",
             color="Importance (%)",
-            color_continuous_scale=["#C0003B", "#F57C00", "#2E7D32"],
+            color_continuous_scale=PLOTLY_CONT,
             title="Importance relative des dimensions dans la satisfaction globale"
         )
 
-        fig_sat.update_layout(
-            yaxis=dict(autorange="reversed"),
-            xaxis_title="Importance relative (%)",
-            yaxis_title="",
-            height=480,
-            coloraxis_showscale=False
-        )
-
         fig_sat.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
+        fig_sat.update_layout(xaxis_title="Importance relative (%)", yaxis_title="")
+        theme_layout(fig_sat, height=500, showlegend=False)
         st.plotly_chart(fig_sat, use_container_width=True, config={"displayModeBar": False})
 
         summary_box(
             f"""
-            <b>Interprétation décisionnelle :</b><br>
+            <span style="font-size:20px; font-weight:800; color:{USJ_ORANGE};">Interprétation décisionnelle</span><br>
             La dimension <b>{top_sat["Dimension"]}</b> est le facteur le plus déterminant
             pour expliquer la satisfaction globale, avec une importance relative de
             <b>{top_sat["Importance (%)"]:.1f}%</b>. La deuxième dimension la plus importante est
@@ -1602,24 +1433,18 @@ def page_importance():
             orientation="h",
             text="Importance (%)",
             color="Importance (%)",
-            color_continuous_scale=["#C0003B", "#F57C00", "#2E7D32"],
+            color_continuous_scale=PLOTLY_CONT,
             title="Importance relative des dimensions dans la recommandation de l’USJ"
         )
 
-        fig_rec.update_layout(
-            yaxis=dict(autorange="reversed"),
-            xaxis_title="Importance relative (%)",
-            yaxis_title="",
-            height=480,
-            coloraxis_showscale=False
-        )
-
         fig_rec.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
+        fig_rec.update_layout(xaxis_title="Importance relative (%)", yaxis_title="")
+        theme_layout(fig_rec, height=500, showlegend=False)
         st.plotly_chart(fig_rec, use_container_width=True, config={"displayModeBar": False})
 
         summary_box(
             f"""
-            <b>Interprétation décisionnelle :</b><br>
+            <span style="font-size:20px; font-weight:800; color:{USJ_GREEN};">Interprétation décisionnelle</span><br>
             La dimension <b>{top_rec["Dimension"]}</b> est le facteur le plus déterminant
             pour expliquer la recommandation de l’USJ, avec une importance relative de
             <b>{top_rec["Importance (%)"]:.1f}%</b>. La deuxième dimension la plus importante est
@@ -1630,12 +1455,220 @@ def page_importance():
             background="#F3FAF5"
         )
 
+
 # =====================================================
-# Page 4
+# Page 4 - Descriptive results by section
+# =====================================================
+
+def page_descriptive_sections():
+    section_header(
+        "Résultats descriptifs par section",
+        "Analyse détaillée des questions par section, avec évolution, distributions et corrélations internes."
+    )
+
+    available_sections = [sec for sec, items in components.items() if len(items) > 0]
+
+    if not available_sections:
+        st.warning("Aucune section disponible.")
+        return
+
+    selected_section = st.selectbox("Choisir une section", available_sections)
+    items = components[selected_section]
+
+    if len(items) == 0:
+        st.warning("Aucune question disponible pour cette section.")
+        return
+
+    section_score = None
+    for col in SCORE_COLUMNS:
+        if SCORE_LABELS.get(col, "") == selected_section or selected_section.lower() in SCORE_LABELS.get(col, "").lower():
+            section_score = col
+            break
+
+    question_summary = section_question_summary(df_filtered, items)
+
+    if question_summary.empty:
+        st.warning("Aucun résultat disponible pour cette section.")
+        return
+
+    top_q = question_summary.iloc[0]
+    weak_q = question_summary.iloc[-1]
+
+    c1, c2, c3 = st.columns(3)
+
+    with c1:
+        insight_card("Nombre de questions", len(items), selected_section, USJ_BLUE)
+
+    with c2:
+        insight_card("Question la mieux évaluée", safe_pct(top_q["Résultat (%)"]), question_short_label(top_q["Question"]), USJ_GREEN)
+
+    with c3:
+        insight_card("Question la plus faible", safe_pct(weak_q["Résultat (%)"]), question_short_label(weak_q["Question"]), USJ_RED if weak_q["Résultat (%)"] < 50 else USJ_ORANGE)
+
+    summary_box(
+        f"""
+        <span style="font-size:20px; font-weight:800; color:{USJ_BLUE};">Lecture de la section</span><br>
+        Dans la section <b>{selected_section}</b>, la question la mieux évaluée est
+        <b>{score_question_label(top_q["Question"])}</b> avec <b>{top_q["Résultat (%)"]:.1f}%</b>.
+        La question la moins bien évaluée est <b>{score_question_label(weak_q["Question"])}</b>
+        avec <b>{weak_q["Résultat (%)"]:.1f}%</b>. Cette lecture permet d’identifier les points forts
+        et les aspects à prioriser au sein de la même section.
+        """,
+        color=USJ_BLUE,
+        background="#F7F9FC"
+    )
+
+    # Ranking bar chart
+    fig_rank = px.bar(
+        question_summary.sort_values("Résultat (%)"),
+        x="Résultat (%)",
+        y="Libellé court",
+        orientation="h",
+        text="Résultat (%)",
+        color="Résultat (%)",
+        color_continuous_scale=PLOTLY_CONT,
+        hover_data={"Question": True, "Moyenne /4": ":.2f", "N valide": True, "Taux de données manquantes (%)": ":.1f"}
+    )
+    fig_rank.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
+    fig_rank.update_layout(
+        title=f"Classement des questions – {selected_section}",
+        xaxis_title="Résultat (%)",
+        yaxis_title="Question"
+    )
+    theme_layout(fig_rank, height=max(440, 45 * len(question_summary)), showlegend=False)
+    st.plotly_chart(fig_rank, use_container_width=True, config={"displayModeBar": False})
+
+    # Table
+    display_q = question_summary.copy()
+    display_q["Résultat (%)"] = display_q["Résultat (%)"].map(lambda x: f"{x:.1f}%" if pd.notna(x) else "")
+    display_q["Moyenne /4"] = display_q["Moyenne /4"].map(lambda x: f"{x:.2f}" if pd.notna(x) else "")
+    display_q["Taux de données manquantes (%)"] = display_q["Taux de données manquantes (%)"].map(lambda x: f"{x:.1f}%" if pd.notna(x) else "")
+    st.dataframe(
+        display_q[["Question", "Résultat (%)", "Moyenne /4", "N valide", "Taux de données manquantes (%)"]],
+        use_container_width=True,
+        hide_index=True
+    )
+
+    # Evolution by year
+    trend_q = section_trend(df_filtered, items)
+    if not trend_q.empty and trend_q["Année"].nunique() > 1:
+        fig_q_trend = px.line(
+            trend_q,
+            x="Année",
+            y="Résultat (%)",
+            color="Question",
+            markers=True,
+            text="Résultat (%)",
+            color_discrete_sequence=PLOTLY_SEQ,
+            hover_data={"Question complète": True}
+        )
+        fig_q_trend.update_traces(texttemplate="%{text:.1f}%", textposition="top center", mode="lines+markers+text")
+        fig_q_trend.update_layout(
+            title=f"Évolution des questions – {selected_section}",
+            xaxis_title="Année",
+            yaxis_title="Résultat (%)",
+            legend_title="Question"
+        )
+        theme_layout(fig_q_trend, height=560)
+        st.plotly_chart(fig_q_trend, use_container_width=True, config={"displayModeBar": False})
+
+    # Distribution
+    dist = response_distribution(df_original.loc[df_filtered.index], df_filtered, items)
+    if not dist.empty:
+        selected_question_short = st.selectbox(
+            "Choisir une question pour afficher la distribution des réponses",
+            sorted(dist["Question"].unique())
+        )
+
+        dist_q = dist[dist["Question"] == selected_question_short]
+
+        fig_dist = px.bar(
+            dist_q,
+            x="Année",
+            y="Pourcentage",
+            color="Réponse",
+            text="Pourcentage",
+            barmode="stack",
+            color_discrete_sequence=PLOTLY_SEQ,
+            hover_data={"N": True}
+        )
+        fig_dist.update_traces(texttemplate="%{text:.1f}%", textposition="inside")
+        fig_dist.update_layout(
+            title=f"Distribution des réponses – {selected_question_short}",
+            xaxis_title="Année",
+            yaxis_title="Pourcentage des réponses"
+        )
+        theme_layout(fig_dist, height=500)
+        st.plotly_chart(fig_dist, use_container_width=True, config={"displayModeBar": False})
+
+    # Correlation matrix
+    corr, ranking = correlation_with_section_mean(df_filtered, items)
+
+    if not corr.empty:
+        labels = [question_short_label(c) if c != "Moyenne de la section" else c for c in corr.columns]
+        corr_display = corr.copy()
+        corr_display.index = labels
+        corr_display.columns = labels
+
+        fig_corr = px.imshow(
+            corr_display,
+            text_auto=".2f",
+            aspect="auto",
+            color_continuous_scale="RdBu",
+            zmin=-1,
+            zmax=1,
+            title=f"Heatmap de corrélation – {selected_section}"
+        )
+        fig_corr.update_layout(
+            xaxis_title="Questions",
+            yaxis_title="Questions",
+            coloraxis_colorbar=dict(title="Corrélation")
+        )
+        theme_layout(fig_corr, height=max(520, 35 * len(corr_display)), showlegend=False)
+        st.plotly_chart(fig_corr, use_container_width=True, config={"displayModeBar": False})
+
+        fig_corr_rank = px.bar(
+            ranking.sort_values("Corrélation avec la moyenne"),
+            x="Corrélation avec la moyenne",
+            y="Question courte",
+            orientation="h",
+            text="Corrélation avec la moyenne",
+            color="Corrélation avec la moyenne",
+            color_continuous_scale=PLOTLY_CONT,
+            hover_data={"Question": True}
+        )
+        fig_corr_rank.update_traces(texttemplate="%{text:.2f}", textposition="outside")
+        fig_corr_rank.update_layout(
+            title="Questions les plus liées à la moyenne de la section",
+            xaxis_title="Corrélation avec la moyenne de section",
+            yaxis_title="Question"
+        )
+        theme_layout(fig_corr_rank, height=max(420, 42 * len(ranking)), showlegend=False)
+        st.plotly_chart(fig_corr_rank, use_container_width=True, config={"displayModeBar": False})
+
+        top_corr = ranking.iloc[0]
+        summary_box(
+            f"""
+            <span style="font-size:20px; font-weight:800; color:{USJ_GREEN};">Lecture corrélationnelle</span><br>
+            La question la plus fortement associée à la moyenne de la section est
+            <b>{score_question_label(top_corr["Question"])}</b>, avec une corrélation de
+            <b>{top_corr["Corrélation avec la moyenne"]:.2f}</b>. Cette question peut être considérée
+            comme particulièrement représentative de la dimension analysée.
+            """,
+            color=USJ_GREEN,
+            background="#F3FAF5"
+        )
+
+
+# =====================================================
+# Page 5 - Methodology
 # =====================================================
 
 def page_methodology():
-    st.markdown(f"<h2 style='color:{USJ_BLUE};'>Méthodologie de calcul des composantes</h2>", unsafe_allow_html=True)
+    section_header(
+        "Méthodologie des composantes",
+        "Mode de calcul des dimensions, recodage des réponses et fiabilité interne."
+    )
 
     summary_box(
         """
@@ -1700,6 +1733,7 @@ def page_methodology():
         background="#FFF8F0"
     )
 
+
 # =====================================================
 # Display selected page
 # =====================================================
@@ -1710,14 +1744,15 @@ if page == "Vue générale des indicateurs":
 elif page == "Comparaison historique":
     page_historical_comparison()
 
-elif page == "Résultats descriptifs par section":
-    page_descriptive_sections()
-
 elif page == "Facteurs clés d’amélioration":
     page_importance()
 
+elif page == "Résultats descriptifs par section":
+    page_descriptive_sections()
+
 elif page == "Méthodologie des composantes":
     page_methodology()
+
 
 # =====================================================
 # Footer
@@ -1730,9 +1765,10 @@ st.markdown(
         padding:15px;
         background-color:{USJ_BLUE};
         color:white;
-        border-radius:12px;
+        border-radius:14px;
         text-align:center;
         font-size:14px;
+        box-shadow:0 4px 14px rgba(0,0,0,0.08);
     ">
         Université Saint-Joseph de Beyrouth – Exit Survey 2022-2025
     </div>
