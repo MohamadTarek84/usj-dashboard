@@ -4,6 +4,7 @@ numpy
 openpyxl
 plotly
 scikit-learn
+scipy
 matplotlib
 sqlalchemy
 psycopg2-binary
