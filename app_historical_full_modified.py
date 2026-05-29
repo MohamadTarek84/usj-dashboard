@@ -2247,31 +2247,88 @@ def html_escape(value):
 # Additional survey questions helpers
 # =====================================================
 
+
 def get_excluded_non_question_columns():
+    """Columns that should not be treated as questionnaire items."""
     base_cols = {
         "Year", "Année", "Genre", "Faculté_Institut_g", "Faculté", "Cursus", "Niveau", "Niveau_Lib",
         "startlanguage", "StartLanguage", "Language", "Langue", "Age", "Date", "Horodateur", "Timestamp",
-        "Institution", "Responsable", "Email", "Adresse e-mail", "ID", "Id", "id", "Code", "Nom", "Prénom"
+        "Institution", "Responsable", "Email", "Adresse e-mail", "ID", "Id", "id", "Code", "Nom", "Prénom",
+        "StartDate", "EndDate", "Status", "IPAddress", "Progress", "Duration", "Finished", "RecordedDate",
+        "ResponseId", "RecipientLastName", "RecipientFirstName", "RecipientEmail", "ExternalReference",
+        "LocationLatitude", "LocationLongitude", "DistributionChannel", "UserLanguage"
     }
     base_cols.update(SCORE_COLUMNS)
     return base_cols
 
 
 def get_used_dashboard_question_columns():
+    """Original questionnaire columns already used in KPIs/components."""
     used = set()
     for item_list in components.values():
-        used.update(item_list)
+        used.update([str(x).strip() for x in item_list])
     for q in [q42, q43, q26, q27]:
         if q:
-            used.add(q)
+            used.add(str(q).strip())
     return used
 
 
-def get_other_question_columns(original_data):
-    """Return questionnaire variables not already used in components/KPIs.
+def is_probable_survey_question(col_name):
+    """Detect actual survey-question columns dynamically from the Excel file.
 
-    The function is intentionally conservative: it removes demographic/filter columns,
-    internal score columns and variables already used in the dashboard components.
+    This intentionally captures numbered questions such as:
+    3- Dans votre institution..., 6- Etudié à l'étranger..., 14_a-..., etc.
+    """
+    import re
+    c = str(col_name).strip()
+    if not c:
+        return False
+    c_lower = c.lower()
+
+    # Strong signal: survey item starts with a number, optionally followed by _a, a, -, or spaces.
+    if re.match(r"^\s*\d+\s*[_a-zA-Z]?\s*[-–—]", c):
+        return True
+    if re.match(r"^\s*\d+\s*[_a-zA-Z]\s*[-–—]", c):
+        return True
+    if re.match(r"^\s*\d+[_a-zA-Z]+\s*[-–—]", c):
+        return True
+
+    # Secondary signal: looks like a survey wording even without a numeric prefix.
+    question_terms = [
+        "satisf", "recommand", "tuteur", "mobilité", "etranger", "étranger", "échange", "stage",
+        "emploi", "travail", "programme", "parcours", "université", "institution", "faculté", "institut",
+        "école", "enseignement", "service", "activité", "campus", "bibliothèque", "laboratoire", "frais",
+        "avez-vous", "vous a-t-on", "dans votre", "durant votre", "après l’obtention", "après l'obtention", "?"
+    ]
+    return any(term in c_lower for term in question_terms)
+
+
+def classify_other_question(col_name, series=None):
+    c = str(col_name).lower()
+    if any(k in c for k in ["tuteur", "orientation", "conseil", "encadrement"]):
+        return "Accompagnement / tutorat"
+    if any(k in c for k in ["étranger", "etranger", "mobilité", "mobilite", "échange", "echange"]):
+        return "Mobilité internationale"
+    if any(k in c for k in ["stage", "emploi", "travail", "carrière", "carriere", "insertion"]):
+        return "Insertion / parcours professionnel"
+    if any(k in c for k in ["admission", "inscription", "administratif", "dossier"]):
+        return "Processus administratifs"
+    if any(k in c for k in ["langue", "language"]):
+        return "Langues / profil"
+    if any(k in c for k in ["commentaire", "remarque", "suggestion", "précisez", "precisez", "autre"]):
+        return "Questions ouvertes / précisions"
+    if series is not None:
+        nunique = series.map(clean_response_value).dropna().nunique()
+        if nunique > 30:
+            return "Questions ouvertes / précisions"
+    return "Autres informations complémentaires"
+
+
+def get_other_question_columns(original_data):
+    """Return all survey questions not already used in the main indicators/components.
+
+    The detection is based on the Excel columns at runtime, so any additional historical item
+    such as Q3 tutor assignment or Q6 international mobility is automatically included when present.
     """
     excluded = get_excluded_non_question_columns().union(get_used_dashboard_question_columns())
     candidate_cols = []
@@ -2283,11 +2340,32 @@ def get_other_question_columns(original_data):
             continue
         if original_data[col].dropna().empty:
             continue
-        # Keep real questionnaire items. Most questionnaire columns contain a number/question wording.
-        # Also keep any categorical variable with useful response content.
+        if not is_probable_survey_question(col_str):
+            continue
         candidate_cols.append(col_str)
-    return candidate_cols
 
+    # Natural questionnaire order when columns start with numbers, otherwise original order.
+    import re
+    def sort_key(x):
+        m = re.match(r"^\s*(\d+)", str(x))
+        return (int(m.group(1)) if m else 9999, str(x))
+    return sorted(candidate_cols, key=sort_key)
+
+
+def get_other_question_inventory(original_data, coded_filter_data):
+    rows = []
+    for col in get_other_question_columns(original_data):
+        s = original_data.loc[coded_filter_data.index, col].map(clean_response_value) if len(coded_filter_data) else pd.Series(dtype=object)
+        valid = s.dropna()
+        rows.append({
+            "Catégorie": classify_other_question(col, s),
+            "Question": col,
+            "Question affichée": score_question_label(col),
+            "N valide": int(valid.shape[0]),
+            "Modalités": int(valid.nunique()) if not valid.empty else 0,
+            "Type": "Fermée / catégorielle" if (not valid.empty and valid.nunique() <= 30) else "Ouverte / texte libre",
+        })
+    return pd.DataFrame(rows)
 
 def clean_response_value(value):
     if pd.isna(value):
@@ -2313,8 +2391,18 @@ def build_other_question_distribution(original_data, coded_filter_data, question
     return dist
 
 
-def summarize_other_questions_for_report(original_data, coded_filter_data, max_questions=6):
+
+def summarize_other_questions_for_report(original_data, coded_filter_data, max_questions=14):
+    """Compact executive summary of complementary questions for the printable report.
+
+    Priority is given to closed questions, especially operational items such as tutoring,
+    mobility, exchange, employment/stage and administrative pathway questions.
+    """
     rows = []
+    priority_terms = [
+        "tuteur", "mobilité", "mobilite", "étranger", "etranger", "échange", "echange",
+        "stage", "emploi", "travail", "insertion", "admission", "administratif", "parcours"
+    ]
     other_cols = get_other_question_columns(original_data)
     for col in other_cols:
         if col not in original_data.columns:
@@ -2324,74 +2412,105 @@ def summarize_other_questions_for_report(original_data, coded_filter_data, max_q
             continue
         n_valid = int(series.shape[0])
         unique_n = int(series.nunique())
-        # Prefer closed questions for a concise executive report.
-        if unique_n < 2 or unique_n > 20:
+        if unique_n < 2 or unique_n > 30:
             continue
         counts = series.value_counts(dropna=True)
         top_resp = counts.index[0]
         top_pct = counts.iloc[0] / counts.sum() * 100
+        q_lower = str(col).lower()
+        priority_score = 0
+        if any(term in q_lower for term in priority_terms):
+            priority_score += 1000
+        if str(col).strip().startswith(("3-", "3 -", "6-", "6 -")):
+            priority_score += 1200
+        priority_score += min(n_valid, 500)
         rows.append({
+            "Catégorie": classify_other_question(col, series),
             "Question": col,
             "N valide": n_valid,
             "Réponse dominante": top_resp,
             "Pourcentage": top_pct,
             "Nombre de modalités": unique_n,
+            "Priorité": priority_score,
         })
     if not rows:
         return pd.DataFrame()
     out = pd.DataFrame(rows)
-    out = out.sort_values(["N valide", "Pourcentage"], ascending=[False, False]).head(max_questions)
-    return out
+    out = out.sort_values(["Priorité", "N valide", "Pourcentage"], ascending=[False, False, False]).head(max_questions)
+    return out.drop(columns=["Priorité"], errors="ignore")
+
 
 
 def page_other_questions():
     section_header(
         "Autres questions du questionnaire",
-        "Exploration des variables non intégrées dans les composantes principales, avec distributions et comparaisons par année."
+        "Résultats complémentaires issus des questions non intégrées dans les indicateurs principaux."
     )
 
     summary_box(
         """
-        Cette page complète les analyses principales en affichant les questions du questionnaire qui ne sont pas utilisées dans les scores de composantes.
-        Elle permet de ne pas perdre d’information utile pour la décision, notamment les questions contextuelles, administratives ou complémentaires.
-        Les résultats ci-dessous respectent les filtres actifs du tableau de bord.
+        Cette page détecte automatiquement, à partir du fichier Excel, toutes les questions du questionnaire qui ne sont pas utilisées dans les scores principaux.
+        Elle inclut notamment les questions de tutorat, de mobilité internationale, de parcours, d’administration ou d’autres informations complémentaires.
+        Les résultats respectent les filtres actifs du tableau de bord et peuvent être mobilisés dans le rapport synthétique imprimable.
         """,
         color=USJ_BLUE,
         background="#F7F9FC"
     )
 
-    other_cols = get_other_question_columns(df_original)
-    if not other_cols:
+    inventory = get_other_question_inventory(df_original, df_filtered)
+    if inventory.empty:
         st.warning("Aucune question complémentaire n’a été détectée en dehors des composantes déjà analysées.")
         return
 
-    col_a, col_b, col_c = st.columns(3)
+    col_a, col_b, col_c, col_d = st.columns(4)
     with col_a:
-        insight_card("Questions complémentaires", len(other_cols), "Variables disponibles", USJ_BLUE)
+        insight_card("Questions complémentaires", len(inventory), "Détectées dans Excel", USJ_BLUE)
     with col_b:
         insight_card("Répondants filtrés", len(df_filtered), "Base active", USJ_GREEN if len(df_filtered) > 0 else USJ_RED)
     with col_c:
-        insight_card("Années représentées", df_filtered["Year"].nunique(), "Selon les filtres", USJ_GOLD)
+        insight_card("Questions fermées", int((inventory["Type"] == "Fermée / catégorielle").sum()), "Analysables en graphique", USJ_GOLD)
+    with col_d:
+        insight_card("Années représentées", df_filtered["Year"].nunique(), "Selon les filtres", USJ_BLUE_2)
 
-    selected_other_question = st.selectbox(
-        "Choisir une question complémentaire",
-        other_cols,
-        format_func=lambda x: score_question_label(x)
+    st.markdown(f"<h3 style='color:{USJ_BLUE}; margin-top:22px;'>Inventaire des autres questions détectées</h3>", unsafe_allow_html=True)
+    inv_display = inventory.copy()
+    st.dataframe(
+        inv_display[["Catégorie", "Question affichée", "N valide", "Modalités", "Type"]],
+        use_container_width=True,
+        hide_index=True
     )
+
+    categories = ["Toutes les catégories"] + sorted(inventory["Catégorie"].dropna().unique().tolist())
+    cfilter, qfilter = st.columns([1, 2])
+    with cfilter:
+        selected_category = st.selectbox("Filtrer par catégorie", categories)
+    filtered_inventory = inventory.copy()
+    if selected_category != "Toutes les catégories":
+        filtered_inventory = filtered_inventory[filtered_inventory["Catégorie"] == selected_category]
+
+    with qfilter:
+        selected_other_question = st.selectbox(
+            "Choisir une question complémentaire",
+            filtered_inventory["Question"].tolist(),
+            format_func=lambda x: score_question_label(x)
+        )
 
     selected_series = df_original.loc[df_filtered.index, selected_other_question].map(clean_response_value)
     valid_series = selected_series.dropna()
     n_valid = int(valid_series.shape[0])
     missing_pct = selected_series.isna().mean() * 100 if len(selected_series) > 0 else np.nan
     unique_n = int(valid_series.nunique()) if n_valid > 0 else 0
+    selected_category_label = classify_other_question(selected_other_question, selected_series)
 
-    k1, k2, k3 = st.columns(3)
+    k1, k2, k3, k4 = st.columns(4)
     with k1:
-        insight_card("Réponses valides", n_valid, "Après filtres", USJ_BLUE)
+        insight_card("Catégorie", selected_category_label, "Lecture thématique", USJ_BLUE)
     with k2:
-        insight_card("Données manquantes", safe_pct(missing_pct), "Taux de non-réponse", USJ_ORANGE if pd.notna(missing_pct) and missing_pct > 10 else USJ_GREEN)
+        insight_card("Réponses valides", n_valid, "Après filtres", USJ_GREEN if n_valid > 0 else USJ_RED)
     with k3:
-        insight_card("Modalités distinctes", unique_n, "Diversité des réponses", USJ_GOLD)
+        insight_card("Données manquantes", safe_pct(missing_pct), "Taux de non-réponse", USJ_ORANGE if pd.notna(missing_pct) and missing_pct > 10 else USJ_GREEN)
+    with k4:
+        insight_card("Modalités", unique_n, "Réponses distinctes", USJ_GOLD)
 
     if n_valid == 0:
         st.warning("Aucune réponse valide pour cette question dans les filtres sélectionnés.")
@@ -2401,13 +2520,13 @@ def page_other_questions():
         f"""
         <div style='background:#FFFFFF;border:1px solid #DDE5F0;border-left:7px solid {USJ_BLUE};border-radius:18px;padding:18px 20px;margin:18px 0;box-shadow:0 5px 16px rgba(0,0,0,0.05);'>
             <div style='font-size:14px;font-weight:800;color:#667085;margin-bottom:6px;'>Question analysée</div>
-            <div style='font-size:20px;font-weight:900;color:{USJ_BLUE};line-height:1.35;'>{html_escape(selected_other_question)}</div>
+            <div style='font-size:20px;font-weight:900;color:{USJ_BLUE};line-height:1.35;'>{html_escape(score_question_label(selected_other_question))}</div>
+            <div style='font-size:13px;color:#667085;margin-top:8px;'>Variable Excel : {html_escape(selected_other_question)}</div>
         </div>
         """,
         unsafe_allow_html=True
     )
 
-    # Closed/categorical questions: professional distributions.
     if unique_n <= 30:
         dist_year = build_other_question_distribution(df_original, df_filtered, selected_other_question)
         overall = valid_series.value_counts(dropna=True).reset_index()
@@ -2422,7 +2541,7 @@ def page_other_questions():
             orientation="h",
             text="Pourcentage",
             color="Pourcentage",
-            color_continuous_scale=[[0, "#EAF2FF"], [0.5, "#6C8DC7"], [1, USJ_BLUE]],
+            color_continuous_scale=[[0, "#EAF2FF"], [0.5, "#7FA6D9"], [1, USJ_BLUE]],
             hover_data={"N": True, "Pourcentage": ":.2f"},
             title="Distribution globale des réponses"
         )
@@ -2449,12 +2568,17 @@ def page_other_questions():
             st.plotly_chart(fig_stack, use_container_width=True, config={"displayModeBar": False})
 
         top_resp = overall.sort_values("Pourcentage", ascending=False).iloc[0]
+        second_resp = overall.sort_values("Pourcentage", ascending=False).iloc[1] if len(overall) > 1 else None
+        second_text = ""
+        if second_resp is not None:
+            second_text = f" La deuxième réponse la plus fréquente est <b>{html_escape(second_resp['Réponse'])}</b> ({second_resp['Pourcentage']:.2f}%)."
+
         summary_box(
             f"""
             <span style='font-size:20px; font-weight:800; color:{USJ_BLUE};'>Lecture décisionnelle</span><br>
-            La réponse la plus fréquente à cette question est <b>{html_escape(top_resp['Réponse'])}</b>, avec
-            <b>{top_resp['Pourcentage']:.2f}%</b> des réponses valides. Cette information doit être lue comme un indicateur complémentaire
-            aux scores de satisfaction, utile pour contextualiser les priorités d’action.
+            Pour cette question complémentaire, la réponse dominante est <b>{html_escape(top_resp['Réponse'])}</b>, avec
+            <b>{top_resp['Pourcentage']:.2f}%</b> des réponses valides.{second_text}
+            Cette information apporte un éclairage contextuel aux indicateurs principaux et peut expliquer certains résultats observés dans les dimensions de satisfaction.
             """,
             color=USJ_BLUE,
             background="#F7F9FC"
@@ -2465,8 +2589,7 @@ def page_other_questions():
         st.dataframe(display_overall, use_container_width=True, hide_index=True)
 
     else:
-        # Open/high-cardinality questions: avoid unreadable charts, provide frequency table and samples.
-        freq = valid_series.value_counts().head(20).reset_index()
+        freq = valid_series.value_counts().head(25).reset_index()
         freq.columns = ["Réponse", "N"]
         freq["Pourcentage"] = freq["N"] / n_valid * 100
         freq["Pourcentage"] = freq["Pourcentage"].map(lambda x: f"{x:.2f}%")
@@ -2474,8 +2597,8 @@ def page_other_questions():
         st.dataframe(freq, use_container_width=True, hide_index=True)
         summary_box(
             """
-            Cette question présente un nombre élevé de réponses distinctes. Elle est donc traitée comme une question ouverte ou quasi ouverte.
-            Le tableau affiche les réponses les plus fréquentes afin de repérer les tendances sans surcharger le rapport.
+            Cette question comporte un nombre élevé de réponses distinctes. Elle est donc traitée comme une question ouverte ou quasi ouverte.
+            Le tableau présente les réponses les plus fréquentes afin d’identifier les signaux récurrents sans surcharger la lecture.
             """,
             color=USJ_ORANGE,
             background="#FFF8F0"
@@ -2537,13 +2660,43 @@ def build_printable_report_html():
         return "#667085"
 
     def html_table(rows, headers, empty_message="Aucune donnée disponible."):
+        """Render report tables with consistent column alignment.
+
+        Numeric columns are right-aligned in both header and body, so values sit exactly
+        under their titles. Text columns remain left-aligned. The function also keeps
+        older pre-built <td> cells working while normalizing header alignment.
+        """
+        numeric_headers = {
+            "Résultat", "Faculté", "USJ", "USJ filtré", "Écart", "p-value",
+            "Importance", "Poids", "N valide", "N", "Moyenne", "Moyenne (%)",
+            "Évolution", "Rang"
+        }
         if not rows:
-            return f"<table><tbody><tr><td>{empty_message}</td></tr></tbody></table>"
-        head = "".join(f"<th>{clean_text(h)}</th>" for h in headers)
+            colspan = max(1, len(headers))
+            return f"<table class='report-table'><tbody><tr><td colspan='{colspan}'>{empty_message}</td></tr></tbody></table>"
+
+        head_cells = []
+        for h in headers:
+            align = "right" if h in numeric_headers else "left"
+            head_cells.append(f"<th style='text-align:{align};'>{clean_text(h)}</th>")
+        head = "".join(head_cells)
+
         body = ""
         for row in rows:
-            body += "<tr>" + "".join(str(row.get(h, "")) for h in headers) + "</tr>"
-        return f"<table><thead><tr>{head}</tr></thead><tbody>{body}</tbody></table>"
+            cells = []
+            for h in headers:
+                cell = str(row.get(h, ""))
+                # Most report rows already provide a complete <td>...</td> cell.
+                # If not, wrap safely and align it according to the header type.
+                if not cell.lstrip().lower().startswith("<td"):
+                    align = "right" if h in numeric_headers else "left"
+                    cell = f"<td style='text-align:{align};'>{cell}</td>"
+                elif h in numeric_headers and "text-align" not in cell.lower():
+                    cell = cell.replace("<td", "<td style='text-align:right;'", 1)
+                cells.append(cell)
+            body += "<tr>" + "".join(cells) + "</tr>"
+
+        return f"<table class='report-table'><thead><tr>{head}</tr></thead><tbody>{body}</tbody></table>"
 
     report_data = df_filtered.copy()
     comparison_data = apply_current_filters_without_faculty(df_coded)
@@ -2556,6 +2709,16 @@ def build_printable_report_html():
     sat = pct_from_mean(report_data["Score satisfaction globale"].mean()) if "Score satisfaction globale" in report_data.columns else np.nan
     rec = calculate_recommendation_rate(report_data, q43)
     exp = pct_from_mean(report_data["Score expérience globale USJ"].mean()) if "Score expérience globale USJ" in report_data.columns else np.nan
+
+    # Benchmark variables used later in the customized conclusion.
+    usj_sat = np.nan
+    usj_rec = np.nan
+    usj_exp = np.nan
+    sat_gap = np.nan
+    rec_gap = np.nan
+    exp_gap = np.nan
+    best_benchmark_dim = None
+    weakest_benchmark_dim = None
 
     badge_text, badge_color = performance_class(sat)
     dim_table = build_report_dimension_table(report_data)
@@ -2694,6 +2857,9 @@ def build_printable_report_html():
         merged_bench = fac_dims.merge(usj_dims, on="Dimension", how="inner")
         merged_bench["Écart"] = merged_bench["Faculté"] - merged_bench["USJ"]
         merged_bench = merged_bench.sort_values("Écart", ascending=False)
+        if not merged_bench.empty:
+            best_benchmark_dim = merged_bench.iloc[0]
+            weakest_benchmark_dim = merged_bench.iloc[-1]
 
         bench_dim_rows = []
         for _, row in merged_bench.iterrows():
@@ -2871,25 +3037,46 @@ def build_printable_report_html():
     # -------------------------------------------------
     # Complementary questions not included in components
     # -------------------------------------------------
-    other_report_df = summarize_other_questions_for_report(df_original, report_data, max_questions=6)
+    other_report_df = summarize_other_questions_for_report(df_original, report_data, max_questions=14)
     other_questions_html = ""
     if not other_report_df.empty:
         other_rows = []
         for _, row in other_report_df.iterrows():
             other_rows.append({
+                "Catégorie": f"<td>{clean_text(row.get('Catégorie', ''))}</td>",
                 "Question": f"<td>{clean_text(score_question_label(row['Question']))}</td>",
                 "N valide": f"<td style='text-align:right;'>{int(row['N valide'])}</td>",
                 "Réponse dominante": f"<td>{clean_text(row['Réponse dominante'])}</td>",
                 "Poids": f"<td style='text-align:right; font-weight:800; color:{USJ_BLUE};'>{fmt_pct2(row['Pourcentage'])}</td>",
             })
+
+        # Specific operational signals, when available in the Excel file.
+        signal_lines = []
+        for _, row in other_report_df.iterrows():
+            q_lower = str(row["Question"]).lower()
+            if any(term in q_lower for term in ["tuteur", "mobilité", "mobilite", "étranger", "etranger", "échange", "echange"]):
+                signal_lines.append(
+                    f"<li><b>{clean_text(score_question_label(row['Question']))}</b> : réponse dominante <b>{clean_text(row['Réponse dominante'])}</b> ({fmt_pct2(row['Pourcentage'])}, N={int(row['N valide'])}).</li>"
+                )
+        signals_html = ""
+        if signal_lines:
+            signals_html = f"""
+            <div class='zone-explain' style='border-left-color:{USJ_GOLD};'>
+                <b>Signaux opérationnels à lire avec attention</b>
+                <ul>{''.join(signal_lines[:6])}</ul>
+            </div>
+            """
+
         other_questions_html = f"""
         <div class='report-card'>
             <h3>Questions complémentaires non intégrées aux composantes</h3>
             <p>
-                Cette section valorise les variables du questionnaire qui ne sont pas incluses dans les scores principaux. Elles apportent un éclairage
-                complémentaire pour interpréter la situation du périmètre analysé et repérer des signaux opérationnels utiles à la décision.
+                Cette section exploite les questions du questionnaire qui ne sont pas incluses dans les scores principaux. Elles donnent un contexte essentiel
+                pour comprendre les résultats et orienter les décisions. Les questions de tutorat, de mobilité internationale, de parcours et d’administration
+                sont automatiquement détectées lorsqu’elles existent dans le fichier Excel.
             </p>
-            {html_table(other_rows, ["Question", "N valide", "Réponse dominante", "Poids"])}
+            {signals_html}
+            {html_table(other_rows, ["Catégorie", "Question", "N valide", "Réponse dominante", "Poids"])}
         </div>
         """
     else:
@@ -2945,6 +3132,50 @@ def build_printable_report_html():
     <b>{fmt_pct2(exp)}</b>. {action_text} Les résultats doivent être interprétés conjointement avec les tendances historiques, les écarts par rapport à l’ensemble USJ
     et les facteurs clés d’amélioration, afin de prioriser les actions les plus susceptibles d’améliorer l’expérience étudiante.
     """
+
+    # -------------------------------------------------
+    # Customized operational conclusion
+    # -------------------------------------------------
+    try:
+        driver_text = clean_text(top_driver["Dimension"]) if len(sat_model) >= 30 and feature_columns else None
+    except Exception:
+        driver_text = None
+
+    if faculte != "Tous":
+        benchmark_sentence = ""
+        if pd.notna(sat_gap):
+            if sat_gap >= 1:
+                benchmark_sentence = f"Son niveau de satisfaction globale est supérieur à la moyenne USJ filtrée de <b style='color:{USJ_GREEN};'>{fmt_pts(sat_gap)}</b>, ce qui traduit un positionnement favorable à consolider."
+            elif sat_gap <= -1:
+                benchmark_sentence = f"Son niveau de satisfaction globale est inférieur à la moyenne USJ filtrée de <b style='color:{USJ_RED};'>{fmt_pts(sat_gap)}</b>, ce qui justifie un suivi spécifique au niveau facultaire."
+            else:
+                benchmark_sentence = f"Son niveau de satisfaction globale est proche de la moyenne USJ filtrée (<b>{fmt_pts(sat_gap)}</b>), ce qui indique un positionnement globalement aligné sur la tendance institutionnelle."
+
+        dim_gap_sentence = ""
+        if best_benchmark_dim is not None and weakest_benchmark_dim is not None:
+            dim_gap_sentence = (
+                f"Par rapport à l’ensemble USJ filtré, le meilleur avantage relatif concerne <b>{clean_text(best_benchmark_dim['Dimension'])}</b> "
+                f"(<b style='color:{gap_color(best_benchmark_dim['Écart'])};'>{fmt_pts(best_benchmark_dim['Écart'])}</b>), tandis que le principal retrait concerne "
+                f"<b>{clean_text(weakest_benchmark_dim['Dimension'])}</b> (<b style='color:{gap_color(weakest_benchmark_dim['Écart'])};'>{fmt_pts(weakest_benchmark_dim['Écart'])}</b>)."
+            )
+
+        driver_sentence = f"Le facteur clé d’amélioration prioritaire à considérer est <b>{driver_text}</b>, car il présente le poids explicatif le plus élevé dans la satisfaction globale." if driver_text else "Les facteurs clés d’amélioration doivent être interprétés avec prudence pour ce périmètre, car l’échantillon disponible peut limiter la robustesse du modèle explicatif."
+
+        conclusion_text = f"""
+        Pour <b>{clean_text(faculty_label)}</b>, les résultats doivent être lus comme un outil d’aide à la décision propre au périmètre facultaire sélectionné, et non comme une conclusion générale sur l’ensemble de l’Université.
+        La situation actuelle se caractérise par une satisfaction globale de <b>{fmt_pct2(sat)}</b>, un taux de recommandation de <b>{fmt_pct2(rec)}</b> et une expérience globale de <b>{fmt_pct2(exp)}</b>.
+        {benchmark_sentence} {dim_gap_sentence}
+        Sur le plan opérationnel, la priorité consiste à agir d’abord sur <b>{clean_text(weak['Dimension'])}</b>, qui représente le point le plus fragile du profil facultaire, tout en maintenant les acquis observés sur <b>{clean_text(best['Dimension'])}</b>.
+        {driver_sentence} La combinaison du diagnostic par dimension, du positionnement par rapport à l’USJ, des questions complémentaires et des facteurs explicatifs permet de transformer ce rapport en plan d’action facultaire ciblé, mesurable et directement exploitable par l’équipe de direction.
+        """
+    else:
+        driver_sentence = f"Le levier explicatif le plus important pour améliorer la satisfaction globale est <b>{driver_text}</b>." if driver_text else "Les facteurs explicatifs doivent être analysés sur un périmètre suffisamment large pour garantir une interprétation robuste."
+        conclusion_text = f"""
+        Pour <b>l’ensemble de l’Université</b>, ce rapport fournit une lecture institutionnelle consolidée destinée à orienter les priorités transversales d’amélioration.
+        La satisfaction globale atteint <b>{fmt_pct2(sat)}</b>, le taux de recommandation atteint <b>{fmt_pct2(rec)}</b> et l’expérience globale est évaluée à <b>{fmt_pct2(exp)}</b>.
+        La priorité institutionnelle concerne <b>{clean_text(weak['Dimension'])}</b>, tandis que <b>{clean_text(best['Dimension'])}</b> constitue un point fort à préserver.
+        {driver_sentence} Les résultats doivent être utilisés pour arbitrer les actions communes, identifier les dimensions nécessitant un accompagnement institutionnel et soutenir une amélioration continue fondée sur des données comparables entre années et entre facultés.
+        """
 
     return f"""
     <html>
@@ -3051,30 +3282,33 @@ def build_printable_report_html():
         .driver-card {{ border-left: 7px solid {USJ_GOLD}; }}
         .decision-card {{ border-left: 7px solid {USJ_GREEN}; background: #F8FCF8; }}
         .decision-card li {{ margin-bottom: 8px; line-height: 1.5; }}
-        table {{
+        table.report-table {{
             width: 100%;
             border-collapse: collapse;
-            table-layout: fixed;
+            table-layout: auto;
             font-size: 14.2px;
             margin-top: 10px;
         }}
-        th {{
+        table.report-table th {{
             background: {USJ_BLUE};
             color: white;
-            text-align: left;
-            padding: 10px;
+            padding: 10px 12px;
             vertical-align: middle;
+            white-space: nowrap;
         }}
-        td {{
+        table.report-table td {{
             border-bottom: 1px solid #E6ECF3;
-            padding: 9px 10px;
+            padding: 9px 12px;
             vertical-align: top;
-            overflow-wrap: anywhere;
+            overflow-wrap: break-word;
         }}
-        th:nth-child(1), td:nth-child(1) {{ width: 42%; }}
-        th:nth-child(2), td:nth-child(2) {{ width: 19%; }}
-        th:nth-child(3), td:nth-child(3) {{ width: 19%; }}
-        th:nth-child(4), td:nth-child(4) {{ width: 20%; }}
+        table.report-table tr:nth-child(even) td {{
+            background-color: #FBFCFE;
+        }}
+        table.report-table td:last-child,
+        table.report-table th:last-child {{
+            padding-right: 18px;
+        }}
         .zone-explain {{
             margin-top: 12px;
             background: #F7F9FC;
@@ -3163,13 +3397,8 @@ def build_printable_report_html():
             {decision_html}
 
             <div class='report-card'>
-                <h3>Conclusion opérationnelle</h3>
-                <p>
-                    Ce rapport vise à soutenir une prise de décision fondée sur les données. Les résultats les plus faibles identifient les domaines où une intervention
-                    ciblée peut produire un gain visible, tandis que les facteurs clés d’amélioration indiquent les leviers les plus influents sur la satisfaction globale.
-                    La combinaison des niveaux de satisfaction, des écarts historiques, du positionnement par rapport à l’USJ et du diagnostic par question permet de
-                    construire un plan d’action priorisé, mesurable et adapté au périmètre analysé.
-                </p>
+                <h3>Conclusion opérationnelle personnalisée</h3>
+                <p>{conclusion_text}</p>
             </div>
 
             <div class='print-note'>Université Saint-Joseph de Beyrouth - Unité Assurance Qualité / CCAD</div>
