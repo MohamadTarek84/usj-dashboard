@@ -119,14 +119,141 @@ st.markdown(
     }}
 
     .stRadio > div {{
-        background: #F7F9FC;
-        padding: 8px 12px;
-        border-radius: 16px;
+        background: linear-gradient(135deg, #F7F9FC 0%, #EEF4FF 100%);
+        padding: 12px 14px;
+        border-radius: 18px;
+        border: 1px solid #D9E4F5;
+        box-shadow: 0 6px 18px rgba(0, 27, 117, 0.06);
     }}
 
-    button[kind="secondary"] {{
+    .stRadio label {{
+        font-family: Candara, Arial, sans-serif !important;
+        font-size: 14px !important;
+        color: {USJ_TEXT} !important;
+    }}
+
+    .stRadio div[role="radiogroup"] label[data-baseweb="radio"] > div:first-child {{
+        border-color: #B9C7DE !important;
+    }}
+
+    .stSelectbox label, .stRadio > label, .stButton button {{
+        font-family: Candara, Arial, sans-serif !important;
+        color: {USJ_TEXT} !important;
+        font-weight: 700 !important;
+    }}
+
+    div[data-baseweb="select"] > div {{
+        background-color: #F3F6FB !important;
+        border: 1px solid #D8E2F0 !important;
+        border-radius: 12px !important;
+        min-height: 44px !important;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.85);
+    }}
+
+    div[data-baseweb="select"] span {{
+        color: {USJ_TEXT} !important;
+        font-family: Candara, Arial, sans-serif !important;
+    }}
+
+    button[kind="secondary"], .stButton button {{
         border-radius: 18px !important;
-        border: 1px solid #D0D7E2 !important;
+        border: 1px solid #C9D6EA !important;
+        background: #FFFFFF !important;
+        box-shadow: 0 4px 12px rgba(0, 27, 117, 0.08) !important;
+        min-height: 42px !important;
+    }}
+
+    button[kind="secondary"]:hover, .stButton button:hover {{
+        border-color: {USJ_BLUE} !important;
+        color: {USJ_BLUE} !important;
+        background: #F4F8FF !important;
+    }}
+
+    .control-panel {{
+        background: linear-gradient(135deg, #FFFFFF 0%, #F7FAFF 58%, #EEF5FF 100%);
+        border: 1px solid #D8E3F3;
+        border-radius: 24px;
+        padding: 20px 24px 16px 24px;
+        margin: 12px 0 18px 0;
+        box-shadow: 0 10px 28px rgba(0, 27, 117, 0.08);
+    }}
+
+    .control-title {{
+        color: {USJ_BLUE};
+        font-size: 22px;
+        font-weight: 900;
+        margin: 0 0 4px 0;
+        font-family: Candara, Arial, sans-serif;
+    }}
+
+    .control-subtitle {{
+        color: #5F6B7A;
+        font-size: 14px;
+        margin: 0 0 14px 0;
+        line-height: 1.45;
+        font-family: Candara, Arial, sans-serif;
+    }}
+
+    .data-chip-row {{
+        display:flex;
+        flex-wrap:wrap;
+        gap:10px;
+        margin-top:8px;
+        margin-bottom:8px;
+    }}
+
+    .data-chip {{
+        display:inline-flex;
+        align-items:center;
+        gap:7px;
+        background:#FFFFFF;
+        border:1px solid #D7E2F2;
+        border-radius:999px;
+        padding:7px 12px;
+        color:{USJ_TEXT};
+        font-size:13px;
+        font-weight:700;
+        box-shadow:0 3px 10px rgba(0,27,117,0.05);
+        font-family: Candara, Arial, sans-serif;
+    }}
+
+    .data-chip strong {{
+        color:{USJ_BLUE};
+    }}
+
+    .respondent-card {{
+        background: linear-gradient(135deg, {USJ_BLUE} 0%, {USJ_BLUE_2} 100%);
+        color:white;
+        border-radius:18px;
+        padding:16px 18px;
+        margin-top:12px;
+        margin-bottom:16px;
+        box-shadow:0 8px 22px rgba(0,27,117,0.16);
+        font-family: Candara, Arial, sans-serif;
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+    }}
+
+    .respondent-card .label {{
+        font-size:14px;
+        opacity:0.92;
+        font-weight:700;
+    }}
+
+    .respondent-card .value {{
+        font-size:28px;
+        font-weight:900;
+        letter-spacing:0.2px;
+    }}
+
+    .nav-title {{
+        margin-top: 8px;
+        margin-bottom: 6px;
+        font-family: Candara, Arial, sans-serif;
+        color:{USJ_BLUE};
+        font-size:16px;
+        font-weight:900;
     }}
 
     .block-container {{
@@ -951,13 +1078,34 @@ with header_right:
 st.divider()
 
 # =====================================================
-# Linked filters
+# Professional control panel and linked filters
 # =====================================================
 
-filter_action_cols = st.columns([1.3, 1.4, 6])
+last_update_label = pd.to_datetime(excel_file_mtime, unit="s").strftime("%Y-%m-%d %H:%M:%S")
+file_size_mb = excel_file_size / (1024 * 1024)
+
+st.markdown(
+    f"""
+    <div class="control-panel">
+        <div class="control-title">Pilotage du tableau de bord</div>
+        <div class="control-subtitle">
+            Ajustez les filtres pour actualiser automatiquement l’ensemble des indicateurs, comparaisons, analyses descriptives,
+            statistiques inférentielles et rapports synthétiques.
+        </div>
+        <div class="data-chip-row">
+            <span class="data-chip">📁 <strong>Fichier actif</strong> {excel_file_path}</span>
+            <span class="data-chip">💾 <strong>Taille</strong> {file_size_mb:.2f} Mo</span>
+            <span class="data-chip">🕒 <strong>Dernière modification</strong> {last_update_label}</span>
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+filter_action_cols = st.columns([1.15, 1.35, 6.5])
 
 with filter_action_cols[0]:
-    if st.button("Réinitialiser les filtres"):
+    if st.button("↺ Réinitialiser les filtres", use_container_width=True):
         st.session_state["filter_year"] = "Tous"
         st.session_state["filter_genre"] = "Tous"
         st.session_state["filter_faculte"] = "Tous"
@@ -966,13 +1114,24 @@ with filter_action_cols[0]:
         st.rerun()
 
 with filter_action_cols[1]:
-    if st.button("Actualiser les données Excel"):
+    if st.button("⟳ Actualiser les données Excel", use_container_width=True):
         st.cache_data.clear()
         st.rerun()
 
-st.caption(
-    f"Fichier de données actif : {excel_file_path} | Taille : {excel_file_size:,} octets | "
-    f"Dernière modification détectée : {pd.to_datetime(excel_file_mtime, unit='s').strftime('%Y-%m-%d %H:%M:%S')}"
+st.markdown(
+    f"""
+    <div style="
+        margin-top:12px;
+        margin-bottom:8px;
+        color:{USJ_BLUE};
+        font-family:Candara, Arial, sans-serif;
+        font-weight:900;
+        font-size:17px;
+    ">
+        Filtres d’analyse
+    </div>
+    """,
+    unsafe_allow_html=True
 )
 
 filter_cols = st.columns(5)
@@ -1013,12 +1172,29 @@ df_filtered = df_after_cursus.copy()
 if niveau != "Tous":
     df_filtered = df_filtered[df_filtered["Niveau"].astype(str) == niveau]
 
+active_filter_labels = []
+if year != "Tous":
+    active_filter_labels.append(f"Année : {year}")
+if genre != "Tous":
+    active_filter_labels.append(f"Genre : {genre}")
+if faculte != "Tous":
+    active_filter_labels.append(f"Faculté : {faculte}")
+if cursus != "Tous":
+    active_filter_labels.append(f"Cursus : {cursus}")
+if niveau != "Tous":
+    active_filter_labels.append(f"Niveau : {niveau}")
+active_filter_text = " | ".join(active_filter_labels) if active_filter_labels else "Aucun filtre spécifique appliqué"
+
 st.markdown(
     f"""
-    <div style="font-size:16px; margin-top:10px; margin-bottom:18px;">
-        <b>Nombre de répondants affichés :</b> {len(df_filtered)}
+    <div class="respondent-card">
+        <div>
+            <div class="label">Population actuellement analysée</div>
+            <div style="font-size:13px; opacity:0.90; margin-top:4px;">{active_filter_text}</div>
+        </div>
+        <div class="value">{len(df_filtered):,}</div>
     </div>
-    """,
+    """.replace(",", " "),
     unsafe_allow_html=True
 )
 
@@ -1026,8 +1202,10 @@ st.markdown(
 # Navigation
 # =====================================================
 
+st.markdown('<div class="nav-title">Navigation analytique</div>', unsafe_allow_html=True)
+
 page = st.radio(
-    "Navigation",
+    "Navigation analytique",
     [
         "Vue générale des indicateurs",
         "Comparaison historique",
@@ -1038,7 +1216,8 @@ page = st.radio(
         "Méthodologie des composantes",
         "Rapport synthétique imprimable"
     ],
-    horizontal=True
+    horizontal=True,
+    label_visibility="collapsed"
 )
 
 year_summary_all = build_year_summary(df_coded, q43)
@@ -2923,13 +3102,23 @@ def build_printable_report_html():
         </div>
         """
     else:
+        key_points = []
+        if pd.notna(sat):
+            key_points.append(f"La satisfaction globale du périmètre analysé atteint <b>{fmt_pct2(sat)}</b>, ce qui le situe en <b>{clean_text(badge_text)}</b>.")
+        if pd.notna(rec):
+            key_points.append(f"Le taux de recommandation atteint <b>{fmt_pct2(rec)}</b>, indicateur central de l’attachement des répondants à l’USJ.")
+        if not dim_table.empty:
+            key_points.append(f"Le principal point fort est <b>{clean_text(best['Dimension'])}</b> avec <b>{fmt_pct2(best['Résultat'])}</b>.")
+            key_points.append(f"La principale priorité d’amélioration concerne <b>{clean_text(weak['Dimension'])}</b> avec <b>{fmt_pct2(weak['Résultat'])}</b>.")
+        key_points_html = "".join(f"<li>{item}</li>" for item in key_points)
         benchmark_html = f"""
-        <div class='report-card'>
-            <h3>Positionnement institutionnel</h3>
+        <div class='report-card decision-card'>
+            <h3>Points clés à retenir</h3>
             <p>
-                Le rapport présente une lecture globale de l’Université. Pour générer un rapport propre à une faculté, sélectionnez une faculté
-                dans le filtre <b>Faculté</b>, puis revenez à cette page. Les tableaux de benchmarking s’activeront automatiquement.
+                Cette lecture synthétise les résultats institutionnels selon les filtres sélectionnés. Elle met en évidence les forces,
+                les zones à consolider et les priorités d’action à discuter dans une logique d’amélioration continue.
             </p>
+            <ul>{key_points_html}</ul>
         </div>
         """
 
@@ -3446,9 +3635,9 @@ def page_printable_report():
 
     summary_box(
         """
-        Ce rapport est généré automatiquement à partir des filtres actifs en haut du tableau de bord.
-        Pour obtenir un rapport propre à une faculté, sélectionnez d’abord la faculté souhaitée dans le filtre <b>Faculté</b>,
-        puis revenez à cette page. Le bouton d’impression est intégré dans le rapport rendu ci-dessous.
+        Ce rapport analytique synthétise les indicateurs clés, les forces, les priorités d’amélioration, les évolutions historiques,
+        les facteurs explicatifs et les questions complémentaires selon les filtres actuellement sélectionnés.
+        Il est conçu pour servir de support direct à la lecture, à l’impression et à la prise de décision.
         """,
         color=USJ_BLUE,
         background="#F7F9FC"
