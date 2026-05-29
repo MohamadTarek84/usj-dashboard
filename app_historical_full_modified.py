@@ -9,7 +9,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
-import streamlit.components.v1 as components
+import streamlit.components.v1 as st_components
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 
 try:
@@ -2525,7 +2525,7 @@ def page_printable_report():
 
     col_print, col_download = st.columns([1, 1])
     with col_print:
-        components.html(
+        st_components.html(
             """
             <button onclick="window.print()" style="
                 width:100%;
