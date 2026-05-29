@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import os
 import plotly.express as px
+import plotly.graph_objects as go
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from scipy import stats
 
@@ -479,15 +480,24 @@ with st.spinner("Chargement du tableau de bord..."):
     df_original, df_coded, components, q42, q43, q26, q27 = prepare_data()
 
 # =====================================================
-# Header
+# Header with USJ / UAQ logo
 # =====================================================
 
-header_left, header_right = st.columns([5, 1])
+logo_candidates = [
+    "usj_uaq_logo.png",
+    "USJ_UAQ_logo.png",
+    "usj_logo.png",
+    "image.png"
+]
+
+logo_path = next((logo for logo in logo_candidates if os.path.exists(logo)), None)
+
+header_left, header_right = st.columns([4.5, 1.5], vertical_alignment="center")
 
 with header_left:
     st.markdown(
         f"""
-        <h1 style="color:{USJ_BLUE}; margin-bottom:0;">
+        <h1 style="color:{USJ_BLUE}; margin-bottom:0; font-size:36px; font-weight:800;">
             Tableau de bord – Exit Survey USJ 2022-2025
         </h1>
         <p style="font-size:18px; color:#555; margin-top:4px;">
@@ -498,8 +508,8 @@ with header_left:
     )
 
 with header_right:
-    if os.path.exists("usj_logo.png"):
-        st.image("usj_logo.png", width=160)
+    if logo_path is not None:
+        st.image(logo_path, width=300)
 
 st.divider()
 
@@ -695,10 +705,9 @@ def page_historical_comparison():
 
     summary_box(
         """
-        Cette page compare les résultats de l’Exit Survey entre les années disponibles.
-        Elle permet de suivre l’évolution de la satisfaction globale, de la recommandation et des principales dimensions
-        de l’expérience étudiante. Les tests statistiques indiquent si les différences observées entre les années
-        sont statistiquement significatives.
+        Cette page présente une analyse comparative des résultats de l’Exit Survey sur les années disponibles.
+        Elle permet d’identifier les tendances, les écarts entre années, les dimensions en progression ou en recul,
+        ainsi que les différences statistiquement significatives. Les résultats sont calculés selon les filtres actifs.
         """,
         color=USJ_BLUE,
         background="#F7F9FC"
@@ -730,7 +739,7 @@ def page_historical_comparison():
     component_map = {k: v for k, v in component_map.items() if v in df_filtered.columns}
 
     # -------------------------------------------------
-    # Yearly KPI trend table
+    # Yearly comparison table
     # -------------------------------------------------
 
     rows = []
@@ -747,18 +756,96 @@ def page_historical_comparison():
 
     trend_df = pd.DataFrame(rows)
 
-    st.subheader("Tableau comparatif par année")
+    # Ensure chronological order when labels are standard strings.
+    trend_df["Année"] = trend_df["Année"].astype(str)
+    trend_df = trend_df.sort_values("Année")
+
+    last_year = trend_df["Année"].iloc[-1]
+    previous_year = trend_df["Année"].iloc[-2] if len(trend_df) >= 2 else trend_df["Année"].iloc[-1]
+
+    def get_year_value(indicator, year_value):
+        vals = trend_df.loc[trend_df["Année"] == year_value, indicator]
+        return vals.iloc[0] if len(vals) > 0 else np.nan
+
+    sat_last = get_year_value("Satisfaction globale", last_year) if "Satisfaction globale" in trend_df.columns else np.nan
+    sat_prev = get_year_value("Satisfaction globale", previous_year) if "Satisfaction globale" in trend_df.columns else np.nan
+    rec_last = get_year_value("Taux de recommandation", last_year) if "Taux de recommandation" in trend_df.columns else np.nan
+    rec_prev = get_year_value("Taux de recommandation", previous_year) if "Taux de recommandation" in trend_df.columns else np.nan
+
+    diff_sat = sat_last - sat_prev if pd.notna(sat_last) and pd.notna(sat_prev) else np.nan
+    diff_rec = rec_last - rec_prev if pd.notna(rec_last) and pd.notna(rec_prev) else np.nan
+
+    # Identify strongest improvement and strongest decline.
+    diff_rows_for_cards = []
+    for col in trend_df.columns:
+        if col in ["Année", "Nombre de répondants"]:
+            continue
+        v_last = get_year_value(col, last_year)
+        v_prev = get_year_value(col, previous_year)
+        if pd.notna(v_last) and pd.notna(v_prev):
+            diff_rows_for_cards.append({"Indicateur": col, "Écart": v_last - v_prev})
+
+    diff_card_df = pd.DataFrame(diff_rows_for_cards)
+    if not diff_card_df.empty:
+        strongest_up = diff_card_df.sort_values("Écart", ascending=False).iloc[0]
+        strongest_down = diff_card_df.sort_values("Écart", ascending=True).iloc[0]
+    else:
+        strongest_up = {"Indicateur": "NA", "Écart": np.nan}
+        strongest_down = {"Indicateur": "NA", "Écart": np.nan}
+
+    st.subheader("Résumé exécutif de l’évolution")
+
+    c1, c2, c3, c4 = st.columns(4)
+
+    with c1:
+        importance_card(
+            f"Satisfaction globale {last_year}",
+            sat_last,
+            f"Écart vs {previous_year}: {diff_sat:+.1f} pts" if pd.notna(diff_sat) else "Écart non disponible"
+        )
+
+    with c2:
+        importance_card(
+            f"Recommandation {last_year}",
+            rec_last,
+            f"Écart vs {previous_year}: {diff_rec:+.1f} pts" if pd.notna(diff_rec) else "Écart non disponible"
+        )
+
+    with c3:
+        importance_card(
+            "Plus forte progression",
+            abs(strongest_up["Écart"]) if pd.notna(strongest_up["Écart"]) else np.nan,
+            f"{strongest_up['Indicateur']} ({strongest_up['Écart']:+.1f} pts)" if pd.notna(strongest_up["Écart"]) else "Non disponible"
+        )
+
+    with c4:
+        importance_card(
+            "Plus fort recul",
+            abs(strongest_down["Écart"]) if pd.notna(strongest_down["Écart"]) else np.nan,
+            f"{strongest_down['Indicateur']} ({strongest_down['Écart']:+.1f} pts)" if pd.notna(strongest_down["Écart"]) else "Non disponible"
+        )
+
+    # -------------------------------------------------
+    # Detailed comparison table
+    # -------------------------------------------------
+
+    st.subheader("Tableau comparatif détaillé par année")
+
+    format_dict = {col: "{:.1f}%" for col in trend_df.columns if col not in ["Année", "Nombre de répondants"]}
     st.dataframe(
-        trend_df.style.format({col: "{:.1f}%" for col in trend_df.columns if col not in ["Année", "Nombre de répondants"]}),
+        trend_df.style.format(format_dict),
         use_container_width=True,
         hide_index=True
     )
 
     # -------------------------------------------------
-    # Main trend chart
+    # Main trend chart with labels
     # -------------------------------------------------
 
-    main_trend = trend_df[["Année", "Satisfaction globale", "Taux de recommandation"]].melt(
+    st.subheader("Évolution de la satisfaction globale et de la recommandation")
+
+    main_cols = [col for col in ["Satisfaction globale", "Taux de recommandation"] if col in trend_df.columns]
+    main_trend = trend_df[["Année"] + main_cols].melt(
         id_vars="Année",
         var_name="Indicateur",
         value_name="Pourcentage"
@@ -770,33 +857,69 @@ def page_historical_comparison():
         y="Pourcentage",
         color="Indicateur",
         markers=True,
+        text="Pourcentage",
         title="Évolution de la satisfaction globale et de la recommandation"
+    )
+
+    fig_main.update_traces(
+        mode="lines+markers+text",
+        texttemplate="%{text:.1f}%",
+        textposition="top center",
+        line=dict(width=4),
+        marker=dict(size=10)
     )
 
     fig_main.update_layout(
         yaxis_title="Pourcentage",
         xaxis_title="Année",
-        height=430,
-        legend_title=""
+        height=460,
+        legend_title="",
+        hovermode="x unified",
+        margin=dict(l=20, r=20, t=70, b=40)
     )
 
-    fig_main.update_traces(line=dict(width=4), marker=dict(size=10))
     st.plotly_chart(fig_main, use_container_width=True, config={"displayModeBar": False})
 
     # -------------------------------------------------
-    # Components comparison chart
+    # Heatmap of dimensions by year
     # -------------------------------------------------
 
-    components_only = [label for label in component_map.keys() if label != "Satisfaction globale"]
+    st.subheader("Carte de chaleur des dimensions par année")
 
-    comp_long = trend_df[["Année"] + components_only].melt(
+    dimensions_for_heatmap = [label for label in component_map.keys() if label != "Satisfaction globale"]
+    heatmap_df = trend_df[["Année"] + dimensions_for_heatmap].copy()
+    heatmap_long = heatmap_df.melt(
         id_vars="Année",
         var_name="Dimension",
         value_name="Pourcentage"
     )
 
+    fig_heat = px.imshow(
+        heatmap_df.set_index("Année")[dimensions_for_heatmap].T,
+        text_auto=".1f",
+        aspect="auto",
+        color_continuous_scale=[USJ_RED, USJ_BLUE, USJ_GREEN],
+        title="Niveau des dimensions par année (%)"
+    )
+
+    fig_heat.update_layout(
+        height=540,
+        xaxis_title="Année",
+        yaxis_title="Dimension",
+        coloraxis_colorbar_title="%",
+        margin=dict(l=20, r=20, t=70, b=40)
+    )
+
+    st.plotly_chart(fig_heat, use_container_width=True, config={"displayModeBar": False})
+
+    # -------------------------------------------------
+    # Grouped bar chart of components
+    # -------------------------------------------------
+
+    st.subheader("Comparaison visuelle des dimensions")
+
     fig_comp = px.bar(
-        comp_long,
+        heatmap_long,
         x="Dimension",
         y="Pourcentage",
         color="Année",
@@ -805,15 +928,70 @@ def page_historical_comparison():
         title="Comparaison des dimensions par année"
     )
 
+    fig_comp.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
     fig_comp.update_layout(
         yaxis_title="Pourcentage",
         xaxis_title="",
-        height=560,
-        xaxis_tickangle=-35
+        height=620,
+        xaxis_tickangle=-35,
+        legend_title="Année",
+        margin=dict(l=20, r=20, t=70, b=150)
     )
 
-    fig_comp.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
     st.plotly_chart(fig_comp, use_container_width=True, config={"displayModeBar": False})
+
+    # -------------------------------------------------
+    # Year-over-year differences with colors
+    # -------------------------------------------------
+
+    st.subheader(f"Écarts entre {previous_year} et {last_year}")
+
+    diff_rows = []
+    for col in trend_df.columns:
+        if col in ["Année", "Nombre de répondants"]:
+            continue
+
+        val_last = get_year_value(col, last_year)
+        val_prev = get_year_value(col, previous_year)
+
+        if pd.notna(val_last) and pd.notna(val_prev):
+            diff_rows.append({
+                "Indicateur": col,
+                previous_year: round(val_prev, 1),
+                last_year: round(val_last, 1),
+                "Écart en points": round(val_last - val_prev, 1)
+            })
+
+    diff_df = pd.DataFrame(diff_rows).sort_values("Écart en points", ascending=False)
+
+    fig_diff = px.bar(
+        diff_df,
+        x="Écart en points",
+        y="Indicateur",
+        orientation="h",
+        text="Écart en points",
+        color="Écart en points",
+        color_continuous_scale=[USJ_RED, "#E8E8E8", USJ_GREEN],
+        title=f"Variation en points entre {previous_year} et {last_year}"
+    )
+
+    fig_diff.update_traces(texttemplate="%{text:+.1f} pts", textposition="outside")
+    fig_diff.update_layout(
+        yaxis=dict(autorange="reversed"),
+        xaxis_title="Écart en points",
+        yaxis_title="",
+        height=560,
+        coloraxis_showscale=False,
+        margin=dict(l=20, r=40, t=70, b=40)
+    )
+
+    st.plotly_chart(fig_diff, use_container_width=True, config={"displayModeBar": False})
+
+    st.dataframe(
+        diff_df.style.format({previous_year: "{:.1f}%", last_year: "{:.1f}%", "Écart en points": "{:+.1f}"}),
+        use_container_width=True,
+        hide_index=True
+    )
 
     # -------------------------------------------------
     # Statistical tests
@@ -826,26 +1004,41 @@ def page_historical_comparison():
     for label, col in component_map.items():
         groups = []
         valid_years = []
+        ns_by_year = []
+        means_by_year = []
 
         for y in years_available:
             vals = df_filtered[df_filtered["Year"].astype(str) == y][col].dropna()
             if len(vals) >= 5:
                 groups.append(vals)
                 valid_years.append(y)
+                ns_by_year.append(len(vals))
+                means_by_year.append(vals.mean())
 
         if len(groups) >= 2:
             try:
                 f_stat, p_value = stats.f_oneway(*groups)
             except Exception:
                 f_stat, p_value = np.nan, np.nan
+
+            try:
+                all_vals = pd.concat(groups)
+                grand_mean = all_vals.mean()
+                ss_between = sum(len(g) * (g.mean() - grand_mean) ** 2 for g in groups)
+                ss_total = ((all_vals - grand_mean) ** 2).sum()
+                eta_sq = ss_between / ss_total if ss_total != 0 else np.nan
+            except Exception:
+                eta_sq = np.nan
         else:
-            f_stat, p_value = np.nan, np.nan
+            f_stat, p_value, eta_sq = np.nan, np.nan, np.nan
 
         test_rows.append({
             "Dimension": label,
             "Test": "ANOVA",
             "Années comparées": ", ".join(valid_years),
+            "N valide total": int(sum(ns_by_year)) if ns_by_year else 0,
             "p-value": p_value,
+            "Taille d’effet": eta_sq,
             "Résultat": "Différence significative" if pd.notna(p_value) and p_value < 0.05 else "Non significatif"
         })
 
@@ -859,19 +1052,25 @@ def page_historical_comparison():
             contingency = pd.crosstab(rec_data["Year"], rec_data[q43])
             try:
                 chi2, p_rec, dof, expected = stats.chi2_contingency(contingency)
+                n_total = contingency.values.sum()
+                min_dim = min(contingency.shape) - 1
+                cramers_v = np.sqrt(chi2 / (n_total * min_dim)) if n_total > 0 and min_dim > 0 else np.nan
             except Exception:
-                p_rec = np.nan
+                p_rec, cramers_v = np.nan, np.nan
 
             test_rows.append({
                 "Dimension": "Taux de recommandation",
                 "Test": "Chi-square",
                 "Années comparées": ", ".join(sorted(rec_data["Year"].astype(str).unique())),
+                "N valide total": len(rec_data),
                 "p-value": p_rec,
+                "Taille d’effet": cramers_v,
                 "Résultat": "Différence significative" if pd.notna(p_rec) and p_rec < 0.05 else "Non significatif"
             })
 
     tests_df = pd.DataFrame(test_rows)
     tests_df["p-value"] = tests_df["p-value"].apply(lambda x: np.nan if pd.isna(x) else round(x, 4))
+    tests_df["Taille d’effet"] = tests_df["Taille d’effet"].apply(lambda x: np.nan if pd.isna(x) else round(x, 4))
 
     st.dataframe(tests_df, use_container_width=True, hide_index=True)
 
@@ -882,9 +1081,9 @@ def page_historical_comparison():
         summary_box(
             f"""
             <b>Lecture statistique :</b><br>
-            Les différences entre les années sont statistiquement significatives pour les dimensions suivantes :
-            <b>{sig_list}</b>. Ces résultats indiquent que l’évolution observée ne doit pas être lue uniquement
-            comme une variation descriptive, mais comme une différence statistiquement confirmée au seuil de 5%.
+            Les différences entre les années sont statistiquement significatives pour :
+            <b>{sig_list}</b>. Cela signifie que les écarts observés ne sont pas uniquement descriptifs
+            et peuvent être considérés comme statistiquement confirmés au seuil de 5%.
             """,
             color=USJ_GREEN,
             background="#F3FAF5"
@@ -901,32 +1100,62 @@ def page_historical_comparison():
         )
 
     # -------------------------------------------------
-    # Year-over-year differences
+    # Optional faculty heatmap when all faculties are shown
     # -------------------------------------------------
 
-    if len(years_available) >= 2:
-        st.subheader("Écarts entre la dernière année et l’année précédente")
+    if "Faculté_Institut_g" in df_filtered.columns and faculte == "Tous":
+        st.subheader("Comparaison par faculté et par année")
 
-        last_year = years_available[-1]
-        previous_year = years_available[-2]
+        faculty_metric = st.selectbox(
+            "Choisir l’indicateur à comparer par faculté",
+            ["Satisfaction globale", "Taux de recommandation"] + dimensions_for_heatmap,
+            key="faculty_metric_comparison"
+        )
 
-        diff_rows = []
-        for col in trend_df.columns:
-            if col in ["Année", "Nombre de répondants"]:
-                continue
+        if faculty_metric == "Taux de recommandation":
+            fac_rows = []
+            for (fac, y), sub in df_filtered.groupby(["Faculté_Institut_g", "Year"]):
+                fac_rows.append({
+                    "Faculté": fac,
+                    "Année": y,
+                    "Pourcentage": calculate_recommendation_rate(sub, q43),
+                    "N": len(sub)
+                })
+            fac_df = pd.DataFrame(fac_rows)
+        else:
+            metric_col = component_map.get(faculty_metric)
+            fac_df = (
+                df_filtered.groupby(["Faculté_Institut_g", "Year"])[metric_col]
+                .mean()
+                .reset_index()
+                .rename(columns={"Faculté_Institut_g": "Faculté", metric_col: "Moyenne"})
+            )
+            fac_df["Pourcentage"] = fac_df["Moyenne"].apply(pct_from_mean)
+            fac_df["N"] = df_filtered.groupby(["Faculté_Institut_g", "Year"]).size().values
 
-            val_last = trend_df.loc[trend_df["Année"] == last_year, col].values[0]
-            val_prev = trend_df.loc[trend_df["Année"] == previous_year, col].values[0]
+        fac_pivot = fac_df.pivot(index="Faculté", columns="Année", values="Pourcentage")
+        fac_pivot = fac_pivot.dropna(how="all")
 
-            diff_rows.append({
-                "Indicateur": col,
-                previous_year: round(val_prev, 1),
-                last_year: round(val_last, 1),
-                "Écart en points": round(val_last - val_prev, 1)
-            })
+        fig_fac = px.imshow(
+            fac_pivot,
+            text_auto=".1f",
+            aspect="auto",
+            color_continuous_scale=[USJ_RED, USJ_BLUE, USJ_GREEN],
+            title=f"{faculty_metric} par faculté et par année (%)"
+        )
 
-        diff_df = pd.DataFrame(diff_rows).sort_values("Écart en points", ascending=False)
-        st.dataframe(diff_df, use_container_width=True, hide_index=True)
+        fig_fac.update_layout(
+            height=max(450, 28 * len(fac_pivot)),
+            xaxis_title="Année",
+            yaxis_title="Faculté",
+            coloraxis_colorbar_title="%"
+        )
+
+        st.plotly_chart(fig_fac, use_container_width=True, config={"displayModeBar": False})
+
+        with st.expander("Voir le tableau détaillé par faculté"):
+            st.dataframe(fac_df.sort_values(["Faculté", "Année"]), use_container_width=True, hide_index=True)
+
 
 # =====================================================
 # Page 3
