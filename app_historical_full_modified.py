@@ -2242,97 +2242,437 @@ def html_escape(value):
     return html_lib.escape(str(value))
 
 
+
 def build_printable_report_html():
+    """Build a detailed, decision-oriented printable HTML report.
+
+    The report uses the active dashboard filters and combines:
+    - KPI results
+    - dimensional ranking
+    - historical evolution
+    - faculty benchmarking when a faculty is selected
+    - key improvement drivers from the Random Forest models
+    - statistical significance tests across years
+    - question-level strengths and priorities
+    - automatic operational recommendations
+    """
+
+    def fmt_pct2(value):
+        return "NA" if pd.isna(value) else f"{value:.2f}%"
+
+    def fmt_pts(value):
+        return "NA" if pd.isna(value) else f"{value:+.2f} pts"
+
+    def fmt_num(value, digits=2):
+        return "NA" if pd.isna(value) else f"{value:.{digits}f}"
+
+    def clean_text(value):
+        return html_escape(value)
+
+    def performance_class(value):
+        if pd.isna(value):
+            return "Non disponible", "#777777"
+        if value < 50:
+            return "Zone d’alerte", USJ_RED
+        if value <= 75:
+            return "Zone de consolidation", USJ_ORANGE
+        return "Zone de force", USJ_GREEN
+
+    def row_color(value):
+        if pd.isna(value):
+            return "#F3F4F6"
+        if value < 50:
+            return "#FDE2E1"
+        if value <= 75:
+            return "#FFF3D6"
+        return "#E5F4E7"
+
+    def gap_color(value):
+        if pd.isna(value):
+            return "#667085"
+        if value > 0:
+            return USJ_GREEN
+        if value < 0:
+            return USJ_RED
+        return "#667085"
+
+    def html_table(rows, headers, empty_message="Aucune donnée disponible."):
+        if not rows:
+            return f"<table><tbody><tr><td>{empty_message}</td></tr></tbody></table>"
+        head = "".join(f"<th>{clean_text(h)}</th>" for h in headers)
+        body = ""
+        for row in rows:
+            body += "<tr>" + "".join(str(row.get(h, "")) for h in headers) + "</tr>"
+        return f"<table><thead><tr>{head}</tr></thead><tbody>{body}</tbody></table>"
+
     report_data = df_filtered.copy()
     comparison_data = apply_current_filters_without_faculty(df_coded)
 
     faculty_label = faculte if faculte != "Tous" else "Ensemble de l’Université"
     period_label = year if year != "Tous" else "Toutes les années disponibles"
-    report_title = f"Rapport synthétique Exit Survey - {faculty_label}"
+    report_title = f"Rapport analytique Exit Survey - {faculty_label}"
 
     n_resp = len(report_data)
     sat = pct_from_mean(report_data["Score satisfaction globale"].mean()) if "Score satisfaction globale" in report_data.columns else np.nan
     rec = calculate_recommendation_rate(report_data, q43)
     exp = pct_from_mean(report_data["Score expérience globale USJ"].mean()) if "Score expérience globale USJ" in report_data.columns else np.nan
 
-    badge_text, badge_color = report_badge(sat)
+    badge_text, badge_color = performance_class(sat)
     dim_table = build_report_dimension_table(report_data)
 
     if not dim_table.empty:
+        dim_table = dim_table.copy().sort_values("Résultat", ascending=False)
+        top_dims = dim_table.head(3)
+        weak_dims = dim_table.tail(3).sort_values("Résultat", ascending=True)
         best = dim_table.iloc[0]
         weak = dim_table.iloc[-1]
-        dim_rows_html = "".join(
-            f"""
-            <tr>
-                <td>{html_escape(row['Dimension'])}</td>
-                <td style='text-align:right; font-weight:700;'>{row['Résultat']:.2f}%</td>
-            </tr>
-            """
-            for _, row in dim_table.iterrows()
-        )
     else:
+        top_dims = pd.DataFrame()
+        weak_dims = pd.DataFrame()
         best = {"Dimension": "Non disponible", "Résultat": np.nan}
         weak = {"Dimension": "Non disponible", "Résultat": np.nan}
-        dim_rows_html = "<tr><td colspan='2'>Aucune dimension disponible.</td></tr>"
 
-    benchmark_html = ""
-    if faculte != "Tous" and "Faculté_Institut_g" in comparison_data.columns:
-        usj_sat = pct_from_mean(comparison_data["Score satisfaction globale"].mean())
-        usj_rec = calculate_recommendation_rate(comparison_data, q43)
-        sat_gap = sat - usj_sat if pd.notna(sat) and pd.notna(usj_sat) else np.nan
-        rec_gap = rec - usj_rec if pd.notna(rec) and pd.notna(usj_rec) else np.nan
-        benchmark_html = f"""
-        <div class='report-card'>
-            <h3>Positionnement par rapport à l’ensemble USJ filtré</h3>
-            <p>
-                La satisfaction globale de la faculté est de <b>{safe_pct(sat)}</b>, contre <b>{safe_pct(usj_sat)}</b>
-                pour l’ensemble USJ avec les mêmes filtres hors faculté, soit un écart de
-                <b>{'NA' if pd.isna(sat_gap) else f'{sat_gap:+.2f} points'}</b>.
-                Le taux de recommandation est de <b>{safe_pct(rec)}</b>, contre <b>{safe_pct(usj_rec)}</b>,
-                soit un écart de <b>{'NA' if pd.isna(rec_gap) else f'{rec_gap:+.2f} points'}</b>.
-            </p>
-        </div>
-        """
-    else:
-        benchmark_html = """
-        <div class='report-card'>
-            <h3>Positionnement institutionnel</h3>
-            <p>
-                Le rapport présente ici une lecture globale de l’Université. Pour générer un rapport propre à une faculté,
-                sélectionnez une faculté dans le filtre <b>Faculté</b>, puis revenez à cette page.
-            </p>
-        </div>
-        """
+    generated_filters = f"Année : {year} | Genre : {genre} | Faculté : {faculte} | Niveau : {niveau}"
 
+    # -------------------------------------------------
+    # Dimensional ranking table
+    # -------------------------------------------------
+    dim_rows = []
+    for i, row in dim_table.iterrows():
+        status_text, status_color = performance_class(row["Résultat"])
+        dim_rows.append({
+            "Dimension": f"<td>{clean_text(row['Dimension'])}</td>",
+            "Résultat": f"<td style='text-align:right; background:{row_color(row['Résultat'])}; font-weight:800;'>{fmt_pct2(row['Résultat'])}</td>",
+            "Lecture": f"<td><span class='mini-badge' style='background:{status_color};'>{clean_text(status_text)}</span></td>",
+        })
+    dim_table_html = html_table(dim_rows, ["Dimension", "Résultat", "Lecture"])
+
+    # -------------------------------------------------
+    # Strengths and priorities tables
+    # -------------------------------------------------
+    strength_rows = []
+    for rank, (_, row) in enumerate(top_dims.iterrows(), start=1):
+        strength_rows.append({
+            "Rang": f"<td>{rank}</td>",
+            "Dimension": f"<td>{clean_text(row['Dimension'])}</td>",
+            "Résultat": f"<td style='text-align:right; font-weight:800; color:{USJ_GREEN};'>{fmt_pct2(row['Résultat'])}</td>",
+        })
+    strengths_html = html_table(strength_rows, ["Rang", "Dimension", "Résultat"])
+
+    priority_rows = []
+    for rank, (_, row) in enumerate(weak_dims.iterrows(), start=1):
+        priority_rows.append({
+            "Rang": f"<td>{rank}</td>",
+            "Dimension": f"<td>{clean_text(row['Dimension'])}</td>",
+            "Résultat": f"<td style='text-align:right; font-weight:800; color:{USJ_RED if row['Résultat'] < 75 else USJ_ORANGE};'>{fmt_pct2(row['Résultat'])}</td>",
+        })
+    priorities_html = html_table(priority_rows, ["Rang", "Dimension", "Résultat"])
+
+    # -------------------------------------------------
+    # Historical trend, using all available years in the filtered scope
+    # -------------------------------------------------
     trend_html = ""
+    trend_dimension_html = ""
     ys = build_year_summary(report_data, q43)
     if len(ys) >= 2 and "Satisfaction globale" in ys.columns:
+        ys = ys.sort_values("Année")
         first_year = ys["Année"].iloc[0]
         last_year = ys["Année"].iloc[-1]
         first_sat = ys["Satisfaction globale"].iloc[0]
         last_sat = ys["Satisfaction globale"].iloc[-1]
-        delta = last_sat - first_sat if pd.notna(first_sat) and pd.notna(last_sat) else np.nan
+        delta_sat = last_sat - first_sat if pd.notna(first_sat) and pd.notna(last_sat) else np.nan
+        first_rec = ys["Taux de recommandation"].iloc[0] if "Taux de recommandation" in ys.columns else np.nan
+        last_rec = ys["Taux de recommandation"].iloc[-1] if "Taux de recommandation" in ys.columns else np.nan
+        delta_rec = last_rec - first_rec if pd.notna(first_rec) and pd.notna(last_rec) else np.nan
+
         trend_html = f"""
         <div class='report-card'>
-            <h3>Évolution historique</h3>
+            <h3>Évolution historique globale</h3>
             <p>
-                Entre <b>{html_escape(first_year)}</b> et <b>{html_escape(last_year)}</b>, la satisfaction globale évolue de
-                <b>{safe_pct(first_sat)}</b> à <b>{safe_pct(last_sat)}</b>, soit
-                <b>{'NA' if pd.isna(delta) else f'{delta:+.2f} points'}</b>.
+                Entre <b>{clean_text(first_year)}</b> et <b>{clean_text(last_year)}</b>, la satisfaction globale évolue de
+                <b>{fmt_pct2(first_sat)}</b> à <b>{fmt_pct2(last_sat)}</b>, soit <b style='color:{gap_color(delta_sat)};'>{fmt_pts(delta_sat)}</b>.
+                Le taux de recommandation évolue de <b>{fmt_pct2(first_rec)}</b> à <b>{fmt_pct2(last_rec)}</b>, soit
+                <b style='color:{gap_color(delta_rec)};'>{fmt_pts(delta_rec)}</b>. Cette évolution permet de distinguer les progrès réels
+                des dimensions nécessitant une attention continue.
             </p>
         </div>
         """
 
-    action_text = ""
-    if not dim_table.empty:
-        action_text = f"""
-        <br><br>
-        La priorité d’amélioration immédiate concerne <b>{html_escape(weak['Dimension'])}</b>, qui présente le résultat le plus faible
-        (<b>{weak['Résultat']:.2f}%</b>). À l’inverse, <b>{html_escape(best['Dimension'])}</b> constitue un point fort à préserver
-        et à valoriser (<b>{best['Résultat']:.2f}%</b>).
+        comp_long = build_component_long(report_data)
+        if not comp_long.empty:
+            hp = comp_long.pivot_table(index="Dimension", columns="Année", values="Pourcentage", aggfunc="mean")
+            hp = hp.sort_index(axis=1)
+            if hp.shape[1] >= 2:
+                first_col = hp.columns[0]
+                last_col = hp.columns[-1]
+                diff = (hp[last_col] - hp[first_col]).dropna().sort_values(ascending=False)
+                dim_evo_rows = []
+                for dim, val in diff.items():
+                    dim_evo_rows.append({
+                        "Dimension": f"<td>{clean_text(dim)}</td>",
+                        f"{first_col}": f"<td style='text-align:right;'>{fmt_pct2(hp.loc[dim, first_col])}</td>",
+                        f"{last_col}": f"<td style='text-align:right;'>{fmt_pct2(hp.loc[dim, last_col])}</td>",
+                        "Évolution": f"<td style='text-align:right; font-weight:800; color:{gap_color(val)};'>{fmt_pts(val)}</td>",
+                    })
+                trend_dimension_html = f"""
+                <div class='report-card'>
+                    <h3>Évolution par dimension</h3>
+                    {html_table(dim_evo_rows, ["Dimension", str(first_col), str(last_col), "Évolution"])}
+                </div>
+                """
+
+    # -------------------------------------------------
+    # Benchmark against filtered USJ when a faculty is selected
+    # -------------------------------------------------
+    benchmark_html = ""
+    if faculte != "Tous" and "Faculté_Institut_g" in comparison_data.columns and len(comparison_data) > 0:
+        usj_sat = pct_from_mean(comparison_data["Score satisfaction globale"].mean()) if "Score satisfaction globale" in comparison_data.columns else np.nan
+        usj_rec = calculate_recommendation_rate(comparison_data, q43)
+        usj_exp = pct_from_mean(comparison_data["Score expérience globale USJ"].mean()) if "Score expérience globale USJ" in comparison_data.columns else np.nan
+        sat_gap = sat - usj_sat if pd.notna(sat) and pd.notna(usj_sat) else np.nan
+        rec_gap = rec - usj_rec if pd.notna(rec) and pd.notna(usj_rec) else np.nan
+        exp_gap = exp - usj_exp if pd.notna(exp) and pd.notna(usj_exp) else np.nan
+
+        bench_rows = []
+        benchmark_scores = {
+            "Satisfaction globale": (sat, usj_sat, sat_gap),
+            "Recommandation": (rec, usj_rec, rec_gap),
+            "Expérience globale": (exp, usj_exp, exp_gap),
+        }
+        for label, values in benchmark_scores.items():
+            fac_val, usj_val, gap = values
+            bench_rows.append({
+                "Indicateur": f"<td>{clean_text(label)}</td>",
+                "Faculté": f"<td style='text-align:right; font-weight:800;'>{fmt_pct2(fac_val)}</td>",
+                "USJ filtré": f"<td style='text-align:right;'>{fmt_pct2(usj_val)}</td>",
+                "Écart": f"<td style='text-align:right; font-weight:800; color:{gap_color(gap)};'>{fmt_pts(gap)}</td>",
+            })
+
+        # Dimension-level benchmark
+        fac_dims = build_report_dimension_table(report_data).rename(columns={"Résultat": "Faculté"})
+        usj_dims = build_report_dimension_table(comparison_data).rename(columns={"Résultat": "USJ"})
+        merged_bench = fac_dims.merge(usj_dims, on="Dimension", how="inner")
+        merged_bench["Écart"] = merged_bench["Faculté"] - merged_bench["USJ"]
+        merged_bench = merged_bench.sort_values("Écart", ascending=False)
+
+        bench_dim_rows = []
+        for _, row in merged_bench.iterrows():
+            bench_dim_rows.append({
+                "Dimension": f"<td>{clean_text(row['Dimension'])}</td>",
+                "Faculté": f"<td style='text-align:right; font-weight:800;'>{fmt_pct2(row['Faculté'])}</td>",
+                "USJ filtré": f"<td style='text-align:right;'>{fmt_pct2(row['USJ'])}</td>",
+                "Écart": f"<td style='text-align:right; font-weight:800; color:{gap_color(row['Écart'])};'>{fmt_pts(row['Écart'])}</td>",
+            })
+
+        best_gap_text = ""
+        weak_gap_text = ""
+        if not merged_bench.empty:
+            best_gap = merged_bench.iloc[0]
+            weak_gap = merged_bench.iloc[-1]
+            best_gap_text = f"Le positionnement le plus favorable concerne <b>{clean_text(best_gap['Dimension'])}</b> ({fmt_pts(best_gap['Écart'])})."
+            weak_gap_text = f"Le principal retrait relatif concerne <b>{clean_text(weak_gap['Dimension'])}</b> ({fmt_pts(weak_gap['Écart'])})."
+
+        benchmark_html = f"""
+        <div class='report-card'>
+            <h3>Positionnement par rapport à l’ensemble USJ filtré</h3>
+            <p>
+                La comparaison ci-dessous situe <b>{clean_text(faculty_label)}</b> par rapport à l’ensemble USJ, en conservant les mêmes filtres
+                d’année, de genre et de niveau. {best_gap_text} {weak_gap_text}
+            </p>
+            {html_table(bench_rows, ["Indicateur", "Faculté", "USJ filtré", "Écart"])}
+            <div style='height:14px;'></div>
+            <h4>Écarts par dimension</h4>
+            {html_table(bench_dim_rows, ["Dimension", "Faculté", "USJ filtré", "Écart"])}
+        </div>
+        """
+    else:
+        benchmark_html = f"""
+        <div class='report-card'>
+            <h3>Positionnement institutionnel</h3>
+            <p>
+                Le rapport présente une lecture globale de l’Université. Pour générer un rapport propre à une faculté, sélectionnez une faculté
+                dans le filtre <b>Faculté</b>, puis revenez à cette page. Les tableaux de benchmarking s’activeront automatiquement.
+            </p>
+        </div>
         """
 
-    generated_filters = f"Année : {year} | Genre : {genre} | Faculté : {faculte} | Niveau : {niveau}"
+    # -------------------------------------------------
+    # Key improvement drivers, using the same RF models as the dashboard
+    # -------------------------------------------------
+    feature_columns = [
+        "Score enseignement et apprentissage",
+        "Score accompagnement et encadrement",
+        "Score développement des compétences",
+        "Score services USJ",
+        "Score vie étudiante et activités",
+        "Score infrastructures et équipements",
+        "Score frais / qualité enseignement",
+        "Score frais / autres universités",
+    ]
+    feature_columns = [c for c in feature_columns if c in report_data.columns]
+    display_names = {col: clean_component_name(col) for col in feature_columns}
+
+    importance_html = ""
+    model_base = report_data
+    sat_model = model_base[feature_columns + ["Score satisfaction globale"]].dropna() if feature_columns else pd.DataFrame()
+    if len(sat_model) < 30:
+        # Use the broader filtered comparison sample as fallback so the report still gives decision support.
+        sat_model = comparison_data[feature_columns + ["Score satisfaction globale"]].dropna() if feature_columns and "Score satisfaction globale" in comparison_data.columns else pd.DataFrame()
+
+    if len(sat_model) >= 30 and feature_columns:
+        try:
+            importances = train_satisfaction_importance(sat_model, feature_columns)
+            imp_df = pd.DataFrame({
+                "Dimension": [display_names[c] for c in feature_columns],
+                "Importance": importances,
+            })
+            total_imp = imp_df["Importance"].sum()
+            imp_df["Importance (%)"] = imp_df["Importance"] / total_imp * 100 if total_imp > 0 else np.nan
+            imp_df = imp_df.sort_values("Importance (%)", ascending=False).head(5)
+            imp_rows = []
+            for rank, (_, row) in enumerate(imp_df.iterrows(), start=1):
+                imp_rows.append({
+                    "Rang": f"<td>{rank}</td>",
+                    "Levier": f"<td>{clean_text(row['Dimension'])}</td>",
+                    "Importance": f"<td style='text-align:right; font-weight:800; color:{USJ_BLUE};'>{fmt_pct2(row['Importance (%)'])}</td>",
+                })
+            top_driver = imp_df.iloc[0]
+            importance_html = f"""
+            <div class='report-card driver-card'>
+                <h3>Facteurs clés d’amélioration de la satisfaction globale</h3>
+                <p>
+                    Le modèle explicatif met en évidence les dimensions qui contribuent le plus à la satisfaction globale. Le levier principal est
+                    <b>{clean_text(top_driver['Dimension'])}</b> avec une importance relative de <b>{fmt_pct2(top_driver['Importance (%)'])}</b>.
+                    Ces résultats orientent les priorités d’action vers les dimensions les plus influentes, et non uniquement vers les scores les plus faibles.
+                </p>
+                {html_table(imp_rows, ["Rang", "Levier", "Importance"])}
+            </div>
+            """
+        except Exception:
+            importance_html = """
+            <div class='report-card'>
+                <h3>Facteurs clés d’amélioration</h3>
+                <p>Les facteurs clés n’ont pas pu être recalculés pour les filtres actuels. Les données filtrées sont probablement insuffisantes.</p>
+            </div>
+            """
+    else:
+        importance_html = """
+        <div class='report-card'>
+            <h3>Facteurs clés d’amélioration</h3>
+            <p>
+                L’échantillon filtré ne contient pas assez de réponses complètes pour recalculer un modèle explicatif fiable. Pour interpréter les leviers,
+                il est recommandé de consulter la page <b>Facteurs clés d’amélioration</b> avec un périmètre plus large.
+            </p>
+        </div>
+        """
+
+    # -------------------------------------------------
+    # Statistical tests across years
+    # -------------------------------------------------
+    stats_rows = []
+    if report_data["Year"].nunique() >= 2 and stats is not None:
+        for col in SCORE_COLUMNS:
+            if col in report_data.columns:
+                p_value, test_name = anova_or_kruskal(report_data, col)
+                stats_rows.append({
+                    "Indicateur": f"<td>{clean_text(SCORE_LABELS.get(col, col))}</td>",
+                    "p-value": f"<td style='text-align:right; font-weight:800;'>{format_p_value(p_value)}</td>",
+                    "Interprétation": f"<td>{clean_text(p_interpretation(p_value))}</td>",
+                })
+        p_rec = chi_square_recommendation(report_data, q43)
+        stats_rows.append({
+            "Indicateur": "<td>Taux de recommandation</td>",
+            "p-value": f"<td style='text-align:right; font-weight:800;'>{format_p_value(p_rec)}</td>",
+            "Interprétation": f"<td>{clean_text(p_interpretation(p_rec))}</td>",
+        })
+    stats_html = ""
+    if stats_rows:
+        significant_count = sum(1 for row in stats_rows if "non significative" not in str(row["Interprétation"]).lower() and "Non calculable" not in str(row["Interprétation"]))
+        stats_html = f"""
+        <div class='report-card'>
+            <h3>Résultats statistiques historiques</h3>
+            <p>
+                Les tests ci-dessous indiquent si les écarts observés entre années sont statistiquement significatifs. Ils permettent de distinguer
+                les fluctuations descriptives des différences plus solides. Nombre d’indicateurs significatifs : <b>{significant_count}</b>.
+            </p>
+            {html_table(stats_rows, ["Indicateur", "p-value", "Interprétation"])}
+        </div>
+        """
+
+    # -------------------------------------------------
+    # Question-level diagnostics
+    # -------------------------------------------------
+    question_rows = []
+    for section_name, item_list in components.items():
+        valid_items = [item for item in item_list if item in report_data.columns]
+        if not valid_items:
+            continue
+        qsum = section_question_summary(report_data, valid_items)
+        if qsum.empty:
+            continue
+        q_best = qsum.iloc[0]
+        q_weak = qsum.iloc[-1]
+        question_rows.append({
+            "Section": f"<td>{clean_text(section_name)}</td>",
+            "Point fort question": f"<td>{clean_text(score_question_label(q_best['Question']))}<br><b style='color:{USJ_GREEN};'>{fmt_pct2(q_best['Résultat (%)'])}</b></td>",
+            "Point à améliorer": f"<td>{clean_text(score_question_label(q_weak['Question']))}<br><b style='color:{USJ_RED if q_weak['Résultat (%)'] < 75 else USJ_ORANGE};'>{fmt_pct2(q_weak['Résultat (%)'])}</b></td>",
+        })
+    question_html = f"""
+    <div class='report-card'>
+        <h3>Diagnostic détaillé par section et par question</h3>
+        <p>
+            Ce tableau descend au niveau des questions afin d’identifier les aspects concrets qui soutiennent les résultats ou qui expliquent les faiblesses.
+            Il est particulièrement utile pour transformer les constats statistiques en actions opérationnelles.
+        </p>
+        {html_table(question_rows, ["Section", "Point fort question", "Point à améliorer"])}
+    </div>
+    """
+
+    # -------------------------------------------------
+    # Recommendations
+    # -------------------------------------------------
+    rec_items = []
+    if not weak_dims.empty:
+        for _, row in weak_dims.iterrows():
+            rec_items.append(f"Prioriser un plan d’action ciblé sur <b>{clean_text(row['Dimension'])}</b>, dont le résultat est de <b>{fmt_pct2(row['Résultat'])}</b>.")
+    if not top_dims.empty:
+        for _, row in top_dims.head(2).iterrows():
+            rec_items.append(f"Préserver et valoriser <b>{clean_text(row['Dimension'])}</b>, qui constitue un acquis solide à <b>{fmt_pct2(row['Résultat'])}</b>.")
+    if importance_html and len(sat_model) >= 30 and feature_columns:
+        try:
+            main_driver = top_driver["Dimension"]
+            rec_items.append(f"Aligner les actions d’amélioration avec le levier explicatif principal : <b>{clean_text(main_driver)}</b>.")
+        except Exception:
+            pass
+    if faculte != "Tous":
+        rec_items.append("Comparer les résultats avec la moyenne USJ filtrée afin de distinguer les enjeux propres à la faculté des enjeux institutionnels transversaux.")
+
+    recommendations_html = "".join(f"<li>{item}</li>" for item in rec_items[:7])
+    decision_html = f"""
+    <div class='report-card decision-card'>
+        <h3>Recommandations décisionnelles</h3>
+        <ul>{recommendations_html}</ul>
+    </div>
+    """
+
+    # -------------------------------------------------
+    # Executive narrative
+    # -------------------------------------------------
+    if not dim_table.empty:
+        action_text = (
+            f"La priorité d’amélioration immédiate concerne <b>{clean_text(weak['Dimension'])}</b>, qui présente le résultat le plus faible "
+            f"(<b>{fmt_pct2(weak['Résultat'])}</b>). À l’inverse, <b>{clean_text(best['Dimension'])}</b> constitue le principal point fort "
+            f"à préserver et à valoriser (<b>{fmt_pct2(best['Résultat'])}</b>)."
+        )
+    else:
+        action_text = "Les dimensions ne sont pas disponibles pour les filtres sélectionnés."
+
+    executive_text = f"""
+    Ce rapport présente une lecture décisionnelle des résultats de l’Exit Survey pour <b>{clean_text(faculty_label)}</b>.
+    La satisfaction globale atteint <b>{fmt_pct2(sat)}</b>, le taux de recommandation atteint <b>{fmt_pct2(rec)}</b> et l’expérience globale est évaluée à
+    <b>{fmt_pct2(exp)}</b>. {action_text} Les résultats doivent être interprétés conjointement avec les tendances historiques, les écarts par rapport à l’ensemble USJ
+    et les facteurs clés d’amélioration, afin de prioriser les actions les plus susceptibles d’améliorer l’expérience étudiante.
+    """
 
     return f"""
     <html>
@@ -2347,9 +2687,9 @@ def build_printable_report_html():
             padding: 0;
         }}
         .report-container {{
-            max-width: 1050px;
+            max-width: 1120px;
             margin: 0 auto;
-            padding: 28px 34px;
+            padding: 30px 36px;
             border: 1px solid #DDE5F0;
             border-radius: 22px;
             background: linear-gradient(180deg, #FFFFFF 0%, #F7F9FC 100%);
@@ -2360,15 +2700,16 @@ def build_printable_report_html():
             margin-bottom: 20px;
         }}
         .report-title {{
-            font-size: 31px;
+            font-size: 32px;
             font-weight: 900;
             color: {USJ_BLUE};
             margin: 0;
+            line-height: 1.15;
         }}
         .report-subtitle {{
             font-size: 16px;
             color: #5F6B7A;
-            margin-top: 7px;
+            margin-top: 8px;
         }}
         .badge {{
             display: inline-block;
@@ -2378,7 +2719,7 @@ def build_printable_report_html():
             border-radius: 999px;
             font-size: 14px;
             font-weight: 800;
-            margin-top: 10px;
+            margin-top: 12px;
         }}
         .kpi-grid {{
             display: grid;
@@ -2405,6 +2746,11 @@ def build_printable_report_html():
             color: {USJ_BLUE};
             margin-top: 6px;
         }}
+        .two-col {{
+            display:grid;
+            grid-template-columns: 1fr 1fr;
+            gap:16px;
+        }}
         .report-card {{
             background: #ffffff;
             border: 1px solid #DDE5F0;
@@ -2419,16 +2765,25 @@ def build_printable_report_html():
             margin-bottom: 8px;
             font-size: 20px;
         }}
+        .report-card h4 {{
+            color: {USJ_BLUE};
+            margin: 10px 0 8px 0;
+            font-size: 17px;
+        }}
         .report-card p {{
             font-size: 15.5px;
             line-height: 1.65;
             text-align: justify;
-            margin: 0;
+            margin: 0 0 12px 0;
         }}
+        .driver-card {{ border-left: 7px solid {USJ_GOLD}; }}
+        .decision-card {{ border-left: 7px solid {USJ_GREEN}; background: #F8FCF8; }}
+        .decision-card li {{ margin-bottom: 8px; line-height: 1.5; }}
         table {{
             width: 100%;
             border-collapse: collapse;
-            font-size: 14.5px;
+            font-size: 14.2px;
+            margin-top: 10px;
         }}
         th {{
             background: {USJ_BLUE};
@@ -2439,6 +2794,15 @@ def build_printable_report_html():
         td {{
             border-bottom: 1px solid #E6ECF3;
             padding: 9px 10px;
+            vertical-align: top;
+        }}
+        .mini-badge {{
+            display:inline-block;
+            color:#fff;
+            padding:4px 9px;
+            border-radius:999px;
+            font-size:12px;
+            font-weight:800;
         }}
         .print-note {{
             margin-top: 16px;
@@ -2449,6 +2813,7 @@ def build_printable_report_html():
             body {{ margin: 0; }}
             .no-print {{ display: none !important; }}
             .report-container {{ border: none; box-shadow: none; padding: 10px; }}
+            .report-card {{ page-break-inside: avoid; }}
         }}
     </style>
     </head>
@@ -2458,45 +2823,57 @@ def build_printable_report_html():
                 <button onclick='window.print()' style='background:#001B75;color:white;border:0;border-radius:12px;padding:10px 16px;font-family:Candara, Arial, sans-serif;font-size:14px;font-weight:800;cursor:pointer;'>Imprimer ce rapport</button>
             </div>
             <div class='report-header'>
-                <h1 class='report-title'>{html_escape(report_title)}</h1>
-                <div class='report-subtitle'>Période : {html_escape(period_label)} | {html_escape(generated_filters)}</div>
-                <div class='badge'>{html_escape(badge_text)}</div>
+                <h1 class='report-title'>{clean_text(report_title)}</h1>
+                <div class='report-subtitle'>Période : {clean_text(period_label)} | {clean_text(generated_filters)}</div>
+                <div class='badge'>{clean_text(badge_text)}</div>
             </div>
 
             <div class='kpi-grid'>
                 <div class='kpi-box'><div class='kpi-label'>Répondants</div><div class='kpi-value'>{n_resp}</div></div>
-                <div class='kpi-box'><div class='kpi-label'>Satisfaction globale</div><div class='kpi-value'>{safe_pct(sat)}</div></div>
-                <div class='kpi-box'><div class='kpi-label'>Recommandation</div><div class='kpi-value'>{safe_pct(rec)}</div></div>
-                <div class='kpi-box'><div class='kpi-label'>Expérience globale</div><div class='kpi-value'>{safe_pct(exp)}</div></div>
+                <div class='kpi-box'><div class='kpi-label'>Satisfaction globale</div><div class='kpi-value'>{fmt_pct2(sat)}</div></div>
+                <div class='kpi-box'><div class='kpi-label'>Recommandation</div><div class='kpi-value'>{fmt_pct2(rec)}</div></div>
+                <div class='kpi-box'><div class='kpi-label'>Expérience globale</div><div class='kpi-value'>{fmt_pct2(exp)}</div></div>
             </div>
 
             <div class='report-card'>
                 <h3>Synthèse exécutive</h3>
-                <p>
-                    Ce rapport présente une lecture synthétique des résultats de l’Exit Survey pour <b>{html_escape(faculty_label)}</b>.
-                    La satisfaction globale atteint <b>{safe_pct(sat)}</b> et le taux de recommandation atteint <b>{safe_pct(rec)}</b>.
-                    {action_text}
-                </p>
+                <p>{executive_text}</p>
+            </div>
+
+            <div class='two-col'>
+                <div class='report-card'>
+                    <h3>Forces principales</h3>
+                    <p>Ces dimensions constituent les acquis les plus solides du périmètre analysé.</p>
+                    {strengths_html}
+                </div>
+                <div class='report-card'>
+                    <h3>Priorités d’amélioration</h3>
+                    <p>Ces dimensions doivent être examinées en priorité pour orienter les actions d’amélioration.</p>
+                    {priorities_html}
+                </div>
             </div>
 
             {benchmark_html}
             {trend_html}
+            {trend_dimension_html}
+            {importance_html}
+            {stats_html}
+            {question_html}
 
             <div class='report-card'>
-                <h3>Classement des dimensions</h3>
-                <table>
-                    <thead><tr><th>Dimension</th><th style='text-align:right;'>Résultat</th></tr></thead>
-                    <tbody>{dim_rows_html}</tbody>
-                </table>
+                <h3>Classement complet des dimensions</h3>
+                {dim_table_html}
             </div>
 
+            {decision_html}
+
             <div class='report-card'>
-                <h3>Message de lecture</h3>
+                <h3>Conclusion opérationnelle</h3>
                 <p>
-                    Les résultats doivent être lus comme un outil d’aide à la décision. Les dimensions les plus élevées indiquent
-                    des acquis à maintenir, tandis que les dimensions les plus faibles signalent des domaines où des actions ciblées
-                    peuvent améliorer l’expérience étudiante. La comparaison avec les filtres sélectionnés permet d’adapter la lecture
-                    à chaque faculté ou population analysée.
+                    Ce rapport vise à soutenir une prise de décision fondée sur les données. Les résultats les plus faibles identifient les domaines où une intervention
+                    ciblée peut produire un gain visible, tandis que les facteurs clés d’amélioration indiquent les leviers les plus influents sur la satisfaction globale.
+                    La combinaison des niveaux de satisfaction, des écarts historiques, du positionnement par rapport à l’USJ et du diagnostic par question permet de
+                    construire un plan d’action priorisé, mesurable et adapté au périmètre analysé.
                 </p>
             </div>
 
@@ -2505,7 +2882,6 @@ def build_printable_report_html():
     </body>
     </html>
     """
-
 
 def page_printable_report():
     section_header(
