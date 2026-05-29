@@ -860,10 +860,11 @@ def response_distribution(original_data, coded_data, items):
                 "Year": coded_data["Year"]
             })
             temp = temp.dropna(subset=["Réponse"])
-            for (year, q, resp), g in temp.groupby(["Year", "Question", "Réponse"]):
+            for (year, q, q_full, resp), g in temp.groupby(["Year", "Question", "Question complète", "Réponse"]):
                 rows.append({
                     "Année": year,
                     "Question": q,
+                    "Question complète": q_full,
                     "Réponse": resp,
                     "N": len(g)
                 })
@@ -1276,20 +1277,39 @@ def page_historical_comparison():
             diff_df["Évolution"] = diff_df[last_year] - diff_df[first_year]
             diff_plot = diff_df["Évolution"].reset_index().sort_values("Évolution")
 
-            fig_diff = px.bar(
-                diff_plot,
-                x="Évolution",
-                y="Dimension",
-                orientation="h",
-                text="Évolution",
-                color="Évolution",
-                color_continuous_scale=PLOTLY_DIVERGING,
-                title=f"Évolution des dimensions entre {first_year} et {last_year}"
+            diff_plot["Libellé"] = diff_plot["Évolution"].apply(lambda x: f"{x:+.2f} pts")
+            diff_plot["Sens"] = np.where(diff_plot["Évolution"] >= 0, "Progression", "Baisse")
+
+            fig_diff = go.Figure()
+            for sens, color in [("Baisse", USJ_RED), ("Progression", USJ_GREEN)]:
+                sub = diff_plot[diff_plot["Sens"] == sens]
+                if not sub.empty:
+                    fig_diff.add_trace(
+                        go.Bar(
+                            x=sub["Évolution"],
+                            y=sub["Dimension"],
+                            orientation="h",
+                            name=sens,
+                            marker=dict(color=color, line=dict(color="white", width=1.2)),
+                            text=sub["Libellé"],
+                            textposition="outside",
+                            cliponaxis=False,
+                            hovertemplate="<b>%{y}</b><br>Évolution: %{x:+.2f} pts<extra></extra>",
+                        )
+                    )
+
+            max_abs = max(1, float(np.nanmax(np.abs(diff_plot["Évolution"]))))
+            fig_diff.add_vline(x=0, line_width=1.5, line_color="#8A94A6")
+            fig_diff.update_layout(
+                title=f"Évolution des dimensions entre {first_year} et {last_year}",
+                xaxis_title="Évolution en points de pourcentage",
+                yaxis_title="",
+                xaxis=dict(range=[-max_abs - 1.2, max_abs + 1.2], zeroline=False),
+                bargap=0.28,
+                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
             )
-            fig_diff.update_traces(texttemplate="%{text:+.2f} pts", textposition="outside", cliponaxis=False)
-            fig_diff.update_layout(xaxis_title="Évolution en points de pourcentage", yaxis_title="")
-            theme_layout(fig_diff, height=520, showlegend=False)
-            st.plotly_chart(fig_diff, use_container_width=True, config={"displayModeBar": False})
+            theme_layout(fig_diff, height=540, showlegend=True)
+            st.plotly_chart(fig_diff, use_container_width=True, config={"displayModeBar": True})
 
             best_gain = diff_plot.sort_values("Évolution", ascending=False).iloc[0]
             largest_decline = diff_plot.sort_values("Évolution", ascending=True).iloc[0]
@@ -1328,7 +1348,26 @@ def page_historical_comparison():
     })
 
     stat_df = pd.DataFrame(stat_rows)
-    st.dataframe(stat_df, use_container_width=True, hide_index=True)
+    stat_df["p-value"] = stat_df["p-value"].apply(lambda x: "" if pd.isna(x) else f"{float(x):.3f}")
+
+    def style_pvalue_table(row):
+        interpretation = str(row.get("Interprétation", ""))
+        if "hautement" in interpretation:
+            color = USJ_GREEN
+            bg = "#E8F5E9"
+        elif ("très" in interpretation) or ("significative" in interpretation and "non" not in interpretation):
+            color = USJ_BLUE
+            bg = "#EAF2FF"
+        else:
+            color = "#5F6B7A"
+            bg = "#F2F4F7"
+        return ["", "", f"background-color:{bg}; color:{color}; font-weight:700;"]
+
+    st.dataframe(
+        stat_df.style.apply(style_pvalue_table, axis=1),
+        use_container_width=True,
+        hide_index=True
+    )
 
     # Table details
     display_table = year_summary_filtered.copy()
@@ -1633,25 +1672,72 @@ def page_descriptive_sections():
     # Evolution by year
     trend_q = section_trend(df_filtered, items)
     if not trend_q.empty and trend_q["Année"].nunique() > 1:
-        fig_q_trend = px.line(
-            trend_q,
-            x="Année",
-            y="Résultat (%)",
-            color="Question",
-            markers=True,
-            text="Résultat (%)",
-            color_discrete_sequence=PLOTLY_SEQ,
-            hover_data={"Question complète": True}
+        all_questions = list(dict.fromkeys(trend_q["Question complète"].tolist()))
+        default_questions = all_questions[: min(4, len(all_questions))]
+        selected_questions = st.multiselect(
+            "Questions à afficher dans le graphique d’évolution",
+            options=all_questions,
+            default=default_questions,
+            help="Sélectionnez quelques questions pour garder un graphique lisible et interactif."
         )
-        fig_q_trend.update_traces(texttemplate="%{text:.1f}%", textposition="top center", mode="lines+markers+text")
-        fig_q_trend.update_layout(
-            title=f"Évolution des questions – {selected_section}",
-            xaxis_title="Année",
-            yaxis_title="Résultat (%)",
-            legend_title="Question"
-        )
-        theme_layout(fig_q_trend, height=560)
-        st.plotly_chart(fig_q_trend, use_container_width=True, config={"displayModeBar": False})
+
+        trend_selected = trend_q[trend_q["Question complète"].isin(selected_questions)].copy()
+        if trend_selected.empty:
+            st.info("Sélectionnez au moins une question pour afficher l’évolution.")
+        else:
+            trend_selected["Libellé valeur"] = trend_selected["Résultat (%)"].apply(lambda x: "" if pd.isna(x) else f"{x:.2f}%")
+            fig_q_trend = px.line(
+                trend_selected,
+                x="Année",
+                y="Résultat (%)",
+                color="Question complète",
+                markers=True,
+                text="Libellé valeur",
+                color_discrete_sequence=PLOTLY_SEQ,
+                hover_data={"Question": False, "Question complète": True, "Résultat (%)": ":.2f"}
+            )
+            fig_q_trend.update_traces(
+                textposition="top center",
+                mode="lines+markers+text",
+                line=dict(width=3),
+                marker=dict(size=9, line=dict(width=1, color="white")),
+                hovertemplate="<b>%{fullData.name}</b><br>Année: %{x}<br>Résultat: %{y:.2f}%<extra></extra>"
+            )
+            y_min = max(0, float(trend_selected["Résultat (%)"].min()) - 5)
+            y_max = min(100, float(trend_selected["Résultat (%)"].max()) + 5)
+            fig_q_trend.update_layout(
+                title=f"Évolution des questions – {selected_section}",
+                xaxis_title="Année",
+                yaxis_title="Résultat (%)",
+                legend_title="Question",
+                hovermode="x unified"
+            )
+            fig_q_trend.update_yaxes(range=[y_min, y_max])
+            theme_layout(fig_q_trend, height=650, showlegend=True)
+            fig_q_trend.update_layout(
+                legend=dict(orientation="h", yanchor="top", y=-0.25, xanchor="left", x=0, font=dict(size=11)),
+                margin=dict(l=40, r=30, t=80, b=170),
+                hovermode="x unified"
+            )
+            st.plotly_chart(fig_q_trend, use_container_width=True, config={"displayModeBar": True})
+
+            trend_change = trend_selected.sort_values("Année").groupby("Question complète").agg(
+                Début=("Résultat (%)", "first"),
+                Fin=("Résultat (%)", "last")
+            ).reset_index()
+            trend_change["Évolution"] = trend_change["Fin"] - trend_change["Début"]
+            best_trend = trend_change.sort_values("Évolution", ascending=False).iloc[0]
+            summary_box(
+                f"""
+                <span style=\"font-size:20px; font-weight:800; color:{USJ_BLUE};\">Lecture de l’évolution des questions</span><br>
+                Parmi les questions affichées, la progression la plus favorable concerne
+                <b>{best_trend["Question complète"]}</b>, avec une variation de
+                <b>{best_trend["Évolution"]:+.2f} points</b> entre la première et la dernière année visibles.
+                Le sélecteur permet de comparer uniquement les questions pertinentes et d’éviter une légende trop chargée.
+                """,
+                color=USJ_BLUE,
+                background="#F7F9FC"
+            )
 
     # Distribution
     dist = response_distribution(df_original.loc[df_filtered.index], df_filtered, items)
@@ -1673,7 +1759,7 @@ def page_descriptive_sections():
             color_discrete_map=RESPONSE_COLORS,
             hover_data={"Question complète": True, "N": True}
         )
-        fig_dist.update_traces(texttemplate="%{text:.1f}%", textposition="inside")
+        fig_dist.update_traces(texttemplate="%{text:.2f}%", textposition="inside", hovertemplate="Réponse: %{fullData.name}<br>Année: %{x}<br>Pourcentage: %{y:.2f}%<extra></extra>")
         fig_dist.update_layout(
             title=f"Distribution des réponses – {selected_question_short}",
             xaxis_title="Année",
