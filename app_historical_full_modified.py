@@ -1000,6 +1000,7 @@ page = st.radio(
         "Comparaison historique",
         "Facteurs clés d’amélioration",
         "Résultats descriptifs par section",
+        "Statistiques inférentielles",
         "Méthodologie des composantes"
     ],
     horizontal=True
@@ -1827,8 +1828,363 @@ def page_descriptive_sections():
         )
 
 
+
 # =====================================================
-# Page 5 - Methodology
+# Page 5 - Inferential statistics by demographic variables
+# =====================================================
+
+def clean_question_name(question):
+    """Return the full question wording without the leading code."""
+    q = str(question).strip()
+    if "-" in q:
+        return q.split("-", 1)[1].strip()
+    return q
+
+
+def wrap_plot_label(text, width=46):
+    text = str(text)
+    return "<br>".join(textwrap.wrap(text, width=width))
+
+
+def format_p_value(p):
+    if pd.isna(p):
+        return "NA"
+    return f"{p:.3f}"
+
+
+def effect_size_label(value, test_name):
+    if pd.isna(value):
+        return "NA"
+    if test_name == "Welch t-test":
+        return f"d = {value:.2f}"
+    return f"η² = {value:.2f}"
+
+
+def inferential_test(data, group_col, value_col):
+    temp = data[[group_col, value_col]].copy()
+    temp[group_col] = temp[group_col].astype(str).str.strip()
+    temp = temp.replace({"nan": np.nan, "None": np.nan, "": np.nan})
+    temp[value_col] = pd.to_numeric(temp[value_col], errors="coerce")
+    temp = temp.dropna(subset=[group_col, value_col])
+
+    group_values = [g[value_col].values for _, g in temp.groupby(group_col) if g[value_col].notna().sum() >= 2]
+    group_names = [name for name, g in temp.groupby(group_col) if g[value_col].notna().sum() >= 2]
+
+    if len(group_values) < 2 or stats is None:
+        return {
+            "Test": "Non calculable",
+            "p-value": np.nan,
+            "Effet": np.nan,
+            "Groupes valides": len(group_values),
+            "N valide": len(temp),
+        }
+
+    try:
+        if len(group_values) == 2:
+            _, p = stats.ttest_ind(group_values[0], group_values[1], equal_var=False, nan_policy="omit")
+            n1, n2 = len(group_values[0]), len(group_values[1])
+            s1, s2 = np.nanstd(group_values[0], ddof=1), np.nanstd(group_values[1], ddof=1)
+            pooled_sd = np.sqrt(((n1 - 1) * s1**2 + (n2 - 1) * s2**2) / max(n1 + n2 - 2, 1))
+            effect = (np.nanmean(group_values[0]) - np.nanmean(group_values[1])) / pooled_sd if pooled_sd > 0 else np.nan
+            test_name = "Welch t-test"
+        else:
+            _, p = stats.f_oneway(*group_values)
+            grand_mean = temp[value_col].mean()
+            ss_between = sum(len(vals) * (np.nanmean(vals) - grand_mean) ** 2 for vals in group_values)
+            ss_total = sum((temp[value_col] - grand_mean) ** 2)
+            effect = ss_between / ss_total if ss_total > 0 else np.nan
+            test_name = "ANOVA"
+    except Exception:
+        p = np.nan
+        effect = np.nan
+        test_name = "Non calculable"
+
+    return {
+        "Test": test_name,
+        "p-value": p,
+        "Effet": effect,
+        "Groupes valides": len(group_values),
+        "N valide": len(temp),
+    }
+
+
+def significance_badge(p):
+    if pd.isna(p):
+        return "Non calculable"
+    if p < 0.001:
+        return "Différence hautement significative"
+    if p < 0.01:
+        return "Différence très significative"
+    if p < 0.05:
+        return "Différence significative"
+    return "Différence non significative"
+
+
+def build_group_mean_table(data, group_col, variables_dict):
+    rows = []
+    for var_col, label in variables_dict.items():
+        if var_col not in data.columns:
+            continue
+        temp = data[[group_col, var_col]].copy()
+        temp[group_col] = temp[group_col].astype(str).str.strip()
+        temp = temp.replace({"nan": np.nan, "None": np.nan, "": np.nan})
+        temp[var_col] = pd.to_numeric(temp[var_col], errors="coerce")
+        temp = temp.dropna(subset=[group_col, var_col])
+        for group_name, g in temp.groupby(group_col):
+            rows.append({
+                "Variable": label,
+                "Variable courte": wrap_plot_label(label, 42),
+                "Groupe": group_name,
+                "Moyenne (%)": pct_from_mean(g[var_col].mean()),
+                "Écart-type (%)": g[var_col].std() / 4 * 100 if pd.notna(g[var_col].std()) else np.nan,
+                "N": len(g),
+            })
+    return pd.DataFrame(rows)
+
+
+def build_inferential_results(data, group_col, variables_dict):
+    rows = []
+    for var_col, label in variables_dict.items():
+        if var_col not in data.columns:
+            continue
+        res = inferential_test(data, group_col, var_col)
+        rows.append({
+            "Indicateur": label,
+            "Test": res["Test"],
+            "p-value": format_p_value(res["p-value"]),
+            "Taille d’effet": effect_size_label(res["Effet"], res["Test"]),
+            "N valide": res["N valide"],
+            "Groupes valides": res["Groupes valides"],
+            "Interprétation": significance_badge(res["p-value"]),
+            "p_numeric": res["p-value"],
+        })
+    return pd.DataFrame(rows)
+
+
+def page_inferential_statistics():
+    section_header(
+        "Statistiques inférentielles par variables démographiques",
+        "Comparaison des moyennes des dimensions et des questions selon le genre, la faculté, le niveau et la langue de démarrage."
+    )
+
+    summary_box(
+        f"""
+        Cette section permet de tester si les résultats moyens diffèrent significativement entre les groupes démographiques.
+        Les moyennes sont présentées en pourcentage afin de rester cohérentes avec les autres pages du tableau de bord.
+        Pour deux groupes, le tableau utilise un <b>Welch t-test</b>. Pour trois groupes ou plus, il utilise une <b>ANOVA</b>.
+        Une p-value inférieure à <b>0.050</b> indique une différence statistiquement significative entre les groupes comparés.
+        """,
+        color=USJ_BLUE,
+        background="#F7F9FC"
+    )
+
+    demographic_candidates = {
+        "Genre": "Genre",
+        "Faculté_Institut_g": "Faculté / Institut",
+        "Niveau_Lib": "Niveau",
+        "startlanguage": "Langue de démarrage",
+    }
+    available_demo = {col: label for col, label in demographic_candidates.items() if col in df_filtered.columns}
+
+    if "Niveau_Lib" not in available_demo and "Niveau" in df_filtered.columns:
+        available_demo["Niveau"] = "Niveau"
+
+    if not available_demo:
+        st.warning("Aucune des variables démographiques demandées n’est disponible dans le fichier filtré.")
+        return
+
+    controls = st.columns([1.4, 1.2, 1.8])
+    with controls[0]:
+        selected_demo = st.selectbox(
+            "Variable démographique",
+            list(available_demo.keys()),
+            format_func=lambda x: available_demo[x]
+        )
+    with controls[1]:
+        analysis_level = st.selectbox(
+            "Niveau d’analyse",
+            ["Moyennes des sections", "Questions d’une section"]
+        )
+    with controls[2]:
+        selected_section_inf = None
+        if analysis_level == "Questions d’une section":
+            available_sections = [sec for sec, items in components.items() if len(items) > 0]
+            selected_section_inf = st.selectbox("Section à comparer", available_sections)
+
+    if analysis_level == "Moyennes des sections":
+        variables_dict = {
+            col: SCORE_LABELS[col]
+            for col in SCORE_COLUMNS
+            if col in df_filtered.columns and df_filtered[col].notna().sum() > 0
+        }
+        title_suffix = "les dimensions"
+    else:
+        items = [item for item in components.get(selected_section_inf, []) if item in df_filtered.columns]
+        variables_dict = {item: clean_question_name(item) for item in items}
+        title_suffix = f"les questions de la section {selected_section_inf}"
+
+    if not variables_dict:
+        st.warning("Aucune variable numérique disponible pour cette comparaison.")
+        return
+
+    mean_table = build_group_mean_table(df_filtered, selected_demo, variables_dict)
+    inferential_df = build_inferential_results(df_filtered, selected_demo, variables_dict)
+
+    if mean_table.empty:
+        st.warning("Aucune donnée valide disponible après application des filtres.")
+        return
+
+    group_count = mean_table["Groupe"].nunique()
+    variable_count = mean_table["Variable"].nunique()
+    significant_count = inferential_df["p_numeric"].lt(0.05).sum() if "p_numeric" in inferential_df.columns else 0
+
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        insight_card("Groupes comparés", group_count, available_demo[selected_demo], USJ_BLUE)
+    with c2:
+        insight_card("Indicateurs analysés", variable_count, title_suffix, USJ_BLUE_2)
+    with c3:
+        insight_card("Différences significatives", significant_count, "p-value < 0.050", USJ_GREEN if significant_count > 0 else "#777777")
+
+    tab_heat, tab_detail, tab_tests = st.tabs([
+        "Vue comparative interactive",
+        "Comparaison détaillée",
+        "Tests statistiques"
+    ])
+
+    with tab_heat:
+        pivot = mean_table.pivot_table(index="Variable", columns="Groupe", values="Moyenne (%)", aggfunc="mean")
+        pivot = pivot.loc[[variables_dict[col] for col in variables_dict.keys() if variables_dict[col] in pivot.index]]
+        wrapped_index = [wrap_plot_label(x, 44) for x in pivot.index]
+        pivot_display = pivot.copy()
+        pivot_display.index = wrapped_index
+
+        fig_heat = px.imshow(
+            pivot_display,
+            text_auto=".2f",
+            aspect="auto",
+            color_continuous_scale=PLOTLY_CONT,
+            zmin=max(0, np.nanmin(pivot.values) - 5) if np.isfinite(np.nanmin(pivot.values)) else None,
+            zmax=min(100, np.nanmax(pivot.values) + 5) if np.isfinite(np.nanmax(pivot.values)) else None,
+            title=f"Carte comparative des moyennes par {available_demo[selected_demo]}"
+        )
+        fig_heat.update_layout(
+            xaxis_title=available_demo[selected_demo],
+            yaxis_title="Indicateur",
+            coloraxis_colorbar=dict(title="Moyenne (%)"),
+            hoverlabel=dict(bgcolor="white", font_size=13, font_family="Candara")
+        )
+        theme_layout(fig_heat, height=max(520, 46 * len(pivot_display)), showlegend=False)
+        st.plotly_chart(fig_heat, use_container_width=True, config={"displayModeBar": True, "displaylogo": False})
+
+        best_row = mean_table.sort_values("Moyenne (%)", ascending=False).iloc[0]
+        weak_row = mean_table.sort_values("Moyenne (%)", ascending=True).iloc[0]
+        summary_box(
+            f"""
+            <span style="font-size:20px; font-weight:800; color:{USJ_BLUE};">Lecture comparative</span><br>
+            Le résultat moyen le plus élevé est observé pour <b>{best_row['Variable']}</b> dans le groupe
+            <b>{best_row['Groupe']}</b>, avec <b>{best_row['Moyenne (%)']:.2f}%</b>.
+            Le résultat moyen le plus faible est observé pour <b>{weak_row['Variable']}</b> dans le groupe
+            <b>{weak_row['Groupe']}</b>, avec <b>{weak_row['Moyenne (%)']:.2f}%</b>.
+            Cette lecture permet de repérer les écarts les plus visibles avant l’interprétation statistique.
+            """,
+            color=USJ_BLUE,
+            background="#F7F9FC"
+        )
+
+    with tab_detail:
+        selected_variable_label = st.selectbox(
+            "Indicateur à explorer",
+            list(variables_dict.values())
+        )
+        detail = mean_table[mean_table["Variable"] == selected_variable_label].sort_values("Moyenne (%)", ascending=False)
+
+        fig_bar = px.bar(
+            detail,
+            x="Groupe",
+            y="Moyenne (%)",
+            text="Moyenne (%)",
+            error_y="Écart-type (%)",
+            color="Moyenne (%)",
+            color_continuous_scale=PLOTLY_CONT,
+            hover_data={"N": True, "Écart-type (%)": ":.2f"},
+            title=f"Comparaison de l’indicateur : {selected_variable_label}"
+        )
+        fig_bar.update_traces(texttemplate="%{text:.2f}%", textposition="outside", marker_line_color="white", marker_line_width=1.2)
+        fig_bar.update_layout(
+            xaxis_title=available_demo[selected_demo],
+            yaxis_title="Moyenne (%)",
+            yaxis=dict(range=[0, min(105, max(100, detail["Moyenne (%)"].max() + 10))])
+        )
+        theme_layout(fig_bar, height=520, showlegend=False)
+        st.plotly_chart(fig_bar, use_container_width=True, config={"displayModeBar": True, "displaylogo": False})
+
+        # Boxplot on the original 1-4 scale for the same indicator
+        reverse_lookup = {v: k for k, v in variables_dict.items()}
+        selected_col = reverse_lookup[selected_variable_label]
+        box_data = df_filtered[[selected_demo, selected_col]].copy()
+        box_data[selected_demo] = box_data[selected_demo].astype(str).str.strip()
+        box_data = box_data.replace({"nan": np.nan, "None": np.nan, "": np.nan})
+        box_data[selected_col] = pd.to_numeric(box_data[selected_col], errors="coerce")
+        box_data = box_data.dropna(subset=[selected_demo, selected_col])
+        box_data["Résultat (%)"] = box_data[selected_col].apply(pct_from_mean)
+
+        fig_box = px.box(
+            box_data,
+            x=selected_demo,
+            y="Résultat (%)",
+            color=selected_demo,
+            points="outliers",
+            color_discrete_sequence=PLOTLY_SEQ,
+            title="Distribution des réponses par groupe"
+        )
+        fig_box.update_layout(
+            xaxis_title=available_demo[selected_demo],
+            yaxis_title="Résultat (%)",
+            showlegend=False
+        )
+        theme_layout(fig_box, height=500, showlegend=False)
+        st.plotly_chart(fig_box, use_container_width=True, config={"displayModeBar": True, "displaylogo": False})
+
+        display_detail = detail[["Groupe", "Moyenne (%)", "Écart-type (%)", "N"]].copy()
+        display_detail["Moyenne (%)"] = display_detail["Moyenne (%)"].map(lambda x: f"{x:.2f}%" if pd.notna(x) else "")
+        display_detail["Écart-type (%)"] = display_detail["Écart-type (%)"].map(lambda x: f"{x:.2f}" if pd.notna(x) else "")
+        st.dataframe(display_detail, use_container_width=True, hide_index=True)
+
+    with tab_tests:
+        display_tests = inferential_df.drop(columns=["p_numeric"], errors="ignore").copy()
+        st.dataframe(display_tests, use_container_width=True, hide_index=True)
+
+        significant = inferential_df[inferential_df["p_numeric"].lt(0.05)].copy()
+        if not significant.empty:
+            significant = significant.sort_values("p_numeric").head(5)
+            items_html = "".join(
+                f"<li><b>{row['Indicateur']}</b> : p-value = <b>{row['p-value']}</b>, {row['Interprétation'].lower()}.</li>"
+                for _, row in significant.iterrows()
+            )
+            summary_box(
+                f"""
+                <span style="font-size:20px; font-weight:800; color:{USJ_GREEN};">Résultats significatifs à retenir</span><br>
+                Les différences statistiquement significatives les plus marquées concernent :
+                <ul style="margin-top:8px; margin-bottom:0;">{items_html}</ul>
+                """,
+                color=USJ_GREEN,
+                background="#F3FAF5"
+            )
+        else:
+            summary_box(
+                f"""
+                <span style="font-size:20px; font-weight:800; color:{USJ_ORANGE};">Lecture statistique</span><br>
+                Aucun indicateur ne présente une différence statistiquement significative au seuil de 0.050 pour
+                la variable <b>{available_demo[selected_demo]}</b> avec les filtres actuellement appliqués.
+                """,
+                color=USJ_ORANGE,
+                background="#FFF8F0"
+            )
+
+
+# =====================================================
+# Page 6 - Methodology
 # =====================================================
 
 def page_methodology():
@@ -1916,6 +2272,9 @@ elif page == "Facteurs clés d’amélioration":
 
 elif page == "Résultats descriptifs par section":
     page_descriptive_sections()
+
+elif page == "Statistiques inférentielles":
+    page_inferential_statistics()
 
 elif page == "Méthodologie des composantes":
     page_methodology()
