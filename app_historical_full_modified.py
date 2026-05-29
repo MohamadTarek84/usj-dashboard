@@ -142,8 +142,7 @@ st.markdown(
 # General helpers
 # =====================================================
 
-@st.cache_data(show_spinner=False)
-def load_data():
+def find_excel_file():
     possible_files = [
         "Exit_Survey_all-data.xlsx",
         "Exit_Survey_all_data.xlsx",
@@ -154,14 +153,28 @@ def load_data():
 
     for file in possible_files:
         if os.path.exists(file):
-            df = pd.read_excel(file)
-            df.columns = df.columns.astype(str).str.strip()
-            return df
+            stat = os.stat(file)
+            return file, stat.st_mtime, stat.st_size
 
     st.error("Excel file not found. Please upload the historical file to GitHub.")
     st.write("Available files:")
     st.write(os.listdir("."))
     st.stop()
+
+
+@st.cache_data(show_spinner=False)
+def load_data(file_path, file_mtime, file_size):
+    """
+    Load the Excel file with automatic cache invalidation.
+
+    Streamlit normally keeps cached data even after a file is modified.
+    By passing the file modification time and file size as cache arguments,
+    the dashboard reloads the Excel automatically whenever a new version is
+    uploaded to GitHub or replaced in the app directory.
+    """
+    df = pd.read_excel(file_path)
+    df.columns = df.columns.astype(str).str.strip()
+    return df
 
 
 def recode_series(series, mapping):
@@ -435,8 +448,8 @@ def theme_layout(fig, height=480, showlegend=True):
 # =====================================================
 
 @st.cache_data(show_spinner=False)
-def prepare_data():
-    df_original = normalize_year_column(load_data())
+def prepare_data(file_path, file_mtime, file_size):
+    df_original = normalize_year_column(load_data(file_path, file_mtime, file_size))
     df_coded = df_original.copy()
 
     if "Faculté_Institut_g" in df_coded.columns:
@@ -903,7 +916,12 @@ def correlation_with_section_mean(data, items):
 # =====================================================
 
 with st.spinner("Chargement du tableau de bord..."):
-    df_original, df_coded, components, q42, q43, q26, q27 = prepare_data()
+    excel_file_path, excel_file_mtime, excel_file_size = find_excel_file()
+    df_original, df_coded, components, q42, q43, q26, q27 = prepare_data(
+        excel_file_path,
+        excel_file_mtime,
+        excel_file_size
+    )
 
 # =====================================================
 # Header
@@ -936,13 +954,26 @@ st.divider()
 # Linked filters
 # =====================================================
 
-if st.button("Réinitialiser les filtres"):
-    st.session_state["filter_year"] = "Tous"
-    st.session_state["filter_genre"] = "Tous"
-    st.session_state["filter_faculte"] = "Tous"
-    st.session_state["filter_cursus"] = "Tous"
-    st.session_state["filter_niveau"] = "Tous"
-    st.rerun()
+filter_action_cols = st.columns([1.3, 1.4, 6])
+
+with filter_action_cols[0]:
+    if st.button("Réinitialiser les filtres"):
+        st.session_state["filter_year"] = "Tous"
+        st.session_state["filter_genre"] = "Tous"
+        st.session_state["filter_faculte"] = "Tous"
+        st.session_state["filter_cursus"] = "Tous"
+        st.session_state["filter_niveau"] = "Tous"
+        st.rerun()
+
+with filter_action_cols[1]:
+    if st.button("Actualiser les données Excel"):
+        st.cache_data.clear()
+        st.rerun()
+
+st.caption(
+    f"Fichier de données actif : {excel_file_path} | Taille : {excel_file_size:,} octets | "
+    f"Dernière modification détectée : {pd.to_datetime(excel_file_mtime, unit='s').strftime('%Y-%m-%d %H:%M:%S')}"
+)
 
 filter_cols = st.columns(5)
 df_filter_base = df_coded.copy()
