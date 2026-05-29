@@ -21,6 +21,10 @@ USJ_BLUE = "#001B75"
 USJ_RED = "#C0003B"
 USJ_GREEN = "#2E7D32"
 USJ_ORANGE = "#F57C00"
+USJ_GOLD = "#C9A227"
+USJ_PURPLE = "#5B2E91"
+USJ_LIGHT_BLUE = "#EAF2F8"
+USJ_SOFT_GRAY = "#F7F9FC"
 
 # =====================================================
 # Useful functions
@@ -484,6 +488,7 @@ with st.spinner("Chargement du tableau de bord..."):
 # =====================================================
 
 logo_candidates = [
+    "LogoUAQ.png",
     "usj_uaq_logo.png",
     "USJ_UAQ_logo.png",
     "usj_logo.png",
@@ -581,6 +586,7 @@ page = st.radio(
     [
         "Vue générale des indicateurs",
         "Comparaison historique",
+        "Résultats descriptifs par section",
         "Facteurs clés d’amélioration",
         "Méthodologie des composantes"
     ],
@@ -1157,8 +1163,302 @@ def page_historical_comparison():
             st.dataframe(fac_df.sort_values(["Faculté", "Année"]), use_container_width=True, hide_index=True)
 
 
+
 # =====================================================
-# Page 3
+# Page 3 - Descriptive results by survey section
+# =====================================================
+
+def short_question_label(question, max_len=78):
+    question = str(question).strip()
+    if len(question) <= max_len:
+        return question
+    return question[:max_len - 3] + "..."
+
+
+def section_score_column(section_name):
+    mapping = {
+        "Enseignement et apprentissage": "Score enseignement et apprentissage",
+        "Accompagnement et encadrement": "Score accompagnement et encadrement",
+        "Développement des compétences": "Score développement des compétences",
+        "Expérience globale USJ": "Score expérience globale USJ",
+        "Services de l’USJ": "Score services USJ",
+        "Vie étudiante et activités": "Score vie étudiante et activités",
+        "Infrastructures et équipements": "Score infrastructures et équipements",
+        "Perception financière": None,
+        "Satisfaction globale et recommandation": None
+    }
+    return mapping.get(section_name)
+
+
+def descriptive_section_items():
+    sections = dict(components)
+    financial_items = [col for col in [q26, q27] if col in df_coded.columns]
+    if financial_items:
+        sections["Perception financière"] = financial_items
+    global_items = [col for col in [q42, q43] if col in df_original.columns]
+    if global_items:
+        sections["Satisfaction globale et recommandation"] = global_items
+    return sections
+
+
+def make_item_summary(data, items, section_name):
+    rows = []
+    for item in items:
+        if item == q43:
+            rate = calculate_recommendation_rate(data, q43)
+            rows.append({
+                "Question": item,
+                "Libellé court": short_question_label(item),
+                "Indicateur (%)": rate,
+                "Moyenne /4": np.nan,
+                "N valide": data[item].notna().sum() if item in data.columns else 0,
+                "Manquants (%)": round(data[item].isna().mean() * 100, 1) if item in data.columns else np.nan,
+                "Type": "Recommandation"
+            })
+        elif item in data.columns:
+            numeric = pd.to_numeric(data[item], errors="coerce")
+            mean_value = numeric.mean()
+            rows.append({
+                "Question": item,
+                "Libellé court": short_question_label(item),
+                "Indicateur (%)": pct_from_mean(mean_value),
+                "Moyenne /4": mean_value,
+                "N valide": numeric.notna().sum(),
+                "Manquants (%)": round(numeric.isna().mean() * 100, 1),
+                "Type": "Moyenne"
+            })
+    return pd.DataFrame(rows)
+
+
+def make_distribution_table(raw_data, coded_data, item):
+    rows = []
+    if item not in raw_data.columns and item not in coded_data.columns:
+        return pd.DataFrame()
+
+    base = raw_data[item] if item in raw_data.columns else coded_data[item]
+    years = sorted(coded_data["Year"].dropna().astype(str).unique()) if "Year" in coded_data.columns else ["Tous"]
+
+    for y in years:
+        if "Year" in coded_data.columns:
+            idx = coded_data[coded_data["Year"].astype(str) == y].index
+            s = base.loc[idx]
+        else:
+            s = base
+        s = s.dropna().astype(str).str.strip()
+        total = len(s)
+        if total == 0:
+            continue
+        counts = s.value_counts().reset_index()
+        counts.columns = ["Réponse", "Effectif"]
+        counts["Pourcentage"] = counts["Effectif"] / total * 100
+        counts["Année"] = y
+        rows.append(counts)
+
+    if rows:
+        return pd.concat(rows, ignore_index=True)
+    return pd.DataFrame()
+
+
+def page_descriptive_sections():
+    st.markdown(f"<h2 style='color:{USJ_BLUE};'>Résultats descriptifs par section</h2>", unsafe_allow_html=True)
+
+    summary_box(
+        """
+        Cette page présente les résultats détaillés des questions regroupées par section du questionnaire.
+        Elle permet de visualiser les moyennes, les pourcentages, les distributions de réponses et les corrélations
+        entre les items d’une même section et leur moyenne globale. Les résultats restent dynamiques selon les filtres actifs.
+        """,
+        color=USJ_BLUE,
+        background=USJ_LIGHT_BLUE
+    )
+
+    sections = descriptive_section_items()
+    section_names = list(sections.keys())
+
+    c_left, c_right = st.columns([2.2, 1])
+    with c_left:
+        selected_section = st.selectbox(
+            "Choisir une section du questionnaire",
+            section_names,
+            key="descriptive_section_selector"
+        )
+    with c_right:
+        show_raw_distribution = st.toggle(
+            "Afficher la distribution détaillée d’une question",
+            value=True
+        )
+
+    items = [col for col in sections[selected_section] if col in df_coded.columns or col in df_original.columns]
+    numeric_items = [col for col in items if col in df_coded.columns and pd.to_numeric(df_coded[col], errors="coerce").notna().sum() > 0]
+    raw_filtered = df_original.loc[df_filtered.index].copy()
+
+    if not items:
+        st.warning("Aucune question disponible pour cette section dans les données filtrées.")
+        return
+
+    section_col = section_score_column(selected_section)
+    if section_col is not None and section_col in df_filtered.columns:
+        section_pct = pct_from_mean(df_filtered[section_col].mean())
+    elif selected_section == "Perception financière":
+        finance_cols = ["Score frais / qualité enseignement", "Score frais / autres universités"]
+        finance_cols = [c for c in finance_cols if c in df_filtered.columns]
+        section_pct = pct_from_mean(df_filtered[finance_cols].mean(axis=1).mean()) if finance_cols else np.nan
+    elif selected_section == "Satisfaction globale et recommandation":
+        section_pct = pct_from_mean(df_filtered["Score satisfaction globale"].mean()) if "Score satisfaction globale" in df_filtered.columns else np.nan
+    else:
+        section_pct = np.nan
+
+    valid_n_section = int(df_filtered[numeric_items].notna().any(axis=1).sum()) if numeric_items else len(df_filtered)
+
+    k1, k2, k3 = st.columns(3)
+    with k1:
+        percent_card("Résultat moyen de la section", section_pct, selected_section)
+    with k2:
+        importance_card("Questions analysées", len(items) / max(len(items), 1) * 100, f"{len(items)} questions")
+    with k3:
+        importance_card("Répondants valides", valid_n_section / max(len(df_filtered), 1) * 100, f"{valid_n_section} sur {len(df_filtered)}")
+
+    item_summary = make_item_summary(df_filtered, items, selected_section)
+
+    if not item_summary.empty:
+        item_summary_display = item_summary.copy()
+        item_summary_display["Indicateur (%)"] = item_summary_display["Indicateur (%)"].round(1)
+        item_summary_display["Moyenne /4"] = item_summary_display["Moyenne /4"].round(2)
+
+        st.markdown(f"<h3 style='color:{USJ_BLUE};'>Synthèse des questions de la section</h3>", unsafe_allow_html=True)
+        st.dataframe(
+            item_summary_display[["Libellé court", "Indicateur (%)", "Moyenne /4", "N valide", "Manquants (%)", "Type"]],
+            use_container_width=True,
+            hide_index=True
+        )
+
+        fig_items = px.bar(
+            item_summary.sort_values("Indicateur (%)", ascending=True),
+            x="Indicateur (%)",
+            y="Libellé court",
+            orientation="h",
+            text="Indicateur (%)",
+            color="Indicateur (%)",
+            color_continuous_scale=[USJ_RED, USJ_BLUE, USJ_GOLD, USJ_GREEN],
+            title=f"Résultats détaillés des questions – {selected_section}"
+        )
+        fig_items.update_layout(
+            height=max(430, 45 * len(item_summary)),
+            xaxis_title="Pourcentage /4",
+            yaxis_title="",
+            coloraxis_showscale=False,
+            plot_bgcolor="white",
+            paper_bgcolor="white"
+        )
+        fig_items.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
+        st.plotly_chart(fig_items, use_container_width=True, config={"displayModeBar": False})
+
+    # -------------------------------------------------
+    # Historical view for section items
+    # -------------------------------------------------
+    if "Year" in df_filtered.columns and len(df_filtered["Year"].dropna().unique()) > 1 and numeric_items:
+        st.markdown(f"<h3 style='color:{USJ_BLUE};'>Évolution par année dans la section</h3>", unsafe_allow_html=True)
+        year_rows = []
+        for y in sorted(df_filtered["Year"].dropna().astype(str).unique()):
+            sub = df_filtered[df_filtered["Year"].astype(str) == y]
+            for item in numeric_items:
+                year_rows.append({
+                    "Année": y,
+                    "Question": short_question_label(item),
+                    "Résultat (%)": pct_from_mean(pd.to_numeric(sub[item], errors="coerce").mean())
+                })
+        year_item_df = pd.DataFrame(year_rows).dropna()
+        if not year_item_df.empty:
+            fig_year = px.line(
+                year_item_df,
+                x="Année",
+                y="Résultat (%)",
+                color="Question",
+                markers=True,
+                text="Résultat (%)",
+                title=f"Évolution des questions – {selected_section}",
+                color_discrete_sequence=[USJ_BLUE, USJ_RED, USJ_GREEN, USJ_ORANGE, USJ_PURPLE, USJ_GOLD]
+            )
+            fig_year.update_traces(mode="lines+markers+text", texttemplate="%{text:.1f}%", textposition="top center")
+            fig_year.update_layout(height=520, yaxis_title="Résultat (%)", xaxis_title="Année", plot_bgcolor="white", paper_bgcolor="white")
+            st.plotly_chart(fig_year, use_container_width=True, config={"displayModeBar": False})
+
+    # -------------------------------------------------
+    # Distribution of one question
+    # -------------------------------------------------
+    if show_raw_distribution:
+        st.markdown(f"<h3 style='color:{USJ_BLUE};'>Distribution interactive des réponses</h3>", unsafe_allow_html=True)
+        selected_question = st.selectbox(
+            "Choisir une question pour afficher la distribution des réponses",
+            items,
+            format_func=lambda x: short_question_label(x, 120),
+            key="distribution_question_selector"
+        )
+        dist_df = make_distribution_table(raw_filtered, df_filtered, selected_question)
+        if not dist_df.empty:
+            fig_dist = px.bar(
+                dist_df,
+                x="Réponse",
+                y="Pourcentage",
+                color="Année",
+                barmode="group",
+                text="Pourcentage",
+                title="Distribution des réponses par année",
+                color_discrete_sequence=[USJ_BLUE, USJ_RED, USJ_GREEN, USJ_ORANGE, USJ_PURPLE, USJ_GOLD]
+            )
+            fig_dist.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
+            fig_dist.update_layout(height=480, xaxis_title="Réponse", yaxis_title="Pourcentage", plot_bgcolor="white", paper_bgcolor="white")
+            st.plotly_chart(fig_dist, use_container_width=True, config={"displayModeBar": False})
+            st.dataframe(dist_df.sort_values(["Année", "Réponse"]), use_container_width=True, hide_index=True)
+        else:
+            st.info("Aucune distribution disponible pour cette question avec les filtres actuels.")
+
+    # -------------------------------------------------
+    # Correlation heatmap
+    # -------------------------------------------------
+    st.markdown(f"<h3 style='color:{USJ_BLUE};'>Corrélation entre les questions et la moyenne de la section</h3>", unsafe_allow_html=True)
+
+    if len(numeric_items) < 2:
+        st.info("La heatmap de corrélation nécessite au moins deux questions numériques dans la section.")
+    else:
+        corr_data = df_filtered[numeric_items].apply(pd.to_numeric, errors="coerce").copy()
+        corr_data["Moyenne de la section"] = corr_data[numeric_items].mean(axis=1, skipna=True)
+        corr_matrix = corr_data.corr().round(2)
+
+        labels = [short_question_label(c, 38) if c != "Moyenne de la section" else c for c in corr_matrix.columns]
+        fig_corr = px.imshow(
+            corr_matrix,
+            text_auto=True,
+            color_continuous_scale=[USJ_RED, "#FFFFFF", USJ_BLUE],
+            zmin=-1,
+            zmax=1,
+            title=f"Heatmap des corrélations – {selected_section}"
+        )
+        fig_corr.update_xaxes(ticktext=labels, tickvals=list(range(len(labels))))
+        fig_corr.update_yaxes(ticktext=labels, tickvals=list(range(len(labels))))
+        fig_corr.update_layout(height=max(520, 55 * len(labels)), plot_bgcolor="white", paper_bgcolor="white")
+        st.plotly_chart(fig_corr, use_container_width=True, config={"displayModeBar": False})
+
+        corr_with_mean = corr_matrix["Moyenne de la section"].drop("Moyenne de la section").sort_values(ascending=False).reset_index()
+        corr_with_mean.columns = ["Question", "Corrélation avec la moyenne"]
+        corr_with_mean["Question"] = corr_with_mean["Question"].apply(lambda x: short_question_label(x, 110))
+
+        fig_corr_bar = px.bar(
+            corr_with_mean.sort_values("Corrélation avec la moyenne", ascending=True),
+            x="Corrélation avec la moyenne",
+            y="Question",
+            orientation="h",
+            text="Corrélation avec la moyenne",
+            color="Corrélation avec la moyenne",
+            color_continuous_scale=[USJ_ORANGE, USJ_BLUE, USJ_GREEN],
+            title="Questions les plus liées à la moyenne de la section"
+        )
+        fig_corr_bar.update_traces(texttemplate="%{text:.2f}", textposition="outside")
+        fig_corr_bar.update_layout(height=max(420, 42 * len(corr_with_mean)), xaxis_title="Corrélation", yaxis_title="", coloraxis_showscale=False, plot_bgcolor="white", paper_bgcolor="white")
+        st.plotly_chart(fig_corr_bar, use_container_width=True, config={"displayModeBar": False})
+
+# =====================================================
+# Page 4
 # =====================================================
 
 def page_importance():
@@ -1409,6 +1709,9 @@ if page == "Vue générale des indicateurs":
 
 elif page == "Comparaison historique":
     page_historical_comparison()
+
+elif page == "Résultats descriptifs par section":
+    page_descriptive_sections()
 
 elif page == "Facteurs clés d’amélioration":
     page_importance()
