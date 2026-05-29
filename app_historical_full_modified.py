@@ -2326,14 +2326,13 @@ def build_printable_report_html():
     action_text = ""
     if not dim_table.empty:
         action_text = f"""
-        <p>
-            La priorité d’amélioration immédiate concerne <b>{html_escape(weak['Dimension'])}</b>, qui présente le résultat le plus faible
-            (<b>{weak['Résultat']:.2f}%</b>). À l’inverse, <b>{html_escape(best['Dimension'])}</b> constitue un point fort à préserver
-            et à valoriser (<b>{best['Résultat']:.2f}%</b>).
-        </p>
+        <br><br>
+        La priorité d’amélioration immédiate concerne <b>{html_escape(weak['Dimension'])}</b>, qui présente le résultat le plus faible
+        (<b>{weak['Résultat']:.2f}%</b>). À l’inverse, <b>{html_escape(best['Dimension'])}</b> constitue un point fort à préserver
+        et à valoriser (<b>{best['Résultat']:.2f}%</b>).
         """
 
-    generated_filters = f"Année : {year} | Genre : {genre} | Faculté : {faculte} | Cursus : {cursus} | Niveau : {niveau}"
+    generated_filters = f"Année : {year} | Genre : {genre} | Faculté : {faculte} | Niveau : {niveau}"
 
     return f"""
     <html>
@@ -2455,6 +2454,9 @@ def build_printable_report_html():
     </head>
     <body>
         <div class='report-container'>
+            <div class='no-print' style='display:flex; justify-content:flex-end; margin-bottom:12px;'>
+                <button onclick='window.print()' style='background:#001B75;color:white;border:0;border-radius:12px;padding:10px 16px;font-family:Candara, Arial, sans-serif;font-size:14px;font-weight:800;cursor:pointer;'>Imprimer ce rapport</button>
+            </div>
             <div class='report-header'>
                 <h1 class='report-title'>{html_escape(report_title)}</h1>
                 <div class='report-subtitle'>Période : {html_escape(period_label)} | {html_escape(generated_filters)}</div>
@@ -2515,45 +2517,36 @@ def page_printable_report():
         """
         Ce rapport est généré automatiquement à partir des filtres actifs en haut du tableau de bord.
         Pour obtenir un rapport propre à une faculté, sélectionnez d’abord la faculté souhaitée dans le filtre <b>Faculté</b>,
-        puis revenez à cette page. Le rapport peut être imprimé depuis le navigateur ou téléchargé au format HTML.
+        puis revenez à cette page. Le bouton d’impression est intégré dans le rapport rendu ci-dessous.
         """,
         color=USJ_BLUE,
         background="#F7F9FC"
     )
 
-    report_html = build_printable_report_html()
+    try:
+        report_html = build_printable_report_html()
+    except Exception as exc:
+        st.error("Le rapport synthétique n’a pas pu être généré. Vérifiez les filtres ou les colonnes disponibles.")
+        st.exception(exc)
+        return
 
-    col_print, col_download = st.columns([1, 1])
-    with col_print:
-        st_components.html(
-            """
-            <button onclick="window.print()" style="
-                width:100%;
-                padding:13px 18px;
-                border-radius:14px;
-                border:0;
-                background:#001B75;
-                color:white;
-                font-family:Candara, Arial, sans-serif;
-                font-size:16px;
-                font-weight:800;
-                cursor:pointer;
-            ">Imprimer le rapport</button>
-            """,
-            height=58,
-        )
-    with col_download:
-        faculty_part = faculte if faculte != "Tous" else "USJ"
-        file_name = f"rapport_exit_survey_{str(faculty_part).replace(' ', '_')}.html"
-        st.download_button(
-            "Télécharger le rapport HTML",
-            data=report_html.encode("utf-8"),
-            file_name=file_name,
-            mime="text/html",
-            use_container_width=True,
-        )
+    faculty_part = faculte if faculte != "Tous" else "USJ"
+    safe_faculty_part = str(faculty_part).replace(" ", "_").replace("/", "_").replace("\\", "_")
+    file_name = f"rapport_exit_survey_{safe_faculty_part}.html"
 
-    st.markdown(report_html, unsafe_allow_html=True)
+    st.download_button(
+        "Télécharger le rapport HTML",
+        data=report_html.encode("utf-8"),
+        file_name=file_name,
+        mime="text/html",
+        use_container_width=True,
+    )
+
+    st_components.html(
+        report_html,
+        height=1450,
+        scrolling=True,
+    )
 
 
 # =====================================================
