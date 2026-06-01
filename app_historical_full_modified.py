@@ -3055,7 +3055,7 @@ def page_other_questions():
             row["Question affichée"]: row["Question"]
             for _, row in filtered_inventory.iterrows()
         }
-        selected_other_question_label = st.radio(
+        selected_other_question_label = st.selectbox(
             "Choisir une question complémentaire",
             options=list(question_options.keys())
         )
