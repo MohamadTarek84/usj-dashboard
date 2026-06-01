@@ -267,7 +267,7 @@ def apply_style():
 
     @media (max-width: 760px) {{
         .platform-header {{
-            padding: 14px 16px;
+            padding: 10px 12px;
             gap: 10px;
         }}
 
@@ -523,18 +523,18 @@ def apply_style():
         background: #ffffff;
         border: 1px solid #DDE5F0;
         border-radius: 18px;
-        padding: 18px;
-        min-height: 330px;
+        padding: 14px;
+        min-height: 0;
         box-shadow: 0 10px 28px rgba(27,42,65,0.06);
-        margin-bottom: 16px;
+        margin-bottom: 10px;
     }}
 
     .visual-column-title {{
         font-size: 1.1rem;
         font-weight: 850;
         color: #001F5B;
-        margin-bottom: 16px;
-        padding-bottom: 10px;
+        margin-bottom: 10px;
+        padding-bottom: 6px;
         border-bottom: 1px solid #DDE5F0;
     }}
 
@@ -552,8 +552,8 @@ def apply_style():
 
     .priority-card {{
         border-radius: 16px;
-        padding: 14px 16px;
-        margin-bottom: 12px;
+        padding: 10px 12px;
+        margin-bottom: 8px;
         border: 1px solid #DDE5F0;
     }}
 
