@@ -797,31 +797,94 @@ def weighted_score(theme, employee_ranked, director_ranked):
 
 
 def calculate_final_themes(employee_ranked, director_ranked):
+    """
+    Final selection rule:
+    1. Start with Employee P1 and Director P1.
+    2. If both selected the same theme as P1, this theme is selected automatically.
+    3. Then move rank by rank: P2 with P2, then P3 with P3.
+    4. At each rank, if one or two themes are proposed, select themes that are common anywhere
+       in both lists first, regardless of their exact priority position.
+    5. If fewer than 3 themes are selected, complete the list using priority order:
+       Employee P1, Director P1, Employee P2, Director P2, Employee P3, Director P3.
+    """
     employee_ranked = employee_ranked or []
     director_ranked = director_ranked or []
 
-    matched = [theme for theme in employee_ranked if theme in director_ranked]
-    candidates = list(dict.fromkeys(employee_ranked + director_ranked))
+    final = []
+    matched = []
 
-    ranked_candidates = sorted(
-        candidates,
-        key=lambda theme: (
-            theme not in matched,
-            -weighted_score(theme, employee_ranked, director_ranked),
-            candidates.index(theme)
-        )
-    )
+    employee_set = set(employee_ranked)
+    director_set = set(director_ranked)
 
-    final = ranked_candidates[:3]
+    common_themes = [
+        theme for theme in employee_ranked
+        if theme in director_set
+    ]
+
+    # Case 1: both Priority 1 are exactly the same.
+    if (
+        len(employee_ranked) >= 1
+        and len(director_ranked) >= 1
+        and employee_ranked[0] == director_ranked[0]
+    ):
+        final.append(employee_ranked[0])
+        matched.append(employee_ranked[0])
+
+    # Rank-by-rank logic: compare P1 with P1, then P2 with P2, then P3 with P3.
+    for rank_index in range(3):
+        rank_candidates = []
+
+        if len(employee_ranked) > rank_index:
+            rank_candidates.append(employee_ranked[rank_index])
+
+        if len(director_ranked) > rank_index:
+            rank_candidates.append(director_ranked[rank_index])
+
+        # First priority: common themes, regardless of exact rank.
+        for theme in rank_candidates:
+            if theme in employee_set and theme in director_set and theme not in final:
+                final.append(theme)
+                matched.append(theme)
+
+        if len(final) == 3:
+            break
+
+    # Add remaining common themes if not already selected.
+    for theme in common_themes:
+        if theme not in final:
+            final.append(theme)
+            matched.append(theme)
+
+        if len(final) == 3:
+            break
+
+    # Complete using alternating ranked order.
+    alternating_candidates = []
+
+    for rank_index in range(3):
+        if len(employee_ranked) > rank_index:
+            alternating_candidates.append(employee_ranked[rank_index])
+
+        if len(director_ranked) > rank_index:
+            alternating_candidates.append(director_ranked[rank_index])
+
+    for theme in alternating_candidates:
+        if theme not in final:
+            final.append(theme)
+
+        if len(final) == 3:
+            break
+
+    final = final[:3]
 
     if len(matched) >= 3:
-        scenario = "Accord complet : les 3 thèmes sont communs entre l’employé et le directeur."
+        scenario = "Accord complet : les 3 thèmes finaux sont communs entre l’employé et le Doyen / Directeur."
     elif len(matched) == 2:
-        scenario = "Accord fort : 2 thèmes sont communs. Le 3e thème est proposé selon le score de priorité."
+        scenario = "Accord fort : 2 thèmes communs ont été retenus, puis le troisième thème a été complété selon l’ordre de priorité."
     elif len(matched) == 1:
-        scenario = "Accord partiel : 1 thème est commun. Les 2 autres thèmes sont proposés selon le score de priorité."
+        scenario = "Accord partiel : 1 thème commun a été retenu, puis les autres thèmes ont été complétés selon l’ordre de priorité."
     else:
-        scenario = "Aucun thème commun : la sélection finale est proposée selon les priorités croisées."
+        scenario = "Aucun thème commun : les thèmes finaux ont été proposés selon l’ordre croisé des priorités."
 
     return matched, final, scenario
 
