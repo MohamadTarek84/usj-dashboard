@@ -3,6 +3,8 @@ import sqlite3
 import json
 from datetime import datetime
 import pandas as pd
+import os
+import base64
 
 DB_NAME = "tna_demo.db"
 
@@ -10,6 +12,8 @@ USJ_BLUE = "#001F5B"
 USJ_RED = "#8B1538"
 USJ_GOLD = "#C9A227"
 USJ_TEXT = "#1B2A41"
+CFP_LOGO_PATH = "CFP LOGO.png"
+USJ_LOGO_PATH = "USJ LOGO 150.png"
 
 PSG_THEMES = [
     "Communication constructive",
@@ -137,6 +141,42 @@ DEMO_USERS = {
 }
 
 
+
+def image_to_base64(image_path):
+    if not os.path.exists(image_path):
+        return ""
+
+    with open(image_path, "rb") as image_file:
+        return base64.b64encode(image_file.read()).decode("utf-8")
+
+
+def render_platform_header():
+    cfp_logo = image_to_base64(CFP_LOGO_PATH)
+    usj_logo = image_to_base64(USJ_LOGO_PATH)
+
+    cfp_html = (
+        f"<img src='data:image/png;base64,{cfp_logo}' class='platform-logo cfp-logo'>"
+        if cfp_logo else
+        "<div class='logo-placeholder'>CFP</div>"
+    )
+
+    usj_html = (
+        f"<img src='data:image/png;base64,{usj_logo}' class='platform-logo usj-logo'>"
+        if usj_logo else
+        "<div class='logo-placeholder'>USJ</div>"
+    )
+
+    st.markdown(f"""
+    <div class="platform-header">
+        <div class="logo-side left-logo">{cfp_html}</div>
+        <div class="header-center">
+            <div class="header-title">Centre de Formation Professionnelle</div>
+            <div class="header-subtitle">Training Needs Assessment - TNA 2026</div>
+        </div>
+        <div class="logo-side right-logo">{usj_html}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
 def apply_style():
     st.markdown(f"""
     <style>
@@ -148,6 +188,100 @@ def apply_style():
     .block-container {{
         padding-top: 1.2rem;
         max-width: 1280px;
+    }}
+
+    .platform-header {{
+        background: #ffffff;
+        border: 1px solid #DDE5F0;
+        border-radius: 22px;
+        padding: 16px 24px;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 10px 30px rgba(27,42,65,0.07);
+    }}
+
+    .logo-side {{
+        width: 180px;
+        display: flex;
+        align-items: center;
+    }}
+
+    .left-logo {{
+        justify-content: flex-start;
+    }}
+
+    .right-logo {{
+        justify-content: flex-end;
+    }}
+
+    .platform-logo {{
+        max-height: 82px;
+        max-width: 165px;
+        object-fit: contain;
+        display: block;
+    }}
+
+    .cfp-logo {{
+        max-height: 86px;
+    }}
+
+    .usj-logo {{
+        max-height: 78px;
+    }}
+
+    .header-center {{
+        text-align: center;
+        flex: 1;
+        padding: 0 20px;
+    }}
+
+    .header-title {{
+        color: {USJ_BLUE};
+        font-weight: 850;
+        font-size: 1.45rem;
+        line-height: 1.2;
+    }}
+
+    .header-subtitle {{
+        color: #6B7688;
+        font-weight: 700;
+        font-size: 0.96rem;
+        margin-top: 4px;
+    }}
+
+    .logo-placeholder {{
+        border: 2px solid {USJ_BLUE};
+        color: {USJ_BLUE};
+        border-radius: 14px;
+        padding: 14px 20px;
+        font-weight: 850;
+        background: #F7FAFE;
+    }}
+
+    @media (max-width: 760px) {{
+        .platform-header {{
+            padding: 14px 16px;
+            gap: 10px;
+        }}
+
+        .logo-side {{
+            width: 90px;
+        }}
+
+        .platform-logo {{
+            max-height: 58px;
+            max-width: 88px;
+        }}
+
+        .header-title {{
+            font-size: 1.05rem;
+        }}
+
+        .header-subtitle {{
+            font-size: 0.78rem;
+        }}
     }}
 
     h1, h2, h3 {{
@@ -1018,6 +1152,7 @@ def main():
 
     apply_style()
     init_db()
+    render_platform_header()
 
     if "logged_in" not in st.session_state:
         st.session_state["logged_in"] = False
