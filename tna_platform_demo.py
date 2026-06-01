@@ -57,16 +57,83 @@ DD_LEADER_THEMES = [
 ]
 
 DEMO_USERS = {
-    "PSG001": {"role": "psg", "name": "Mohamad Khalil", "faculty": "Faculté des Sciences", "institution": "USJ", "department": "Service des Études", "director_code": "DD001"},
-    "PSG002": {"role": "psg", "name": "Rana Nader", "faculty": "Faculté des Sciences", "institution": "USJ", "department": "Service des Études", "director_code": "DD001"},
-    "PSG003": {"role": "psg", "name": "Karim Haddad", "faculty": "Faculté des Sciences", "institution": "USJ", "department": "Service Informatique", "director_code": "DD001"},
-    "PSG004": {"role": "psg", "name": "Maya Saad", "faculty": "Faculté des Sciences", "institution": "USJ", "department": "Service Informatique", "director_code": "DD001"},
-    "PSG005": {"role": "psg", "name": "Georges Khoury", "faculty": "Faculté des Sciences", "institution": "USJ", "department": "Service Administratif", "director_code": "DD001"},
-    "PSG006": {"role": "psg", "name": "Nadine Abi Rached", "faculty": "Faculté de Médecine", "institution": "USJ", "department": "Secrétariat académique", "director_code": "DD002"},
-    "PSG007": {"role": "psg", "name": "Paul Tannous", "faculty": "Faculté de Médecine", "institution": "USJ", "department": "Laboratoire", "director_code": "DD002"},
-    "DD001": {"role": "director", "name": "Dr. Rami Haddad", "faculty": "Faculté des Sciences", "institution": "USJ", "department": "Direction"},
-    "DD002": {"role": "director", "name": "Dr. Carla Mansour", "faculty": "Faculté de Médecine", "institution": "USJ", "department": "Direction"},
-    "ADMIN2032": {"role": "admin", "name": "Administrateur TNA", "faculty": "USJ", "institution": "USJ", "department": "Administration Centrale"}
+    "PSG001": {
+        "role": "psg",
+        "name": "Mohamad Khalil",
+        "faculty": "Faculté des Sciences",
+        "institution": "USJ",
+        "department": "Service des Études",
+        "director_code": "DD001"
+    },
+    "PSG002": {
+        "role": "psg",
+        "name": "Rana Nader",
+        "faculty": "Faculté des Sciences",
+        "institution": "USJ",
+        "department": "Service des Études",
+        "director_code": "DD001"
+    },
+    "PSG003": {
+        "role": "psg",
+        "name": "Karim Haddad",
+        "faculty": "Faculté des Sciences",
+        "institution": "USJ",
+        "department": "Service Informatique",
+        "director_code": "DD001"
+    },
+    "PSG004": {
+        "role": "psg",
+        "name": "Maya Saad",
+        "faculty": "Faculté des Sciences",
+        "institution": "USJ",
+        "department": "Service Informatique",
+        "director_code": "DD001"
+    },
+    "PSG005": {
+        "role": "psg",
+        "name": "Georges Khoury",
+        "faculty": "Faculté des Sciences",
+        "institution": "USJ",
+        "department": "Service Administratif",
+        "director_code": "DD001"
+    },
+    "PSG006": {
+        "role": "psg",
+        "name": "Nadine Abi Rached",
+        "faculty": "Faculté de Médecine",
+        "institution": "USJ",
+        "department": "Secrétariat académique",
+        "director_code": "DD002"
+    },
+    "PSG007": {
+        "role": "psg",
+        "name": "Paul Tannous",
+        "faculty": "Faculté de Médecine",
+        "institution": "USJ",
+        "department": "Laboratoire",
+        "director_code": "DD002"
+    },
+    "DD001": {
+        "role": "director",
+        "name": "Dr. Rami Haddad",
+        "faculty": "Faculté des Sciences",
+        "institution": "USJ",
+        "department": "Direction"
+    },
+    "DD002": {
+        "role": "director",
+        "name": "Dr. Carla Mansour",
+        "faculty": "Faculté de Médecine",
+        "institution": "USJ",
+        "department": "Direction"
+    },
+    "ADMIN2032": {
+        "role": "admin",
+        "name": "Administrateur TNA",
+        "faculty": "USJ",
+        "institution": "USJ",
+        "department": "Administration Centrale"
+    }
 }
 
 
@@ -119,24 +186,46 @@ def apply_style():
         opacity: 0.95;
     }}
 
-    div[data-baseweb="input"] {{
+    div[data-baseweb="input"],
+    div[data-baseweb="select"],
+    div[data-baseweb="textarea"] {{
         background-color: #ffffff !important;
         border: 2px solid {USJ_BLUE} !important;
         border-radius: 14px !important;
-        box-shadow: 0 4px 14px rgba(0,31,91,0.10) !important;
+        box-shadow: 0 4px 14px rgba(0,31,91,0.12) !important;
     }}
 
-    div[data-baseweb="input"]:focus-within {{
+    div[data-baseweb="input"]:focus-within,
+    div[data-baseweb="select"]:focus-within,
+    div[data-baseweb="textarea"]:focus-within {{
         border: 3px solid {USJ_RED} !important;
-        box-shadow: 0 0 0 4px rgba(139,21,56,0.12) !important;
+        box-shadow: 0 0 0 4px rgba(139,21,56,0.14) !important;
     }}
 
-    div[data-baseweb="input"] input {{
+    div[data-baseweb="input"] input,
+    div[data-baseweb="select"] > div,
+    div[data-baseweb="textarea"] textarea {{
         background-color: #ffffff !important;
         color: {USJ_BLUE} !important;
         font-weight: 700 !important;
-        font-size: 18px !important;
-        padding: 14px !important;
+        font-size: 17px !important;
+        padding: 12px 14px !important;
+        border-radius: 12px !important;
+    }}
+
+    div[data-baseweb="select"] svg {{
+        color: {USJ_BLUE} !important;
+    }}
+
+    textarea {{
+        min-height: 130px !important;
+        line-height: 1.5 !important;
+    }}
+
+    .stSelectbox,
+    .stTextArea,
+    .stTextInput {{
+        margin-bottom: 12px !important;
     }}
 
     label {{
@@ -395,14 +484,20 @@ def login_page():
     <div class="main-hero">
         <div class="hero-kicker">TNA 2026</div>
         <div class="hero-title">Plateforme d’analyse des besoins en formation</div>
-        <div class="hero-subtitle">Accès sécurisé au questionnaire PSG, au questionnaire Doyens / Directeurs et au tableau de bord administrateur.</div>
+        <div class="hero-subtitle">Accès sécurisé par code au questionnaire PSG, au questionnaire Doyens / Directeurs et au tableau de bord administrateur.</div>
     </div>
     """, unsafe_allow_html=True)
 
     col1, col2, col3 = st.columns([1, 1.2, 1])
 
     with col2:
-        code = st.text_input("Code d’accès", type="password")
+        code = st.text_input(
+            "Code d’accès",
+            type="default",
+            placeholder="Exemple : PSG001, DD001 ou ADMIN2032",
+            autocomplete="off",
+            key="access_code"
+        )
 
         if st.button("Accéder au questionnaire", use_container_width=True):
             cleaned_code = code.strip().upper()
