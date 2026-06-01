@@ -1456,17 +1456,6 @@ def render_admin_dashboard():
                 st.markdown("#### Thèmes proposés")
                 render_theme_pills(final, "pill final")
 
-            if matched:
-                st.markdown("**Thèmes en commun :**")
-                render_theme_pills(matched, "pill matched")
-            else:
-                st.markdown("<span class='pill missing'>Aucun thème commun</span>", unsafe_allow_html=True)
-
-            st.info(scenario)
-
-            with st.expander("Afficher la matrice de décision"):
-                render_priority_matrix(employee_ranked, director_ranked, final)
-
             st.divider()
 
     elif view == "Réponses PSG":
