@@ -1045,6 +1045,12 @@ def get_question_non_available_years(question_col):
     if q_norm.startswith(normalize_question_key("31-")):
         return {"2022-2023", "2022/2023", "2022–2023", "2022_2023"}
 
+    if any(q_norm.startswith(normalize_question_key(prefix)) for prefix in [
+        "44_a-", "44_b-", "44_c-", "44_d-", "44_e-", "44_f-", "44_g-"
+    ]):
+        return {"2022-2023", "2022/2023", "2022–2023", "2022_2023",
+                "2023-2024", "2023/2024", "2023–2024", "2023_2024"}
+
     return set()
 
 
