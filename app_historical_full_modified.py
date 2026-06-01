@@ -156,6 +156,12 @@ st.markdown(
         font-family: Candara, Arial, sans-serif !important;
     }}
 
+    div[data-baseweb="select"] input {{
+        pointer-events: none !important;
+        caret-color: transparent !important;
+        color: transparent !important;
+    }}
+
     button[kind="secondary"], .stButton button {{
         border-radius: 18px !important;
         border: 1px solid #C9D6EA !important;
@@ -3058,6 +3064,7 @@ def page_other_questions():
         selected_other_question_label = st.selectbox(
             "Choisir une question complémentaire",
             options=list(question_options.keys())
+            key="other_question_dropdown"
         )
         selected_other_question = question_options[selected_other_question_label]
 
