@@ -1213,62 +1213,6 @@ def render_employee_comparison_visual(employee_name, employee_ranked, director_r
     st.markdown("#### Tableau comparatif des priorités")
     st.dataframe(comparison_df, use_container_width=True, hide_index=True)
 
-    if go is not None:
-        score_rows = []
-
-        all_themes = list(dict.fromkeys(employee_ranked + director_ranked + final_themes))
-        for theme in all_themes:
-            emp_score = 4 - (employee_ranked.index(theme) + 1) if theme in employee_ranked else 0
-            dir_score = 4 - (director_ranked.index(theme) + 1) if theme in director_ranked else 0
-            final_score = 4 - (final_themes.index(theme) + 1) if theme in final_themes else 0
-
-            score_rows.append({
-                "Thème": theme,
-                "Score employé": emp_score,
-                "Score directeur": dir_score,
-                "Score final": final_score
-            })
-
-        if score_rows:
-            score_df = pd.DataFrame(score_rows)
-
-            fig = go.Figure()
-
-            fig.add_trace(go.Bar(
-                y=score_df["Thème"],
-                x=score_df["Score employé"],
-                name="Employé",
-                orientation="h"
-            ))
-
-            fig.add_trace(go.Bar(
-                y=score_df["Thème"],
-                x=score_df["Score directeur"],
-                name="Doyen / Directeur",
-                orientation="h"
-            ))
-
-            fig.add_trace(go.Bar(
-                y=score_df["Thème"],
-                x=score_df["Score final"],
-                name="Final proposé",
-                orientation="h"
-            ))
-
-            fig.update_layout(
-                title="Scores comparés des thèmes",
-                barmode="group",
-                height=max(360, 70 * len(score_df)),
-                margin=dict(l=20, r=20, t=55, b=20),
-                xaxis_title="Score de priorité",
-                yaxis_title="",
-                yaxis=dict(autorange="reversed"),
-                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
-                paper_bgcolor="rgba(0,0,0,0)",
-                plot_bgcolor="rgba(0,0,0,0)"
-            )
-
-            st.plotly_chart(fig, use_container_width=True)
 
 
 def render_priority_matrix(employee_ranked, director_ranked, final_themes):
