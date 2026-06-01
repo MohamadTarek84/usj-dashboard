@@ -580,6 +580,24 @@ def prepare_data(file_path, file_mtime, file_size):
     df_original = normalize_year_column(load_data(file_path, file_mtime, file_size))
     df_coded = df_original.copy()
 
+    # Correct known historical availability issue caused by the merged Excel.
+    # Questions 9d_a to 9d_e did not exist in the 2022-2023 questionnaire.
+    # They must therefore be blank for 2022-2023 and excluded from denominators.
+    stage_impact_9d_items = [
+        "9d_a- L'expérience de stage a permis d'améliorer : La capacité à travailler en équipe",
+        "9d_b- L'expérience de stage a permis d'améliorer : L'appréciation des valeurs éthiques",
+        "9d_c- L'expérience de stage a permis d'améliorer :Le développement professionnel",
+        "9d_d- L'expérience de stage a permis d'améliorer :Les compétences en matière de gestion du temps",
+        "9d_e- L'expérience de stage a permis d'améliorer :Le lien entre la théorie et la pratique",
+    ]
+    year_norm = df_original["Year"].astype(str).str.strip().str.replace("–", "-", regex=False).str.replace("/", "-", regex=False).str.replace("_", "-", regex=False)
+    mask_2022_2023 = year_norm.eq("2022-2023")
+    for col in stage_impact_9d_items:
+        if col in df_original.columns:
+            df_original.loc[mask_2022_2023, col] = np.nan
+        if col in df_coded.columns:
+            df_coded.loc[mask_2022_2023, col] = np.nan
+
     if "Faculté_Institut_g" in df_coded.columns:
         df_coded["Faculté_Institut_g"] = df_coded["Faculté_Institut_g"].replace({"ELFS": "ESTS"})
         df_original["Faculté_Institut_g"] = df_original["Faculté_Institut_g"].replace({"ELFS": "ESTS"})
@@ -1000,21 +1018,67 @@ def get_question_dependency(question_col, original_data=None):
     return None
 
 
+def get_question_non_available_years(question_col):
+    """Return years where a question did not exist in the original survey.
+
+    This is different from a missing answer. For example, 9d_a to 9d_e did not exist
+    in the 2022-2023 Exit Survey, so 2022-2023 respondents must be excluded from
+    the denominator even if the merged Excel accidentally contains copied values.
+    """
+    q_norm = normalize_question_key(question_col)
+
+    if any(q_norm.startswith(normalize_question_key(prefix)) for prefix in [
+        "9d_a-", "9d_b-", "9d_c-", "9d_d-", "9d_e-"
+    ]):
+        return {"2022-2023", "2022/2023", "2022–2023", "2022_2023"}
+
+    return set()
+
+
+def is_question_available_for_year(question_col, year_value):
+    unavailable_years = get_question_non_available_years(question_col)
+    if not unavailable_years:
+        return True
+
+    y = str(year_value).strip()
+    y_norm = y.replace("–", "-").replace("/", "-").replace("_", "-")
+    unavailable_norm = {str(v).replace("–", "-").replace("/", "-").replace("_", "-") for v in unavailable_years}
+    return y_norm not in unavailable_norm
+
+
+def get_question_available_index(original_data, coded_filter_data, question_col):
+    """Return rows where the selected question existed in that survey year."""
+    if len(coded_filter_data) == 0:
+        return pd.Index([])
+    if "Year" not in coded_filter_data.columns:
+        return coded_filter_data.index
+
+    available_mask = coded_filter_data["Year"].map(lambda y: is_question_available_for_year(question_col, y)).fillna(True)
+    return available_mask[available_mask].index
+
+
 def get_applicable_response_series(original_data, coded_filter_data, question_col):
-    """Return responses using the correct denominator for conditional questions."""
+    """Return responses using the correct denominator for conditional questions.
+
+    The denominator excludes:
+    1. respondents for whom the question was not asked because of skip logic, and
+    2. respondents from years where the question did not exist in the original survey.
+    """
     if question_col not in original_data.columns or len(coded_filter_data) == 0:
         empty = pd.Series(dtype=object)
         return empty, pd.Index([]), 0, None
 
     base_index = coded_filter_data.index
+    available_index = get_question_available_index(original_data, coded_filter_data, question_col)
+
     parent_col = get_question_dependency(question_col, original_data)
 
     if parent_col and parent_col in original_data.columns:
-        parent_values = original_data.loc[base_index, parent_col].map(clean_response_value)
+        parent_values = original_data.loc[available_index, parent_col].map(clean_response_value)
         eligible_mask = parent_values.map(is_yes_response).fillna(False)
         eligible_index = eligible_mask[eligible_mask].index
     else:
-        eligible_index = base_index
+        eligible_index = available_index
 
     non_applicable_n = int(len(base_index) - len(eligible_index))
     responses = original_data.loc[eligible_index, question_col].map(clean_response_value)
