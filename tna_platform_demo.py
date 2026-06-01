@@ -779,16 +779,29 @@ def count_existing_responses():
     return count
 
 
+def trial_data_is_complete():
+    expected_codes = set(TRIAL_PSG_RESPONSES.keys()) | set(TRIAL_DIRECTOR_RESPONSES.keys())
+
+    conn = sqlite3.connect(DB_NAME)
+    existing_codes = {
+        row[0]
+        for row in conn.execute("SELECT DISTINCT respondent_code FROM responses").fetchall()
+    }
+    conn.close()
+
+    return expected_codes.issubset(existing_codes)
+
+
 def seed_trial_data(force=False):
-    if count_existing_responses() > 0 and not force:
+    if not force and trial_data_is_complete():
         return
 
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
 
-    if force:
-        c.execute("DELETE FROM responses")
-        c.execute("DELETE FROM admin_theme_overrides")
+    # Demo mode: keep the database clean so the dashboard always shows the full generated dataset.
+    c.execute("DELETE FROM responses")
+    c.execute("DELETE FROM admin_theme_overrides")
 
     base_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -1327,6 +1340,7 @@ def ranked_select_with_defaults(label, options, key_prefix, defaults=None):
 
 
 def render_employee_comparison_visual(employee_name, employee_ranked, director_ranked, final_themes, matched):
+    # The comparative priority table and decision matrix were intentionally removed.
     st.markdown(f"""
     <div class="card gold-card">
         <h3 style="margin-top:0; color:#001F5B;">Synthèse visuelle claire - {employee_name}</h3>
@@ -1335,25 +1349,7 @@ def render_employee_comparison_visual(employee_name, employee_ranked, director_r
         </div>
     </div>
     """, unsafe_allow_html=True)
-
-    comparison_rows = []
-
-    for rank in [1, 2, 3]:
-        emp_theme = employee_ranked[rank - 1] if len(employee_ranked) >= rank else ""
-        dir_theme = director_ranked[rank - 1] if len(director_ranked) >= rank else ""
-        final_theme = final_themes[rank - 1] if len(final_themes) >= rank else ""
-
-        comparison_rows.append({
-            "Priorité": f"P{rank}",
-            "Choix de l’employé": emp_theme,
-            "Choix du Doyen / Directeur": dir_theme,
-            "Thème final proposé": final_theme,
-            "Correspondance": "Oui" if final_theme in matched else "Non"
-        })
-
-    comparison_df = pd.DataFrame(comparison_rows)
-
-    c1, c2, c3 = st.columns(3)
+c1, c2, c3 = st.columns(3)
 
     with c1:
         st.markdown("""
@@ -1414,9 +1410,6 @@ def render_employee_comparison_visual(employee_name, employee_ranked, director_r
 
         st.markdown("</div>", unsafe_allow_html=True)
 
-    st.markdown("#### Tableau comparatif des priorités")
-    st.dataframe(comparison_df, use_container_width=True, hide_index=True)
-
 
 
 def render_priority_matrix(employee_ranked, director_ranked, final_themes):
@@ -1466,10 +1459,12 @@ def render_admin_dashboard():
         st.info("Aucune réponse enregistrée pour le moment.")
         return
 
+    st.caption("Données d’essai intégrées : 5 Doyens / Directeurs et 25 employés PSG.")
+
     with st.sidebar:
         st.header("Filtres administrateur")
 
-        if st.button("Réinitialiser et charger les données d’essai", use_container_width=True):
+        if st.button("Charger / réinitialiser les données d’essai", use_container_width=True):
             seed_trial_data(force=True)
             st.success("Données d’essai chargées.")
             st.rerun()
