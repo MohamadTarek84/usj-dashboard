@@ -3111,11 +3111,11 @@ def page_other_questions():
     dependency_label = clean_other_question_label(parent_col) if parent_col else "Aucune condition"
 
     if selected_other_question.startswith("44_"):
-        rows = []
+    rows = []
 
     for col, label in Q44_FINANCING_ITEMS.items():
         if col in df_original.columns:
-            responses, eligible_index, non_applicable_n, parent_col = get_applicable_response_series(
+            responses, q44_eligible_index, q44_non_applicable_n, q44_parent_col = get_applicable_response_series(
                 df_original,
                 df_filtered,
                 col
@@ -3137,6 +3137,10 @@ def page_other_questions():
 
     q44_df = pd.DataFrame(rows)
 
+    if q44_df.empty:
+        st.warning("Aucune donnée valide disponible pour les modes de financement.")
+        return
+
     q44_long = q44_df.melt(
         id_vars=["Modalité", "N valide"],
         value_vars=["Oui (%)", "Non (%)"],
@@ -3155,12 +3159,12 @@ def page_other_questions():
             "Oui (%)": USJ_GREEN,
             "Non (%)": USJ_DARK_RED
         },
-        hover_data={"N valide": True}
+        hover_data={"N valide": True},
+        title="Modes de financement des études à l’USJ"
     )
 
     fig_q44.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
     fig_q44.update_layout(
-        title="Modes de financement des études à l’USJ",
         xaxis_title="Mode de financement",
         yaxis_title="Pourcentage des réponses valides",
         legend_title="Réponse",
@@ -3171,7 +3175,6 @@ def page_other_questions():
     st.plotly_chart(fig_q44, use_container_width=True, config={"displayModeBar": False})
 
     return
-
 
     
     k1, k2, k3, k4 = st.columns(4)
