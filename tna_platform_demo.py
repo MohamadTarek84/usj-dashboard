@@ -327,6 +327,7 @@ def apply_style():
         border: 2px solid {USJ_BLUE} !important;
         border-radius: 14px !important;
         box-shadow: 0 4px 14px rgba(0,31,91,0.12) !important;
+        min-height: 52px !important;
     }}
 
     div[data-baseweb="input"]:focus-within,
@@ -336,22 +337,37 @@ def apply_style():
         box-shadow: 0 0 0 4px rgba(139,21,56,0.14) !important;
     }}
 
-    div[data-baseweb="input"] input,
-    div[data-baseweb="select"] > div,
-    div[data-baseweb="textarea"] textarea {{
+    div[data-baseweb="input"] input {{
         background-color: #ffffff !important;
         color: {USJ_BLUE} !important;
         font-weight: 700 !important;
         font-size: 17px !important;
         padding: 12px 14px !important;
-        border-radius: 12px !important;
+    }}
+
+    div[data-baseweb="select"] div {{
+        color: {USJ_BLUE} !important;
+        font-weight: 700 !important;
+        font-size: 16px !important;
+    }}
+
+    div[data-baseweb="select"] span {{
+        color: {USJ_BLUE} !important;
+        font-weight: 700 !important;
+        opacity: 1 !important;
     }}
 
     div[data-baseweb="select"] svg {{
         color: {USJ_BLUE} !important;
+        fill: {USJ_BLUE} !important;
     }}
 
-    textarea {{
+    div[data-baseweb="textarea"] textarea {{
+        background-color: #ffffff !important;
+        color: {USJ_BLUE} !important;
+        font-weight: 600 !important;
+        font-size: 16px !important;
+        padding: 14px 16px !important;
         min-height: 130px !important;
         line-height: 1.5 !important;
     }}
