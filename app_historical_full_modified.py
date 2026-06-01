@@ -927,18 +927,97 @@ OTHER_QUESTION_LABELS = {
 }
 
 
-def clean_other_question_label(question):
-    """Return a complete, reader-friendly label for complementary questions.
 
-    The Excel column name is kept internally for calculations, while this
-    function controls what appears in the dashboard and in the printable report.
-    If a column is not in OTHER_QUESTION_LABELS, the function falls back to the
-    full Excel label after removing only the leading technical code when needed.
-    """
+def clean_other_question_label(question):
+    """Return a complete, readable label for complementary questions."""
     q = str(question).strip()
-    if q in OTHER_QUESTION_LABELS:
-        return OTHER_QUESTION_LABELS[q]
-    return score_question_label(q)
+    return OTHER_QUESTION_LABELS.get(q, score_question_label(q))
+
+
+def normalize_question_key(value):
+    """Normalize column labels for robust matching despite accents, spaces and NBSP."""
+    import unicodedata
+    text = str(value).strip().replace("\u00a0", " ")
+    text = unicodedata.normalize("NFKD", text)
+    text = "".join(ch for ch in text if not unicodedata.combining(ch))
+    text = text.lower()
+    text = re.sub(r"\s+", " ", text)
+    text = text.replace("’", "'")
+    return text.strip()
+
+
+def is_yes_response(value):
+    """Detect affirmative answers used for skip-pattern eligibility."""
+    if pd.isna(value):
+        return False
+    text = normalize_question_key(value)
+    return text in {"oui", "yes", "y"} or text.startswith("oui ")
+
+
+def find_column_by_prefix(columns, prefixes):
+    """Find a column using normalized prefixes."""
+    normalized = {col: normalize_question_key(col) for col in columns}
+    for prefix in prefixes:
+        prefix_norm = normalize_question_key(prefix)
+        for col, norm_col in normalized.items():
+            if norm_col.startswith(prefix_norm):
+                return col
+    return None
+
+
+def get_question_dependency(question_col, original_data=None):
+    """Return the parent question for skip-pattern questions."""
+    columns = original_data.columns if original_data is not None else df_original.columns
+    q_norm = normalize_question_key(question_col)
+
+    dependency_rules = [
+        {
+            "child_prefixes": ["9a-", "9b_a-", "9b_b-", "9b_c-", "9b_d-", "9b_e-", "9b_f-", "9b_g-", "9b_h-", "9c-", "9d_a-", "9d_b-", "9d_c-", "9d_d-", "9d_e-"],
+            "parent_prefixes": ["9- avez-vous realise un stage", "9- avez-vous réalisé un stage"],
+        },
+        {
+            "child_prefixes": ["24a-"],
+            "parent_prefixes": ["24- beneficier d'une aide", "24- bénéficier d'une aide"],
+        },
+        {
+            "child_prefixes": ["25a-"],
+            "parent_prefixes": ["25- beneficier d'une bourse", "25- bénéficier d'une bourse"],
+        },
+        {
+            "child_prefixes": ["37-"],
+            "parent_prefixes": ["36-suivez-vous les pages", "36- suivez-vous les pages"],
+        },
+        {
+            "child_prefixes": ["39-"],
+            "parent_prefixes": ["38-suivez-vous les pages", "38- suivez-vous les pages"],
+        },
+    ]
+
+    for rule in dependency_rules:
+        if any(q_norm.startswith(normalize_question_key(prefix)) for prefix in rule["child_prefixes"]):
+            return find_column_by_prefix(columns, rule["parent_prefixes"])
+    return None
+
+
+def get_applicable_response_series(original_data, coded_filter_data, question_col):
+    """Return responses using the correct denominator for conditional questions."""
+    if question_col not in original_data.columns or len(coded_filter_data) == 0:
+        empty = pd.Series(dtype=object)
+        return empty, pd.Index([]), 0, None
+
+    base_index = coded_filter_data.index
+    parent_col = get_question_dependency(question_col, original_data)
+
+    if parent_col and parent_col in original_data.columns:
+        parent_values = original_data.loc[base_index, parent_col].map(clean_response_value)
+        eligible_mask = parent_values.map(is_yes_response).fillna(False)
+        eligible_index = eligible_mask[eligible_mask].index
+    else:
+        eligible_index = base_index
+
+    non_applicable_n = int(len(base_index) - len(eligible_index))
+    responses = original_data.loc[eligible_index, question_col].map(clean_response_value)
+    return responses, eligible_index, non_applicable_n, parent_col
 
 def build_year_summary(data, q43):
     rows = []
@@ -2556,12 +2635,12 @@ def html_escape(value):
 def get_excluded_non_question_columns():
     """Columns that should not be treated as questionnaire items."""
     base_cols = {
-        "Year", "Année", "Genre", "Faculté_Institut_g", "Faculté_Institut", "Faculté", "Cursus", "Niveau", "Niveau_Lib",
-        "startlanguage", "StartLanguage", "Language", "Langue", "Age", "Date", "Horodateur", "Timestamp",
-        "Institution", "Responsable", "Email", "Adresse e-mail", "ID", "Id", "id", "Code", "Nom", "Prénom",
-        "StartDate", "EndDate", "Status", "IPAddress", "Progress", "Duration", "Finished", "RecordedDate",
-        "ResponseId", "RecipientLastName", "RecipientFirstName", "RecipientEmail", "ExternalReference",
-        "LocationLatitude", "LocationLongitude", "DistributionChannel", "UserLanguage"
+        "Year", "Année", "Genre", "Faculté_Institut_g", "Faculté", "Faculté_Institut", "Faculty", "Institut",
+        "Cursus", "Niveau", "Niveau_Lib", "startlanguage", "StartLanguage", "Language", "Langue", "Age",
+        "Date", "Horodateur", "Timestamp", "Institution", "Responsable", "Email", "Adresse e-mail", "ID", "Id", "id",
+        "Code", "Nom", "Prénom", "StartDate", "EndDate", "Status", "IPAddress", "Progress", "Duration",
+        "Finished", "RecordedDate", "ResponseId", "RecipientLastName", "RecipientFirstName", "RecipientEmail",
+        "ExternalReference", "LocationLatitude", "LocationLongitude", "DistributionChannel", "UserLanguage"
     }
     base_cols.update(SCORE_COLUMNS)
     return base_cols
@@ -2630,33 +2709,17 @@ def classify_other_question(col_name, series=None):
 
 
 def get_other_question_columns(original_data):
-    """Return all survey questions not already used in the main indicators/components.
-
-    The detection is based on the Excel columns at runtime, so any additional historical item
-    such as Q3 tutor assignment or Q6 international mobility is automatically included when present.
-    """
+    """Return all survey questions not already used in the main indicators/components."""
     excluded = get_excluded_non_question_columns().union(get_used_dashboard_question_columns())
     candidate_cols = []
     for col in original_data.columns:
         col_str = str(col).strip()
-        col_norm = (
-            col_str.lower()
-            .replace("é", "e")
-            .replace("è", "e")
-            .replace("ê", "e")
-            .replace("à", "a")
-            .replace(" ", "")
-        )
-
-        # Never treat demographic, filter, identifier, score or faculty columns as complementary questions.
+        col_norm = normalize_question_key(col_str)
         if col_str in excluded:
             continue
-        if col_norm in {
-            "faculte_institut", "faculte_institut_g", "faculte", "institution",
-            "genre", "cursus", "niveau", "niveau_lib", "year", "annee"
-        }:
+        if col_norm in {"faculte_institut", "faculte institut", "faculte_institut_g", "faculty", "faculte", "institut"}:
             continue
-        if "faculte_institut" in col_norm or "faculty" in col_norm:
+        if "faculte_institut" in col_norm or col_norm.startswith("faculte institut"):
             continue
         if col_str.startswith("Score "):
             continue
@@ -2666,7 +2729,6 @@ def get_other_question_columns(original_data):
             continue
         candidate_cols.append(col_str)
 
-    # Natural questionnaire order when columns start with numbers, otherwise original order.
     import re
     def sort_key(x):
         m = re.match(r"^\s*(\d+)", str(x))
@@ -2677,24 +2739,25 @@ def get_other_question_columns(original_data):
 def get_other_question_inventory(original_data, coded_filter_data):
     rows = []
     for col in get_other_question_columns(original_data):
-        s = original_data.loc[coded_filter_data.index, col].map(clean_response_value) if len(coded_filter_data) else pd.Series(dtype=object)
+        s, eligible_index, non_applicable_n, parent_col = get_applicable_response_series(original_data, coded_filter_data, col)
         valid = s.dropna()
+        eligible_n = int(len(eligible_index))
+        missing_n = int(s.isna().sum()) if eligible_n > 0 else 0
+        missing_pct = (missing_n / eligible_n * 100) if eligible_n > 0 else np.nan
         rows.append({
             "Catégorie": classify_other_question(col, s),
             "Question": col,
             "Question affichée": clean_other_question_label(col),
+            "Question filtre": clean_other_question_label(parent_col) if parent_col else "Aucun filtre conditionnel",
+            "Base applicable": eligible_n,
+            "Non applicable": non_applicable_n,
             "N valide": int(valid.shape[0]),
+            "Données manquantes (%)": missing_pct,
             "Modalités": int(valid.nunique()) if not valid.empty else 0,
             "Type": "Fermée / catégorielle" if (not valid.empty and valid.nunique() <= 30) else "Ouverte / texte libre",
         })
-    out = pd.DataFrame(rows)
-    if not out.empty:
-        out["Catégorie"] = out["Catégorie"].replace({
-            "Questions ouvertes / précisions": "Questions complémentaires détaillées",
-            "Questions ouvertes / précisions ": "Questions complémentaires détaillées",
-            "Questions ouvertes / precisions": "Questions complémentaires détaillées",
-        })
-    return out
+    return pd.DataFrame(rows)
+
 
 def clean_response_value(value):
     if pd.isna(value):
@@ -2708,9 +2771,14 @@ def clean_response_value(value):
 def build_other_question_distribution(original_data, coded_filter_data, question_col):
     if question_col not in original_data.columns:
         return pd.DataFrame()
+
+    responses, eligible_index, non_applicable_n, parent_col = get_applicable_response_series(original_data, coded_filter_data, question_col)
+    if len(eligible_index) == 0:
+        return pd.DataFrame()
+
     temp = pd.DataFrame({
-        "Année": coded_filter_data["Year"].astype(str).values,
-        "Réponse": original_data.loc[coded_filter_data.index, question_col].map(clean_response_value).values,
+        "Année": coded_filter_data.loc[eligible_index, "Year"].astype(str).values,
+        "Réponse": responses.values,
     })
     temp = temp.dropna(subset=["Réponse"])
     if temp.empty:
@@ -2721,11 +2789,12 @@ def build_other_question_distribution(original_data, coded_filter_data, question
 
 
 
+
 def summarize_other_questions_for_report(original_data, coded_filter_data, max_questions=14):
     """Compact executive summary of complementary questions for the printable report.
 
-    Priority is given to closed questions, especially operational items such as tutoring,
-    mobility, exchange, employment/stage and administrative pathway questions.
+    For conditional questions, the denominator is the applicable base only.
+    Example: Q9a/Q9b/Q9c/Q9d are computed only among respondents who answered Oui to Q9.
     """
     rows = []
     priority_terms = [
@@ -2736,7 +2805,8 @@ def summarize_other_questions_for_report(original_data, coded_filter_data, max_q
     for col in other_cols:
         if col not in original_data.columns:
             continue
-        series = original_data.loc[coded_filter_data.index, col].map(clean_response_value).dropna()
+        series, eligible_index, non_applicable_n, parent_col = get_applicable_response_series(original_data, coded_filter_data, col)
+        series = series.dropna()
         if series.empty:
             continue
         n_valid = int(series.shape[0])
@@ -2750,12 +2820,16 @@ def summarize_other_questions_for_report(original_data, coded_filter_data, max_q
         priority_score = 0
         if any(term in q_lower for term in priority_terms):
             priority_score += 1000
-        if str(col).strip().startswith(("3-", "3 -", "6-", "6 -")):
+        if str(col).strip().startswith(("3-", "3 -", "6-", "6 -", "9-", "9a-", "9b_", "9c-")):
             priority_score += 1200
         priority_score += min(n_valid, 500)
         rows.append({
             "Catégorie": classify_other_question(col, series),
             "Question": col,
+            "Question affichée": clean_other_question_label(col),
+            "Question filtre": clean_other_question_label(parent_col) if parent_col else "Aucun filtre conditionnel",
+            "Base applicable": int(len(eligible_index)),
+            "Non applicable": int(non_applicable_n),
             "N valide": n_valid,
             "Réponse dominante": top_resp,
             "Pourcentage": top_pct,
@@ -2770,6 +2844,7 @@ def summarize_other_questions_for_report(original_data, coded_filter_data, max_q
 
 
 
+
 def page_other_questions():
     section_header(
         "Autres questions du questionnaire",
@@ -2778,9 +2853,9 @@ def page_other_questions():
 
     summary_box(
         """
-        Cette page détecte automatiquement, à partir du fichier Excel, toutes les questions du questionnaire qui ne sont pas utilisées dans les scores principaux.
-        Elle inclut notamment les questions de tutorat, de mobilité internationale, de parcours, d’administration ou d’autres informations complémentaires.
-        Les résultats respectent les filtres actifs du tableau de bord et peuvent être mobilisés dans le rapport synthétique imprimable.
+        Cette page détecte automatiquement, à partir du fichier Excel, les questions qui ne sont pas utilisées dans les scores principaux.
+        Pour les questions conditionnelles, la base de calcul est corrigée : les répondants non concernés sont classés comme <b>non applicables</b> et ne sont pas comptés comme données manquantes.
+        Par exemple, les questions liées au stage sont calculées uniquement parmi les répondants ayant déclaré avoir réalisé un stage.
         """,
         color=USJ_BLUE,
         background="#F7F9FC"
@@ -2799,12 +2874,14 @@ def page_other_questions():
     with col_c:
         insight_card("Questions fermées", int((inventory["Type"] == "Fermée / catégorielle").sum()), "Analysables en graphique", USJ_GOLD)
     with col_d:
-        insight_card("Années représentées", df_filtered["Year"].nunique(), "Selon les filtres", USJ_BLUE_2)
+        conditional_n = int((inventory["Question filtre"] != "Aucun filtre conditionnel").sum())
+        insight_card("Questions conditionnelles", conditional_n, "Base applicable corrigée", USJ_BLUE_2)
 
     st.markdown(f"<h3 style='color:{USJ_BLUE}; margin-top:22px;'>Inventaire des autres questions détectées</h3>", unsafe_allow_html=True)
     inv_display = inventory.copy()
+    inv_display["Données manquantes (%)"] = inv_display["Données manquantes (%)"].map(lambda x: "" if pd.isna(x) else f"{x:.1f}%")
     st.dataframe(
-        inv_display[["Catégorie", "Question affichée", "N valide", "Modalités", "Type"]],
+        inv_display[["Catégorie", "Question affichée", "Question filtre", "Base applicable", "Non applicable", "N valide", "Données manquantes (%)", "Modalités", "Type"]],
         use_container_width=True,
         hide_index=True
     )
@@ -2819,36 +2896,45 @@ def page_other_questions():
 
     with qfilter:
         question_options = {
-            clean_other_question_label(q): q
-            for q in filtered_inventory["Question"].tolist()
+            row["Question affichée"]: row["Question"]
+            for _, row in filtered_inventory.iterrows()
         }
-
         selected_other_question_label = st.selectbox(
             "Choisir une question complémentaire",
             options=list(question_options.keys())
         )
-
         selected_other_question = question_options[selected_other_question_label]
 
-    selected_series = df_original.loc[df_filtered.index, selected_other_question].map(clean_response_value)
+    selected_series, eligible_index, non_applicable_n, parent_col = get_applicable_response_series(
+        df_original,
+        df_filtered,
+        selected_other_question
+    )
     valid_series = selected_series.dropna()
+    eligible_n = int(len(eligible_index))
     n_valid = int(valid_series.shape[0])
-    missing_pct = selected_series.isna().mean() * 100 if len(selected_series) > 0 else np.nan
+    missing_n = int(selected_series.isna().sum()) if eligible_n > 0 else 0
+    missing_pct = missing_n / eligible_n * 100 if eligible_n > 0 else np.nan
     unique_n = int(valid_series.nunique()) if n_valid > 0 else 0
     selected_category_label = classify_other_question(selected_other_question, selected_series)
+    dependency_label = clean_other_question_label(parent_col) if parent_col else "Aucune condition"
 
     k1, k2, k3, k4 = st.columns(4)
     with k1:
         insight_card("Catégorie", selected_category_label, "Lecture thématique", USJ_BLUE)
     with k2:
-        insight_card("Réponses valides", n_valid, "Après filtres", USJ_GREEN if n_valid > 0 else USJ_RED)
+        insight_card("Base applicable", eligible_n, "Répondants concernés", USJ_GREEN if eligible_n > 0 else USJ_RED)
     with k3:
-        insight_card("Données manquantes", safe_pct(missing_pct), "Taux de non-réponse", USJ_ORANGE if pd.notna(missing_pct) and missing_pct > 10 else USJ_GREEN)
+        insight_card("Données manquantes", safe_pct(missing_pct), "Parmi les répondants concernés", USJ_ORANGE if pd.notna(missing_pct) and missing_pct > 10 else USJ_GREEN)
     with k4:
-        insight_card("Modalités", unique_n, "Réponses distinctes", USJ_GOLD)
+        insight_card("Non applicable", non_applicable_n, "Exclus du dénominateur", USJ_BLUE_2)
+
+    if eligible_n == 0:
+        st.warning("Aucun répondant n’est applicable pour cette question avec les filtres sélectionnés.")
+        return
 
     if n_valid == 0:
-        st.warning("Aucune réponse valide pour cette question dans les filtres sélectionnés.")
+        st.warning("Aucune réponse valide pour cette question parmi les répondants concernés.")
         return
 
     st.markdown(
@@ -2857,6 +2943,7 @@ def page_other_questions():
             <div style='font-size:14px;font-weight:800;color:#667085;margin-bottom:6px;'>Question analysée</div>
             <div style='font-size:20px;font-weight:900;color:{USJ_BLUE};line-height:1.35;'>{html_escape(selected_other_question_label)}</div>
             <div style='font-size:13px;color:#667085;margin-top:8px;'>Variable Excel : {html_escape(selected_other_question)}</div>
+            <div style='font-size:13px;color:#667085;margin-top:4px;'>Condition d’applicabilité : {html_escape(dependency_label)}</div>
         </div>
         """,
         unsafe_allow_html=True
@@ -2878,36 +2965,17 @@ def page_other_questions():
             color="Pourcentage",
             color_continuous_scale=[[0, "#EAF2FF"], [0.5, "#7FA6D9"], [1, USJ_BLUE]],
             hover_data={"N": True, "Pourcentage": ":.2f"},
-            title="Distribution globale des réponses"
+            title="Distribution globale des réponses parmi les répondants concernés"
         )
-        fig_overall.update_traces(texttemplate="%{text:.2f}%", textposition="outside", marker_line_color="white", marker_line_width=1)
-        fig_overall.update_layout(xaxis_title="Pourcentage des réponses", yaxis_title="", coloraxis_showscale=False)
-        theme_layout(fig_overall, height=max(420, 38 * len(overall)), showlegend=False)
+        fig_overall.update_traces(texttemplate="%{text:.2f}%", textposition="outside", marker_line_color="white", marker_line_width=1, cliponaxis=False)
+        fig_overall.update_layout(xaxis_title="Pourcentage des réponses valides", yaxis_title="", coloraxis_showscale=False, margin=dict(l=40, r=80, t=90, b=50))
+        theme_layout(fig_overall, height=max(460, 42 * len(overall)), showlegend=False)
         st.plotly_chart(fig_overall, use_container_width=True, config={"displayModeBar": False})
 
         if not dist_year.empty and dist_year["Année"].nunique() > 1:
-            # Keep the chart readable when a question has many response categories.
-            # The most frequent responses are displayed separately and the remaining
-            # ones are grouped under "Autres réponses". This prevents legends from
-            # covering the title or the plot area.
-            response_order = overall.sort_values("Pourcentage", ascending=False)["Réponse"].astype(str).tolist()
-            max_visible_responses = 10
-            visible_responses = response_order[:max_visible_responses]
-            dist_year_plot = dist_year.copy()
-            if len(response_order) > max_visible_responses:
-                dist_year_plot["Réponse"] = np.where(
-                    dist_year_plot["Réponse"].astype(str).isin(visible_responses),
-                    dist_year_plot["Réponse"].astype(str),
-                    "Autres réponses"
-                )
-                dist_year_plot = (
-                    dist_year_plot
-                    .groupby(["Année", "Réponse"], as_index=False)
-                    .agg({"N": "sum", "Pourcentage": "sum"})
-                )
-
+            response_count = dist_year["Réponse"].nunique()
             fig_stack = px.bar(
-                dist_year_plot,
+                dist_year,
                 x="Année",
                 y="Pourcentage",
                 color="Réponse",
@@ -2917,45 +2985,16 @@ def page_other_questions():
                 hover_data={"N": True, "Pourcentage": ":.2f"},
                 title="Évolution de la distribution par année"
             )
-            fig_stack.update_traces(
-                texttemplate="%{text:.1f}%",
-                textposition="inside",
-                marker_line_color="white",
-                marker_line_width=0.8,
-                hovertemplate="Année: %{x}<br>Réponse: %{fullData.name}<br>Pourcentage: %{y:.2f}%<extra></extra>"
-            )
+            fig_stack.update_traces(texttemplate="%{text:.1f}%", textposition="inside", cliponaxis=False)
             fig_stack.update_layout(
-                yaxis_title="Pourcentage des réponses",
+                yaxis_title="Pourcentage des réponses valides",
                 xaxis_title="Année",
                 legend_title="Réponse",
-                title=dict(
-                    text="Évolution de la distribution par année",
-                    x=0.01,
-                    y=0.98,
-                    font=dict(size=20, color=USJ_BLUE, family="Candara, Arial")
-                ),
+                legend=dict(orientation="h", yanchor="bottom", y=1.14, xanchor="left", x=0, font=dict(size=10)),
+                margin=dict(l=40, r=30, t=150 if response_count > 6 else 100, b=50),
             )
-            theme_layout(fig_stack, height=570, showlegend=True)
-            fig_stack.update_layout(
-                legend=dict(
-                    orientation="v",
-                    yanchor="top",
-                    y=1.0,
-                    xanchor="left",
-                    x=1.02,
-                    font=dict(size=11, family="Candara, Arial"),
-                    title=dict(text="Réponse")
-                ),
-                margin=dict(l=70, r=340, t=105, b=65),
-                hovermode="x unified"
-            )
-            st.plotly_chart(fig_stack, use_container_width=True, config={"displayModeBar": True, "displaylogo": False})
-
-            if len(response_order) > max_visible_responses:
-                st.caption(
-                    f"Pour préserver la lisibilité du graphique, seules les {max_visible_responses} réponses les plus fréquentes sont affichées séparément. "
-                    "Les autres modalités sont regroupées sous 'Autres réponses'."
-                )
+            theme_layout(fig_stack, height=620 if response_count > 6 else 540)
+            st.plotly_chart(fig_stack, use_container_width=True, config={"displayModeBar": False})
 
         top_resp = overall.sort_values("Pourcentage", ascending=False).iloc[0]
         second_resp = overall.sort_values("Pourcentage", ascending=False).iloc[1] if len(overall) > 1 else None
@@ -2963,11 +3002,18 @@ def page_other_questions():
         if second_resp is not None:
             second_text = f" La deuxième réponse la plus fréquente est <b>{html_escape(second_resp['Réponse'])}</b> ({second_resp['Pourcentage']:.2f}%)."
 
+        conditional_text = ""
+        if parent_col:
+            conditional_text = (
+                f" Cette question est conditionnelle : le calcul est basé uniquement sur les <b>{eligible_n}</b> répondants concernés, "
+                f"tandis que <b>{non_applicable_n}</b> répondants sont considérés comme non applicables et exclus du taux de non-réponse."
+            )
+
         summary_box(
             f"""
             <span style='font-size:20px; font-weight:800; color:{USJ_BLUE};'>Lecture décisionnelle</span><br>
             Pour cette question complémentaire, la réponse dominante est <b>{html_escape(top_resp['Réponse'])}</b>, avec
-            <b>{top_resp['Pourcentage']:.2f}%</b> des réponses valides.{second_text}
+            <b>{top_resp['Pourcentage']:.2f}%</b> des réponses valides.{second_text}{conditional_text}
             Cette information apporte un éclairage contextuel aux indicateurs principaux et peut expliquer certains résultats observés dans les dimensions de satisfaction.
             """,
             color=USJ_BLUE,
@@ -2988,11 +3034,13 @@ def page_other_questions():
         summary_box(
             """
             Cette question comporte un nombre élevé de réponses distinctes. Elle est donc traitée comme une question ouverte ou quasi ouverte.
-            Le tableau présente les réponses les plus fréquentes afin d’identifier les signaux récurrents sans surcharger la lecture.
+            Le tableau présente les réponses les plus fréquentes parmi les répondants concernés afin d’identifier les signaux récurrents sans surcharger la lecture.
             """,
             color=USJ_ORANGE,
             background="#FFF8F0"
         )
+
+
 
 
 
@@ -3058,7 +3106,7 @@ def build_printable_report_html():
         """
         numeric_headers = {
             "Résultat", "Faculté", "USJ", "USJ filtré", "Écart", "p-value",
-            "Importance", "Poids", "N valide", "N", "Moyenne", "Moyenne (%)",
+            "Importance", "Poids", "Base applicable", "N valide", "N", "Moyenne", "Moyenne (%)",
             "Évolution", "Rang"
         }
         if not rows:
@@ -3444,7 +3492,8 @@ def build_printable_report_html():
         for _, row in other_report_df.iterrows():
             other_rows.append({
                 "Catégorie": f"<td>{clean_text(row.get('Catégorie', ''))}</td>",
-                "Question": f"<td>{clean_text(clean_other_question_label(row['Question']))}</td>",
+                "Question": f"<td>{clean_text(row.get('Question affichée', clean_other_question_label(row['Question'])))}</td>",
+                "Base applicable": f"<td style='text-align:right;'>{int(row.get('Base applicable', row['N valide']))}</td>",
                 "N valide": f"<td style='text-align:right;'>{int(row['N valide'])}</td>",
                 "Réponse dominante": f"<td>{clean_text(row['Réponse dominante'])}</td>",
                 "Poids": f"<td style='text-align:right; font-weight:800; color:{USJ_BLUE};'>{fmt_pct2(row['Pourcentage'])}</td>",
@@ -3456,7 +3505,7 @@ def build_printable_report_html():
             q_lower = str(row["Question"]).lower()
             if any(term in q_lower for term in ["tuteur", "mobilité", "mobilite", "étranger", "etranger", "échange", "echange"]):
                 signal_lines.append(
-                    f"<li><b>{clean_text(clean_other_question_label(row['Question']))}</b> : réponse dominante <b>{clean_text(row['Réponse dominante'])}</b> ({fmt_pct2(row['Pourcentage'])}, N={int(row['N valide'])}).</li>"
+                    f"<li><b>{clean_text(row.get('Question affichée', clean_other_question_label(row['Question'])))}</b> : réponse dominante <b>{clean_text(row['Réponse dominante'])}</b> ({fmt_pct2(row['Pourcentage'])}, base applicable={int(row.get('Base applicable', row['N valide']))}, N valide={int(row['N valide'])}).</li>"
                 )
         signals_html = ""
         if signal_lines:
@@ -3476,7 +3525,7 @@ def build_printable_report_html():
                 sont automatiquement détectées lorsqu’elles existent dans le fichier Excel.
             </p>
             {signals_html}
-            {html_table(other_rows, ["Catégorie", "Question", "N valide", "Réponse dominante", "Poids"])}
+            {html_table(other_rows, ["Catégorie", "Question", "Base applicable", "N valide", "Réponse dominante", "Poids"])}
         </div>
         """
     else:
