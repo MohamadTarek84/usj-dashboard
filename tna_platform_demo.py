@@ -66,82 +66,135 @@ DD_LEADER_THEMES = [
 ]
 
 DEMO_USERS = {
-    "PSG001": {
-        "role": "psg",
-        "name": "Mohamad Khalil",
-        "faculty": "Faculté des Sciences",
-        "institution": "USJ",
-        "department": "Service des Études",
-        "director_code": "DD001"
-    },
-    "PSG002": {
-        "role": "psg",
-        "name": "Rana Nader",
-        "faculty": "Faculté des Sciences",
-        "institution": "USJ",
-        "department": "Service des Études",
-        "director_code": "DD001"
-    },
-    "PSG003": {
-        "role": "psg",
-        "name": "Karim Haddad",
-        "faculty": "Faculté des Sciences",
-        "institution": "USJ",
-        "department": "Service Informatique",
-        "director_code": "DD001"
-    },
-    "PSG004": {
-        "role": "psg",
-        "name": "Maya Saad",
-        "faculty": "Faculté des Sciences",
-        "institution": "USJ",
-        "department": "Service Informatique",
-        "director_code": "DD001"
-    },
-    "PSG005": {
-        "role": "psg",
-        "name": "Georges Khoury",
-        "faculty": "Faculté des Sciences",
-        "institution": "USJ",
-        "department": "Service Administratif",
-        "director_code": "DD001"
-    },
-    "PSG006": {
-        "role": "psg",
-        "name": "Nadine Abi Rached",
-        "faculty": "Faculté de Médecine",
-        "institution": "USJ",
-        "department": "Secrétariat académique",
-        "director_code": "DD002"
-    },
-    "PSG007": {
-        "role": "psg",
-        "name": "Paul Tannous",
-        "faculty": "Faculté de Médecine",
-        "institution": "USJ",
-        "department": "Laboratoire",
-        "director_code": "DD002"
-    },
-    "DD001": {
-        "role": "director",
-        "name": "Dr. Rami Haddad",
-        "faculty": "Faculté des Sciences",
-        "institution": "USJ",
-        "department": "Direction"
-    },
-    "DD002": {
-        "role": "director",
-        "name": "Dr. Carla Mansour",
-        "faculty": "Faculté de Médecine",
-        "institution": "USJ",
-        "department": "Direction"
-    },
+    "PSG001": {"role": "psg", "name": "Nour Haddad", "faculty": "Faculté des Sciences", "institution": "USJ", "department": "Service des Études", "director_code": "DD001"},
+    "PSG002": {"role": "psg", "name": "Karim Mansour", "faculty": "Faculté des Sciences", "institution": "USJ", "department": "Service des Études", "director_code": "DD001"},
+    "PSG003": {"role": "psg", "name": "Maya Khoury", "faculty": "Faculté des Sciences", "institution": "USJ", "department": "Service Informatique", "director_code": "DD001"},
+    "PSG004": {"role": "psg", "name": "Elias Saad", "faculty": "Faculté des Sciences", "institution": "USJ", "department": "Service Informatique", "director_code": "DD001"},
+    "PSG005": {"role": "psg", "name": "Rita Nader", "faculty": "Faculté des Sciences", "institution": "USJ", "department": "Service Administratif", "director_code": "DD001"},
+
+    "PSG006": {"role": "psg", "name": "Paul Tannous", "faculty": "Faculté de Médecine", "institution": "USJ", "department": "Secrétariat académique", "director_code": "DD002"},
+    "PSG007": {"role": "psg", "name": "Nadine Abi Rached", "faculty": "Faculté de Médecine", "institution": "USJ", "department": "Laboratoire", "director_code": "DD002"},
+    "PSG008": {"role": "psg", "name": "Georges Saliba", "faculty": "Faculté de Médecine", "institution": "USJ", "department": "Accueil étudiants", "director_code": "DD002"},
+    "PSG009": {"role": "psg", "name": "Sarah Karam", "faculty": "Faculté de Médecine", "institution": "USJ", "department": "Coordination administrative", "director_code": "DD002"},
+    "PSG010": {"role": "psg", "name": "Fadi Younes", "faculty": "Faculté de Médecine", "institution": "USJ", "department": "Support pédagogique", "director_code": "DD002"},
+
+    "PSG011": {"role": "psg", "name": "Lina Farah", "faculty": "Faculté de Gestion et de Management", "institution": "USJ", "department": "Scolarité", "director_code": "DD003"},
+    "PSG012": {"role": "psg", "name": "Marc Azar", "faculty": "Faculté de Gestion et de Management", "institution": "USJ", "department": "Relations entreprises", "director_code": "DD003"},
+    "PSG013": {"role": "psg", "name": "Hala Daher", "faculty": "Faculté de Gestion et de Management", "institution": "USJ", "department": "Communication", "director_code": "DD003"},
+    "PSG014": {"role": "psg", "name": "Joe Sfeir", "faculty": "Faculté de Gestion et de Management", "institution": "USJ", "department": "Administration", "director_code": "DD003"},
+    "PSG015": {"role": "psg", "name": "Mona Raad", "faculty": "Faculté de Gestion et de Management", "institution": "USJ", "department": "Assurance qualité", "director_code": "DD003"},
+
+    "PSG016": {"role": "psg", "name": "Tania Helou", "faculty": "Faculté des Lettres et des Sciences Humaines", "institution": "USJ", "department": "Bibliothèque", "director_code": "DD004"},
+    "PSG017": {"role": "psg", "name": "Rami Chidiac", "faculty": "Faculté des Lettres et des Sciences Humaines", "institution": "USJ", "department": "Secrétariat", "director_code": "DD004"},
+    "PSG018": {"role": "psg", "name": "Dina Aoun", "faculty": "Faculté des Lettres et des Sciences Humaines", "institution": "USJ", "department": "Vie étudiante", "director_code": "DD004"},
+    "PSG019": {"role": "psg", "name": "Michel Najjar", "faculty": "Faculté des Lettres et des Sciences Humaines", "institution": "USJ", "department": "Support académique", "director_code": "DD004"},
+    "PSG020": {"role": "psg", "name": "Carla Haddad", "faculty": "Faculté des Lettres et des Sciences Humaines", "institution": "USJ", "department": "Communication", "director_code": "DD004"},
+
+    "PSG021": {"role": "psg", "name": "Sami Bassil", "faculty": "Faculté d’Ingénierie", "institution": "USJ", "department": "Laboratoires", "director_code": "DD005"},
+    "PSG022": {"role": "psg", "name": "Layal Matar", "faculty": "Faculté d’Ingénierie", "institution": "USJ", "department": "Support technique", "director_code": "DD005"},
+    "PSG023": {"role": "psg", "name": "Anthony Ghosn", "faculty": "Faculté d’Ingénierie", "institution": "USJ", "department": "Scolarité", "director_code": "DD005"},
+    "PSG024": {"role": "psg", "name": "Mireille Daher", "faculty": "Faculté d’Ingénierie", "institution": "USJ", "department": "Coordination administrative", "director_code": "DD005"},
+    "PSG025": {"role": "psg", "name": "Patrick Bou Saab", "faculty": "Faculté d’Ingénierie", "institution": "USJ", "department": "Innovation et projets", "director_code": "DD005"},
+
+    "DD001": {"role": "director", "name": "Dr. Rami Haddad", "faculty": "Faculté des Sciences", "institution": "USJ", "department": "Direction"},
+    "DD002": {"role": "director", "name": "Dr. Carla Mansour", "faculty": "Faculté de Médecine", "institution": "USJ", "department": "Direction"},
+    "DD003": {"role": "director", "name": "Dr. Joseph Khoury", "faculty": "Faculté de Gestion et de Management", "institution": "USJ", "department": "Direction"},
+    "DD004": {"role": "director", "name": "Dr. Nadine Farhat", "faculty": "Faculté des Lettres et des Sciences Humaines", "institution": "USJ", "department": "Direction"},
+    "DD005": {"role": "director", "name": "Dr. Marc Saad", "faculty": "Faculté d’Ingénierie", "institution": "USJ", "department": "Direction"},
+
     "ADMIN2032": {
         "role": "admin",
         "name": "Administrateur TNA",
         "faculty": "USJ",
         "institution": "USJ",
         "department": "Administration Centrale"
+    }
+}
+
+
+TRIAL_PSG_RESPONSES = {
+    "PSG001": ["Communication constructive", "Collaboration", "Bureautique-Excel"],
+    "PSG002": ["Outils intelligence artificielle", "Gestion du temps", "Communication écrite"],
+    "PSG003": ["Bureautique-Excel", "Outils intelligence artificielle", "Gestion de projets"],
+    "PSG004": ["Résolution de conflits", "Communication orale", "Team building"],
+    "PSG005": ["Customer service", "Gestion du stress", "Communication constructive"],
+
+    "PSG006": ["Santé mentale", "Gestion du stress", "Intelligence émotionnelle"],
+    "PSG007": ["Bureautique-Excel", "Ergonomie", "Gestion du temps"],
+    "PSG008": ["Customer service", "Communication orale", "Diversité culturelle"],
+    "PSG009": ["Gestion de projets", "Collaboration", "Communication écrite"],
+    "PSG010": ["Outils intelligence artificielle", "Bureautique-PowerPoint", "Création de contenu-Réseaux sociaux"],
+
+    "PSG011": ["Gestion financière", "Bureautique-Excel", "Esprit critique et résolution de problèmes"],
+    "PSG012": ["Communication orale", "Public speaking and Body language", "Customer service"],
+    "PSG013": ["Branding", "Création de contenu-Réseaux sociaux", "Digital marketing"],
+    "PSG014": ["Gestion du changement en milieu universitaire", "Gestion de projets", "Collaboration"],
+    "PSG015": ["Esprit critique et résolution de problèmes", "Bureautique-Excel", "Communication écrite"],
+
+    "PSG016": ["Communication écrite", "Bureautique-Word", "Customer service"],
+    "PSG017": ["Gestion du temps", "Gestion du stress", "Collaboration"],
+    "PSG018": ["Inclusion", "Diversité culturelle", "Intelligence interpersonnelle"],
+    "PSG019": ["Outils intelligence artificielle", "Bureautique-PowerPoint", "Gestion de projets"],
+    "PSG020": ["Branding", "Communication orale", "Création de contenu-Réseaux sociaux"],
+
+    "PSG021": ["Ergonomie", "Gestion de projets", "Bureautique-Excel"],
+    "PSG022": ["Outils intelligence artificielle", "Esprit critique et résolution de problèmes", "Communication constructive"],
+    "PSG023": ["Customer service", "Gestion du temps", "Communication écrite"],
+    "PSG024": ["Collaboration", "Gestion du changement en milieu universitaire", "Team building"],
+    "PSG025": ["Outils intelligence artificielle", "Gestion de projets", "Esprit critique et résolution de problèmes"]
+}
+
+
+TRIAL_DIRECTOR_RESPONSES = {
+    "DD001": {
+        "leader": ["Data-driven decision making", "Outils intelligence artificielle-IA", "Strategic decision making"],
+        "employees": {
+            "PSG001": ["Communication constructive", "Collaboration", "Communication orale"],
+            "PSG002": ["Outils intelligence artificielle", "Communication écrite", "Gestion du temps"],
+            "PSG003": ["Gestion de projets", "Bureautique-Excel", "Outils intelligence artificielle"],
+            "PSG004": ["Team building", "Résolution de conflits", "Diversité culturelle"],
+            "PSG005": ["Customer service", "Communication constructive", "Gestion du stress"]
+        }
+    },
+    "DD002": {
+        "leader": ["Crisis management and institutional resilience", "Gestion budgétaire", "Change management in academic institutions"],
+        "employees": {
+            "PSG006": ["Gestion du stress", "Santé mentale", "Bien-être au travail"],
+            "PSG007": ["Ergonomie", "Bureautique-Excel", "Gestion du temps"],
+            "PSG008": ["Customer service", "Diversité culturelle", "Communication orale"],
+            "PSG009": ["Gestion de projets", "Communication écrite", "Collaboration"],
+            "PSG010": ["Outils intelligence artificielle", "Bureautique-PowerPoint", "Branding"]
+        }
+    },
+    "DD003": {
+        "leader": ["Strategic decision making", "Digital marketing", "Gestion financière"],
+        "employees": {
+            "PSG011": ["Gestion financière", "Esprit critique et résolution de problèmes", "Bureautique-Excel"],
+            "PSG012": ["Public speaking and Body language", "Communication orale", "Customer service"],
+            "PSG013": ["Digital marketing", "Branding", "Création de contenu-Réseaux sociaux"],
+            "PSG014": ["Gestion du changement en milieu universitaire", "Collaboration", "Gestion de projets"],
+            "PSG015": ["Bureautique-Excel", "Esprit critique et résolution de problèmes", "Communication écrite"]
+        }
+    },
+    "DD004": {
+        "leader": ["Agile management", "Change management in academic institutions", "Data-driven decision making"],
+        "employees": {
+            "PSG016": ["Bureautique-Word", "Communication écrite", "Customer service"],
+            "PSG017": ["Gestion du temps", "Collaboration", "Gestion du stress"],
+            "PSG018": ["Inclusion", "Intelligence interpersonnelle", "Diversité culturelle"],
+            "PSG019": ["Outils intelligence artificielle", "Gestion de projets", "Bureautique-PowerPoint"],
+            "PSG020": ["Création de contenu-Réseaux sociaux", "Branding", "Communication orale"]
+        }
+    },
+    "DD005": {
+        "leader": ["Outils intelligence artificielle-IA", "Data-driven decision making", "Gestion budgétaire"],
+        "employees": {
+            "PSG021": ["Ergonomie", "Bureautique-Excel", "Gestion de projets"],
+            "PSG022": ["Outils intelligence artificielle", "Communication constructive", "Esprit critique et résolution de problèmes"],
+            "PSG023": ["Customer service", "Communication écrite", "Gestion du temps"],
+            "PSG024": ["Team building", "Collaboration", "Gestion du changement en milieu universitaire"],
+            "PSG025": ["Outils intelligence artificielle", "Gestion de projets", "Esprit critique et résolution de problèmes"]
+        }
     }
 }
 
@@ -719,6 +772,94 @@ def save_response(user, data):
     conn.close()
 
 
+def count_existing_responses():
+    conn = sqlite3.connect(DB_NAME)
+    count = conn.execute("SELECT COUNT(*) FROM responses").fetchone()[0]
+    conn.close()
+    return count
+
+
+def seed_trial_data(force=False):
+    if count_existing_responses() > 0 and not force:
+        return
+
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+
+    if force:
+        c.execute("DELETE FROM responses")
+        c.execute("DELETE FROM admin_theme_overrides")
+
+    base_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    for employee_code, ranked_themes in TRIAL_PSG_RESPONSES.items():
+        user = DEMO_USERS[employee_code]
+
+        data = {
+            "ranked_themes": ranked_themes,
+            "selected_themes": ranked_themes,
+            "other_themes": "Donnée d’essai générée automatiquement.",
+            "director_code": user.get("director_code", "")
+        }
+
+        c.execute("""
+            INSERT INTO responses (
+                respondent_code, role, name, faculty, institution, department, data_json, submitted_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            employee_code,
+            user["role"],
+            user["name"],
+            user["faculty"],
+            user["institution"],
+            user["department"],
+            json.dumps(data, ensure_ascii=False),
+            base_time
+        ))
+
+    for director_code, response in TRIAL_DIRECTOR_RESPONSES.items():
+        user = DEMO_USERS[director_code]
+
+        employees_training_needs = []
+
+        for employee_code, ranked_themes in response["employees"].items():
+            emp = DEMO_USERS[employee_code]
+
+            employees_training_needs.append({
+                "employee_code": employee_code,
+                "employee_name": emp["name"],
+                "employee_department": emp["department"],
+                "ranked_themes_by_director": ranked_themes,
+                "selected_themes": ranked_themes,
+                "other_themes": "Donnée d’essai générée automatiquement par le directeur."
+            })
+
+        data = {
+            "leader_ranked_themes": response["leader"],
+            "leader_selected_themes": response["leader"],
+            "leader_other_themes": "Donnée d’essai générée automatiquement.",
+            "employees_training_needs": employees_training_needs
+        }
+
+        c.execute("""
+            INSERT INTO responses (
+                respondent_code, role, name, faculty, institution, department, data_json, submitted_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            director_code,
+            user["role"],
+            user["name"],
+            user["faculty"],
+            user["institution"],
+            user["department"],
+            json.dumps(data, ensure_ascii=False),
+            base_time
+        ))
+
+    conn.commit()
+    conn.close()
+
+
 def load_responses():
     conn = sqlite3.connect(DB_NAME)
     rows = conn.execute("""
@@ -920,7 +1061,7 @@ def login_page():
             else:
                 st.error("Code non reconnu.")
 
-        st.caption("Codes demo : PSG001, DD001, DD002, ADMIN2032")
+        st.caption("Codes demo : PSG001 à PSG025, DD001 à DD005, ADMIN2032")
 
 
 def render_form_hero(profile_label, title, objective):
@@ -1328,6 +1469,11 @@ def render_admin_dashboard():
     with st.sidebar:
         st.header("Filtres administrateur")
 
+        if st.button("Réinitialiser et charger les données d’essai", use_container_width=True):
+            seed_trial_data(force=True)
+            st.success("Données d’essai chargées.")
+            st.rerun()
+
         view = st.selectbox(
             "Vue à afficher",
             [
@@ -1659,6 +1805,7 @@ def main():
 
     apply_style()
     init_db()
+    seed_trial_data(force=False)
     render_platform_header()
 
     if "logged_in" not in st.session_state:
