@@ -3141,6 +3141,31 @@ def page_other_questions():
             st.warning("Aucune donnée valide disponible pour les modes de financement.")
             return
 
+        q44_base = int(q44_df["N valide"].max()) if "N valide" in q44_df.columns and not q44_df.empty else 0
+        q44_missing_pct = missing_pct
+        q44_modalities = int(len(Q44_FINANCING_ITEMS))
+
+        q1, q2, q3, q4 = st.columns(4)
+        with q1:
+            insight_card("Catégorie", selected_category_label, "Lecture thématique", USJ_BLUE)
+        with q2:
+            insight_card("Base applicable", q44_base, "Répondants concernés", USJ_GREEN if q44_base > 0 else USJ_RED)
+        with q3:
+            insight_card("Données manquantes", safe_pct(q44_missing_pct), "Parmi les répondants concernés", USJ_ORANGE if pd.notna(q44_missing_pct) and q44_missing_pct > 10 else USJ_GREEN)
+        with q4:
+            insight_card("Nombre de modalités", q44_modalities, "Modes de financement", USJ_GOLD)
+
+        st.markdown(
+            f"""
+            <div style='background:#FFFFFF;border:1px solid #DDE5F0;border-left:7px solid {USJ_BLUE};border-radius:18px;padding:18px 20px;margin:18px 0;box-shadow:0 5px 16px rgba(0,0,0,0.05);'>
+                <div style='font-size:14px;font-weight:800;color:#667085;margin-bottom:6px;'>Question analysée</div>
+                <div style='font-size:20px;font-weight:900;color:{USJ_BLUE};line-height:1.35;'>{html_escape(selected_other_question_label)}</div>
+                <div style='font-size:13px;color:#667085;margin-top:8px;'>Analyse groupée des modalités de financement déclarées dans le questionnaire.</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
         q44_long = q44_df.melt(
             id_vars=["Modalité", "N valide"],
             value_vars=["Oui (%)", "Non (%)"],
@@ -3175,33 +3200,41 @@ def page_other_questions():
         st.plotly_chart(fig_q44, use_container_width=True, config={"displayModeBar": False})
 
         q44_yes = q44_df.sort_values("Oui (%)", ascending=False)
-
         top_q44 = q44_yes.iloc[0]
         second_q44 = q44_yes.iloc[1] if len(q44_yes) > 1 else None
-        
+
         second_q44_text = ""
         if second_q44 is not None:
             second_q44_text = (
-                f", suivie de <b>{html_escape(second_q44['Modalité'])}</b> "
-                f"avec <b>{second_q44['Oui (%)']:.2f}%</b>"
+                f" La deuxième modalité la plus déclarée est <b>{html_escape(second_q44['Modalité'])}</b> "
+                f"avec <b>{second_q44['Oui (%)']:.2f}%</b> de réponses « Oui »."
             )
-        
+
         summary_box(
             f"""
             <span style='font-size:20px; font-weight:800; color:{USJ_BLUE};'>Lecture décisionnelle</span><br>
-            Concernant les modes de financement des études à l’USJ, la modalité la plus déclarée est
-            <b>{html_escape(top_q44['Modalité'])}</b>, avec <b>{top_q44['Oui (%)']:.2f}%</b> de réponses « Oui »
-            {second_q44_text}. Cette lecture permet d’identifier les principales sources de financement mobilisées
-            par les étudiants et d’éclairer les décisions relatives aux aides financières, aux bourses et aux dispositifs
-            de soutien économique.
+            Concernant les modes de financement des études à l’USJ, <b>{top_q44['Oui (%)']:.2f}%</b> des répondants concernés
+            déclarent avoir mobilisé la modalité <b>{html_escape(top_q44['Modalité'])}</b>.{second_q44_text}
+            Cette lecture permet d’identifier les principales sources de financement utilisées par les étudiants et d’éclairer
+            les décisions relatives aux aides financières, aux bourses et aux dispositifs de soutien économique.
             """,
             color=USJ_BLUE,
             background="#F7F9FC"
         )
-        
+
+        q44_display = q44_df.copy()
+        q44_display["Oui (%)"] = q44_display["Oui (%)"].map(lambda x: f"{x:.2f}%")
+        q44_display["Non (%)"] = q44_display["Non (%)"].map(lambda x: f"{x:.2f}%")
+
+        st.dataframe(
+            q44_display[["Modalité", "N valide", "Oui (%)", "Non (%)"]],
+            use_container_width=True,
+            hide_index=True
+        )
+
         return
 
-    
+
     k1, k2, k3, k4 = st.columns(4)
     with k1:
         insight_card("Catégorie", selected_category_label, "Lecture thématique", USJ_BLUE)
