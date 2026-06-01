@@ -596,7 +596,7 @@ def apply_style():
         }}
     }}
     
-    .admin-action-button {
+    .admin-action-button {{
         width: 100%;
         min-height: 50px;
         background: #001F5B;
@@ -608,14 +608,14 @@ def apply_style():
         font-size: 15px;
         cursor: pointer;
         box-shadow: 0 6px 16px rgba(0,31,91,0.16);
-    }
+    }}
 
-    .admin-action-button:hover {
+    .admin-action-button:hover {{
         background: #123E7C;
         color: #ffffff;
-    }
+    }}
 
-    div[data-testid="stDownloadButton"] > button {
+    div[data-testid="stDownloadButton"] > button {{
         width: 100% !important;
         min-height: 50px !important;
         background: #001F5B !important;
@@ -626,15 +626,15 @@ def apply_style():
         font-weight: 850 !important;
         font-size: 15px !important;
         box-shadow: 0 6px 16px rgba(0,31,91,0.16) !important;
-    }
+    }}
 
-    div[data-testid="stDownloadButton"] > button:hover {
+    div[data-testid="stDownloadButton"] > button:hover {{
         background: #123E7C !important;
         color: #ffffff !important;
         border: 0 !important;
-    }
+    }}
 
-    @media print {
+    @media print {{
         .platform-header,
         section[data-testid="stSidebar"],
         div[data-testid="stToolbar"],
@@ -642,20 +642,20 @@ def apply_style():
         div[data-testid="stStatusWidget"],
         div[data-testid="stDownloadButton"],
         button,
-        .admin-action-button {
+        .admin-action-button {{
             display: none !important;
-        }
+        }}
 
-        .main-hero {
+        .main-hero {{
             box-shadow: none !important;
             border-radius: 0 !important;
-        }
+        }}
 
-        .block-container {
+        .block-container {{
             max-width: 100% !important;
             padding: 0 !important;
-        }
-    }
+        }}
+    }}
 
     </style>
     """, unsafe_allow_html=True)
@@ -1718,7 +1718,7 @@ def build_director_report_html(selected_director, df, overrides):
                 }}
             }}
         
-    .admin-action-button {
+    .admin-action-button {{
         width: 100%;
         min-height: 50px;
         background: #001F5B;
@@ -1730,14 +1730,14 @@ def build_director_report_html(selected_director, df, overrides):
         font-size: 15px;
         cursor: pointer;
         box-shadow: 0 6px 16px rgba(0,31,91,0.16);
-    }
+    }}
 
-    .admin-action-button:hover {
+    .admin-action-button:hover {{
         background: #123E7C;
         color: #ffffff;
-    }
+    }}
 
-    div[data-testid="stDownloadButton"] > button {
+    div[data-testid="stDownloadButton"] > button {{
         width: 100% !important;
         min-height: 50px !important;
         background: #001F5B !important;
@@ -1748,15 +1748,15 @@ def build_director_report_html(selected_director, df, overrides):
         font-weight: 850 !important;
         font-size: 15px !important;
         box-shadow: 0 6px 16px rgba(0,31,91,0.16) !important;
-    }
+    }}
 
-    div[data-testid="stDownloadButton"] > button:hover {
+    div[data-testid="stDownloadButton"] > button:hover {{
         background: #123E7C !important;
         color: #ffffff !important;
         border: 0 !important;
-    }
+    }}
 
-    @media print {
+    @media print {{
         .platform-header,
         section[data-testid="stSidebar"],
         div[data-testid="stToolbar"],
@@ -1764,20 +1764,20 @@ def build_director_report_html(selected_director, df, overrides):
         div[data-testid="stStatusWidget"],
         div[data-testid="stDownloadButton"],
         button,
-        .admin-action-button {
+        .admin-action-button {{
             display: none !important;
-        }
+        }}
 
-        .main-hero {
+        .main-hero {{
             box-shadow: none !important;
             border-radius: 0 !important;
-        }
+        }}
 
-        .block-container {
+        .block-container {{
             max-width: 100% !important;
             padding: 0 !important;
-        }
-    }
+        }}
+    }}
 
     </style>
     </head>
