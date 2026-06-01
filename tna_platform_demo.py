@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import sqlite3
 import json
 from datetime import datetime
@@ -221,7 +222,7 @@ def apply_style():
 
     h1, h2, h3 {{
         color: {USJ_BLUE};
-        font-weight: 850;
+        font-weight: 400;
     }}
 
     .platform-header {{
@@ -273,7 +274,7 @@ def apply_style():
 
     .header-title {{
         color: {USJ_BLUE};
-        font-weight: 850;
+        font-weight: 400;
         font-size: 1.45rem;
         line-height: 1.2;
     }}
@@ -290,7 +291,7 @@ def apply_style():
         color: {USJ_BLUE};
         border-radius: 14px;
         padding: 14px 20px;
-        font-weight: 850;
+        font-weight: 400;
         background: #F7FAFE;
     }}
 
@@ -315,7 +316,7 @@ def apply_style():
     .hero-title {{
         font-size: 2.15rem;
         line-height: 1.1;
-        font-weight: 850;
+        font-weight: 400;
         margin-bottom: 10px;
     }}
 
@@ -492,7 +493,7 @@ def apply_style():
 
     .visual-column-title {{
         font-size: 1.08rem;
-        font-weight: 850;
+        font-weight: 400;
         color: #001F5B;
         margin-bottom: 10px;
         padding-bottom: 6px;
@@ -527,7 +528,7 @@ def apply_style():
 
     .priority-rank {{
         font-size: 0.78rem;
-        font-weight: 850;
+        font-weight: 400;
         color: #5D697A;
         text-transform: uppercase;
         letter-spacing: 0.04em;
@@ -536,7 +537,7 @@ def apply_style():
 
     .priority-theme {{
         font-size: 0.98rem;
-        font-weight: 850;
+        font-weight: 400;
         color: #001F5B;
         line-height: 1.35;
     }}
@@ -549,7 +550,7 @@ def apply_style():
         background: #ffffff;
         color: #735C00;
         font-size: 0.76rem;
-        font-weight: 800;
+        font-weight: 500;
         border: 1px solid #E6D58D;
     }}
 
@@ -558,7 +559,7 @@ def apply_style():
         background:{USJ_BLUE};
         color:white;
         border:0;
-        font-weight:800;
+        font-weight:500;
         min-height: 46px;
     }}
 
@@ -604,7 +605,7 @@ def apply_style():
         border: 0;
         border-radius: 12px;
         padding: 13px 18px;
-        font-weight: 850;
+        font-weight: 400;
         font-size: 15px;
         cursor: pointer;
         box-shadow: 0 6px 16px rgba(0,31,91,0.16);
@@ -623,7 +624,7 @@ def apply_style():
         border: 0 !important;
         border-radius: 12px !important;
         padding: 13px 18px !important;
-        font-weight: 850 !important;
+        font-weight: 400 !important;
         font-size: 15px !important;
         box-shadow: 0 6px 16px rgba(0,31,91,0.16) !important;
     }}
@@ -1726,7 +1727,7 @@ def build_director_report_html(selected_director, df, overrides):
         border: 0;
         border-radius: 12px;
         padding: 13px 18px;
-        font-weight: 850;
+        font-weight: 400;
         font-size: 15px;
         cursor: pointer;
         box-shadow: 0 6px 16px rgba(0,31,91,0.16);
@@ -1745,7 +1746,7 @@ def build_director_report_html(selected_director, df, overrides):
         border: 0 !important;
         border-radius: 12px !important;
         padding: 13px 18px !important;
-        font-weight: 850 !important;
+        font-weight: 400 !important;
         font-size: 15px !important;
         box-shadow: 0 6px 16px rgba(0,31,91,0.16) !important;
     }}
@@ -1803,18 +1804,26 @@ def build_director_report_html(selected_director, df, overrides):
 
 
 def render_save_pdf_button():
-    st.markdown(
+    components.html(
         """
-        <script>
-        function saveAsPdf() {
-            window.print();
-        }
-        </script>
-        <button onclick="saveAsPdf()" class="admin-action-button">
+        <button onclick="window.parent.print();" style="
+            width:100%;
+            min-height:50px;
+            background:#001F5B;
+            color:#ffffff;
+            border:0;
+            border-radius:12px;
+            padding:13px 18px;
+            font-weight:400;
+            font-size:15px;
+            cursor:pointer;
+            box-shadow:0 6px 16px rgba(0,31,91,0.16);
+            font-family:Arial, sans-serif;
+        ">
             Enregistrer le rapport en PDF
         </button>
         """,
-        unsafe_allow_html=True
+        height=62
     )
 
 
