@@ -1019,10 +1019,7 @@ def get_question_dependency(question_col, original_data=None):
             "child_prefixes": ["25a-"],
             "parent_prefixes": ["25- beneficier d'une bourse", "25- bénéficier d'une bourse"],
         },
-        {
-            "child_prefixes": ["39-"],
-            "parent_prefixes": ["38-suivez-vous les pages", "38- suivez-vous les pages"],
-        },
+    
     ]
 
     for rule in dependency_rules:
