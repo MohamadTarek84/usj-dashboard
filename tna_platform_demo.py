@@ -3,12 +3,16 @@ import sqlite3
 import json
 from datetime import datetime
 from collections import Counter
-
 import pandas as pd
-
 
 DB_NAME = "tna_demo.db"
 
+USJ_BLUE = "#001F5B"
+USJ_RED = "#8B1538"
+USJ_GOLD = "#C9A227"
+USJ_LIGHT = "#F5F7FB"
+USJ_CARD = "#FFFFFF"
+USJ_TEXT = "#1B2A41"
 
 PSG_THEMES = [
     "Communication constructive",
@@ -43,7 +47,6 @@ PSG_THEMES = [
     "Customer service"
 ]
 
-
 DD_LEADER_THEMES = [
     "Outils intelligence artificielle-IA",
     "Agile management",
@@ -56,158 +59,49 @@ DD_LEADER_THEMES = [
     "Data-driven decision making"
 ]
 
-
 DEMO_USERS = {
-    "PSG001": {
-        "role": "psg",
-        "name": "Mohamad Khalil",
-        "faculty": "Faculté des Sciences",
-        "institution": "USJ",
-        "department": "Service des Études",
-        "director_code": "DD001"
-    },
-    "PSG002": {
-        "role": "psg",
-        "name": "Rana Nader",
-        "faculty": "Faculté des Sciences",
-        "institution": "USJ",
-        "department": "Service des Études",
-        "director_code": "DD001"
-    },
-    "PSG003": {
-        "role": "psg",
-        "name": "Karim Haddad",
-        "faculty": "Faculté des Sciences",
-        "institution": "USJ",
-        "department": "Service Informatique",
-        "director_code": "DD001"
-    },
-    "PSG004": {
-        "role": "psg",
-        "name": "Maya Saad",
-        "faculty": "Faculté des Sciences",
-        "institution": "USJ",
-        "department": "Service Informatique",
-        "director_code": "DD001"
-    },
-    "PSG005": {
-        "role": "psg",
-        "name": "Georges Khoury",
-        "faculty": "Faculté des Sciences",
-        "institution": "USJ",
-        "department": "Service Administratif",
-        "director_code": "DD001"
-    },
-    "PSG006": {
-        "role": "psg",
-        "name": "Nadine Abi Rached",
-        "faculty": "Faculté de Médecine",
-        "institution": "USJ",
-        "department": "Secrétariat académique",
-        "director_code": "DD002"
-    },
-    "PSG007": {
-        "role": "psg",
-        "name": "Paul Tannous",
-        "faculty": "Faculté de Médecine",
-        "institution": "USJ",
-        "department": "Laboratoire",
-        "director_code": "DD002"
-    },
-    "DD001": {
-        "role": "director",
-        "name": "Dr. Rami Haddad",
-        "faculty": "Faculté des Sciences",
-        "institution": "USJ",
-        "department": "Direction"
-    },
-    "DD002": {
-        "role": "director",
-        "name": "Dr. Carla Mansour",
-        "faculty": "Faculté de Médecine",
-        "institution": "USJ",
-        "department": "Direction"
-    },
-    "ADMIN2032": {
-        "role": "admin",
-        "name": "Administrateur TNA",
-        "faculty": "USJ",
-        "institution": "USJ",
-        "department": "Administration Centrale"
-    }
+    "PSG001": {"role": "psg", "name": "Mohamad Khalil", "faculty": "Faculté des Sciences", "institution": "USJ", "department": "Service des Études", "director_code": "DD001"},
+    "PSG002": {"role": "psg", "name": "Rana Nader", "faculty": "Faculté des Sciences", "institution": "USJ", "department": "Service des Études", "director_code": "DD001"},
+    "PSG003": {"role": "psg", "name": "Karim Haddad", "faculty": "Faculté des Sciences", "institution": "USJ", "department": "Service Informatique", "director_code": "DD001"},
+    "PSG004": {"role": "psg", "name": "Maya Saad", "faculty": "Faculté des Sciences", "institution": "USJ", "department": "Service Informatique", "director_code": "DD001"},
+    "PSG005": {"role": "psg", "name": "Georges Khoury", "faculty": "Faculté des Sciences", "institution": "USJ", "department": "Service Administratif", "director_code": "DD001"},
+    "PSG006": {"role": "psg", "name": "Nadine Abi Rached", "faculty": "Faculté de Médecine", "institution": "USJ", "department": "Secrétariat académique", "director_code": "DD002"},
+    "PSG007": {"role": "psg", "name": "Paul Tannous", "faculty": "Faculté de Médecine", "institution": "USJ", "department": "Laboratoire", "director_code": "DD002"},
+    "DD001": {"role": "director", "name": "Dr. Rami Haddad", "faculty": "Faculté des Sciences", "institution": "USJ", "department": "Direction"},
+    "DD002": {"role": "director", "name": "Dr. Carla Mansour", "faculty": "Faculté de Médecine", "institution": "USJ", "department": "Direction"},
+    "ADMIN2032": {"role": "admin", "name": "Administrateur TNA", "faculty": "USJ", "institution": "USJ", "department": "Administration Centrale"}
 }
 
 
-USJ_BLUE = "#001F5B"
-USJ_RED = "#8B1538"
-USJ_GOLD = "#C9A227"
-USJ_LIGHT_BLUE = "#EAF2F8"
-USJ_TEXT = "#1B2A41"
-
-
 def apply_style():
-    st.markdown(
-        f"""
-        <style>
-        .stApp {{
-            background-color: #F7F9FC;
-            color: {USJ_TEXT};
-            font-family: Candara, Arial, sans-serif;
-        }}
-        h1, h2, h3 {{
-            color: {USJ_BLUE};
-            font-family: Candara, Arial, sans-serif;
-        }}
-        div[data-testid="stMetric"] {{
-            background: white;
-            border: 1px solid #E5E7EB;
-            border-radius: 14px;
-            padding: 16px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-        }}
-        div[data-testid="stExpander"] {{
-            background: white;
-            border-radius: 12px;
-        }}
-        .block-container {{
-            padding-top: 2rem;
-        }}
-        .info-card {{
-            background: white;
-            border-left: 6px solid {USJ_BLUE};
-            border-radius: 14px;
-            padding: 18px 22px;
-            margin-bottom: 18px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        }}
-        .theme-pill {{
-            background: {USJ_LIGHT_BLUE};
-            border: 1px solid #D7E3F2;
-            color: {USJ_BLUE};
-            border-radius: 999px;
-            padding: 7px 12px;
-            display: inline-block;
-            margin: 4px 5px 4px 0;
-            font-weight: 600;
-        }}
-        .employee-card {{
-            background: white;
-            border: 1px solid #E5E7EB;
-            border-radius: 12px;
-            padding: 14px 16px;
-            margin-bottom: 10px;
-        }}
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
+    st.markdown(f"""
+    <style>
+    .stApp {{ background: {USJ_LIGHT}; color: {USJ_TEXT}; }}
+    h1, h2, h3 {{ color: {USJ_BLUE}; font-weight: 800; }}
+    section[data-testid="stSidebar"] {{ background: #ffffff; border-right: 1px solid #E0E5EF; }}
+    .block-container {{ padding-top: 2rem; padding-bottom: 3rem; max-width: 1350px; }}
+    div[data-testid="stMetric"] {{ background:#ffffff; border:1px solid #E0E5EF; padding:18px 20px; border-radius:16px; box-shadow:0 4px 14px rgba(0,0,0,0.05); }}
+    div[data-testid="stExpander"] {{ background:#ffffff; border:1px solid #E0E5EF; border-radius:14px; }}
+    .card {{ background:#ffffff; border:1px solid #E0E5EF; border-radius:16px; padding:18px 20px; margin-bottom:16px; box-shadow:0 4px 14px rgba(0,0,0,0.05); }}
+    .blue-card {{ border-left:6px solid {USJ_BLUE}; }}
+    .red-card {{ border-left:6px solid {USJ_RED}; }}
+    .gold-card {{ border-left:6px solid {USJ_GOLD}; }}
+    .pill {{ display:inline-block; padding:8px 12px; margin:4px 5px 4px 0; border-radius:999px; background:#EAF2F8; color:{USJ_BLUE}; font-weight:700; font-size:14px; }}
+    .pill-red {{ background:#F8EDEF; color:{USJ_RED}; }}
+    .pill-gold {{ background:#FFF8DF; color:#735C00; }}
+    .matched {{ background:#E9F7EF; color:#146C43; }}
+    .missing {{ background:#FFF3CD; color:#7A5A00; }}
+    .final {{ background:#EAF2F8; color:{USJ_BLUE}; border:1px solid #C9DDF2; }}
+    div.stButton > button {{ border-radius:10px; background:{USJ_BLUE}; color:white; border:0; font-weight:700; }}
+    div.stDownloadButton > button {{ border-radius:10px; background:{USJ_RED}; color:white; border:0; font-weight:700; }}
+    </style>
+    """, unsafe_allow_html=True)
 
 
 def init_db():
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
-    c.execute(
-        """
+    c.execute("""
         CREATE TABLE IF NOT EXISTS responses (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             respondent_code TEXT,
@@ -219,8 +113,7 @@ def init_db():
             data_json TEXT,
             submitted_at TEXT
         )
-        """
-    )
+    """)
     conn.commit()
     conn.close()
 
@@ -228,27 +121,41 @@ def init_db():
 def save_response(user, data):
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
-    c.execute(
-        """
+    c.execute("""
         INSERT INTO responses (
-            respondent_code, role, name, faculty, institution,
-            department, data_json, submitted_at
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """,
-        (
-            st.session_state["code"],
-            user["role"],
-            user["name"],
-            user["faculty"],
-            user["institution"],
-            user["department"],
-            json.dumps(data, ensure_ascii=False),
-            datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        )
-    )
+            respondent_code, role, name, faculty, institution, department, data_json, submitted_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        st.session_state["code"], user["role"], user["name"], user["faculty"],
+        user["institution"], user["department"], json.dumps(data, ensure_ascii=False),
+        datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    ))
     conn.commit()
     conn.close()
+
+
+def load_responses():
+    conn = sqlite3.connect(DB_NAME)
+    rows = conn.execute("""
+        SELECT respondent_code, role, name, faculty, institution, department, data_json, submitted_at
+        FROM responses
+        ORDER BY submitted_at DESC
+    """).fetchall()
+    conn.close()
+
+    records = []
+    for row in rows:
+        code, role, name, faculty, institution, department, data_json, submitted_at = row
+        try:
+            data = json.loads(data_json)
+        except Exception:
+            data = {}
+        records.append({
+            "Code": code, "Profil": role, "Nom": name, "Faculté": faculty,
+            "Institution": institution, "Département": department,
+            "Date": submitted_at, "Données": data
+        })
+    return pd.DataFrame(records)
 
 
 def get_employees_for_director(director_code):
@@ -261,35 +168,59 @@ def get_employees_for_director(director_code):
     return employees
 
 
-def read_all_responses():
-    conn = sqlite3.connect(DB_NAME)
-    rows = conn.execute(
-        """
-        SELECT respondent_code, role, name, faculty, institution, department, data_json, submitted_at
-        FROM responses
-        ORDER BY submitted_at DESC
-        """
-    ).fetchall()
-    conn.close()
-    return rows
+def unique_ranked_select(label, options, key_prefix):
+    st.markdown(f"**{label}**")
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        p1 = st.selectbox("Priorité 1", [""] + options, key=f"{key_prefix}_p1")
+    with c2:
+        remaining2 = [x for x in options if x != p1]
+        p2 = st.selectbox("Priorité 2", [""] + remaining2, key=f"{key_prefix}_p2")
+    with c3:
+        remaining3 = [x for x in options if x not in [p1, p2]]
+        p3 = st.selectbox("Priorité 3", [""] + remaining3, key=f"{key_prefix}_p3")
+    return [x for x in [p1, p2, p3] if x]
+
+
+def weighted_score(theme, employee_ranked, director_ranked):
+    score = 0
+    weights = {0: 3, 1: 2, 2: 1}
+    for i, t in enumerate(employee_ranked):
+        if t == theme:
+            score += weights.get(i, 0)
+    for i, t in enumerate(director_ranked):
+        if t == theme:
+            score += weights.get(i, 0)
+    return score
+
+
+def calculate_final_themes(employee_ranked, director_ranked):
+    employee_ranked = employee_ranked or []
+    director_ranked = director_ranked or []
+    matched = [t for t in employee_ranked if t in director_ranked]
+    candidates = list(dict.fromkeys(employee_ranked + director_ranked))
+    ranked_candidates = sorted(
+        candidates,
+        key=lambda t: (t not in matched, -weighted_score(t, employee_ranked, director_ranked), candidates.index(t))
+    )
+    final = ranked_candidates[:3]
+    scenario = ""
+    if len(matched) >= 3:
+        scenario = "Accord complet : les 3 thèmes sont communs entre l’employé et le directeur."
+    elif len(matched) == 2:
+        scenario = "Accord fort : 2 thèmes sont communs. Le 3e est proposé selon le score de priorité."
+    elif len(matched) == 1:
+        scenario = "Accord partiel : 1 thème est commun. Les 2 autres sont proposés selon le score de priorité."
+    else:
+        scenario = "Aucun thème commun : la sélection finale est proposée selon les priorités croisées."
+    return matched, final, scenario
 
 
 def login_page():
-    st.markdown(
-        f"""
-        <div class="info-card">
-            <h1 style="margin-bottom:0;">Plateforme d’analyse des besoins en formation</h1>
-            <p style="font-size:18px; margin-top:6px; color:{USJ_TEXT};">
-                Training Needs Assessment - TNA 2026
-            </p>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    col1, col2, col3 = st.columns([1, 1.4, 1])
+    st.markdown("<h1>Plateforme d’analyse des besoins en formation</h1>", unsafe_allow_html=True)
+    st.markdown("<div class='card blue-card'>Training Needs Assessment - TNA 2026</div>", unsafe_allow_html=True)
+    col1, col2, col3 = st.columns([1, 1.2, 1])
     with col2:
-        st.markdown("### Connexion")
         code = st.text_input("Code d’accès", type="password")
         if st.button("Accéder au questionnaire", use_container_width=True):
             cleaned_code = code.strip().upper()
@@ -300,56 +231,39 @@ def login_page():
                 st.rerun()
             else:
                 st.error("Code non reconnu.")
-
-        st.caption("Codes démo : PSG001, DD001, DD002, ADMIN2032")
-
-
-def render_user_identity(user):
-    cols = st.columns(3)
-    cols[0].markdown(f"**Nom**  \\n{user['name']}")
-    cols[1].markdown(f"**Faculté / Institution**  \\n{user['faculty']}")
-    cols[2].markdown(f"**Département**  \\n{user['department']}")
-
-
-def render_theme_pills(themes):
-    if not themes:
-        st.caption("Aucun thème sélectionné.")
-        return
-    html = "".join([f'<span class="theme-pill">{theme}</span>' for theme in themes])
-    st.markdown(html, unsafe_allow_html=True)
+        st.caption("Codes demo : PSG001, DD001, DD002, ADMIN2032")
 
 
 def render_psg_form(user):
     st.title("Questionnaire d’analyse des besoins en formation - PSG")
-    st.info(
-        "Ce court questionnaire nous aide à comprendre vos besoins en formation. Les résultats seront utilisés "
-        "pour concevoir des programmes de formation qui soutiennent votre travail, améliorent vos compétences "
-        "et favorisent votre développement professionnel."
-    )
-    render_user_identity(user)
+    st.markdown("""
+    <div class='card blue-card'>
+    Ce court questionnaire nous aide à comprendre vos besoins en formation. Les résultats seront utilisés pour concevoir des programmes de formation qui soutiennent votre travail, améliorent vos compétences et favorisent votre développement professionnel.
+    </div>
+    """, unsafe_allow_html=True)
+
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Nom", user["name"])
+    c2.metric("Faculté / Institution", user["faculty"])
+    c3.metric("Département", user["department"])
+
     st.divider()
-
-    selected_themes = st.multiselect(
-        "1- Veuillez sélectionner jusqu’à 3 thèmes de formation prioritaires :",
+    ranked_themes = unique_ranked_select(
+        "Veuillez classer vos 3 thèmes de formation prioritaires par ordre d’importance :",
         PSG_THEMES,
-        max_selections=3,
-        key="psg_selected_themes"
+        "psg_ranked"
     )
-    other_themes = st.text_area(
-        "2- Quel(s) autre(s) thème(s) ou sujet(s) de formation proposez-vous ?",
-        key="psg_other_themes"
-    )
+    other_themes = st.text_area("Autre(s) thème(s) ou sujet(s) de formation proposés", key="psg_other")
 
-    st.markdown("#### Aperçu de votre sélection")
-    render_theme_pills(selected_themes)
-
-    if st.button("Soumettre mes réponses", type="primary"):
-        if len(selected_themes) == 0:
-            st.warning("Veuillez sélectionner au moins un thème.")
+    if st.button("Soumettre mes réponses", use_container_width=True):
+        if len(ranked_themes) != 3:
+            st.warning("Veuillez sélectionner exactement 3 thèmes classés par ordre de priorité.")
             return
         data = {
-            "selected_themes": selected_themes,
-            "other_themes": other_themes
+            "ranked_themes": ranked_themes,
+            "selected_themes": ranked_themes,
+            "other_themes": other_themes,
+            "director_code": user.get("director_code", "")
         }
         save_response(user, data)
         st.success("Vos réponses ont été enregistrées avec succès.")
@@ -357,98 +271,64 @@ def render_psg_form(user):
 
 def render_director_form(user):
     st.title("Questionnaire d’analyse des besoins en formation - Doyens et Directeurs")
-    st.info(
-        "Ce questionnaire vise à identifier vos besoins en formation en tant que leader ainsi que les besoins "
-        "de développement de votre département. Les résultats nous aideront à concevoir des programmes de "
-        "formation qui soutiennent le leadership, améliorent la performance des équipes et s’alignent sur les "
-        "objectifs de l’université."
-    )
-    render_user_identity(user)
+    st.markdown("""
+    <div class='card red-card'>
+    Ce questionnaire vise à identifier vos besoins en formation en tant que leader ainsi que les besoins de développement de votre département. Les résultats nous aideront à concevoir des programmes de formation qui soutiennent le leadership, améliorent la performance des équipes et s’alignent sur les objectifs de l’université.
+    </div>
+    """, unsafe_allow_html=True)
+
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Nom", user["name"])
+    c2.metric("Faculté / Institution", user["faculty"])
+    c3.metric("Département", user["department"])
+
     st.divider()
-
     st.subheader("A. Vos besoins de formation en tant que leader")
-    leader_themes = st.multiselect(
-        "1- Veuillez sélectionner jusqu’à 3 thématiques auxquelles vous souhaitez participer :",
+    leader_ranked = unique_ranked_select(
+        "Veuillez classer vos 3 thématiques prioritaires par ordre d’importance :",
         DD_LEADER_THEMES,
-        max_selections=3,
-        key="leader_themes"
+        "leader_ranked"
     )
-    leader_other = st.text_area(
-        "2- Quel(s) autre(s) thème(s) ou sujet(s) de formation proposez-vous pour vous-même ?",
-        key="leader_other"
-    )
-
-    st.markdown("#### Aperçu des thèmes sélectionnés pour vous")
-    render_theme_pills(leader_themes)
+    leader_other = st.text_area("Autre(s) thème(s) proposés pour vous-même", key="leader_other")
 
     st.divider()
     st.subheader("B. Besoins de formation de vos employés")
-
     employees = get_employees_for_director(st.session_state["code"])
-    if not employees:
-        st.warning("Aucun employé n’est actuellement lié à ce compte directeur.")
-    else:
-        st.info(
-            f"{len(employees)} employé(s) sont liés à votre compte. "
-            "Veuillez sélectionner jusqu’à 3 thèmes prioritaires pour chaque employé."
-        )
+    st.info(f"{len(employees)} employé(s) lié(s) à votre compte. Pour chaque employé, veuillez classer 3 thèmes prioritaires.")
 
     employee_training_needs = []
     for emp in employees:
         with st.expander(f"{emp['name']} | {emp['department']}", expanded=True):
-            col_info, col_select = st.columns([1, 2])
-            with col_info:
-                st.markdown(
-                    f"""
-                    <div class="employee-card">
-                        <b>{emp['name']}</b><br>
-                        Code : <b>{emp['code']}</b><br>
-                        Département : {emp['department']}
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-            with col_select:
-                selected_emp_themes = st.multiselect(
-                    f"Thèmes prioritaires pour {emp['name']} :",
-                    PSG_THEMES,
-                    max_selections=3,
-                    key=f"themes_{emp['code']}"
-                )
-                other_emp_themes = st.text_area(
-                    f"Autre(s) besoin(s) spécifique(s) pour {emp['name']} :",
-                    key=f"other_{emp['code']}"
-                )
-                render_theme_pills(selected_emp_themes)
-
+            st.markdown(f"<span class='pill'>Code : {emp['code']}</span><span class='pill pill-gold'>{emp['department']}</span>", unsafe_allow_html=True)
+            emp_ranked = unique_ranked_select(
+                f"Classement des 3 thèmes prioritaires pour {emp['name']} :",
+                PSG_THEMES,
+                f"director_emp_{emp['code']}"
+            )
+            emp_other = st.text_area(
+                f"Autre(s) besoin(s) spécifique(s) pour {emp['name']}",
+                key=f"other_{emp['code']}"
+            )
             employee_training_needs.append({
                 "employee_code": emp["code"],
                 "employee_name": emp["name"],
                 "employee_department": emp["department"],
-                "selected_themes": selected_emp_themes,
-                "other_themes": other_emp_themes
+                "ranked_themes_by_director": emp_ranked,
+                "selected_themes": emp_ranked,
+                "other_themes": emp_other
             })
 
-    st.divider()
-    if st.button("Soumettre mes réponses", type="primary"):
-        if len(leader_themes) == 0:
-            st.warning("Veuillez sélectionner au moins un thème pour vous-même.")
+    if st.button("Soumettre mes réponses", use_container_width=True):
+        if len(leader_ranked) != 3:
+            st.warning("Veuillez sélectionner exactement 3 thèmes pour vous-même.")
             return
-
-        incomplete_employees = [
-            emp["employee_name"]
-            for emp in employee_training_needs
-            if len(emp["selected_themes"]) == 0
-        ]
-        if incomplete_employees:
-            st.warning(
-                "Veuillez sélectionner au moins un thème pour chaque employé. Employés incomplets : "
-                + ", ".join(incomplete_employees)
-            )
+        incomplete = [x["employee_name"] for x in employee_training_needs if len(x["ranked_themes_by_director"]) != 3]
+        if incomplete:
+            st.warning("Veuillez sélectionner exactement 3 thèmes pour chaque employé : " + ", ".join(incomplete))
             return
-
         data = {
-            "leader_selected_themes": leader_themes,
+            "leader_ranked_themes": leader_ranked,
+            "leader_selected_themes": leader_ranked,
             "leader_other_themes": leader_other,
             "employees_training_needs": employee_training_needs
         }
@@ -456,254 +336,199 @@ def render_director_form(user):
         st.success("Vos réponses ont été enregistrées avec succès.")
 
 
-def build_admin_dataframes(rows):
-    records = []
-    theme_rows = []
-    employee_priority_rows = []
-
-    for row in rows:
-        code, role, name, faculty, institution, department, data_json, submitted_at = row
-        data = json.loads(data_json)
-        records.append({
-            "Code": code,
-            "Profil": role,
-            "Nom": name,
-            "Faculté": faculty,
-            "Institution": institution,
-            "Département": department,
-            "Date": submitted_at,
-            "Données": data
-        })
-
-        if role == "psg":
-            for theme in data.get("selected_themes", []):
-                theme_rows.append({
-                    "Source": "Choix PSG",
-                    "Code": code,
-                    "Nom": name,
-                    "Faculté": faculty,
-                    "Département": department,
-                    "Thème": theme
-                })
-                employee_priority_rows.append({
-                    "Employee Code": code,
-                    "Employee Name": name,
-                    "Faculty": faculty,
-                    "Department": department,
-                    "Theme": theme,
-                    "Source": "Employee",
-                    "Weight": 1
-                })
-
-        if role == "director":
-            for theme in data.get("leader_selected_themes", []):
-                theme_rows.append({
-                    "Source": "Choix leader",
-                    "Code": code,
-                    "Nom": name,
-                    "Faculté": faculty,
-                    "Département": department,
-                    "Thème": theme
-                })
-            for emp in data.get("employees_training_needs", []):
-                for theme in emp.get("selected_themes", []):
-                    theme_rows.append({
-                        "Source": "Choix directeur pour employé",
-                        "Code": emp.get("employee_code", ""),
-                        "Nom": emp.get("employee_name", ""),
-                        "Faculté": faculty,
-                        "Département": emp.get("employee_department", ""),
-                        "Thème": theme
-                    })
-                    employee_priority_rows.append({
-                        "Employee Code": emp.get("employee_code", ""),
-                        "Employee Name": emp.get("employee_name", ""),
-                        "Faculty": faculty,
-                        "Department": emp.get("employee_department", ""),
-                        "Theme": theme,
-                        "Source": "Director",
-                        "Weight": 2
-                    })
-
-    responses_df = pd.DataFrame(records)
-    themes_df = pd.DataFrame(theme_rows)
-    priorities_df = pd.DataFrame(employee_priority_rows)
-    return responses_df, themes_df, priorities_df
+def latest_by_code(df, code):
+    if df.empty:
+        return None
+    subset = df[df["Code"] == code].sort_values("Date", ascending=False)
+    if subset.empty:
+        return None
+    return subset.iloc[0].to_dict()
 
 
-def calculate_top3_by_employee(priorities_df):
-    if priorities_df.empty:
-        return pd.DataFrame()
-    grouped = (
-        priorities_df.groupby(["Employee Code", "Employee Name", "Faculty", "Department", "Theme"], as_index=False)["Weight"]
-        .sum()
-        .sort_values(["Employee Code", "Weight", "Theme"], ascending=[True, False, True])
-    )
-    grouped["Rank"] = grouped.groupby("Employee Code")["Weight"].rank(method="first", ascending=False).astype(int)
-    return grouped[grouped["Rank"] <= 3]
+def render_theme_pills(themes, css_class="pill"):
+    if not themes:
+        st.caption("Aucun thème sélectionné.")
+        return
+    html = "".join([f"<span class='{css_class}'>{i}. {theme}</span>" for i, theme in enumerate(themes, start=1)])
+    st.markdown(html, unsafe_allow_html=True)
 
 
 def render_admin_dashboard():
     st.title("Tableau de bord administrateur - TNA 2026")
-    st.caption("Vue dynamique des réponses collectées auprès des PSG, Doyens et Directeurs")
+    st.caption("Vue professionnelle pour analyser les choix PSG, les choix des Doyens/Directeurs, et les priorités finales proposées.")
 
-    rows = read_all_responses()
-    if not rows:
+    df = load_responses()
+    if df.empty:
         st.info("Aucune réponse enregistrée pour le moment.")
         return
 
-    responses_df, themes_df, priorities_df = build_admin_dataframes(rows)
+    with st.sidebar:
+        st.header("Filtres")
+        view = st.selectbox(
+            "Vue à afficher",
+            ["Synthèse directeur-employés", "Réponses PSG", "Réponses Doyens / Directeurs", "Départements", "Base de données"]
+        )
+        profiles = ["Tous"] + sorted(df["Profil"].unique().tolist())
+        selected_profile = st.selectbox("Profil", profiles)
+        faculties = ["Toutes"] + sorted(df["Faculté"].unique().tolist())
+        selected_faculty = st.selectbox("Faculté / institution", faculties)
+        departments = ["Tous"] + sorted(df["Département"].unique().tolist())
+        selected_department = st.selectbox("Département", departments)
 
-    st.markdown("### Synthèse générale")
-    col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Réponses totales", len(responses_df))
-    col2.metric("Réponses PSG", len(responses_df[responses_df["Profil"] == "psg"]))
-    col3.metric("Réponses Doyens / Directeurs", len(responses_df[responses_df["Profil"] == "director"]))
-    col4.metric("Facultés / Institutions", responses_df["Faculté"].nunique())
+    filtered = df.copy()
+    if selected_profile != "Tous":
+        filtered = filtered[filtered["Profil"] == selected_profile]
+    if selected_faculty != "Toutes":
+        filtered = filtered[filtered["Faculté"] == selected_faculty]
+    if selected_department != "Tous":
+        filtered = filtered[filtered["Département"] == selected_department]
+
+    k1, k2, k3, k4 = st.columns(4)
+    k1.metric("Réponses", len(filtered))
+    k2.metric("PSG", len(filtered[filtered["Profil"] == "psg"]))
+    k3.metric("Doyens / Directeurs", len(filtered[filtered["Profil"] == "director"]))
+    k4.metric("Départements", filtered["Département"].nunique())
 
     st.divider()
-    st.markdown("### Filtres dynamiques")
-    col_f1, col_f2, col_f3 = st.columns(3)
-    with col_f1:
-        selected_profile = st.multiselect(
-            "Filtrer par profil",
-            sorted(responses_df["Profil"].unique()),
-            default=sorted(responses_df["Profil"].unique())
-        )
-    with col_f2:
-        selected_faculty = st.multiselect(
-            "Filtrer par faculté / institution",
-            sorted(responses_df["Faculté"].unique()),
-            default=sorted(responses_df["Faculté"].unique())
-        )
-    with col_f3:
-        selected_department = st.multiselect(
-            "Filtrer par département",
-            sorted(responses_df["Département"].unique()),
-            default=sorted(responses_df["Département"].unique())
+
+    if view == "Synthèse directeur-employés":
+        directors = [code for code, u in DEMO_USERS.items() if u.get("role") == "director"]
+        director_labels = {code: f"{DEMO_USERS[code]['name']} | {DEMO_USERS[code]['faculty']}" for code in directors}
+        selected_director = st.selectbox(
+            "Sélectionner un Doyen / Directeur",
+            directors,
+            format_func=lambda x: director_labels[x]
         )
 
-    filtered_df = responses_df[
-        responses_df["Profil"].isin(selected_profile)
-        & responses_df["Faculté"].isin(selected_faculty)
-        & responses_df["Département"].isin(selected_department)
-    ]
+        director_user = DEMO_USERS[selected_director]
+        director_response = latest_by_code(df, selected_director)
 
-    st.divider()
-    st.markdown("### Tableau des répondants")
-    display_df = filtered_df.drop(columns=["Données"])
-    st.dataframe(display_df, use_container_width=True, hide_index=True)
+        st.markdown("### 1. Besoins sélectionnés par le Doyen / Directeur pour lui-même")
+        st.markdown(f"""
+        <div class='card red-card'>
+        <b>{director_user['name']}</b><br>
+        {director_user['faculty']} | {director_user['department']}
+        </div>
+        """, unsafe_allow_html=True)
 
-    if themes_df.empty:
-        st.info("Aucun thème sélectionné dans les réponses filtrées.")
-        return
-
-    filtered_themes_df = themes_df[
-        themes_df["Faculté"].isin(selected_faculty)
-        & themes_df["Département"].isin(selected_department)
-    ]
-
-    st.divider()
-    st.markdown("### Analyse des thèmes sélectionnés")
-    tab1, tab2, tab3, tab4 = st.tabs([
-        "Top thèmes",
-        "Par source",
-        "Priorités par employé",
-        "Détails des réponses"
-    ])
-
-    with tab1:
-        top_themes = filtered_themes_df["Thème"].value_counts().reset_index()
-        top_themes.columns = ["Thème", "Nombre de sélections"]
-        st.bar_chart(top_themes.set_index("Thème"), use_container_width=True)
-        st.dataframe(top_themes, use_container_width=True, hide_index=True)
-
-    with tab2:
-        source_count = filtered_themes_df["Source"].value_counts().reset_index()
-        source_count.columns = ["Source", "Nombre"]
-        st.bar_chart(source_count.set_index("Source"), use_container_width=True)
-        st.dataframe(filtered_themes_df, use_container_width=True, hide_index=True)
-
-    with tab3:
-        top3_df = calculate_top3_by_employee(priorities_df)
-        if top3_df.empty:
-            st.info("Aucune priorité par employé disponible.")
+        if director_response:
+            leader_themes = director_response["Données"].get("leader_ranked_themes", director_response["Données"].get("leader_selected_themes", []))
+            render_theme_pills(leader_themes, "pill pill-red")
         else:
-            st.info(
-                "Formule démo : sélection employé = 1 point, sélection directeur = 2 points. "
-                "Les 3 thèmes ayant le score le plus élevé sont retenus pour chaque employé."
-            )
-            st.dataframe(top3_df, use_container_width=True, hide_index=True)
+            st.warning("Ce directeur n’a pas encore soumis ses réponses.")
 
-    with tab4:
-        for _, row in filtered_df.iterrows():
+        st.divider()
+        st.markdown("### 2. Analyse visuelle par employé")
+
+        employees = get_employees_for_director(selected_director)
+        director_emp_map = {}
+        if director_response:
+            for item in director_response["Données"].get("employees_training_needs", []):
+                director_emp_map[item.get("employee_code")] = item
+
+        for emp in employees:
+            emp_response = latest_by_code(df, emp["code"])
+            employee_ranked = []
+            if emp_response:
+                employee_ranked = emp_response["Données"].get("ranked_themes", emp_response["Données"].get("selected_themes", []))
+
+            director_ranked = []
+            if emp["code"] in director_emp_map:
+                director_ranked = director_emp_map[emp["code"]].get("ranked_themes_by_director", director_emp_map[emp["code"]].get("selected_themes", []))
+
+            matched, final, scenario = calculate_final_themes(employee_ranked, director_ranked)
+
+            st.markdown(f"""
+            <div class='card blue-card'>
+                <h3 style='margin-top:0;'>{emp['name']}</h3>
+                <span class='pill'>Code : {emp['code']}</span>
+                <span class='pill pill-gold'>{emp['department']}</span>
+            </div>
+            """, unsafe_allow_html=True)
+
+            c1, c2, c3 = st.columns(3)
+            with c1:
+                st.markdown("#### Choix de l’employé")
+                render_theme_pills(employee_ranked, "pill")
+            with c2:
+                st.markdown("#### Choix du directeur")
+                render_theme_pills(director_ranked, "pill pill-red")
+            with c3:
+                st.markdown("#### Thèmes proposés")
+                render_theme_pills(final, "pill final")
+
+            if matched:
+                st.markdown("**Thèmes en commun :**")
+                render_theme_pills(matched, "pill matched")
+            else:
+                st.markdown("<span class='pill missing'>Aucun thème commun</span>", unsafe_allow_html=True)
+            st.info(scenario)
+            st.divider()
+
+    elif view == "Réponses PSG":
+        st.markdown("### Réponses PSG")
+        psg_df = filtered[filtered["Profil"] == "psg"].copy()
+        if psg_df.empty:
+            st.info("Aucune réponse PSG dans les filtres sélectionnés.")
+        else:
+            for _, row in psg_df.iterrows():
+                themes = row["Données"].get("ranked_themes", row["Données"].get("selected_themes", []))
+                st.markdown(f"<div class='card blue-card'><b>{row['Nom']}</b><br>{row['Faculté']} | {row['Département']} | {row['Date']}</div>", unsafe_allow_html=True)
+                render_theme_pills(themes, "pill")
+
+    elif view == "Réponses Doyens / Directeurs":
+        st.markdown("### Réponses Doyens / Directeurs")
+        dd_df = filtered[filtered["Profil"] == "director"].copy()
+        if dd_df.empty:
+            st.info("Aucune réponse Doyen / Directeur dans les filtres sélectionnés.")
+        else:
+            for _, row in dd_df.iterrows():
+                data = row["Données"]
+                st.markdown(f"<div class='card red-card'><b>{row['Nom']}</b><br>{row['Faculté']} | {row['Département']} | {row['Date']}</div>", unsafe_allow_html=True)
+                st.markdown("**Thèmes sélectionnés pour lui-même :**")
+                render_theme_pills(data.get("leader_ranked_themes", data.get("leader_selected_themes", [])), "pill pill-red")
+                st.markdown("**Thèmes sélectionnés pour les employés :**")
+                for emp in data.get("employees_training_needs", []):
+                    st.markdown(f"<div class='card'><b>{emp.get('employee_name')}</b> | {emp.get('employee_department')}</div>", unsafe_allow_html=True)
+                    render_theme_pills(emp.get("ranked_themes_by_director", emp.get("selected_themes", [])), "pill")
+
+    elif view == "Départements":
+        st.markdown("### Analyse par département")
+        theme_rows = []
+        for _, row in filtered.iterrows():
             data = row["Données"]
-            with st.expander(f"{row['Nom']} | {row['Profil']} | {row['Faculté']} | {row['Date']}"):
-                col_info, col_response = st.columns([1, 2])
-                with col_info:
-                    st.markdown("#### Informations")
-                    st.markdown(f"**Code :** {row['Code']}")
-                    st.markdown(f"**Profil :** {row['Profil']}")
-                    st.markdown(f"**Faculté :** {row['Faculté']}")
-                    st.markdown(f"**Institution :** {row['Institution']}")
-                    st.markdown(f"**Département :** {row['Département']}")
-                    st.markdown(f"**Date :** {row['Date']}")
-                with col_response:
-                    if row["Profil"] == "psg":
-                        st.markdown("#### Besoins de formation PSG")
-                        render_theme_pills(data.get("selected_themes", []))
-                        if data.get("other_themes"):
-                            st.markdown("**Autres propositions :**")
-                            st.info(data.get("other_themes"))
-                    elif row["Profil"] == "director":
-                        st.markdown("#### Besoins du leader")
-                        render_theme_pills(data.get("leader_selected_themes", []))
-                        if data.get("leader_other_themes"):
-                            st.markdown("**Autres propositions pour le leader :**")
-                            st.info(data.get("leader_other_themes"))
+            if row["Profil"] == "psg":
+                for theme in data.get("ranked_themes", data.get("selected_themes", [])):
+                    theme_rows.append({"Département": row["Département"], "Source": "PSG", "Thème": theme})
+            elif row["Profil"] == "director":
+                for emp in data.get("employees_training_needs", []):
+                    for theme in emp.get("ranked_themes_by_director", emp.get("selected_themes", [])):
+                        theme_rows.append({"Département": emp.get("employee_department"), "Source": "Directeur pour employé", "Thème": theme})
+        if not theme_rows:
+            st.info("Aucune donnée disponible.")
+        else:
+            theme_df = pd.DataFrame(theme_rows)
+            dept = st.selectbox("Choisir un département", sorted(theme_df["Département"].dropna().unique()))
+            sub = theme_df[theme_df["Département"] == dept]
+            counts = sub["Thème"].value_counts().reset_index()
+            counts.columns = ["Thème", "Nombre"]
+            st.bar_chart(counts.set_index("Thème"), use_container_width=True)
+            st.dataframe(sub, use_container_width=True, hide_index=True)
 
-                        st.markdown("#### Besoins des employés liés")
-                        for emp in data.get("employees_training_needs", []):
-                            with st.container(border=True):
-                                st.markdown(
-                                    f"**{emp.get('employee_name', '')}**  \\n"
-                                    f"Code : `{emp.get('employee_code', '')}`  \\n"
-                                    f"Département : {emp.get('employee_department', '')}"
-                                )
-                                render_theme_pills(emp.get("selected_themes", []))
-                                if emp.get("other_themes"):
-                                    st.caption(f"Autre besoin : {emp.get('other_themes')}")
-
-    st.divider()
-    st.markdown("### Export des données")
-    csv_respondents = display_df.to_csv(index=False).encode("utf-8-sig")
-    csv_themes = filtered_themes_df.to_csv(index=False).encode("utf-8-sig")
-
-    col_export1, col_export2 = st.columns(2)
-    with col_export1:
+    elif view == "Base de données":
+        st.markdown("### Base de données filtrée")
+        st.dataframe(filtered.drop(columns=["Données"]), use_container_width=True, hide_index=True)
+        export_df = filtered.drop(columns=["Données"])
         st.download_button(
-            label="Télécharger les répondants CSV",
-            data=csv_respondents,
-            file_name="tna_repondants.csv",
-            mime="text/csv",
-            use_container_width=True
-        )
-    with col_export2:
-        st.download_button(
-            label="Télécharger les thèmes CSV",
-            data=csv_themes,
-            file_name="tna_themes.csv",
-            mime="text/csv",
-            use_container_width=True
+            "Télécharger CSV",
+            export_df.to_csv(index=False).encode("utf-8-sig"),
+            "tna_reponses.csv",
+            "text/csv"
         )
 
 
 def main():
-    st.set_page_config(
-        page_title="TNA 2026",
-        page_icon="📘",
-        layout="wide"
-    )
+    st.set_page_config(page_title="TNA 2026", page_icon="📘", layout="wide")
     apply_style()
     init_db()
 
@@ -715,10 +540,10 @@ def main():
         return
 
     user = st.session_state["user"]
-    col1, col2 = st.columns([4, 1])
-    with col1:
-        st.caption(f"Connecté : {user['name']}")
-    with col2:
+    c1, c2 = st.columns([5, 1])
+    with c1:
+        st.caption(f"Connecté : {user['name']} | {user['role']}")
+    with c2:
         if st.button("Déconnexion", use_container_width=True):
             st.session_state.clear()
             st.rerun()
