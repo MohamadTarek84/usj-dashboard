@@ -3,11 +3,6 @@ import sqlite3
 import json
 from datetime import datetime
 import pandas as pd
-
-try:
-    import plotly.graph_objects as go
-except Exception:
-    go = None
 import os
 import base64
 
@@ -17,8 +12,11 @@ USJ_BLUE = "#001F5B"
 USJ_RED = "#8B1538"
 USJ_GOLD = "#C9A227"
 USJ_TEXT = "#1B2A41"
+USJ_LIGHT_BLUE = "#EAF2F8"
+
 CFP_LOGO_PATH = "CFP LOGO.png"
 USJ_LOGO_PATH = "USJ LOGO 150.png"
+
 
 PSG_THEMES = [
     "Communication constructive",
@@ -65,6 +63,7 @@ DD_LEADER_THEMES = [
     "Data-driven decision making"
 ]
 
+
 DEMO_USERS = {
     "PSG001": {"role": "psg", "name": "Nour Haddad", "faculty": "Faculté des Sciences", "institution": "USJ", "department": "Service des Études", "director_code": "DD001"},
     "PSG002": {"role": "psg", "name": "Karim Mansour", "faculty": "Faculté des Sciences", "institution": "USJ", "department": "Service des Études", "director_code": "DD001"},
@@ -102,18 +101,12 @@ DEMO_USERS = {
     "DD004": {"role": "director", "name": "Dr. Nadine Farhat", "faculty": "Faculté des Lettres et des Sciences Humaines", "institution": "USJ", "department": "Direction"},
     "DD005": {"role": "director", "name": "Dr. Marc Saad", "faculty": "Faculté d’Ingénierie", "institution": "USJ", "department": "Direction"},
 
-    "ADMIN2032": {
-        "role": "admin",
-        "name": "Administrateur TNA",
-        "faculty": "USJ",
-        "institution": "USJ",
-        "department": "Administration Centrale"
-    }
+    "ADMIN2032": {"role": "admin", "name": "Administrateur TNA", "faculty": "USJ", "institution": "USJ", "department": "Administration Centrale"}
 }
 
 
 TRIAL_PSG_RESPONSES = {
-    "PSG001": ["Communication constructive", "Collaboration", "Bureautique-Excel"],
+    "PSG001": ["Communication constructive", "Diversité culturelle", "Communication écrite"],
     "PSG002": ["Outils intelligence artificielle", "Gestion du temps", "Communication écrite"],
     "PSG003": ["Bureautique-Excel", "Outils intelligence artificielle", "Gestion de projets"],
     "PSG004": ["Résolution de conflits", "Communication orale", "Team building"],
@@ -127,7 +120,7 @@ TRIAL_PSG_RESPONSES = {
 
     "PSG011": ["Gestion financière", "Bureautique-Excel", "Esprit critique et résolution de problèmes"],
     "PSG012": ["Communication orale", "Public speaking and Body language", "Customer service"],
-    "PSG013": ["Branding", "Création de contenu-Réseaux sociaux", "Digital marketing"],
+    "PSG013": ["Branding", "Création de contenu-Réseaux sociaux", "Customer service"],
     "PSG014": ["Gestion du changement en milieu universitaire", "Gestion de projets", "Collaboration"],
     "PSG015": ["Esprit critique et résolution de problèmes", "Bureautique-Excel", "Communication écrite"],
 
@@ -149,7 +142,7 @@ TRIAL_DIRECTOR_RESPONSES = {
     "DD001": {
         "leader": ["Data-driven decision making", "Outils intelligence artificielle-IA", "Strategic decision making"],
         "employees": {
-            "PSG001": ["Communication constructive", "Collaboration", "Communication orale"],
+            "PSG001": ["Communication écrite", "Collaboration", "Diversité culturelle"],
             "PSG002": ["Outils intelligence artificielle", "Communication écrite", "Gestion du temps"],
             "PSG003": ["Gestion de projets", "Bureautique-Excel", "Outils intelligence artificielle"],
             "PSG004": ["Team building", "Résolution de conflits", "Diversité culturelle"],
@@ -171,7 +164,7 @@ TRIAL_DIRECTOR_RESPONSES = {
         "employees": {
             "PSG011": ["Gestion financière", "Esprit critique et résolution de problèmes", "Bureautique-Excel"],
             "PSG012": ["Public speaking and Body language", "Communication orale", "Customer service"],
-            "PSG013": ["Digital marketing", "Branding", "Création de contenu-Réseaux sociaux"],
+            "PSG013": ["Customer service", "Branding", "Création de contenu-Réseaux sociaux"],
             "PSG014": ["Gestion du changement en milieu universitaire", "Collaboration", "Gestion de projets"],
             "PSG015": ["Bureautique-Excel", "Esprit critique et résolution de problèmes", "Communication écrite"]
         }
@@ -199,7 +192,6 @@ TRIAL_DIRECTOR_RESPONSES = {
 }
 
 
-
 def image_to_base64(image_path):
     if not os.path.exists(image_path):
         return ""
@@ -207,33 +199,6 @@ def image_to_base64(image_path):
     with open(image_path, "rb") as image_file:
         return base64.b64encode(image_file.read()).decode("utf-8")
 
-
-def render_platform_header():
-    cfp_logo = image_to_base64(CFP_LOGO_PATH)
-    usj_logo = image_to_base64(USJ_LOGO_PATH)
-
-    cfp_html = (
-        f"<img src='data:image/png;base64,{cfp_logo}' class='platform-logo cfp-logo'>"
-        if cfp_logo else
-        "<div class='logo-placeholder'>CFP</div>"
-    )
-
-    usj_html = (
-        f"<img src='data:image/png;base64,{usj_logo}' class='platform-logo usj-logo'>"
-        if usj_logo else
-        "<div class='logo-placeholder'>USJ</div>"
-    )
-
-    st.markdown(f"""
-    <div class="platform-header">
-        <div class="logo-side left-logo">{cfp_html}</div>
-        <div class="header-center">
-            <div class="header-title">Centre de Formation Professionnelle</div>
-            <div class="header-subtitle">Training Needs Assessment - TNA 2026</div>
-        </div>
-        <div class="logo-side right-logo">{usj_html}</div>
-    </div>
-    """, unsafe_allow_html=True)
 
 def apply_style():
     st.markdown(f"""
@@ -244,8 +209,13 @@ def apply_style():
     }}
 
     .block-container {{
-        padding-top: 1.2rem;
-        max-width: 1280px;
+        padding-top: 1.1rem;
+        max-width: 1320px;
+    }}
+
+    h1, h2, h3 {{
+        color: {USJ_BLUE};
+        font-weight: 850;
     }}
 
     .platform-header {{
@@ -318,35 +288,6 @@ def apply_style():
         background: #F7FAFE;
     }}
 
-    @media (max-width: 760px) {{
-        .platform-header {{
-            padding: 10px 12px;
-            gap: 10px;
-        }}
-
-        .logo-side {{
-            width: 90px;
-        }}
-
-        .platform-logo {{
-            max-height: 58px;
-            max-width: 88px;
-        }}
-
-        .header-title {{
-            font-size: 1.05rem;
-        }}
-
-        .header-subtitle {{
-            font-size: 0.78rem;
-        }}
-    }}
-
-    h1, h2, h3 {{
-        color: {USJ_BLUE};
-        font-weight: 800;
-    }}
-
     .main-hero {{
         background: linear-gradient(135deg, {USJ_BLUE} 0%, #123E7C 60%, {USJ_RED} 100%);
         border-radius: 24px;
@@ -366,7 +307,7 @@ def apply_style():
     }}
 
     .hero-title {{
-        font-size: 2.25rem;
+        font-size: 2.15rem;
         line-height: 1.1;
         font-weight: 850;
         margin-bottom: 10px;
@@ -398,21 +339,34 @@ def apply_style():
     div[data-baseweb="input"] input {{
         background-color: #ffffff !important;
         color: {USJ_BLUE} !important;
-        font-weight: 700 !important;
+        font-weight: 750 !important;
         font-size: 17px !important;
         padding: 12px 14px !important;
     }}
 
-    div[data-baseweb="select"] div {{
-        color: {USJ_BLUE} !important;
-        font-weight: 700 !important;
-        font-size: 16px !important;
+    div[data-baseweb="select"] {{
+        min-height: 58px !important;
+        padding: 3px 6px !important;
+        box-sizing: border-box !important;
+        overflow: visible !important;
     }}
 
+    div[data-baseweb="select"] > div {{
+        min-height: 48px !important;
+        display: flex !important;
+        align-items: center !important;
+        padding-left: 10px !important;
+        padding-right: 10px !important;
+        box-sizing: border-box !important;
+    }}
+
+    div[data-baseweb="select"] div,
     div[data-baseweb="select"] span {{
         color: {USJ_BLUE} !important;
-        font-weight: 700 !important;
+        font-weight: 750 !important;
+        font-size: 16px !important;
         opacity: 1 !important;
+        line-height: 1.35 !important;
     }}
 
     div[data-baseweb="select"] svg {{
@@ -426,7 +380,7 @@ def apply_style():
         font-weight: 600 !important;
         font-size: 16px !important;
         padding: 14px 16px !important;
-        min-height: 130px !important;
+        min-height: 120px !important;
         line-height: 1.5 !important;
     }}
 
@@ -434,6 +388,7 @@ def apply_style():
     .stTextArea,
     .stTextInput {{
         margin-bottom: 12px !important;
+        overflow: visible !important;
     }}
 
     label {{
@@ -470,7 +425,7 @@ def apply_style():
         background:#ffffff;
         border:1px solid #DDE5F0;
         border-radius:20px;
-        padding:22px 24px;
+        padding:20px 22px;
         margin: 18px 0;
         box-shadow: 0 12px 32px rgba(27,42,65,0.07);
     }}
@@ -495,8 +450,8 @@ def apply_style():
         background:#ffffff;
         border:1px solid #DDE5F0;
         border-radius:16px;
-        padding:18px 20px;
-        margin-bottom:16px;
+        padding:16px 18px;
+        margin-bottom:12px;
         box-shadow:0 8px 22px rgba(27,42,65,0.06);
     }}
 
@@ -511,79 +466,26 @@ def apply_style():
         border-radius:999px;
         background:#EAF2F8;
         color:{USJ_BLUE};
-        font-weight:700;
+        font-weight:750;
         font-size:14px;
     }}
 
     .pill-red {{ background:#F8EDEF; color:{USJ_RED}; }}
     .pill-gold {{ background:#FFF8DF; color:#735C00; }}
-    .matched {{ background:#E9F7EF; color:#146C43; }}
-    .missing {{ background:#FFF3CD; color:#7A5A00; }}
-    .final {{ background:#EAF2F8; color:{USJ_BLUE}; border:1px solid #C9DDF2; }}
+    .pill-green {{ background:#E9F7EF; color:#146C43; }}
+    .pill-final {{ background:#FFF8DF; color:{USJ_BLUE}; border:1px solid #E6D58D; }}
 
-    div.stButton > button {{
-        border-radius:12px;
-        background:{USJ_BLUE};
-        color:white;
-        border:0;
-        font-weight:800;
-        min-height: 46px;
-    }}
-
-    div.stButton > button:hover {{
-        background:#123E7C;
-        color:white;
-        border:0;
-    }}
-    
-    div[data-baseweb="select"] {{
-        min-height: 58px !important;
-        padding: 3px 6px !important;
-        box-sizing: border-box !important;
-        overflow: visible !important;
-    }}
-
-    div[data-baseweb="select"] > div {{
-        min-height: 48px !important;
-        display: flex !important;
-        align-items: center !important;
-        padding-left: 10px !important;
-        padding-right: 10px !important;
-        box-sizing: border-box !important;
-    }}
-
-    div[data-baseweb="select"] div[role="button"] {{
-        min-height: 48px !important;
-        display: flex !important;
-        align-items: center !important;
-    }}
-
-    div[data-baseweb="select"] span {{
-        line-height: 1.35 !important;
-        padding-top: 2px !important;
-        padding-bottom: 2px !important;
-        white-space: normal !important;
-    }}
-
-    .stSelectbox {{
-        overflow: visible !important;
-        padding-top: 4px !important;
-        padding-bottom: 8px !important;
-    }}
-
-    
     .visual-column {{
         background: #ffffff;
         border: 1px solid #DDE5F0;
         border-radius: 18px;
         padding: 14px;
-        min-height: 0;
         box-shadow: 0 10px 28px rgba(27,42,65,0.06);
         margin-bottom: 10px;
     }}
 
     .visual-column-title {{
-        font-size: 1.1rem;
+        font-size: 1.08rem;
         font-weight: 850;
         color: #001F5B;
         margin-bottom: 10px;
@@ -591,17 +493,9 @@ def apply_style():
         border-bottom: 1px solid #DDE5F0;
     }}
 
-    .visual-employee {{
-        border-top: 5px solid #001F5B;
-    }}
-
-    .visual-director {{
-        border-top: 5px solid #8B1538;
-    }}
-
-    .visual-final {{
-        border-top: 5px solid #C9A227;
-    }}
+    .visual-employee {{ border-top: 5px solid #001F5B; }}
+    .visual-director {{ border-top: 5px solid #8B1538; }}
+    .visual-final {{ border-top: 5px solid #C9A227; }}
 
     .priority-card {{
         border-radius: 16px;
@@ -626,34 +520,104 @@ def apply_style():
     }}
 
     .priority-rank {{
-        font-size: 0.82rem;
+        font-size: 0.78rem;
         font-weight: 850;
         color: #5D697A;
         text-transform: uppercase;
         letter-spacing: 0.04em;
-        margin-bottom: 6px;
+        margin-bottom: 5px;
     }}
 
     .priority-theme {{
-        font-size: 1rem;
+        font-size: 0.98rem;
         font-weight: 850;
         color: #001F5B;
         line-height: 1.35;
     }}
 
     .priority-badge {{
-        margin-top: 10px;
+        margin-top: 8px;
         display: inline-block;
         padding: 5px 9px;
         border-radius: 999px;
         background: #ffffff;
         color: #735C00;
-        font-size: 0.78rem;
+        font-size: 0.76rem;
         font-weight: 800;
         border: 1px solid #E6D58D;
     }}
 
+    div.stButton > button {{
+        border-radius:12px;
+        background:{USJ_BLUE};
+        color:white;
+        border:0;
+        font-weight:800;
+        min-height: 46px;
+    }}
+
+    div.stButton > button:hover {{
+        background:#123E7C;
+        color:white;
+        border:0;
+    }}
+
+    @media (max-width: 760px) {{
+        .platform-header {{
+            padding: 14px 16px;
+            gap: 10px;
+        }}
+
+        .logo-side {{
+            width: 90px;
+        }}
+
+        .platform-logo {{
+            max-height: 58px;
+            max-width: 88px;
+        }}
+
+        .header-title {{
+            font-size: 1.05rem;
+        }}
+
+        .header-subtitle {{
+            font-size: 0.78rem;
+        }}
+
+        .hero-title {{
+            font-size: 1.55rem;
+        }}
+    }}
     </style>
+    """, unsafe_allow_html=True)
+
+
+def render_platform_header():
+    cfp_logo = image_to_base64(CFP_LOGO_PATH)
+    usj_logo = image_to_base64(USJ_LOGO_PATH)
+
+    cfp_html = (
+        f"<img src='data:image/png;base64,{cfp_logo}' class='platform-logo cfp-logo'>"
+        if cfp_logo else
+        "<div class='logo-placeholder'>CFP</div>"
+    )
+
+    usj_html = (
+        f"<img src='data:image/png;base64,{usj_logo}' class='platform-logo usj-logo'>"
+        if usj_logo else
+        "<div class='logo-placeholder'>USJ</div>"
+    )
+
+    st.markdown(f"""
+    <div class="platform-header">
+        <div class="logo-side left-logo">{cfp_html}</div>
+        <div class="header-center">
+            <div class="header-title">Centre de Formation Professionnelle</div>
+            <div class="header-subtitle">Training Needs Assessment - TNA 2026</div>
+        </div>
+        <div class="logo-side right-logo">{usj_html}</div>
+    </div>
     """, unsafe_allow_html=True)
 
 
@@ -690,70 +654,10 @@ def init_db():
     conn.close()
 
 
-def save_admin_theme_override(employee_code, employee_ranked, director_ranked):
-    conn = sqlite3.connect(DB_NAME)
-    c = conn.cursor()
-
-    c.execute("""
-        INSERT INTO admin_theme_overrides (
-            employee_code,
-            employee_ranked_json,
-            director_ranked_json,
-            updated_by,
-            updated_at
-        )
-        VALUES (?, ?, ?, ?, ?)
-        ON CONFLICT(employee_code) DO UPDATE SET
-            employee_ranked_json = excluded.employee_ranked_json,
-            director_ranked_json = excluded.director_ranked_json,
-            updated_by = excluded.updated_by,
-            updated_at = excluded.updated_at
-    """, (
-        employee_code,
-        json.dumps(employee_ranked, ensure_ascii=False),
-        json.dumps(director_ranked, ensure_ascii=False),
-        st.session_state.get("code", "ADMIN"),
-        datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    ))
-
-    conn.commit()
-    conn.close()
-
-
-def load_admin_theme_overrides():
-    conn = sqlite3.connect(DB_NAME)
-    rows = conn.execute("""
-        SELECT employee_code, employee_ranked_json, director_ranked_json, updated_by, updated_at
-        FROM admin_theme_overrides
-    """).fetchall()
-    conn.close()
-
-    overrides = {}
-
-    for employee_code, employee_json, director_json, updated_by, updated_at in rows:
-        try:
-            employee_ranked = json.loads(employee_json or "[]")
-        except Exception:
-            employee_ranked = []
-
-        try:
-            director_ranked = json.loads(director_json or "[]")
-        except Exception:
-            director_ranked = []
-
-        overrides[employee_code] = {
-            "employee_ranked": employee_ranked,
-            "director_ranked": director_ranked,
-            "updated_by": updated_by,
-            "updated_at": updated_at
-        }
-
-    return overrides
-
-
 def save_response(user, data):
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
+
     c.execute("""
         INSERT INTO responses (
             respondent_code, role, name, faculty, institution, department, data_json, submitted_at
@@ -768,15 +672,9 @@ def save_response(user, data):
         json.dumps(data, ensure_ascii=False),
         datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     ))
+
     conn.commit()
     conn.close()
-
-
-def count_existing_responses():
-    conn = sqlite3.connect(DB_NAME)
-    count = conn.execute("SELECT COUNT(*) FROM responses").fetchone()[0]
-    conn.close()
-    return count
 
 
 def trial_data_is_complete():
@@ -799,7 +697,6 @@ def seed_trial_data(force=False):
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
 
-    # Demo mode: keep the database clean so the dashboard always shows the full generated dataset.
     c.execute("DELETE FROM responses")
     c.execute("DELETE FROM admin_theme_overrides")
 
@@ -883,8 +780,10 @@ def load_responses():
     conn.close()
 
     records = []
+
     for row in rows:
         code, role, name, faculty, institution, department, data_json, submitted_at = row
+
         try:
             data = json.loads(data_json)
         except Exception:
@@ -904,6 +803,67 @@ def load_responses():
     return pd.DataFrame(records)
 
 
+def save_admin_theme_override(employee_code, employee_ranked, director_ranked):
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+
+    c.execute("""
+        INSERT INTO admin_theme_overrides (
+            employee_code,
+            employee_ranked_json,
+            director_ranked_json,
+            updated_by,
+            updated_at
+        )
+        VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(employee_code) DO UPDATE SET
+            employee_ranked_json = excluded.employee_ranked_json,
+            director_ranked_json = excluded.director_ranked_json,
+            updated_by = excluded.updated_by,
+            updated_at = excluded.updated_at
+    """, (
+        employee_code,
+        json.dumps(employee_ranked, ensure_ascii=False),
+        json.dumps(director_ranked, ensure_ascii=False),
+        st.session_state.get("code", "ADMIN"),
+        datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    ))
+
+    conn.commit()
+    conn.close()
+
+
+def load_admin_theme_overrides():
+    conn = sqlite3.connect(DB_NAME)
+    rows = conn.execute("""
+        SELECT employee_code, employee_ranked_json, director_ranked_json, updated_by, updated_at
+        FROM admin_theme_overrides
+    """).fetchall()
+    conn.close()
+
+    overrides = {}
+
+    for employee_code, employee_json, director_json, updated_by, updated_at in rows:
+        try:
+            employee_ranked = json.loads(employee_json or "[]")
+        except Exception:
+            employee_ranked = []
+
+        try:
+            director_ranked = json.loads(director_json or "[]")
+        except Exception:
+            director_ranked = []
+
+        overrides[employee_code] = {
+            "employee_ranked": employee_ranked,
+            "director_ranked": director_ranked,
+            "updated_by": updated_by,
+            "updated_at": updated_at
+        }
+
+    return overrides
+
+
 def get_employees_for_director(director_code):
     employees = []
 
@@ -914,6 +874,18 @@ def get_employees_for_director(director_code):
             employees.append(emp)
 
     return employees
+
+
+def latest_by_code(df, code):
+    if df.empty:
+        return None
+
+    subset = df[df["Code"] == code].sort_values("Date", ascending=False)
+
+    if subset.empty:
+        return None
+
+    return subset.iloc[0].to_dict()
 
 
 def unique_ranked_select(label, options, key_prefix):
@@ -935,31 +907,58 @@ def unique_ranked_select(label, options, key_prefix):
     return [x for x in [p1, p2, p3] if x]
 
 
-def weighted_score(theme, employee_ranked, director_ranked):
-    score = 0
-    weights = {0: 3, 1: 2, 2: 1}
+def ranked_select_with_defaults(label, options, key_prefix, defaults=None):
+    defaults = defaults or []
+    defaults = [x for x in defaults if x in options]
 
-    for i, theme_selected in enumerate(employee_ranked):
-        if theme_selected == theme:
-            score += weights.get(i, 0)
+    p1_default = defaults[0] if len(defaults) > 0 else ""
+    p2_default = defaults[1] if len(defaults) > 1 else ""
+    p3_default = defaults[2] if len(defaults) > 2 else ""
 
-    for i, theme_selected in enumerate(director_ranked):
-        if theme_selected == theme:
-            score += weights.get(i, 0)
+    st.markdown(f"**{label}**")
 
-    return score
+    c1, c2, c3 = st.columns(3)
+
+    with c1:
+        options_1 = [""] + options
+        p1 = st.selectbox(
+            "Priorité 1",
+            options_1,
+            index=options_1.index(p1_default) if p1_default in options_1 else 0,
+            key=f"{key_prefix}_p1"
+        )
+
+    with c2:
+        remaining_2 = [x for x in options if x != p1]
+        options_2 = [""] + remaining_2
+        p2 = st.selectbox(
+            "Priorité 2",
+            options_2,
+            index=options_2.index(p2_default) if p2_default in options_2 else 0,
+            key=f"{key_prefix}_p2"
+        )
+
+    with c3:
+        remaining_3 = [x for x in options if x not in [p1, p2]]
+        options_3 = [""] + remaining_3
+        p3 = st.selectbox(
+            "Priorité 3",
+            options_3,
+            index=options_3.index(p3_default) if p3_default in options_3 else 0,
+            key=f"{key_prefix}_p3"
+        )
+
+    return [x for x in [p1, p2, p3] if x]
 
 
 def calculate_final_themes(employee_ranked, director_ranked):
     """
-    Final selection rule:
-    1. Start with Employee P1 and Director P1.
-    2. If both selected the same theme as P1, this theme is selected automatically.
-    3. Then move rank by rank: P2 with P2, then P3 with P3.
-    4. At each rank, if one or two themes are proposed, select themes that are common anywhere
-       in both lists first, regardless of their exact priority position.
-    5. If fewer than 3 themes are selected, complete the list using priority order:
-       Employee P1, Director P1, Employee P2, Director P2, Employee P3, Director P3.
+    Selection method requested:
+    - Start from Priority 1 employee and Priority 1 director.
+    - If both selected the same Priority 1, select it automatically.
+    - Then move P2 with P2, then P3 with P3.
+    - At each stage, common themes between both lists are prioritized, regardless of exact priority.
+    - If fewer than 3 themes are common, complete by alternating employee and director priorities.
     """
     employee_ranked = employee_ranked or []
     director_ranked = director_ranked or []
@@ -970,21 +969,11 @@ def calculate_final_themes(employee_ranked, director_ranked):
     employee_set = set(employee_ranked)
     director_set = set(director_ranked)
 
-    common_themes = [
-        theme for theme in employee_ranked
-        if theme in director_set
-    ]
+    if len(employee_ranked) >= 1 and len(director_ranked) >= 1:
+        if employee_ranked[0] == director_ranked[0]:
+            final.append(employee_ranked[0])
+            matched.append(employee_ranked[0])
 
-    # Case 1: both Priority 1 are exactly the same.
-    if (
-        len(employee_ranked) >= 1
-        and len(director_ranked) >= 1
-        and employee_ranked[0] == director_ranked[0]
-    ):
-        final.append(employee_ranked[0])
-        matched.append(employee_ranked[0])
-
-    # Rank-by-rank logic: compare P1 with P1, then P2 with P2, then P3 with P3.
     for rank_index in range(3):
         rank_candidates = []
 
@@ -994,7 +983,6 @@ def calculate_final_themes(employee_ranked, director_ranked):
         if len(director_ranked) > rank_index:
             rank_candidates.append(director_ranked[rank_index])
 
-        # First priority: common themes, regardless of exact rank.
         for theme in rank_candidates:
             if theme in employee_set and theme in director_set and theme not in final:
                 final.append(theme)
@@ -1003,16 +991,14 @@ def calculate_final_themes(employee_ranked, director_ranked):
         if len(final) == 3:
             break
 
-    # Add remaining common themes if not already selected.
-    for theme in common_themes:
-        if theme not in final:
+    for theme in employee_ranked:
+        if theme in director_set and theme not in final:
             final.append(theme)
             matched.append(theme)
 
         if len(final) == 3:
             break
 
-    # Complete using alternating ranked order.
     alternating_candidates = []
 
     for rank_index in range(3):
@@ -1029,52 +1015,20 @@ def calculate_final_themes(employee_ranked, director_ranked):
         if len(final) == 3:
             break
 
-    final = final[:3]
-
-    if len(matched) >= 3:
-        scenario = "Accord complet : les 3 thèmes finaux sont communs entre l’employé et le Doyen / Directeur."
-    elif len(matched) == 2:
-        scenario = "Accord fort : 2 thèmes communs ont été retenus, puis le troisième thème a été complété selon l’ordre de priorité."
-    elif len(matched) == 1:
-        scenario = "Accord partiel : 1 thème commun a été retenu, puis les autres thèmes ont été complétés selon l’ordre de priorité."
-    else:
-        scenario = "Aucun thème commun : les thèmes finaux ont été proposés selon l’ordre croisé des priorités."
-
-    return matched, final, scenario
+    return matched[:3], final[:3]
 
 
-def login_page():
-    st.markdown("""
-    <div class="main-hero">
-        <div class="hero-kicker">TNA 2026</div>
-        <div class="hero-title">Plateforme d’analyse des besoins en formation</div>
-        <div class="hero-subtitle">Accès sécurisé par code au questionnaire PSG, au questionnaire Doyens / Directeurs et au tableau de bord administrateur.</div>
-    </div>
-    """, unsafe_allow_html=True)
+def render_theme_pills(themes, css_class="pill"):
+    if not themes:
+        st.caption("Aucun thème sélectionné.")
+        return
 
-    col1, col2, col3 = st.columns([1, 1.2, 1])
+    html = "".join([
+        f"<span class='{css_class}'>{i}. {theme}</span>"
+        for i, theme in enumerate(themes, start=1)
+    ])
 
-    with col2:
-        code = st.text_input(
-            "Code d’accès",
-            type="default",
-            placeholder="Exemple : PSG001, DD001 ou ADMIN2032",
-            autocomplete="off",
-            key="access_code"
-        )
-
-        if st.button("Accéder au questionnaire", use_container_width=True):
-            cleaned_code = code.strip().upper()
-
-            if cleaned_code in DEMO_USERS:
-                st.session_state["logged_in"] = True
-                st.session_state["code"] = cleaned_code
-                st.session_state["user"] = DEMO_USERS[cleaned_code]
-                st.rerun()
-            else:
-                st.error("Code non reconnu.")
-
-        st.caption("Codes demo : PSG001 à PSG025, DD001 à DD005, ADMIN2032")
+    st.markdown(html, unsafe_allow_html=True)
 
 
 def render_form_hero(profile_label, title, objective):
@@ -1124,17 +1078,38 @@ def render_ranked_section_header(title, help_text, color_class="blue"):
     """, unsafe_allow_html=True)
 
 
-def render_theme_pills(themes, css_class="pill"):
-    if not themes:
-        st.caption("Aucun thème sélectionné.")
-        return
+def login_page():
+    st.markdown("""
+    <div class="main-hero">
+        <div class="hero-kicker">TNA 2026</div>
+        <div class="hero-title">Plateforme d’analyse des besoins en formation</div>
+        <div class="hero-subtitle">Accès sécurisé par code au questionnaire PSG, au questionnaire Doyens / Directeurs et au tableau de bord administrateur.</div>
+    </div>
+    """, unsafe_allow_html=True)
 
-    html = "".join([
-        f"<span class='{css_class}'>{i}. {theme}</span>"
-        for i, theme in enumerate(themes, start=1)
-    ])
+    col1, col2, col3 = st.columns([1, 1.2, 1])
 
-    st.markdown(html, unsafe_allow_html=True)
+    with col2:
+        code = st.text_input(
+            "Code d’accès",
+            type="default",
+            placeholder="Exemple : PSG001, DD001 ou ADMIN2032",
+            autocomplete="off",
+            key="access_code"
+        )
+
+        if st.button("Accéder au questionnaire", use_container_width=True):
+            cleaned_code = code.strip().upper()
+
+            if cleaned_code in DEMO_USERS:
+                st.session_state["logged_in"] = True
+                st.session_state["code"] = cleaned_code
+                st.session_state["user"] = DEMO_USERS[cleaned_code]
+                st.rerun()
+            else:
+                st.error("Code non reconnu.")
+
+        st.caption("Codes demo : PSG001 à PSG025, DD001 à DD005, ADMIN2032")
 
 
 def render_psg_form(user):
@@ -1281,75 +1256,17 @@ def render_director_form(user):
         st.success("Vos réponses ont été enregistrées avec succès.")
 
 
-def latest_by_code(df, code):
-    if df.empty:
-        return None
-
-    subset = df[df["Code"] == code].sort_values("Date", ascending=False)
-
-    if subset.empty:
-        return None
-
-    return subset.iloc[0].to_dict()
-
-
-
-
-def ranked_select_with_defaults(label, options, key_prefix, defaults=None):
-    defaults = defaults or []
-    defaults = [x for x in defaults if x in options]
-
-    p1_default = defaults[0] if len(defaults) > 0 else ""
-    p2_default = defaults[1] if len(defaults) > 1 else ""
-    p3_default = defaults[2] if len(defaults) > 2 else ""
-
-    st.markdown(f"**{label}**")
-
-    c1, c2, c3 = st.columns(3)
-
-    with c1:
-        options_1 = [""] + options
-        p1 = st.selectbox(
-            "Priorité 1",
-            options_1,
-            index=options_1.index(p1_default) if p1_default in options_1 else 0,
-            key=f"{key_prefix}_p1"
-        )
-
-    with c2:
-        remaining_2 = [x for x in options if x != p1]
-        options_2 = [""] + remaining_2
-        p2 = st.selectbox(
-            "Priorité 2",
-            options_2,
-            index=options_2.index(p2_default) if p2_default in options_2 else 0,
-            key=f"{key_prefix}_p2"
-        )
-
-    with c3:
-        remaining_3 = [x for x in options if x not in [p1, p2]]
-        options_3 = [""] + remaining_3
-        p3 = st.selectbox(
-            "Priorité 3",
-            options_3,
-            index=options_3.index(p3_default) if p3_default in options_3 else 0,
-            key=f"{key_prefix}_p3"
-        )
-
-    return [x for x in [p1, p2, p3] if x]
-
-
-def render_employee_comparison_visual(employee_name, employee_ranked, director_ranked, final_themes, matched):
-    # The comparative priority table and decision matrix were intentionally removed.
+def render_employee_visual_cards(employee_name, employee_ranked, director_ranked, final_themes, matched):
     st.markdown(f"""
     <div class="card gold-card">
-        <h3 style="margin-top:0; color:#001F5B;">Synthèse visuelle claire - {employee_name}</h3>
+        <h3 style="margin-top:0; color:#001F5B;">Synthèse visuelle - {employee_name}</h3>
         <div style="color:#5D697A; font-weight:600;">
-            Comparaison entre les priorités de l’employé, les priorités du Doyen / Directeur et les thèmes finaux proposés.
+            Comparaison des priorités classées par l’employé, par le Doyen / Directeur, puis sélection finale proposée.
         </div>
     </div>
     """, unsafe_allow_html=True)
-c1, c2, c3 = st.columns(3)
+
+    c1, c2, c3 = st.columns(3)
 
     with c1:
         st.markdown("""
@@ -1357,15 +1274,15 @@ c1, c2, c3 = st.columns(3)
             <div class="visual-column-title">Choix de l’employé</div>
         """, unsafe_allow_html=True)
 
-        if employee_ranked:
-            for i, theme in enumerate(employee_ranked, start=1):
-                st.markdown(f"""
-                <div class="priority-card employee-card">
-                    <div class="priority-rank">Priorité {i}</div>
-                    <div class="priority-theme">{theme}</div>
-                </div>
-                """, unsafe_allow_html=True)
-        else:
+        for i, theme in enumerate(employee_ranked, start=1):
+            st.markdown(f"""
+            <div class="priority-card employee-card">
+                <div class="priority-rank">Priorité {i}</div>
+                <div class="priority-theme">{theme}</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        if not employee_ranked:
             st.caption("Aucun choix employé.")
 
         st.markdown("</div>", unsafe_allow_html=True)
@@ -1376,15 +1293,15 @@ c1, c2, c3 = st.columns(3)
             <div class="visual-column-title">Choix du Doyen / Directeur</div>
         """, unsafe_allow_html=True)
 
-        if director_ranked:
-            for i, theme in enumerate(director_ranked, start=1):
-                st.markdown(f"""
-                <div class="priority-card director-card">
-                    <div class="priority-rank">Priorité {i}</div>
-                    <div class="priority-theme">{theme}</div>
-                </div>
-                """, unsafe_allow_html=True)
-        else:
+        for i, theme in enumerate(director_ranked, start=1):
+            st.markdown(f"""
+            <div class="priority-card director-card">
+                <div class="priority-rank">Priorité {i}</div>
+                <div class="priority-theme">{theme}</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        if not director_ranked:
             st.caption("Aucun choix directeur.")
 
         st.markdown("</div>", unsafe_allow_html=True)
@@ -1395,60 +1312,28 @@ c1, c2, c3 = st.columns(3)
             <div class="visual-column-title">Thèmes finaux proposés</div>
         """, unsafe_allow_html=True)
 
-        if final_themes:
-            for i, theme in enumerate(final_themes, start=1):
-                badge = "Thème commun" if theme in matched else "Proposé par score"
-                st.markdown(f"""
-                <div class="priority-card final-card">
-                    <div class="priority-rank">Priorité finale {i}</div>
-                    <div class="priority-theme">{theme}</div>
-                    <div class="priority-badge">{badge}</div>
-                </div>
-                """, unsafe_allow_html=True)
-        else:
+        for i, theme in enumerate(final_themes, start=1):
+            badge = "Thème commun" if theme in matched else "Complément selon priorité"
+            st.markdown(f"""
+            <div class="priority-card final-card">
+                <div class="priority-rank">Priorité finale {i}</div>
+                <div class="priority-theme">{theme}</div>
+                <div class="priority-badge">{badge}</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        if not final_themes:
             st.caption("Aucun thème final.")
 
         st.markdown("</div>", unsafe_allow_html=True)
 
-
-
-def render_priority_matrix(employee_ranked, director_ranked, final_themes):
-    rows = []
-
-    for theme in list(dict.fromkeys(employee_ranked + director_ranked + final_themes)):
-        emp_rank = employee_ranked.index(theme) + 1 if theme in employee_ranked else ""
-        dir_rank = director_ranked.index(theme) + 1 if theme in director_ranked else ""
-        final_rank = final_themes.index(theme) + 1 if theme in final_themes else ""
-        status = "Commun" if theme in employee_ranked and theme in director_ranked else "Non commun"
-
-        rows.append({
-            "Thème": theme,
-            "Priorité employé": emp_rank,
-            "Priorité directeur": dir_rank,
-            "Priorité finale proposée": final_rank,
-            "Statut": status
-        })
-
-    matrix_df = pd.DataFrame(rows)
-
-    st.dataframe(
-        matrix_df,
-        use_container_width=True,
-        hide_index=True,
-        column_config={
-            "Statut": st.column_config.TextColumn("Statut"),
-            "Priorité employé": st.column_config.NumberColumn("Priorité employé"),
-            "Priorité directeur": st.column_config.NumberColumn("Priorité directeur"),
-            "Priorité finale proposée": st.column_config.NumberColumn("Priorité finale proposée")
-        }
-    )
 
 def render_admin_dashboard():
     st.markdown("""
     <div class="main-hero">
         <div class="hero-kicker">Administration | TNA 2026</div>
         <div class="hero-title">Tableau de bord administrateur</div>
-        <div class="hero-subtitle">Vue interactive des besoins de formation, avec comparaison employé-directeur, visualisation dynamique et ajustement administratif des thèmes retenus.</div>
+        <div class="hero-subtitle">Vue interactive des besoins de formation avec comparaison employé-directeur et modification administrative des priorités.</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -1554,6 +1439,7 @@ def render_admin_dashboard():
         employees = get_employees_for_director(selected_director)
 
         director_emp_map = {}
+
         if director_response:
             for item in director_response["Données"].get("employees_training_needs", []):
                 director_emp_map[item.get("employee_code")] = item
@@ -1561,11 +1447,10 @@ def render_admin_dashboard():
         if view == "Modifier les priorités":
             st.markdown("### Modification administrative des priorités par employé")
             st.info(
-                "Cette section permet à l’administrateur de corriger ou d’ajuster les 3 thèmes classés par l’employé "
-                "et les 3 thèmes classés par le Doyen / Directeur. Les modifications sont enregistrées séparément "
-                "dans une table d’override administrative."
+                "L’administrateur peut modifier les trois thèmes classés par l’employé "
+                "et les trois thèmes classés par le Doyen / Directeur. Ces modifications sont enregistrées "
+                "dans une table administrative séparée."
             )
-
         else:
             st.markdown("### 2. Analyse visuelle par employé")
 
@@ -1573,6 +1458,7 @@ def render_admin_dashboard():
             emp_response = latest_by_code(df, emp["code"])
 
             employee_original = []
+
             if emp_response:
                 employee_original = emp_response["Données"].get(
                     "ranked_themes",
@@ -1580,6 +1466,7 @@ def render_admin_dashboard():
                 )
 
             director_original = []
+
             if emp["code"] in director_emp_map:
                 director_original = director_emp_map[emp["code"]].get(
                     "ranked_themes_by_director",
@@ -1589,7 +1476,7 @@ def render_admin_dashboard():
             employee_ranked = overrides.get(emp["code"], {}).get("employee_ranked", employee_original)
             director_ranked = overrides.get(emp["code"], {}).get("director_ranked", director_original)
 
-            matched, final, scenario = calculate_final_themes(employee_ranked, director_ranked)
+            matched, final = calculate_final_themes(employee_ranked, director_ranked)
 
             st.markdown(f"""
             <div class='card blue-card'>
@@ -1600,9 +1487,7 @@ def render_admin_dashboard():
             """, unsafe_allow_html=True)
 
             if emp["code"] in overrides:
-                st.caption(
-                    f"Priorités modifiées par l’administrateur le {overrides[emp['code']]['updated_at']}."
-                )
+                st.caption(f"Priorités modifiées par l’administrateur le {overrides[emp['code']]['updated_at']}.")
 
             if view == "Modifier les priorités":
                 c1, c2 = st.columns(2)
@@ -1636,17 +1521,10 @@ def render_admin_dashboard():
                         st.rerun()
 
                 st.divider()
-                continue
 
-            render_employee_comparison_visual(
-                emp["name"],
-                employee_ranked,
-                director_ranked,
-                final,
-                matched
-            )
-
-            st.divider()
+            else:
+                render_employee_visual_cards(emp["name"], employee_ranked, director_ranked, final, matched)
+                st.divider()
 
     elif view == "Réponses PSG":
         st.markdown("### Réponses PSG")
@@ -1657,10 +1535,7 @@ def render_admin_dashboard():
             st.info("Aucune réponse PSG dans les filtres sélectionnés.")
         else:
             for _, row in psg_df.iterrows():
-                themes = row["Données"].get(
-                    "ranked_themes",
-                    row["Données"].get("selected_themes", [])
-                )
+                themes = row["Données"].get("ranked_themes", row["Données"].get("selected_themes", []))
 
                 st.markdown(f"""
                 <div class='card blue-card'>
@@ -1749,43 +1624,23 @@ def render_admin_dashboard():
             counts = sub["Thème"].value_counts().reset_index()
             counts.columns = ["Thème", "Nombre"]
 
-            if go is not None:
-                fig = go.Figure(
-                    data=[
-                        go.Bar(
-                            x=counts["Nombre"],
-                            y=counts["Thème"],
-                            orientation="h"
-                        )
-                    ]
-                )
-                fig.update_layout(
-                    height=520,
-                    margin=dict(l=10, r=10, t=20, b=10),
-                    yaxis=dict(autorange="reversed"),
-                    paper_bgcolor="rgba(0,0,0,0)",
-                    plot_bgcolor="rgba(0,0,0,0)"
-                )
-                st.plotly_chart(fig, use_container_width=True)
-            else:
-                st.bar_chart(counts.set_index("Thème"), use_container_width=True)
-
+            st.bar_chart(counts.set_index("Thème"), use_container_width=True)
             st.dataframe(sub, use_container_width=True, hide_index=True)
 
     elif view == "Base de données":
         st.markdown("### Base de données filtrée")
 
+        display_df = filtered.drop(columns=["Données"])
+
         st.dataframe(
-            filtered.drop(columns=["Données"]),
+            display_df,
             use_container_width=True,
             hide_index=True
         )
 
-        export_df = filtered.drop(columns=["Données"])
-
         st.download_button(
             "Télécharger CSV",
-            export_df.to_csv(index=False).encode("utf-8-sig"),
+            display_df.to_csv(index=False).encode("utf-8-sig"),
             "tna_reponses.csv",
             "text/csv"
         )
