@@ -966,11 +966,18 @@ def normalize_question_key(value):
 
 
 def is_yes_response(value):
-    """Detect affirmative answers used for skip-pattern eligibility."""
+    """Detect affirmative answers used for skip-pattern eligibility.
+
+    This includes standard Oui/Yes responses and extended affirmative responses
+    such as "Oui, à temps plein", "Oui, à temps partiel" and
+    "Oui, occasionnellement". This is required for conditional questions such
+    as Q21, which should be answered only by respondents who declared an
+    employment activity in Q17.
+    """
     if pd.isna(value):
         return False
     text = normalize_question_key(value)
-    return text in {"oui", "yes", "y"} or text.startswith("oui ")
+    return text in {"oui", "yes", "y"} or text.startswith("oui") or text.startswith("yes")
 
 
 def find_column_by_prefix(columns, prefixes):
@@ -993,6 +1000,10 @@ def get_question_dependency(question_col, original_data=None):
         {
             "child_prefixes": ["9a-", "9b_a-", "9b_b-", "9b_c-", "9b_d-", "9b_e-", "9b_f-", "9b_g-", "9b_h-", "9c-", "9d_a-", "9d_b-", "9d_c-", "9d_d-", "9d_e-"],
             "parent_prefixes": ["9- avez-vous realise un stage", "9- avez-vous réalisé un stage"],
+        },
+        {
+            "child_prefixes": ["21_a-", "21_b-", "21_c-"],
+            "parent_prefixes": ["17- exercer une activite remuneree", "17- exercer une activité rémunérée"],
         },
         {
             "child_prefixes": ["24a-"],
