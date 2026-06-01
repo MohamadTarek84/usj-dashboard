@@ -2556,7 +2556,7 @@ def html_escape(value):
 def get_excluded_non_question_columns():
     """Columns that should not be treated as questionnaire items."""
     base_cols = {
-        "Year", "Année", "Genre", "Faculté_Institut_g", "Faculté", "Cursus", "Niveau", "Niveau_Lib",
+        "Year", "Année", "Genre", "Faculté_Institut_g", "Faculté_Institut", "Faculté", "Cursus", "Niveau", "Niveau_Lib",
         "startlanguage", "StartLanguage", "Language", "Langue", "Age", "Date", "Horodateur", "Timestamp",
         "Institution", "Responsable", "Email", "Adresse e-mail", "ID", "Id", "id", "Code", "Nom", "Prénom",
         "StartDate", "EndDate", "Status", "IPAddress", "Progress", "Duration", "Finished", "RecordedDate",
@@ -2621,11 +2621,11 @@ def classify_other_question(col_name, series=None):
     if any(k in c for k in ["langue", "language"]):
         return "Langues / profil"
     if any(k in c for k in ["commentaire", "remarque", "suggestion", "précisez", "precisez", "autre"]):
-        return "Questions ouvertes / précisions"
+        return "Questions complémentaires détaillées"
     if series is not None:
         nunique = series.map(clean_response_value).dropna().nunique()
         if nunique > 30:
-            return "Questions ouvertes / précisions"
+            return "Questions complémentaires détaillées"
     return "Autres informations complémentaires"
 
 
@@ -2639,7 +2639,24 @@ def get_other_question_columns(original_data):
     candidate_cols = []
     for col in original_data.columns:
         col_str = str(col).strip()
+        col_norm = (
+            col_str.lower()
+            .replace("é", "e")
+            .replace("è", "e")
+            .replace("ê", "e")
+            .replace("à", "a")
+            .replace(" ", "")
+        )
+
+        # Never treat demographic, filter, identifier, score or faculty columns as complementary questions.
         if col_str in excluded:
+            continue
+        if col_norm in {
+            "faculte_institut", "faculte_institut_g", "faculte", "institution",
+            "genre", "cursus", "niveau", "niveau_lib", "year", "annee"
+        }:
+            continue
+        if "faculte_institut" in col_norm or "faculty" in col_norm:
             continue
         if col_str.startswith("Score "):
             continue
@@ -2670,7 +2687,14 @@ def get_other_question_inventory(original_data, coded_filter_data):
             "Modalités": int(valid.nunique()) if not valid.empty else 0,
             "Type": "Fermée / catégorielle" if (not valid.empty and valid.nunique() <= 30) else "Ouverte / texte libre",
         })
-    return pd.DataFrame(rows)
+    out = pd.DataFrame(rows)
+    if not out.empty:
+        out["Catégorie"] = out["Catégorie"].replace({
+            "Questions ouvertes / précisions": "Questions complémentaires détaillées",
+            "Questions ouvertes / précisions ": "Questions complémentaires détaillées",
+            "Questions ouvertes / precisions": "Questions complémentaires détaillées",
+        })
+    return out
 
 def clean_response_value(value):
     if pd.isna(value):
@@ -2862,8 +2886,28 @@ def page_other_questions():
         st.plotly_chart(fig_overall, use_container_width=True, config={"displayModeBar": False})
 
         if not dist_year.empty and dist_year["Année"].nunique() > 1:
+            # Keep the chart readable when a question has many response categories.
+            # The most frequent responses are displayed separately and the remaining
+            # ones are grouped under "Autres réponses". This prevents legends from
+            # covering the title or the plot area.
+            response_order = overall.sort_values("Pourcentage", ascending=False)["Réponse"].astype(str).tolist()
+            max_visible_responses = 10
+            visible_responses = response_order[:max_visible_responses]
+            dist_year_plot = dist_year.copy()
+            if len(response_order) > max_visible_responses:
+                dist_year_plot["Réponse"] = np.where(
+                    dist_year_plot["Réponse"].astype(str).isin(visible_responses),
+                    dist_year_plot["Réponse"].astype(str),
+                    "Autres réponses"
+                )
+                dist_year_plot = (
+                    dist_year_plot
+                    .groupby(["Année", "Réponse"], as_index=False)
+                    .agg({"N": "sum", "Pourcentage": "sum"})
+                )
+
             fig_stack = px.bar(
-                dist_year,
+                dist_year_plot,
                 x="Année",
                 y="Pourcentage",
                 color="Réponse",
@@ -2873,10 +2917,45 @@ def page_other_questions():
                 hover_data={"N": True, "Pourcentage": ":.2f"},
                 title="Évolution de la distribution par année"
             )
-            fig_stack.update_traces(texttemplate="%{text:.1f}%", textposition="inside")
-            fig_stack.update_layout(yaxis_title="Pourcentage des réponses", xaxis_title="Année", legend_title="Réponse")
-            theme_layout(fig_stack, height=520)
-            st.plotly_chart(fig_stack, use_container_width=True, config={"displayModeBar": False})
+            fig_stack.update_traces(
+                texttemplate="%{text:.1f}%",
+                textposition="inside",
+                marker_line_color="white",
+                marker_line_width=0.8,
+                hovertemplate="Année: %{x}<br>Réponse: %{fullData.name}<br>Pourcentage: %{y:.2f}%<extra></extra>"
+            )
+            fig_stack.update_layout(
+                yaxis_title="Pourcentage des réponses",
+                xaxis_title="Année",
+                legend_title="Réponse",
+                title=dict(
+                    text="Évolution de la distribution par année",
+                    x=0.01,
+                    y=0.98,
+                    font=dict(size=20, color=USJ_BLUE, family="Candara, Arial")
+                ),
+            )
+            theme_layout(fig_stack, height=570, showlegend=True)
+            fig_stack.update_layout(
+                legend=dict(
+                    orientation="v",
+                    yanchor="top",
+                    y=1.0,
+                    xanchor="left",
+                    x=1.02,
+                    font=dict(size=11, family="Candara, Arial"),
+                    title=dict(text="Réponse")
+                ),
+                margin=dict(l=70, r=340, t=105, b=65),
+                hovermode="x unified"
+            )
+            st.plotly_chart(fig_stack, use_container_width=True, config={"displayModeBar": True, "displaylogo": False})
+
+            if len(response_order) > max_visible_responses:
+                st.caption(
+                    f"Pour préserver la lisibilité du graphique, seules les {max_visible_responses} réponses les plus fréquentes sont affichées séparément. "
+                    "Les autres modalités sont regroupées sous 'Autres réponses'."
+                )
 
         top_resp = overall.sort_values("Pourcentage", ascending=False).iloc[0]
         second_resp = overall.sort_values("Pourcentage", ascending=False).iloc[1] if len(overall) > 1 else None
