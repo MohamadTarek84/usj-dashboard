@@ -3083,7 +3083,7 @@ def page_other_questions():
     with k3:
         insight_card("Données manquantes", safe_pct(missing_pct), "Parmi les répondants concernés", USJ_ORANGE if pd.notna(missing_pct) and missing_pct > 10 else USJ_GREEN)
     with k4:
-        insight_card("Non applicable", non_applicable_n, "Exclus du dénominateur", USJ_BLUE_2)
+         insight_card("Nombre de modalités", unique_n, "Réponses distinctes", USJ_GOLD)
 
     if eligible_n == 0:
         st.warning("Aucun répondant n’est applicable pour cette question avec les filtres sélectionnés.")
