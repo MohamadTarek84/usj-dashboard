@@ -595,6 +595,68 @@ def apply_style():
             font-size: 1.55rem;
         }}
     }}
+    
+    .admin-action-button {
+        width: 100%;
+        min-height: 50px;
+        background: #001F5B;
+        color: #ffffff;
+        border: 0;
+        border-radius: 12px;
+        padding: 13px 18px;
+        font-weight: 850;
+        font-size: 15px;
+        cursor: pointer;
+        box-shadow: 0 6px 16px rgba(0,31,91,0.16);
+    }
+
+    .admin-action-button:hover {
+        background: #123E7C;
+        color: #ffffff;
+    }
+
+    div[data-testid="stDownloadButton"] > button {
+        width: 100% !important;
+        min-height: 50px !important;
+        background: #001F5B !important;
+        color: #ffffff !important;
+        border: 0 !important;
+        border-radius: 12px !important;
+        padding: 13px 18px !important;
+        font-weight: 850 !important;
+        font-size: 15px !important;
+        box-shadow: 0 6px 16px rgba(0,31,91,0.16) !important;
+    }
+
+    div[data-testid="stDownloadButton"] > button:hover {
+        background: #123E7C !important;
+        color: #ffffff !important;
+        border: 0 !important;
+    }
+
+    @media print {
+        .platform-header,
+        section[data-testid="stSidebar"],
+        div[data-testid="stToolbar"],
+        div[data-testid="stDecoration"],
+        div[data-testid="stStatusWidget"],
+        div[data-testid="stDownloadButton"],
+        button,
+        .admin-action-button {
+            display: none !important;
+        }
+
+        .main-hero {
+            box-shadow: none !important;
+            border-radius: 0 !important;
+        }
+
+        .block-container {
+            max-width: 100% !important;
+            padding: 0 !important;
+        }
+    }
+
     </style>
     """, unsafe_allow_html=True)
 
@@ -1655,7 +1717,69 @@ def build_director_report_html(selected_director, df, overrides):
                     break-inside: avoid;
                 }}
             }}
-        </style>
+        
+    .admin-action-button {
+        width: 100%;
+        min-height: 50px;
+        background: #001F5B;
+        color: #ffffff;
+        border: 0;
+        border-radius: 12px;
+        padding: 13px 18px;
+        font-weight: 850;
+        font-size: 15px;
+        cursor: pointer;
+        box-shadow: 0 6px 16px rgba(0,31,91,0.16);
+    }
+
+    .admin-action-button:hover {
+        background: #123E7C;
+        color: #ffffff;
+    }
+
+    div[data-testid="stDownloadButton"] > button {
+        width: 100% !important;
+        min-height: 50px !important;
+        background: #001F5B !important;
+        color: #ffffff !important;
+        border: 0 !important;
+        border-radius: 12px !important;
+        padding: 13px 18px !important;
+        font-weight: 850 !important;
+        font-size: 15px !important;
+        box-shadow: 0 6px 16px rgba(0,31,91,0.16) !important;
+    }
+
+    div[data-testid="stDownloadButton"] > button:hover {
+        background: #123E7C !important;
+        color: #ffffff !important;
+        border: 0 !important;
+    }
+
+    @media print {
+        .platform-header,
+        section[data-testid="stSidebar"],
+        div[data-testid="stToolbar"],
+        div[data-testid="stDecoration"],
+        div[data-testid="stStatusWidget"],
+        div[data-testid="stDownloadButton"],
+        button,
+        .admin-action-button {
+            display: none !important;
+        }
+
+        .main-hero {
+            box-shadow: none !important;
+            border-radius: 0 !important;
+        }
+
+        .block-container {
+            max-width: 100% !important;
+            padding: 0 !important;
+        }
+    }
+
+    </style>
     </head>
     <body>
         <div class="header">
@@ -1678,30 +1802,22 @@ def build_director_report_html(selected_director, df, overrides):
     return html
 
 
-def render_print_button():
+def render_save_pdf_button():
     st.markdown(
         """
         <script>
-        function printPage() {
+        function saveAsPdf() {
             window.print();
         }
         </script>
-        <button onclick="printPage()" style="
-            width:100%;
-            background:#001F5B;
-            color:white;
-            border:0;
-            border-radius:12px;
-            padding:13px 18px;
-            font-weight:800;
-            font-size:15px;
-            cursor:pointer;
-        ">
-            Imprimer la page affichée
+        <button onclick="saveAsPdf()" class="admin-action-button">
+            Enregistrer le rapport en PDF
         </button>
         """,
         unsafe_allow_html=True
     )
+
+
 
 def render_admin_dashboard():
     st.markdown("""
@@ -1828,7 +1944,7 @@ def render_admin_dashboard():
 
         with report_col1:
             st.download_button(
-                "Télécharger le rapport HTML du directeur",
+                "Télécharger le rapport du directeur",
                 report_html.encode("utf-8"),
                 f"rapport_TNA_2026_{selected_director}.html",
                 "text/html",
@@ -1836,7 +1952,7 @@ def render_admin_dashboard():
             )
 
         with report_col2:
-            render_print_button()
+            render_save_pdf_button()
 
         st.markdown("### 1. Besoins sélectionnés par le Doyen / Directeur pour lui-même")
 
