@@ -926,6 +926,20 @@ OTHER_QUESTION_LABELS = {
     "44_g- Financé vos études à l’USJ : Autre prêt": "44_g-Comment avez-vous financé vos études à l’USJ ? Autre prêt",
 }
 
+
+def clean_other_question_label(question):
+    """Return a complete, reader-friendly label for complementary questions.
+
+    The Excel column name is kept internally for calculations, while this
+    function controls what appears in the dashboard and in the printable report.
+    If a column is not in OTHER_QUESTION_LABELS, the function falls back to the
+    full Excel label after removing only the leading technical code when needed.
+    """
+    q = str(question).strip()
+    if q in OTHER_QUESTION_LABELS:
+        return OTHER_QUESTION_LABELS[q]
+    return score_question_label(q)
+
 def build_year_summary(data, q43):
     rows = []
     for year, g in data.groupby("Year"):
@@ -2651,7 +2665,7 @@ def get_other_question_inventory(original_data, coded_filter_data):
         rows.append({
             "Catégorie": classify_other_question(col, s),
             "Question": col,
-            "Question affichée": score_question_label(col),
+            "Question affichée": clean_other_question_label(col),
             "N valide": int(valid.shape[0]),
             "Modalités": int(valid.nunique()) if not valid.empty else 0,
             "Type": "Fermée / catégorielle" if (not valid.empty and valid.nunique() <= 30) else "Ouverte / texte libre",
@@ -2780,11 +2794,17 @@ def page_other_questions():
         filtered_inventory = filtered_inventory[filtered_inventory["Catégorie"] == selected_category]
 
     with qfilter:
-        selected_other_question = st.selectbox(
+        question_options = {
+            clean_other_question_label(q): q
+            for q in filtered_inventory["Question"].tolist()
+        }
+
+        selected_other_question_label = st.selectbox(
             "Choisir une question complémentaire",
-            filtered_inventory["Question"].tolist(),
-            format_func=lambda x: score_question_label(x)
+            options=list(question_options.keys())
         )
+
+        selected_other_question = question_options[selected_other_question_label]
 
     selected_series = df_original.loc[df_filtered.index, selected_other_question].map(clean_response_value)
     valid_series = selected_series.dropna()
@@ -2811,7 +2831,7 @@ def page_other_questions():
         f"""
         <div style='background:#FFFFFF;border:1px solid #DDE5F0;border-left:7px solid {USJ_BLUE};border-radius:18px;padding:18px 20px;margin:18px 0;box-shadow:0 5px 16px rgba(0,0,0,0.05);'>
             <div style='font-size:14px;font-weight:800;color:#667085;margin-bottom:6px;'>Question analysée</div>
-            <div style='font-size:20px;font-weight:900;color:{USJ_BLUE};line-height:1.35;'>{html_escape(score_question_label(selected_other_question))}</div>
+            <div style='font-size:20px;font-weight:900;color:{USJ_BLUE};line-height:1.35;'>{html_escape(selected_other_question_label)}</div>
             <div style='font-size:13px;color:#667085;margin-top:8px;'>Variable Excel : {html_escape(selected_other_question)}</div>
         </div>
         """,
@@ -3345,7 +3365,7 @@ def build_printable_report_html():
         for _, row in other_report_df.iterrows():
             other_rows.append({
                 "Catégorie": f"<td>{clean_text(row.get('Catégorie', ''))}</td>",
-                "Question": f"<td>{clean_text(score_question_label(row['Question']))}</td>",
+                "Question": f"<td>{clean_text(clean_other_question_label(row['Question']))}</td>",
                 "N valide": f"<td style='text-align:right;'>{int(row['N valide'])}</td>",
                 "Réponse dominante": f"<td>{clean_text(row['Réponse dominante'])}</td>",
                 "Poids": f"<td style='text-align:right; font-weight:800; color:{USJ_BLUE};'>{fmt_pct2(row['Pourcentage'])}</td>",
@@ -3357,7 +3377,7 @@ def build_printable_report_html():
             q_lower = str(row["Question"]).lower()
             if any(term in q_lower for term in ["tuteur", "mobilité", "mobilite", "étranger", "etranger", "échange", "echange"]):
                 signal_lines.append(
-                    f"<li><b>{clean_text(score_question_label(row['Question']))}</b> : réponse dominante <b>{clean_text(row['Réponse dominante'])}</b> ({fmt_pct2(row['Pourcentage'])}, N={int(row['N valide'])}).</li>"
+                    f"<li><b>{clean_text(clean_other_question_label(row['Question']))}</b> : réponse dominante <b>{clean_text(row['Réponse dominante'])}</b> ({fmt_pct2(row['Pourcentage'])}, N={int(row['N valide'])}).</li>"
                 )
         signals_html = ""
         if signal_lines:
