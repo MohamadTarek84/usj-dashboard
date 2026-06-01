@@ -932,7 +932,7 @@ OTHER_QUESTION_LABELS = {
     "25a- Dans quelle mesure en êtes-vous satisfait ?": "25a-Dans quelle mesure êtes-vous satisfait de cette bourse ?",
 
     "30_a- Au niveau de la Faculté / du Département": "30_a- Êtes-vous satisfait du niveau d'implication des étudiants dans le processus de prise de décision à l’USJ ? Au niveau de la Faculté ou du Département",
-    "30_b- Au niveau de l’Université": "30_b- Êtes-vous satisfait du niveau d'implication des étudiants dans le processus de prise de décision à l’USJ ? au niveau de l’Université",
+    "30_b- Au niveau de l’Université": "30_b- Êtes-vous satisfait du niveau d'implication des étudiants dans le processus de prise de décision à l’USJ ? Au niveau de l’Université",
 
     "31-Êtes-vous étudiant en situation de handicap ?": "31-Êtes-vous étudiant en situation de handicap ?",
 
