@@ -477,6 +477,42 @@ def apply_style():
         color:white;
         border:0;
     }}
+    
+    div[data-baseweb="select"] {
+        min-height: 58px !important;
+        padding: 3px 6px !important;
+        box-sizing: border-box !important;
+        overflow: visible !important;
+    }
+
+    div[data-baseweb="select"] > div {
+        min-height: 48px !important;
+        display: flex !important;
+        align-items: center !important;
+        padding-left: 10px !important;
+        padding-right: 10px !important;
+        box-sizing: border-box !important;
+    }
+
+    div[data-baseweb="select"] div[role="button"] {
+        min-height: 48px !important;
+        display: flex !important;
+        align-items: center !important;
+    }
+
+    div[data-baseweb="select"] span {
+        line-height: 1.35 !important;
+        padding-top: 2px !important;
+        padding-bottom: 2px !important;
+        white-space: normal !important;
+    }
+
+    .stSelectbox {
+        overflow: visible !important;
+        padding-top: 4px !important;
+        padding-bottom: 8px !important;
+    }
+
     </style>
     """, unsafe_allow_html=True)
 
