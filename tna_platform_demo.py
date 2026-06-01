@@ -658,6 +658,84 @@ def apply_style():
         }}
     }}
 
+    
+    div[data-testid="stDownloadButton"] > button {{
+        width: 100% !important;
+        min-height: 50px !important;
+        height: 50px !important;
+        background: #001F5B !important;
+        color: #ffffff !important;
+        border: 0 !important;
+        border-radius: 12px !important;
+        padding: 13px 18px !important;
+        font-weight: 400 !important;
+        font-size: 15px !important;
+        line-height: 1.2 !important;
+        box-shadow: 0 6px 16px rgba(0,31,91,0.16) !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }}
+
+    div[data-testid="stDownloadButton"] > button:hover {{
+        background: #123E7C !important;
+        color: #ffffff !important;
+        border: 0 !important;
+    }}
+
+    @media print {{
+        .platform-header,
+        section[data-testid="stSidebar"],
+        div[data-testid="stToolbar"],
+        div[data-testid="stDecoration"],
+        div[data-testid="stStatusWidget"],
+        div[data-testid="stDownloadButton"],
+        iframe,
+        button,
+        .admin-action-button,
+        .main-hero,
+        div[data-testid="stExpander"],
+        [data-testid="stMetric"],
+        hr {{
+            display: none !important;
+        }}
+
+        .block-container {{
+            max-width: 100% !important;
+            padding: 0 !important;
+        }}
+
+        .card.blue-card {{
+            page-break-before: always !important;
+            break-before: page !important;
+            margin-top: 0 !important;
+        }}
+
+        .card.blue-card:first-of-type {{
+            page-break-before: auto !important;
+            break-before: auto !important;
+        }}
+
+        .visual-column {{
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            box-shadow: none !important;
+        }}
+
+        .priority-card {{
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }}
+
+        h3 {{
+            page-break-after: avoid !important;
+        }}
+
+        body {{
+            background: white !important;
+        }}
+    }}
+
     </style>
     """, unsafe_allow_html=True)
 
@@ -1667,11 +1745,21 @@ def build_director_report_html(selected_director, df, overrides):
                 margin-bottom: 22px;
             }}
             .employee-card {{
+                page-break-before: always;
                 page-break-inside: avoid;
+                break-before: page;
+                break-inside: avoid;
                 border: 1px solid #DDE5F0;
                 border-radius: 14px;
                 padding: 16px;
                 margin-bottom: 18px;
+                min-height: 88vh;
+                box-sizing: border-box;
+            }}
+
+            .employee-card:first-of-type {{
+                page-break-before: auto;
+                break-before: auto;
             }}
             .three-cols {{
                 display: grid;
@@ -1712,10 +1800,26 @@ def build_director_report_html(selected_director, df, overrides):
             }}
             @media print {{
                 body {{
-                    margin: 18mm;
+                    margin: 14mm;
                 }}
-                .employee-card {{
+
+                .header,
+                .leader {{
+                    page-break-inside: avoid;
                     break-inside: avoid;
+                }}
+
+                .employee-card {{
+                    page-break-before: always;
+                    break-before: page;
+                    page-break-inside: avoid;
+                    break-inside: avoid;
+                    min-height: 90vh;
+                }}
+
+                .employee-card:first-of-type {{
+                    page-break-before: auto;
+                    break-before: auto;
                 }}
             }}
         
@@ -1780,6 +1884,84 @@ def build_director_report_html(selected_director, df, overrides):
         }}
     }}
 
+    
+    div[data-testid="stDownloadButton"] > button {{
+        width: 100% !important;
+        min-height: 50px !important;
+        height: 50px !important;
+        background: #001F5B !important;
+        color: #ffffff !important;
+        border: 0 !important;
+        border-radius: 12px !important;
+        padding: 13px 18px !important;
+        font-weight: 400 !important;
+        font-size: 15px !important;
+        line-height: 1.2 !important;
+        box-shadow: 0 6px 16px rgba(0,31,91,0.16) !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }}
+
+    div[data-testid="stDownloadButton"] > button:hover {{
+        background: #123E7C !important;
+        color: #ffffff !important;
+        border: 0 !important;
+    }}
+
+    @media print {{
+        .platform-header,
+        section[data-testid="stSidebar"],
+        div[data-testid="stToolbar"],
+        div[data-testid="stDecoration"],
+        div[data-testid="stStatusWidget"],
+        div[data-testid="stDownloadButton"],
+        iframe,
+        button,
+        .admin-action-button,
+        .main-hero,
+        div[data-testid="stExpander"],
+        [data-testid="stMetric"],
+        hr {{
+            display: none !important;
+        }}
+
+        .block-container {{
+            max-width: 100% !important;
+            padding: 0 !important;
+        }}
+
+        .card.blue-card {{
+            page-break-before: always !important;
+            break-before: page !important;
+            margin-top: 0 !important;
+        }}
+
+        .card.blue-card:first-of-type {{
+            page-break-before: auto !important;
+            break-before: auto !important;
+        }}
+
+        .visual-column {{
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            box-shadow: none !important;
+        }}
+
+        .priority-card {{
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }}
+
+        h3 {{
+            page-break-after: avoid !important;
+        }}
+
+        body {{
+            background: white !important;
+        }}
+    }}
+
     </style>
     </head>
     <body>
@@ -1806,24 +1988,121 @@ def build_director_report_html(selected_director, df, overrides):
 def render_save_pdf_button():
     components.html(
         """
-        <button onclick="window.parent.print();" style="
-            width:100%;
-            min-height:50px;
-            background:#001F5B;
-            color:#ffffff;
-            border:0;
-            border-radius:12px;
-            padding:13px 18px;
-            font-weight:400;
-            font-size:15px;
-            cursor:pointer;
-            box-shadow:0 6px 16px rgba(0,31,91,0.16);
-            font-family:Arial, sans-serif;
-        ">
+        <style>
+            html, body {
+                margin: 0;
+                padding: 0;
+                background: transparent;
+                font-family: "Source Sans Pro", Arial, sans-serif;
+            }
+
+            .pdf-button {
+                width: 100%;
+                min-height: 50px;
+                background: #001F5B;
+                color: #ffffff;
+                border: 0;
+                border-radius: 12px;
+                padding: 13px 18px;
+                font-weight: 400;
+                font-size: 15px;
+                line-height: 1.2;
+                cursor: pointer;
+                box-shadow: 0 6px 16px rgba(0,31,91,0.16);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-sizing: border-box;
+            }
+
+            .pdf-button:hover {
+                background: #123E7C;
+            }
+        
+    div[data-testid="stDownloadButton"] > button {{
+        width: 100% !important;
+        min-height: 50px !important;
+        height: 50px !important;
+        background: #001F5B !important;
+        color: #ffffff !important;
+        border: 0 !important;
+        border-radius: 12px !important;
+        padding: 13px 18px !important;
+        font-weight: 400 !important;
+        font-size: 15px !important;
+        line-height: 1.2 !important;
+        box-shadow: 0 6px 16px rgba(0,31,91,0.16) !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }}
+
+    div[data-testid="stDownloadButton"] > button:hover {{
+        background: #123E7C !important;
+        color: #ffffff !important;
+        border: 0 !important;
+    }}
+
+    @media print {{
+        .platform-header,
+        section[data-testid="stSidebar"],
+        div[data-testid="stToolbar"],
+        div[data-testid="stDecoration"],
+        div[data-testid="stStatusWidget"],
+        div[data-testid="stDownloadButton"],
+        iframe,
+        button,
+        .admin-action-button,
+        .main-hero,
+        div[data-testid="stExpander"],
+        [data-testid="stMetric"],
+        hr {{
+            display: none !important;
+        }}
+
+        .block-container {{
+            max-width: 100% !important;
+            padding: 0 !important;
+        }}
+
+        .card.blue-card {{
+            page-break-before: always !important;
+            break-before: page !important;
+            margin-top: 0 !important;
+        }}
+
+        .card.blue-card:first-of-type {{
+            page-break-before: auto !important;
+            break-before: auto !important;
+        }}
+
+        .visual-column {{
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            box-shadow: none !important;
+        }}
+
+        .priority-card {{
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }}
+
+        h3 {{
+            page-break-after: avoid !important;
+        }}
+
+        body {{
+            background: white !important;
+        }}
+    }}
+
+    </style>
+
+        <button class="pdf-button" onclick="window.parent.print();">
             Enregistrer le rapport en PDF
         </button>
         """,
-        height=62
+        height=64
     )
 
 
