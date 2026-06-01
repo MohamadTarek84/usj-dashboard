@@ -3174,6 +3174,31 @@ def page_other_questions():
         theme_layout(fig_q44, height=560)
         st.plotly_chart(fig_q44, use_container_width=True, config={"displayModeBar": False})
 
+        q44_yes = q44_df.sort_values("Oui (%)", ascending=False)
+
+        top_q44 = q44_yes.iloc[0]
+        second_q44 = q44_yes.iloc[1] if len(q44_yes) > 1 else None
+        
+        second_q44_text = ""
+        if second_q44 is not None:
+            second_q44_text = (
+                f", suivie de <b>{html_escape(second_q44['Modalité'])}</b> "
+                f"avec <b>{second_q44['Oui (%)']:.2f}%</b>"
+            )
+        
+        summary_box(
+            f"""
+            <span style='font-size:20px; font-weight:800; color:{USJ_BLUE};'>Lecture décisionnelle</span><br>
+            Concernant les modes de financement des études à l’USJ, la modalité la plus déclarée est
+            <b>{html_escape(top_q44['Modalité'])}</b>, avec <b>{top_q44['Oui (%)']:.2f}%</b> de réponses « Oui »
+            {second_q44_text}. Cette lecture permet d’identifier les principales sources de financement mobilisées
+            par les étudiants et d’éclairer les décisions relatives aux aides financières, aux bourses et aux dispositifs
+            de soutien économique.
+            """,
+            color=USJ_BLUE,
+            background="#F7F9FC"
+        )
+        
         return
 
     
