@@ -519,7 +519,7 @@ def apply_style():
     }}
 
     
-    .visual-column {
+    .visual-column {{
         background: #ffffff;
         border: 1px solid #DDE5F0;
         border-radius: 18px;
@@ -527,68 +527,68 @@ def apply_style():
         min-height: 330px;
         box-shadow: 0 10px 28px rgba(27,42,65,0.06);
         margin-bottom: 16px;
-    }
+    }}
 
-    .visual-column-title {
+    .visual-column-title {{
         font-size: 1.1rem;
         font-weight: 850;
         color: #001F5B;
         margin-bottom: 16px;
         padding-bottom: 10px;
         border-bottom: 1px solid #DDE5F0;
-    }
+    }}
 
-    .visual-employee {
+    .visual-employee {{
         border-top: 5px solid #001F5B;
-    }
+    }}
 
-    .visual-director {
+    .visual-director {{
         border-top: 5px solid #8B1538;
-    }
+    }}
 
-    .visual-final {
+    .visual-final {{
         border-top: 5px solid #C9A227;
-    }
+    }}
 
-    .priority-card {
+    .priority-card {{
         border-radius: 16px;
         padding: 14px 16px;
         margin-bottom: 12px;
         border: 1px solid #DDE5F0;
-    }
+    }}
 
-    .employee-card {
+    .employee-card {{
         background: #EAF2F8;
         border-left: 6px solid #001F5B;
-    }
+    }}
 
-    .director-card {
+    .director-card {{
         background: #F8EDEF;
         border-left: 6px solid #8B1538;
-    }
+    }}
 
-    .final-card {
+    .final-card {{
         background: #FFF8DF;
         border-left: 6px solid #C9A227;
-    }
+    }}
 
-    .priority-rank {
+    .priority-rank {{
         font-size: 0.82rem;
         font-weight: 850;
         color: #5D697A;
         text-transform: uppercase;
         letter-spacing: 0.04em;
         margin-bottom: 6px;
-    }
+    }}
 
-    .priority-theme {
+    .priority-theme {{
         font-size: 1rem;
         font-weight: 850;
         color: #001F5B;
         line-height: 1.35;
-    }
+    }}
 
-    .priority-badge {
+    .priority-badge {{
         margin-top: 10px;
         display: inline-block;
         padding: 5px 9px;
@@ -598,7 +598,7 @@ def apply_style():
         font-size: 0.78rem;
         font-weight: 800;
         border: 1px solid #E6D58D;
-    }
+    }}
 
     </style>
     """, unsafe_allow_html=True)
@@ -1156,13 +1156,18 @@ def render_employee_comparison_visual(employee_name, employee_ranked, director_r
         <div class="visual-column visual-employee">
             <div class="visual-column-title">Choix de l’employé</div>
         """, unsafe_allow_html=True)
-        for i, theme in enumerate(employee_ranked, start=1):
-            st.markdown(f"""
-            <div class="priority-card employee-card">
-                <div class="priority-rank">Priorité {i}</div>
-                <div class="priority-theme">{theme}</div>
-            </div>
-            """, unsafe_allow_html=True)
+
+        if employee_ranked:
+            for i, theme in enumerate(employee_ranked, start=1):
+                st.markdown(f"""
+                <div class="priority-card employee-card">
+                    <div class="priority-rank">Priorité {i}</div>
+                    <div class="priority-theme">{theme}</div>
+                </div>
+                """, unsafe_allow_html=True)
+        else:
+            st.caption("Aucun choix employé.")
+
         st.markdown("</div>", unsafe_allow_html=True)
 
     with c2:
@@ -1170,13 +1175,18 @@ def render_employee_comparison_visual(employee_name, employee_ranked, director_r
         <div class="visual-column visual-director">
             <div class="visual-column-title">Choix du Doyen / Directeur</div>
         """, unsafe_allow_html=True)
-        for i, theme in enumerate(director_ranked, start=1):
-            st.markdown(f"""
-            <div class="priority-card director-card">
-                <div class="priority-rank">Priorité {i}</div>
-                <div class="priority-theme">{theme}</div>
-            </div>
-            """, unsafe_allow_html=True)
+
+        if director_ranked:
+            for i, theme in enumerate(director_ranked, start=1):
+                st.markdown(f"""
+                <div class="priority-card director-card">
+                    <div class="priority-rank">Priorité {i}</div>
+                    <div class="priority-theme">{theme}</div>
+                </div>
+                """, unsafe_allow_html=True)
+        else:
+            st.caption("Aucun choix directeur.")
+
         st.markdown("</div>", unsafe_allow_html=True)
 
     with c3:
@@ -1184,15 +1194,20 @@ def render_employee_comparison_visual(employee_name, employee_ranked, director_r
         <div class="visual-column visual-final">
             <div class="visual-column-title">Thèmes finaux proposés</div>
         """, unsafe_allow_html=True)
-        for i, theme in enumerate(final_themes, start=1):
-            badge = "Thème commun" if theme in matched else "Proposé par score"
-            st.markdown(f"""
-            <div class="priority-card final-card">
-                <div class="priority-rank">Priorité finale {i}</div>
-                <div class="priority-theme">{theme}</div>
-                <div class="priority-badge">{badge}</div>
-            </div>
-            """, unsafe_allow_html=True)
+
+        if final_themes:
+            for i, theme in enumerate(final_themes, start=1):
+                badge = "Thème commun" if theme in matched else "Proposé par score"
+                st.markdown(f"""
+                <div class="priority-card final-card">
+                    <div class="priority-rank">Priorité finale {i}</div>
+                    <div class="priority-theme">{theme}</div>
+                    <div class="priority-badge">{badge}</div>
+                </div>
+                """, unsafe_allow_html=True)
+        else:
+            st.caption("Aucun thème final.")
+
         st.markdown("</div>", unsafe_allow_html=True)
 
     st.markdown("#### Tableau comparatif des priorités")
@@ -1214,45 +1229,46 @@ def render_employee_comparison_visual(employee_name, employee_ranked, director_r
                 "Score final": final_score
             })
 
-        score_df = pd.DataFrame(score_rows)
+        if score_rows:
+            score_df = pd.DataFrame(score_rows)
 
-        fig = go.Figure()
+            fig = go.Figure()
 
-        fig.add_trace(go.Bar(
-            y=score_df["Thème"],
-            x=score_df["Score employé"],
-            name="Employé",
-            orientation="h"
-        ))
+            fig.add_trace(go.Bar(
+                y=score_df["Thème"],
+                x=score_df["Score employé"],
+                name="Employé",
+                orientation="h"
+            ))
 
-        fig.add_trace(go.Bar(
-            y=score_df["Thème"],
-            x=score_df["Score directeur"],
-            name="Doyen / Directeur",
-            orientation="h"
-        ))
+            fig.add_trace(go.Bar(
+                y=score_df["Thème"],
+                x=score_df["Score directeur"],
+                name="Doyen / Directeur",
+                orientation="h"
+            ))
 
-        fig.add_trace(go.Bar(
-            y=score_df["Thème"],
-            x=score_df["Score final"],
-            name="Final proposé",
-            orientation="h"
-        ))
+            fig.add_trace(go.Bar(
+                y=score_df["Thème"],
+                x=score_df["Score final"],
+                name="Final proposé",
+                orientation="h"
+            ))
 
-        fig.update_layout(
-            title="Scores comparés des thèmes",
-            barmode="group",
-            height=max(360, 70 * len(score_df)),
-            margin=dict(l=20, r=20, t=55, b=20),
-            xaxis_title="Score de priorité",
-            yaxis_title="",
-            yaxis=dict(autorange="reversed"),
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
-            paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="rgba(0,0,0,0)"
-        )
+            fig.update_layout(
+                title="Scores comparés des thèmes",
+                barmode="group",
+                height=max(360, 70 * len(score_df)),
+                margin=dict(l=20, r=20, t=55, b=20),
+                xaxis_title="Score de priorité",
+                yaxis_title="",
+                yaxis=dict(autorange="reversed"),
+                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(0,0,0,0)"
+            )
 
-        st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, use_container_width=True)
 
 
 def render_priority_matrix(employee_ranked, director_ranked, final_themes):
