@@ -1442,20 +1442,6 @@ def render_admin_dashboard():
                 matched
             )
 
-            c1, c2, c3 = st.columns(3)
-
-            with c1:
-                st.markdown("#### Choix de l’employé")
-                render_theme_pills(employee_ranked, "pill")
-
-            with c2:
-                st.markdown("#### Choix du directeur")
-                render_theme_pills(director_ranked, "pill pill-red")
-
-            with c3:
-                st.markdown("#### Thèmes proposés")
-                render_theme_pills(final, "pill final")
-
             st.divider()
 
     elif view == "Réponses PSG":
