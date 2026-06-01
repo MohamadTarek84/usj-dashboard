@@ -13,6 +13,7 @@ USJ_RED = "#8B1538"
 USJ_GOLD = "#C9A227"
 USJ_TEXT = "#1B2A41"
 USJ_LIGHT_BLUE = "#EAF2F8"
+DEMO_DATA_VERSION = "varied_scenarios_v2"
 
 CFP_LOGO_PATH = "CFP LOGO.png"
 USJ_LOGO_PATH = "USJ LOGO 150.png"
@@ -106,35 +107,40 @@ DEMO_USERS = {
 
 
 TRIAL_PSG_RESPONSES = {
-    "PSG001": ["Communication constructive", "Diversité culturelle", "Communication écrite"],
-    "PSG002": ["Outils intelligence artificielle", "Gestion du temps", "Communication écrite"],
-    "PSG003": ["Bureautique-Excel", "Outils intelligence artificielle", "Gestion de projets"],
-    "PSG004": ["Résolution de conflits", "Communication orale", "Team building"],
-    "PSG005": ["Customer service", "Gestion du stress", "Communication constructive"],
+    # DD001 - mixed cases
+    "PSG001": ["Communication constructive", "Diversité culturelle", "Communication écrite"],          # 0 common with director
+    "PSG002": ["Outils intelligence artificielle", "Gestion du temps", "Communication écrite"],         # 1 common
+    "PSG003": ["Bureautique-Excel", "Outils intelligence artificielle", "Gestion de projets"],          # 2 common
+    "PSG004": ["Résolution de conflits", "Communication orale", "Team building"],                      # 0 common
+    "PSG005": ["Customer service", "Gestion du stress", "Communication constructive"],                  # 3 common
 
-    "PSG006": ["Santé mentale", "Gestion du stress", "Intelligence émotionnelle"],
-    "PSG007": ["Bureautique-Excel", "Ergonomie", "Gestion du temps"],
-    "PSG008": ["Customer service", "Communication orale", "Diversité culturelle"],
-    "PSG009": ["Gestion de projets", "Collaboration", "Communication écrite"],
-    "PSG010": ["Outils intelligence artificielle", "Bureautique-PowerPoint", "Création de contenu-Réseaux sociaux"],
+    # DD002 - mostly low/no agreement
+    "PSG006": ["Santé mentale", "Gestion du stress", "Intelligence émotionnelle"],                     # 1 common
+    "PSG007": ["Bureautique-Excel", "Ergonomie", "Gestion du temps"],                                  # 0 common
+    "PSG008": ["Customer service", "Communication orale", "Diversité culturelle"],                      # 1 common
+    "PSG009": ["Gestion de projets", "Collaboration", "Communication écrite"],                         # 0 common
+    "PSG010": ["Outils intelligence artificielle", "Bureautique-PowerPoint", "Création de contenu-Réseaux sociaux"], # 2 common
 
-    "PSG011": ["Gestion financière", "Bureautique-Excel", "Esprit critique et résolution de problèmes"],
-    "PSG012": ["Communication orale", "Public speaking and Body language", "Customer service"],
-    "PSG013": ["Branding", "Création de contenu-Réseaux sociaux", "Customer service"],
-    "PSG014": ["Gestion du changement en milieu universitaire", "Gestion de projets", "Collaboration"],
-    "PSG015": ["Esprit critique et résolution de problèmes", "Bureautique-Excel", "Communication écrite"],
+    # DD003 - varied business/admin cases
+    "PSG011": ["Gestion financière", "Bureautique-Excel", "Esprit critique et résolution de problèmes"], # 0 common
+    "PSG012": ["Communication orale", "Public speaking and Body language", "Customer service"],          # 1 common
+    "PSG013": ["Branding", "Création de contenu-Réseaux sociaux", "Customer service"],                  # 2 common
+    "PSG014": ["Gestion du changement en milieu universitaire", "Gestion de projets", "Collaboration"], # 0 common
+    "PSG015": ["Esprit critique et résolution de problèmes", "Bureautique-Excel", "Communication écrite"], # 1 common
 
-    "PSG016": ["Communication écrite", "Bureautique-Word", "Customer service"],
-    "PSG017": ["Gestion du temps", "Gestion du stress", "Collaboration"],
-    "PSG018": ["Inclusion", "Diversité culturelle", "Intelligence interpersonnelle"],
-    "PSG019": ["Outils intelligence artificielle", "Bureautique-PowerPoint", "Gestion de projets"],
-    "PSG020": ["Branding", "Communication orale", "Création de contenu-Réseaux sociaux"],
+    # DD004 - mostly no common themes
+    "PSG016": ["Communication écrite", "Bureautique-Word", "Customer service"],                         # 0 common
+    "PSG017": ["Gestion du temps", "Gestion du stress", "Collaboration"],                              # 1 common
+    "PSG018": ["Inclusion", "Diversité culturelle", "Intelligence interpersonnelle"],                   # 0 common
+    "PSG019": ["Outils intelligence artificielle", "Bureautique-PowerPoint", "Gestion de projets"],     # 2 common
+    "PSG020": ["Branding", "Communication orale", "Création de contenu-Réseaux sociaux"],               # 0 common
 
-    "PSG021": ["Ergonomie", "Gestion de projets", "Bureautique-Excel"],
-    "PSG022": ["Outils intelligence artificielle", "Esprit critique et résolution de problèmes", "Communication constructive"],
-    "PSG023": ["Customer service", "Gestion du temps", "Communication écrite"],
-    "PSG024": ["Collaboration", "Gestion du changement en milieu universitaire", "Team building"],
-    "PSG025": ["Outils intelligence artificielle", "Gestion de projets", "Esprit critique et résolution de problèmes"]
+    # DD005 - technical/project cases
+    "PSG021": ["Ergonomie", "Gestion de projets", "Bureautique-Excel"],                                 # 1 common
+    "PSG022": ["Outils intelligence artificielle", "Esprit critique et résolution de problèmes", "Communication constructive"], # 0 common
+    "PSG023": ["Customer service", "Gestion du temps", "Communication écrite"],                          # 1 common
+    "PSG024": ["Collaboration", "Gestion du changement en milieu universitaire", "Team building"],       # 2 common
+    "PSG025": ["Outils intelligence artificielle", "Gestion de projets", "Esprit critique et résolution de problèmes"] # 0 common
 }
 
 
@@ -142,51 +148,51 @@ TRIAL_DIRECTOR_RESPONSES = {
     "DD001": {
         "leader": ["Data-driven decision making", "Outils intelligence artificielle-IA", "Strategic decision making"],
         "employees": {
-            "PSG001": ["Communication écrite", "Collaboration", "Diversité culturelle"],
-            "PSG002": ["Outils intelligence artificielle", "Communication écrite", "Gestion du temps"],
-            "PSG003": ["Gestion de projets", "Bureautique-Excel", "Outils intelligence artificielle"],
-            "PSG004": ["Team building", "Résolution de conflits", "Diversité culturelle"],
-            "PSG005": ["Customer service", "Communication constructive", "Gestion du stress"]
+            "PSG001": ["Gestion financière", "Ergonomie", "Bureautique-PowerPoint"],                    # 0 common
+            "PSG002": ["Collaboration", "Outils intelligence artificielle", "Customer service"],        # 1 common, not same priority
+            "PSG003": ["Gestion de projets", "Bureautique-Excel", "Team building"],                     # 2 common
+            "PSG004": ["Bureautique-Excel", "Bien-être au travail", "Gestion financière"],              # 0 common
+            "PSG005": ["Customer service", "Gestion du stress", "Communication constructive"]           # 3 common
         }
     },
     "DD002": {
         "leader": ["Crisis management and institutional resilience", "Gestion budgétaire", "Change management in academic institutions"],
         "employees": {
-            "PSG006": ["Gestion du stress", "Santé mentale", "Bien-être au travail"],
-            "PSG007": ["Ergonomie", "Bureautique-Excel", "Gestion du temps"],
-            "PSG008": ["Customer service", "Diversité culturelle", "Communication orale"],
-            "PSG009": ["Gestion de projets", "Communication écrite", "Collaboration"],
-            "PSG010": ["Outils intelligence artificielle", "Bureautique-PowerPoint", "Branding"]
+            "PSG006": ["Bien-être au travail", "Santé mentale", "Mindfulness"],                         # 1 common
+            "PSG007": ["Communication constructive", "Collaboration", "Bureautique-PowerPoint"],        # 0 common
+            "PSG008": ["Gestion du temps", "Diversité culturelle", "Ergonomie"],                        # 1 common
+            "PSG009": ["Customer service", "Gestion du stress", "Bureautique-Excel"],                   # 0 common
+            "PSG010": ["Branding", "Bureautique-PowerPoint", "Outils intelligence artificielle"]        # 2 common
         }
     },
     "DD003": {
         "leader": ["Strategic decision making", "Digital marketing", "Gestion financière"],
         "employees": {
-            "PSG011": ["Gestion financière", "Esprit critique et résolution de problèmes", "Bureautique-Excel"],
-            "PSG012": ["Public speaking and Body language", "Communication orale", "Customer service"],
-            "PSG013": ["Customer service", "Branding", "Création de contenu-Réseaux sociaux"],
-            "PSG014": ["Gestion du changement en milieu universitaire", "Collaboration", "Gestion de projets"],
-            "PSG015": ["Bureautique-Excel", "Esprit critique et résolution de problèmes", "Communication écrite"]
+            "PSG011": ["Communication orale", "Gestion du temps", "Customer service"],                  # 0 common
+            "PSG012": ["Gestion financière", "Customer service", "Bureautique-Excel"],                  # 1 common
+            "PSG013": ["Branding", "Customer service", "Gestion de projets"],                           # 2 common
+            "PSG014": ["Santé mentale", "Bureautique-Word", "Ergonomie"],                               # 0 common
+            "PSG015": ["Communication écrite", "Team building", "Gestion du stress"]                    # 1 common
         }
     },
     "DD004": {
         "leader": ["Agile management", "Change management in academic institutions", "Data-driven decision making"],
         "employees": {
-            "PSG016": ["Bureautique-Word", "Communication écrite", "Customer service"],
-            "PSG017": ["Gestion du temps", "Collaboration", "Gestion du stress"],
-            "PSG018": ["Inclusion", "Intelligence interpersonnelle", "Diversité culturelle"],
-            "PSG019": ["Outils intelligence artificielle", "Gestion de projets", "Bureautique-PowerPoint"],
-            "PSG020": ["Création de contenu-Réseaux sociaux", "Branding", "Communication orale"]
+            "PSG016": ["Collaboration", "Gestion de projets", "Ergonomie"],                             # 0 common
+            "PSG017": ["Branding", "Collaboration", "Bureautique-PowerPoint"],                          # 1 common
+            "PSG018": ["Bureautique-Excel", "Customer service", "Gestion financière"],                   # 0 common
+            "PSG019": ["Gestion de projets", "Outils intelligence artificielle", "Communication orale"], # 2 common
+            "PSG020": ["Gestion du stress", "Bureautique-Word", "Customer service"]                     # 0 common
         }
     },
     "DD005": {
         "leader": ["Outils intelligence artificielle-IA", "Data-driven decision making", "Gestion budgétaire"],
         "employees": {
-            "PSG021": ["Ergonomie", "Bureautique-Excel", "Gestion de projets"],
-            "PSG022": ["Outils intelligence artificielle", "Communication constructive", "Esprit critique et résolution de problèmes"],
-            "PSG023": ["Customer service", "Communication écrite", "Gestion du temps"],
-            "PSG024": ["Team building", "Collaboration", "Gestion du changement en milieu universitaire"],
-            "PSG025": ["Outils intelligence artificielle", "Gestion de projets", "Esprit critique et résolution de problèmes"]
+            "PSG021": ["Gestion du temps", "Ergonomie", "Customer service"],                            # 1 common
+            "PSG022": ["Bureautique-Word", "Team building", "Gestion financière"],                      # 0 common
+            "PSG023": ["Communication orale", "Customer service", "Gestion financière"],                # 1 common
+            "PSG024": ["Team building", "Bureautique-Excel", "Collaboration"],                          # 2 common
+            "PSG025": ["Customer service", "Communication orale", "Ergonomie"]                         # 0 common
         }
     }
 }
@@ -650,6 +656,13 @@ def init_db():
         )
     """)
 
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS app_meta (
+            key TEXT PRIMARY KEY,
+            value TEXT
+        )
+    """)
+
     conn.commit()
     conn.close()
 
@@ -681,13 +694,22 @@ def trial_data_is_complete():
     expected_codes = set(TRIAL_PSG_RESPONSES.keys()) | set(TRIAL_DIRECTOR_RESPONSES.keys())
 
     conn = sqlite3.connect(DB_NAME)
+
     existing_codes = {
         row[0]
         for row in conn.execute("SELECT DISTINCT respondent_code FROM responses").fetchall()
     }
+
+    version_row = conn.execute(
+        "SELECT value FROM app_meta WHERE key = ?",
+        ("demo_data_version",)
+    ).fetchone()
+
     conn.close()
 
-    return expected_codes.issubset(existing_codes)
+    version_ok = version_row is not None and version_row[0] == DEMO_DATA_VERSION
+
+    return expected_codes.issubset(existing_codes) and version_ok
 
 
 def seed_trial_data(force=False):
@@ -765,6 +787,12 @@ def seed_trial_data(force=False):
             json.dumps(data, ensure_ascii=False),
             base_time
         ))
+
+    c.execute("""
+        INSERT INTO app_meta (key, value)
+        VALUES (?, ?)
+        ON CONFLICT(key) DO UPDATE SET value = excluded.value
+    """, ("demo_data_version", DEMO_DATA_VERSION))
 
     conn.commit()
     conn.close()
@@ -1344,7 +1372,7 @@ def render_admin_dashboard():
         st.info("Aucune réponse enregistrée pour le moment.")
         return
 
-    st.caption("Données d’essai intégrées : 5 Doyens / Directeurs et 25 employés PSG.")
+    st.caption("Données d’essai intégrées : 5 Doyens / Directeurs et 25 employés PSG. Les scénarios sont volontairement variés : plusieurs cas sans thème commun, quelques cas avec 1 thème commun, quelques cas avec 2 thèmes communs, et un cas avec 3 thèmes communs.")
 
     with st.sidebar:
         st.header("Filtres administrateur")
