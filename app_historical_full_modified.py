@@ -1,5 +1,6 @@
 
 import os
+import re
 import textwrap
 import warnings
 import html as html_lib
