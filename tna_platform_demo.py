@@ -119,6 +119,32 @@ def apply_style():
         opacity: 0.95;
     }}
 
+    div[data-baseweb="input"] {{
+        background-color: #ffffff !important;
+        border: 2px solid {USJ_BLUE} !important;
+        border-radius: 14px !important;
+        box-shadow: 0 4px 14px rgba(0,31,91,0.10) !important;
+    }}
+
+    div[data-baseweb="input"]:focus-within {{
+        border: 3px solid {USJ_RED} !important;
+        box-shadow: 0 0 0 4px rgba(139,21,56,0.12) !important;
+    }}
+
+    div[data-baseweb="input"] input {{
+        background-color: #ffffff !important;
+        color: {USJ_BLUE} !important;
+        font-weight: 700 !important;
+        font-size: 18px !important;
+        padding: 14px !important;
+    }}
+
+    label {{
+        color: {USJ_BLUE} !important;
+        font-weight: 800 !important;
+        font-size: 16px !important;
+    }}
+
     .identity-card {{
         background:#ffffff;
         border: 1px solid #DDE5F0;
