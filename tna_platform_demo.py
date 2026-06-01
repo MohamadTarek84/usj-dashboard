@@ -711,7 +711,7 @@ def render_psg_form(user):
     render_form_hero(
         "Personnel de soutien et de gestion",
         "Questionnaire d’analyse des besoins en formation - PSG",
-        "Ce court questionnaire nous aide à comprendre vos besoins en formation. Les résultats seront utilisés pour concevoir des programmes de formation qui soutiennent votre travail, améliorent vos compétences et favorisent votre développement professionnel."
+        "Ce court questionnaire nous aide à comprendre vos besoins en formation. Les résultats seront utilisés pour concevoir des programmes de formation qui soutiennent votre travail, améliorent vos compétences et favorisent votre développement professionnel.<br><br><b>Il vous faudra environ 5 à 10 minutes pour le compléter. Vos réponses resteront confidentielles.</b>"
     )
 
     render_identity_cards(user)
@@ -758,7 +758,7 @@ def render_director_form(user):
     render_form_hero(
         "Doyens et Directeurs",
         "Questionnaire d’analyse des besoins en formation - Doyens et Directeurs",
-        "Ce questionnaire vise à identifier vos besoins en formation en tant que leader ainsi que les besoins de développement de votre département. Les résultats nous aideront à concevoir des programmes de formation qui soutiennent le leadership, améliorent la performance des équipes et s’alignent sur les objectifs de l’université."
+        "Ce questionnaire vise à identifier vos besoins en formation en tant que leader ainsi que les besoins de développement de votre département. Les résultats nous aideront à concevoir des programmes de formation qui soutiennent le leadership, améliorent la performance des équipes et s’alignent sur les objectifs de l’université.<br><br><b>Il vous faudra environ 10 minutes pour le compléter. Vos réponses resteront confidentielles.</b>"
     )
 
     render_identity_cards(user)
