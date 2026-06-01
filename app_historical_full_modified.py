@@ -962,6 +962,12 @@ def clean_other_question_label(question):
     if q_norm.startswith("9-avez-vous realise un stage") or q_norm.startswith("9 avez-vous realise un stage"):
         return "9-Avez-vous réalisé un stage durant votre parcours à l’USJ ?"
 
+    if q_norm.startswith("11"):
+        return "11-Avez-vous pris des cours d’anglais à l’USJ et comment évaluez-vous votre apprentissage ?"
+
+    if q_norm.startswith("12"):
+        return "12-Avez-vous contacté le Service de l’insertion professionnelle de l’USJ ?"
+
     return OTHER_QUESTION_LABELS.get(q, score_question_label(q))
 
 
