@@ -518,6 +518,88 @@ def apply_style():
         padding-bottom: 8px !important;
     }}
 
+    
+    .visual-column {
+        background: #ffffff;
+        border: 1px solid #DDE5F0;
+        border-radius: 18px;
+        padding: 18px;
+        min-height: 330px;
+        box-shadow: 0 10px 28px rgba(27,42,65,0.06);
+        margin-bottom: 16px;
+    }
+
+    .visual-column-title {
+        font-size: 1.1rem;
+        font-weight: 850;
+        color: #001F5B;
+        margin-bottom: 16px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #DDE5F0;
+    }
+
+    .visual-employee {
+        border-top: 5px solid #001F5B;
+    }
+
+    .visual-director {
+        border-top: 5px solid #8B1538;
+    }
+
+    .visual-final {
+        border-top: 5px solid #C9A227;
+    }
+
+    .priority-card {
+        border-radius: 16px;
+        padding: 14px 16px;
+        margin-bottom: 12px;
+        border: 1px solid #DDE5F0;
+    }
+
+    .employee-card {
+        background: #EAF2F8;
+        border-left: 6px solid #001F5B;
+    }
+
+    .director-card {
+        background: #F8EDEF;
+        border-left: 6px solid #8B1538;
+    }
+
+    .final-card {
+        background: #FFF8DF;
+        border-left: 6px solid #C9A227;
+    }
+
+    .priority-rank {
+        font-size: 0.82rem;
+        font-weight: 850;
+        color: #5D697A;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 6px;
+    }
+
+    .priority-theme {
+        font-size: 1rem;
+        font-weight: 850;
+        color: #001F5B;
+        line-height: 1.35;
+    }
+
+    .priority-badge {
+        margin-top: 10px;
+        display: inline-block;
+        padding: 5px 9px;
+        border-radius: 999px;
+        background: #ffffff;
+        color: #735C00;
+        font-size: 0.78rem;
+        font-weight: 800;
+        border: 1px solid #E6D58D;
+    }
+
     </style>
     """, unsafe_allow_html=True)
 
@@ -1041,77 +1123,136 @@ def ranked_select_with_defaults(label, options, key_prefix, defaults=None):
 
 
 def render_employee_comparison_visual(employee_name, employee_ranked, director_ranked, final_themes, matched):
-    all_nodes = []
-    labels = []
+    st.markdown(f"""
+    <div class="card gold-card">
+        <h3 style="margin-top:0; color:#001F5B;">Synthèse visuelle claire - {employee_name}</h3>
+        <div style="color:#5D697A; font-weight:600;">
+            Comparaison entre les priorités de l’employé, les priorités du Doyen / Directeur et les thèmes finaux proposés.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-    for i, theme in enumerate(employee_ranked, start=1):
-        label = f"Employé P{i}<br>{theme}"
-        labels.append(label)
-        all_nodes.append(("employee", theme, label))
+    comparison_rows = []
 
-    for i, theme in enumerate(director_ranked, start=1):
-        label = f"Directeur P{i}<br>{theme}"
-        labels.append(label)
-        all_nodes.append(("director", theme, label))
+    for rank in [1, 2, 3]:
+        emp_theme = employee_ranked[rank - 1] if len(employee_ranked) >= rank else ""
+        dir_theme = director_ranked[rank - 1] if len(director_ranked) >= rank else ""
+        final_theme = final_themes[rank - 1] if len(final_themes) >= rank else ""
 
-    for i, theme in enumerate(final_themes, start=1):
-        label = f"Final P{i}<br>{theme}"
-        labels.append(label)
-        all_nodes.append(("final", theme, label))
+        comparison_rows.append({
+            "Priorité": f"P{rank}",
+            "Choix de l’employé": emp_theme,
+            "Choix du Doyen / Directeur": dir_theme,
+            "Thème final proposé": final_theme,
+            "Correspondance": "Oui" if final_theme in matched else "Non"
+        })
 
-    if go is None or not labels:
-        st.warning("Plotly n’est pas disponible. La visualisation avancée est remplacée par les cartes ci-dessous.")
-        return
+    comparison_df = pd.DataFrame(comparison_rows)
 
-    sources = []
-    targets = []
-    values = []
+    c1, c2, c3 = st.columns(3)
 
-    for source_index, (source_type, source_theme, source_label) in enumerate(all_nodes):
-        if source_type == "final":
-            continue
+    with c1:
+        st.markdown("""
+        <div class="visual-column visual-employee">
+            <div class="visual-column-title">Choix de l’employé</div>
+        """, unsafe_allow_html=True)
+        for i, theme in enumerate(employee_ranked, start=1):
+            st.markdown(f"""
+            <div class="priority-card employee-card">
+                <div class="priority-rank">Priorité {i}</div>
+                <div class="priority-theme">{theme}</div>
+            </div>
+            """, unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
-        for target_index, (target_type, target_theme, target_label) in enumerate(all_nodes):
-            if target_type == "final" and source_theme == target_theme:
-                sources.append(source_index)
-                targets.append(target_index)
-                values.append(2 if source_theme in matched else 1)
+    with c2:
+        st.markdown("""
+        <div class="visual-column visual-director">
+            <div class="visual-column-title">Choix du Doyen / Directeur</div>
+        """, unsafe_allow_html=True)
+        for i, theme in enumerate(director_ranked, start=1):
+            st.markdown(f"""
+            <div class="priority-card director-card">
+                <div class="priority-rank">Priorité {i}</div>
+                <div class="priority-theme">{theme}</div>
+            </div>
+            """, unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
-    if not sources:
-        for source_index, (source_type, source_theme, source_label) in enumerate(all_nodes):
-            if source_type == "employee":
-                for target_index, (target_type, target_theme, target_label) in enumerate(all_nodes):
-                    if target_type == "final" and target_theme in final_themes[:1]:
-                        sources.append(source_index)
-                        targets.append(target_index)
-                        values.append(1)
-                        break
+    with c3:
+        st.markdown("""
+        <div class="visual-column visual-final">
+            <div class="visual-column-title">Thèmes finaux proposés</div>
+        """, unsafe_allow_html=True)
+        for i, theme in enumerate(final_themes, start=1):
+            badge = "Thème commun" if theme in matched else "Proposé par score"
+            st.markdown(f"""
+            <div class="priority-card final-card">
+                <div class="priority-rank">Priorité finale {i}</div>
+                <div class="priority-theme">{theme}</div>
+                <div class="priority-badge">{badge}</div>
+            </div>
+            """, unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
-    fig = go.Figure(data=[go.Sankey(
-        arrangement="snap",
-        node=dict(
-            pad=20,
-            thickness=18,
-            line=dict(color="rgba(0,31,91,0.35)", width=1),
-            label=labels
-        ),
-        link=dict(
-            source=sources,
-            target=targets,
-            value=values
+    st.markdown("#### Tableau comparatif des priorités")
+    st.dataframe(comparison_df, use_container_width=True, hide_index=True)
+
+    if go is not None:
+        score_rows = []
+
+        all_themes = list(dict.fromkeys(employee_ranked + director_ranked + final_themes))
+        for theme in all_themes:
+            emp_score = 4 - (employee_ranked.index(theme) + 1) if theme in employee_ranked else 0
+            dir_score = 4 - (director_ranked.index(theme) + 1) if theme in director_ranked else 0
+            final_score = 4 - (final_themes.index(theme) + 1) if theme in final_themes else 0
+
+            score_rows.append({
+                "Thème": theme,
+                "Score employé": emp_score,
+                "Score directeur": dir_score,
+                "Score final": final_score
+            })
+
+        score_df = pd.DataFrame(score_rows)
+
+        fig = go.Figure()
+
+        fig.add_trace(go.Bar(
+            y=score_df["Thème"],
+            x=score_df["Score employé"],
+            name="Employé",
+            orientation="h"
+        ))
+
+        fig.add_trace(go.Bar(
+            y=score_df["Thème"],
+            x=score_df["Score directeur"],
+            name="Doyen / Directeur",
+            orientation="h"
+        ))
+
+        fig.add_trace(go.Bar(
+            y=score_df["Thème"],
+            x=score_df["Score final"],
+            name="Final proposé",
+            orientation="h"
+        ))
+
+        fig.update_layout(
+            title="Scores comparés des thèmes",
+            barmode="group",
+            height=max(360, 70 * len(score_df)),
+            margin=dict(l=20, r=20, t=55, b=20),
+            xaxis_title="Score de priorité",
+            yaxis_title="",
+            yaxis=dict(autorange="reversed"),
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)"
         )
-    )])
 
-    fig.update_layout(
-        title_text=f"Flux de décision des thèmes - {employee_name}",
-        font=dict(size=13),
-        height=360,
-        margin=dict(l=10, r=10, t=45, b=10),
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)"
-    )
-
-    st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True)
 
 
 def render_priority_matrix(employee_ranked, director_ranked, final_themes):
