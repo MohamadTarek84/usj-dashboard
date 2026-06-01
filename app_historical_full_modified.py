@@ -3006,7 +3006,7 @@ def summarize_other_questions_for_report(original_data, coded_filter_data, max_q
     out = out.sort_values(["Priorité", "N valide", "Pourcentage"], ascending=[False, False, False]).head(max_questions)
     return out.drop(columns=["Priorité"], errors="ignore")
 
-    Q44_FINANCING_ITEMS = {
+Q44_FINANCING_ITEMS = {
     "44_a- Financé vos études à l’USJ : Parents": "Parents",
     "44_b- Financé vos études à l’USJ : Moi-même (emploi)": "Moi-même par un emploi",
     "44_c- Financé vos études à l’USJ : Bourse accordée par l'USJ sur bases de critères sociaux (Service social)": "Bourse USJ sur critères sociaux",
