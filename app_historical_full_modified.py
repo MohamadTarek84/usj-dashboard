@@ -954,6 +954,14 @@ OTHER_QUESTION_LABELS = {
 def clean_other_question_label(question):
     """Return a complete, readable label for complementary questions."""
     q = str(question).strip()
+    q_norm = normalize_question_key(q)
+
+    if q_norm.startswith("8"):
+        return "8-Êtes-vous membre de la plateforme interactive de l’USJ et de la Fédération des Associations des Anciens, lancée pour fédérer et animer le réseau Alumni ?"
+
+    if q_norm.startswith("9-avez-vous realise un stage") or q_norm.startswith("9 avez-vous realise un stage"):
+        return "9-Avez-vous réalisé un stage durant votre parcours à l’USJ ?"
+
     return OTHER_QUESTION_LABELS.get(q, score_question_label(q))
 
 
