@@ -3,6 +3,11 @@ import sqlite3
 import json
 from datetime import datetime
 import pandas as pd
+
+try:
+    import plotly.graph_objects as go
+except Exception:
+    go = None
 import os
 import base64
 
@@ -520,6 +525,7 @@ def apply_style():
 def init_db():
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
+
     c.execute("""
         CREATE TABLE IF NOT EXISTS responses (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -533,8 +539,81 @@ def init_db():
             submitted_at TEXT
         )
     """)
+
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS admin_theme_overrides (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            employee_code TEXT UNIQUE,
+            employee_ranked_json TEXT,
+            director_ranked_json TEXT,
+            updated_by TEXT,
+            updated_at TEXT
+        )
+    """)
+
     conn.commit()
     conn.close()
+
+
+def save_admin_theme_override(employee_code, employee_ranked, director_ranked):
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+
+    c.execute("""
+        INSERT INTO admin_theme_overrides (
+            employee_code,
+            employee_ranked_json,
+            director_ranked_json,
+            updated_by,
+            updated_at
+        )
+        VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(employee_code) DO UPDATE SET
+            employee_ranked_json = excluded.employee_ranked_json,
+            director_ranked_json = excluded.director_ranked_json,
+            updated_by = excluded.updated_by,
+            updated_at = excluded.updated_at
+    """, (
+        employee_code,
+        json.dumps(employee_ranked, ensure_ascii=False),
+        json.dumps(director_ranked, ensure_ascii=False),
+        st.session_state.get("code", "ADMIN"),
+        datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    ))
+
+    conn.commit()
+    conn.close()
+
+
+def load_admin_theme_overrides():
+    conn = sqlite3.connect(DB_NAME)
+    rows = conn.execute("""
+        SELECT employee_code, employee_ranked_json, director_ranked_json, updated_by, updated_at
+        FROM admin_theme_overrides
+    """).fetchall()
+    conn.close()
+
+    overrides = {}
+
+    for employee_code, employee_json, director_json, updated_by, updated_at in rows:
+        try:
+            employee_ranked = json.loads(employee_json or "[]")
+        except Exception:
+            employee_ranked = []
+
+        try:
+            director_ranked = json.loads(director_json or "[]")
+        except Exception:
+            director_ranked = []
+
+        overrides[employee_code] = {
+            "employee_ranked": employee_ranked,
+            "director_ranked": director_ranked,
+            "updated_by": updated_by,
+            "updated_at": updated_at
+        }
+
+    return overrides
 
 
 def save_response(user, data):
@@ -915,16 +994,168 @@ def latest_by_code(df, code):
     return subset.iloc[0].to_dict()
 
 
+
+
+def ranked_select_with_defaults(label, options, key_prefix, defaults=None):
+    defaults = defaults or []
+    defaults = [x for x in defaults if x in options]
+
+    p1_default = defaults[0] if len(defaults) > 0 else ""
+    p2_default = defaults[1] if len(defaults) > 1 else ""
+    p3_default = defaults[2] if len(defaults) > 2 else ""
+
+    st.markdown(f"**{label}**")
+
+    c1, c2, c3 = st.columns(3)
+
+    with c1:
+        options_1 = [""] + options
+        p1 = st.selectbox(
+            "Priorité 1",
+            options_1,
+            index=options_1.index(p1_default) if p1_default in options_1 else 0,
+            key=f"{key_prefix}_p1"
+        )
+
+    with c2:
+        remaining_2 = [x for x in options if x != p1]
+        options_2 = [""] + remaining_2
+        p2 = st.selectbox(
+            "Priorité 2",
+            options_2,
+            index=options_2.index(p2_default) if p2_default in options_2 else 0,
+            key=f"{key_prefix}_p2"
+        )
+
+    with c3:
+        remaining_3 = [x for x in options if x not in [p1, p2]]
+        options_3 = [""] + remaining_3
+        p3 = st.selectbox(
+            "Priorité 3",
+            options_3,
+            index=options_3.index(p3_default) if p3_default in options_3 else 0,
+            key=f"{key_prefix}_p3"
+        )
+
+    return [x for x in [p1, p2, p3] if x]
+
+
+def render_employee_comparison_visual(employee_name, employee_ranked, director_ranked, final_themes, matched):
+    all_nodes = []
+    labels = []
+
+    for i, theme in enumerate(employee_ranked, start=1):
+        label = f"Employé P{i}<br>{theme}"
+        labels.append(label)
+        all_nodes.append(("employee", theme, label))
+
+    for i, theme in enumerate(director_ranked, start=1):
+        label = f"Directeur P{i}<br>{theme}"
+        labels.append(label)
+        all_nodes.append(("director", theme, label))
+
+    for i, theme in enumerate(final_themes, start=1):
+        label = f"Final P{i}<br>{theme}"
+        labels.append(label)
+        all_nodes.append(("final", theme, label))
+
+    if go is None or not labels:
+        st.warning("Plotly n’est pas disponible. La visualisation avancée est remplacée par les cartes ci-dessous.")
+        return
+
+    sources = []
+    targets = []
+    values = []
+
+    for source_index, (source_type, source_theme, source_label) in enumerate(all_nodes):
+        if source_type == "final":
+            continue
+
+        for target_index, (target_type, target_theme, target_label) in enumerate(all_nodes):
+            if target_type == "final" and source_theme == target_theme:
+                sources.append(source_index)
+                targets.append(target_index)
+                values.append(2 if source_theme in matched else 1)
+
+    if not sources:
+        for source_index, (source_type, source_theme, source_label) in enumerate(all_nodes):
+            if source_type == "employee":
+                for target_index, (target_type, target_theme, target_label) in enumerate(all_nodes):
+                    if target_type == "final" and target_theme in final_themes[:1]:
+                        sources.append(source_index)
+                        targets.append(target_index)
+                        values.append(1)
+                        break
+
+    fig = go.Figure(data=[go.Sankey(
+        arrangement="snap",
+        node=dict(
+            pad=20,
+            thickness=18,
+            line=dict(color="rgba(0,31,91,0.35)", width=1),
+            label=labels
+        ),
+        link=dict(
+            source=sources,
+            target=targets,
+            value=values
+        )
+    )])
+
+    fig.update_layout(
+        title_text=f"Flux de décision des thèmes - {employee_name}",
+        font=dict(size=13),
+        height=360,
+        margin=dict(l=10, r=10, t=45, b=10),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)"
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
+
+
+def render_priority_matrix(employee_ranked, director_ranked, final_themes):
+    rows = []
+
+    for theme in list(dict.fromkeys(employee_ranked + director_ranked + final_themes)):
+        emp_rank = employee_ranked.index(theme) + 1 if theme in employee_ranked else ""
+        dir_rank = director_ranked.index(theme) + 1 if theme in director_ranked else ""
+        final_rank = final_themes.index(theme) + 1 if theme in final_themes else ""
+        status = "Commun" if theme in employee_ranked and theme in director_ranked else "Non commun"
+
+        rows.append({
+            "Thème": theme,
+            "Priorité employé": emp_rank,
+            "Priorité directeur": dir_rank,
+            "Priorité finale proposée": final_rank,
+            "Statut": status
+        })
+
+    matrix_df = pd.DataFrame(rows)
+
+    st.dataframe(
+        matrix_df,
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "Statut": st.column_config.TextColumn("Statut"),
+            "Priorité employé": st.column_config.NumberColumn("Priorité employé"),
+            "Priorité directeur": st.column_config.NumberColumn("Priorité directeur"),
+            "Priorité finale proposée": st.column_config.NumberColumn("Priorité finale proposée")
+        }
+    )
+
 def render_admin_dashboard():
     st.markdown("""
     <div class="main-hero">
         <div class="hero-kicker">Administration | TNA 2026</div>
         <div class="hero-title">Tableau de bord administrateur</div>
-        <div class="hero-subtitle">Analyse des besoins de formation des PSG et des Doyens / Directeurs, avec comparaison employé-directeur et proposition des 3 thèmes finaux.</div>
+        <div class="hero-subtitle">Vue interactive des besoins de formation, avec comparaison employé-directeur, visualisation dynamique et ajustement administratif des thèmes retenus.</div>
     </div>
     """, unsafe_allow_html=True)
 
     df = load_responses()
+    overrides = load_admin_theme_overrides()
 
     if df.empty:
         st.info("Aucune réponse enregistrée pour le moment.")
@@ -937,6 +1168,7 @@ def render_admin_dashboard():
             "Vue à afficher",
             [
                 "Synthèse directeur-employés",
+                "Modifier les priorités",
                 "Réponses PSG",
                 "Réponses Doyens / Directeurs",
                 "Départements",
@@ -972,21 +1204,22 @@ def render_admin_dashboard():
 
     st.divider()
 
-    if view == "Synthèse directeur-employés":
-        directors = [
-            code for code, user in DEMO_USERS.items()
-            if user.get("role") == "director"
-        ]
+    directors = [
+        code for code, user in DEMO_USERS.items()
+        if user.get("role") == "director"
+    ]
 
-        director_labels = {
-            code: f"{DEMO_USERS[code]['name']} | {DEMO_USERS[code]['faculty']}"
-            for code in directors
-        }
+    director_labels = {
+        code: f"{DEMO_USERS[code]['name']} | {DEMO_USERS[code]['faculty']}"
+        for code in directors
+    }
 
+    if view in ["Synthèse directeur-employés", "Modifier les priorités"]:
         selected_director = st.selectbox(
             "Sélectionner un Doyen / Directeur",
             directors,
-            format_func=lambda x: director_labels[x]
+            format_func=lambda x: director_labels[x],
+            key=f"admin_director_selector_{view}"
         )
 
         director_user = DEMO_USERS[selected_director]
@@ -996,8 +1229,9 @@ def render_admin_dashboard():
 
         st.markdown(f"""
         <div class='card red-card'>
-            <b>{director_user['name']}</b><br>
-            {director_user['faculty']} | {director_user['department']}
+            <h3 style='margin-top:0;'>{director_user['name']}</h3>
+            <span class='pill pill-red'>{director_user['faculty']}</span>
+            <span class='pill pill-gold'>{director_user['department']}</span>
         </div>
         """, unsafe_allow_html=True)
 
@@ -1012,32 +1246,43 @@ def render_admin_dashboard():
 
         st.divider()
 
-        st.markdown("### 2. Analyse visuelle par employé")
-
         employees = get_employees_for_director(selected_director)
 
         director_emp_map = {}
-
         if director_response:
             for item in director_response["Données"].get("employees_training_needs", []):
                 director_emp_map[item.get("employee_code")] = item
 
+        if view == "Modifier les priorités":
+            st.markdown("### Modification administrative des priorités par employé")
+            st.info(
+                "Cette section permet à l’administrateur de corriger ou d’ajuster les 3 thèmes classés par l’employé "
+                "et les 3 thèmes classés par le Doyen / Directeur. Les modifications sont enregistrées séparément "
+                "dans une table d’override administrative."
+            )
+
+        else:
+            st.markdown("### 2. Analyse visuelle par employé")
+
         for emp in employees:
             emp_response = latest_by_code(df, emp["code"])
 
-            employee_ranked = []
+            employee_original = []
             if emp_response:
-                employee_ranked = emp_response["Données"].get(
+                employee_original = emp_response["Données"].get(
                     "ranked_themes",
                     emp_response["Données"].get("selected_themes", [])
                 )
 
-            director_ranked = []
+            director_original = []
             if emp["code"] in director_emp_map:
-                director_ranked = director_emp_map[emp["code"]].get(
+                director_original = director_emp_map[emp["code"]].get(
                     "ranked_themes_by_director",
                     director_emp_map[emp["code"]].get("selected_themes", [])
                 )
+
+            employee_ranked = overrides.get(emp["code"], {}).get("employee_ranked", employee_original)
+            director_ranked = overrides.get(emp["code"], {}).get("director_ranked", director_original)
 
             matched, final, scenario = calculate_final_themes(employee_ranked, director_ranked)
 
@@ -1048,6 +1293,53 @@ def render_admin_dashboard():
                 <span class='pill pill-gold'>{emp['department']}</span>
             </div>
             """, unsafe_allow_html=True)
+
+            if emp["code"] in overrides:
+                st.caption(
+                    f"Priorités modifiées par l’administrateur le {overrides[emp['code']]['updated_at']}."
+                )
+
+            if view == "Modifier les priorités":
+                c1, c2 = st.columns(2)
+
+                with c1:
+                    admin_employee_ranked = ranked_select_with_defaults(
+                        "Modifier le classement de l’employé",
+                        PSG_THEMES,
+                        f"admin_edit_employee_{emp['code']}",
+                        employee_ranked
+                    )
+
+                with c2:
+                    admin_director_ranked = ranked_select_with_defaults(
+                        "Modifier le classement du Doyen / Directeur",
+                        PSG_THEMES,
+                        f"admin_edit_director_{emp['code']}",
+                        director_ranked
+                    )
+
+                if st.button(
+                    f"Enregistrer les priorités modifiées pour {emp['name']}",
+                    key=f"save_override_{emp['code']}",
+                    use_container_width=True
+                ):
+                    if len(admin_employee_ranked) != 3 or len(admin_director_ranked) != 3:
+                        st.warning("Veuillez sélectionner exactement 3 thèmes pour l’employé et 3 thèmes pour le directeur.")
+                    else:
+                        save_admin_theme_override(emp["code"], admin_employee_ranked, admin_director_ranked)
+                        st.success(f"Priorités modifiées pour {emp['name']}.")
+                        st.rerun()
+
+                st.divider()
+                continue
+
+            render_employee_comparison_visual(
+                emp["name"],
+                employee_ranked,
+                director_ranked,
+                final,
+                matched
+            )
 
             c1, c2, c3 = st.columns(3)
 
@@ -1070,6 +1362,10 @@ def render_admin_dashboard():
                 st.markdown("<span class='pill missing'>Aucun thème commun</span>", unsafe_allow_html=True)
 
             st.info(scenario)
+
+            with st.expander("Afficher la matrice de décision"):
+                render_priority_matrix(employee_ranked, director_ranked, final)
+
             st.divider()
 
     elif view == "Réponses PSG":
@@ -1173,7 +1469,27 @@ def render_admin_dashboard():
             counts = sub["Thème"].value_counts().reset_index()
             counts.columns = ["Thème", "Nombre"]
 
-            st.bar_chart(counts.set_index("Thème"), use_container_width=True)
+            if go is not None:
+                fig = go.Figure(
+                    data=[
+                        go.Bar(
+                            x=counts["Nombre"],
+                            y=counts["Thème"],
+                            orientation="h"
+                        )
+                    ]
+                )
+                fig.update_layout(
+                    height=520,
+                    margin=dict(l=10, r=10, t=20, b=10),
+                    yaxis=dict(autorange="reversed"),
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    plot_bgcolor="rgba(0,0,0,0)"
+                )
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.bar_chart(counts.set_index("Thème"), use_container_width=True)
+
             st.dataframe(sub, use_container_width=True, hide_index=True)
 
     elif view == "Base de données":
