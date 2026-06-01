@@ -877,8 +877,11 @@ OTHER_QUESTION_LABELS = {
     "7_b- Recherche en ligne": "7_b-Avez-vous été formé à l’USJ à : Recherche d’emploi en ligne",
     "7_c- Entretien d'embauche": "7_c-Avez-vous été formé à l’USJ à : Entretien d’embauche",
 
+
     "8-Membre de la platforme interactive de L’USJ et la Fédération des Associations des Anciens lancé pour fédérer et animer le réseau des Alumni": "8-Êtes-vous membre de la plateforme interactive de l’USJ et de la Fédération des Associations des Anciens, lancée pour fédérer et animer le réseau Alumni ?",
 
+    "Membre de la platforme interactive de L’USJ et la Fédération des Associations des Anciens lancé pour fédérer et animer le réseau des Alumni": "8-Êtes-vous membre de la plateforme interactive de l’USJ et de la Fédération des Associations des Anciens, lancée pour fédérer et animer le réseau Alumni ?",
+    
     "9- Avez-vous réalisé un stage durant votre parcours à l’USJ ?": "9-Avez-vous réalisé un stage durant votre parcours à l’USJ ?",
     "9a- L’université vous aidé à trouver un stage": "9a-L’Université vous a-t-elle aidé à trouver un stage ?",
     "9b_a- Canaux d’accès à votre stage : Service de l’insertion professionnelle de l’USJ": "9b_a-Par quel canal avez-vous accédé à votre stage ? Service de l’insertion professionnelle de l’USJ",
