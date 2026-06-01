@@ -3,7 +3,9 @@ import sqlite3
 import json
 from datetime import datetime
 
+
 DB_NAME = "tna_demo.db"
+
 
 PSG_THEMES = [
     "Communication constructive",
@@ -32,11 +34,12 @@ PSG_THEMES = [
     "Gestion financière",
     "Esprit critique et résolution de problèmes",
     "Gestion du changement en milieu universitaire",
-    "Gestion de projets (bases pour non-chefs de projet)",
+    "Gestion de projets",
     "Équilibre vie professionnelle vie personnelle",
     "Ergonomie",
-    "Customer service (dealing with students/staff)"
+    "Customer service"
 ]
+
 
 DD_LEADER_THEMES = [
     "Outils intelligence artificielle-IA",
@@ -47,30 +50,87 @@ DD_LEADER_THEMES = [
     "Digital marketing",
     "Change management in academic institutions",
     "Crisis management and institutional resilience",
-    "Data-driven decision making (analytics and dashboards for leadership)"
+    "Data-driven decision making"
 ]
+
 
 DEMO_USERS = {
     "PSG001": {
         "role": "psg",
-        "name": "Employé PSG Demo",
-        "faculty": "Faculté de médecine",
+        "name": "Mohamad Khalil",
+        "faculty": "Faculté des Sciences",
         "institution": "USJ",
-        "department": "Administration"
+        "department": "Service des Études",
+        "director_code": "DD001"
+    },
+    "PSG002": {
+        "role": "psg",
+        "name": "Rana Nader",
+        "faculty": "Faculté des Sciences",
+        "institution": "USJ",
+        "department": "Service des Études",
+        "director_code": "DD001"
+    },
+    "PSG003": {
+        "role": "psg",
+        "name": "Karim Haddad",
+        "faculty": "Faculté des Sciences",
+        "institution": "USJ",
+        "department": "Service Informatique",
+        "director_code": "DD001"
+    },
+    "PSG004": {
+        "role": "psg",
+        "name": "Maya Saad",
+        "faculty": "Faculté des Sciences",
+        "institution": "USJ",
+        "department": "Service Informatique",
+        "director_code": "DD001"
+    },
+    "PSG005": {
+        "role": "psg",
+        "name": "Georges Khoury",
+        "faculty": "Faculté des Sciences",
+        "institution": "USJ",
+        "department": "Service Administratif",
+        "director_code": "DD001"
+    },
+    "PSG006": {
+        "role": "psg",
+        "name": "Nadine Abi Rached",
+        "faculty": "Faculté de Médecine",
+        "institution": "USJ",
+        "department": "Secrétariat académique",
+        "director_code": "DD002"
+    },
+    "PSG007": {
+        "role": "psg",
+        "name": "Paul Tannous",
+        "faculty": "Faculté de Médecine",
+        "institution": "USJ",
+        "department": "Laboratoire",
+        "director_code": "DD002"
     },
     "DD001": {
         "role": "director",
-        "name": "Doyen / Directeur Demo",
-        "faculty": "Faculté de médecine",
+        "name": "Dr. Rami Haddad",
+        "faculty": "Faculté des Sciences",
+        "institution": "USJ",
+        "department": "Direction"
+    },
+    "DD002": {
+        "role": "director",
+        "name": "Dr. Carla Mansour",
+        "faculty": "Faculté de Médecine",
         "institution": "USJ",
         "department": "Direction"
     },
     "ADMIN2032": {
         "role": "admin",
-        "name": "Administrateur",
+        "name": "Administrateur TNA",
         "faculty": "USJ",
         "institution": "USJ",
-        "department": "Admin"
+        "department": "Administration Centrale"
     }
 }
 
@@ -103,8 +163,14 @@ def save_response(user, data):
 
     c.execute("""
         INSERT INTO responses (
-            respondent_code, role, name, faculty, institution,
-            department, data_json, submitted_at
+            respondent_code,
+            role,
+            name,
+            faculty,
+            institution,
+            department,
+            data_json,
+            submitted_at
         )
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     """, (
@@ -120,6 +186,18 @@ def save_response(user, data):
 
     conn.commit()
     conn.close()
+
+
+def get_employees_for_director(director_code):
+    employees = []
+
+    for code, info in DEMO_USERS.items():
+        if info.get("role") == "psg" and info.get("director_code") == director_code:
+            emp = info.copy()
+            emp["code"] = code
+            employees.append(emp)
+
+    return employees
 
 
 def login_page():
@@ -153,14 +231,18 @@ def render_psg_form(user):
     st.markdown(f"**Faculté / Institution :** {user['faculty']}")
     st.markdown(f"**Département :** {user['department']}")
 
+    st.divider()
+
     selected_themes = st.multiselect(
-        "1- Veuillez sélectionner les thèmes de formation auxquels vous souhaitez participer :",
+        "1- Veuillez sélectionner jusqu’à 3 thèmes de formation prioritaires :",
         PSG_THEMES,
-        max_selections=3
+        max_selections=3,
+        key="psg_selected_themes"
     )
 
     other_themes = st.text_area(
-        "2- Quel(s) autre(s) thème(s) ou sujet(s) de formation proposez-vous ?"
+        "2- Quel(s) autre(s) thème(s) ou sujet(s) de formation proposez-vous ?",
+        key="psg_other_themes"
     )
 
     if st.button("Soumettre mes réponses"):
@@ -191,36 +273,86 @@ def render_director_form(user):
     st.markdown(f"**Faculté / Institution :** {user['faculty']}")
     st.markdown(f"**Département :** {user['department']}")
 
+    st.divider()
+
+    st.subheader("A. Vos besoins de formation en tant que leader")
+
     leader_themes = st.multiselect(
-        "1- Veuillez sélectionner les thématiques auxquelles vous souhaitez participer :",
+        "1- Veuillez sélectionner jusqu’à 3 thématiques auxquelles vous souhaitez participer :",
         DD_LEADER_THEMES,
-        max_selections=3
+        max_selections=3,
+        key="leader_themes"
     )
 
     leader_other = st.text_area(
-        "2- Quel(s) autre(s) thème(s) ou sujet(s) de formation proposez-vous pour vous-même ?"
+        "2- Quel(s) autre(s) thème(s) ou sujet(s) de formation proposez-vous pour vous-même ?",
+        key="leader_other"
     )
 
-    team_themes = st.multiselect(
-        "3- Veuillez sélectionner les thématiques auxquelles vous souhaitez que votre équipe participe :",
-        PSG_THEMES,
-        max_selections=3
-    )
+    st.divider()
 
-    team_other = st.text_area(
-        "4- Quel(s) autre(s) thème(s) ou sujet(s) de formation proposez-vous pour votre équipe ?"
-    )
+    st.subheader("B. Besoins de formation de vos employés")
+
+    employees = get_employees_for_director(st.session_state["code"])
+
+    if not employees:
+        st.warning("Aucun employé n’est actuellement lié à ce compte directeur.")
+    else:
+        st.info(
+            "Pour chaque employé lié à votre compte, veuillez sélectionner jusqu’à 3 thèmes de formation prioritaires."
+        )
+
+    employee_training_needs = []
+
+    for emp in employees:
+        with st.expander(f"{emp['name']} - {emp['department']}", expanded=True):
+            st.markdown(f"**Code employé :** {emp['code']}")
+            st.markdown(f"**Département :** {emp['department']}")
+
+            selected_emp_themes = st.multiselect(
+                f"Thèmes prioritaires pour {emp['name']} :",
+                PSG_THEMES,
+                max_selections=3,
+                key=f"themes_{emp['code']}"
+            )
+
+            other_emp_themes = st.text_area(
+                f"Autre(s) besoin(s) spécifique(s) pour {emp['name']} :",
+                key=f"other_{emp['code']}"
+            )
+
+            employee_training_needs.append({
+                "employee_code": emp["code"],
+                "employee_name": emp["name"],
+                "employee_department": emp["department"],
+                "selected_themes": selected_emp_themes,
+                "other_themes": other_emp_themes
+            })
+
+    st.divider()
 
     if st.button("Soumettre mes réponses"):
-        if len(leader_themes) == 0 or len(team_themes) == 0:
-            st.warning("Veuillez sélectionner au moins un thème pour vous-même et pour votre équipe.")
+        if len(leader_themes) == 0:
+            st.warning("Veuillez sélectionner au moins un thème pour vous-même.")
+            return
+
+        incomplete_employees = [
+            emp["employee_name"]
+            for emp in employee_training_needs
+            if len(emp["selected_themes"]) == 0
+        ]
+
+        if incomplete_employees:
+            st.warning(
+                "Veuillez sélectionner au moins un thème pour chaque employé. "
+                "Employés incomplets : " + ", ".join(incomplete_employees)
+            )
             return
 
         data = {
             "leader_selected_themes": leader_themes,
             "leader_other_themes": leader_other,
-            "team_selected_themes": team_themes,
-            "team_other_themes": team_other
+            "employees_training_needs": employee_training_needs
         }
 
         save_response(user, data)
@@ -275,8 +407,10 @@ def main():
     user = st.session_state["user"]
 
     col1, col2 = st.columns([4, 1])
+
     with col1:
         st.caption(f"Connecté : {user['name']}")
+
     with col2:
         if st.button("Déconnexion"):
             st.session_state.clear()
@@ -284,8 +418,10 @@ def main():
 
     if user["role"] == "psg":
         render_psg_form(user)
+
     elif user["role"] == "director":
         render_director_form(user)
+
     elif user["role"] == "admin":
         render_admin_dashboard()
 
