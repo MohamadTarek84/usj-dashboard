@@ -3063,7 +3063,7 @@ def page_other_questions():
         }
         selected_other_question_label = st.selectbox(
             "Choisir une question complémentaire",
-            options=list(question_options.keys())
+            options=list(question_options.keys()),
             key="other_question_dropdown"
         )
         selected_other_question = question_options[selected_other_question_label]
