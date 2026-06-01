@@ -3110,7 +3110,7 @@ def page_other_questions():
     selected_category_label = classify_other_question(selected_other_question, selected_series)
     dependency_label = clean_other_question_label(parent_col) if parent_col else "Aucune condition"
 
-        if selected_other_question.startswith("44_"):
+    if selected_other_question.startswith("44_"):
         rows = []
 
         for col, label in Q44_FINANCING_ITEMS.items():
