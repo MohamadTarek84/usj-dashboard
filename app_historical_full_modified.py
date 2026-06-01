@@ -942,13 +942,8 @@ OTHER_QUESTION_LABELS = {
     "38-Suivez-vous les pages et comptes de la Fédération des Associations des Anciens USJ sur les réseaux sociaux": "38-Suivez-vous les pages et comptes de la Fédération des Associations des Anciens USJ sur les réseaux sociaux ?",
     "39-À quelle fréquence visitez-vous les pages et comptes de la Fédération des Associations des Anciens USJ sur les réseaux sociaux": "39-À quelle fréquence visitez-vous les pages et comptes de la Fédération des Associations des Anciens USJ sur les réseaux sociaux ?",
 
-    "44_a- Financé vos études à l’USJ : Parents": "44_a-Comment avez-vous financé vos études à l’USJ ? Parents",
-    "44_b- Financé vos études à l’USJ : Moi-même (emploi)": "44_b-Comment avez-vous financé vos études à l’USJ ? Moi-même par un emploi",
-    "44_c- Financé vos études à l’USJ : Bourse accordée par l'USJ sur bases de critères sociaux (Service social)": "44_c-Comment avez-vous financé vos études à l’USJ ? Bourse USJ sur critères sociaux",
-    "44_d- Financé vos études à l’USJ : Bourse accordée par l'USJ sur bases de critères non sociaux": "44_d-Comment avez-vous financé vos études à l’USJ ? Bourse USJ sur critères non sociaux",
-    "44_e- Financé vos études à l’USJ : Autre bourse": "44_e-Comment avez-vous financé vos études à l’USJ ? Autre bourse",
-    "44_f- Financé vos études à l’USJ : Prêt USJ": "44_f-Comment avez-vous financé vos études à l’USJ ? Prêt USJ",
-    "44_g- Financé vos études à l’USJ : Autre prêt": "44_g-Comment avez-vous financé vos études à l’USJ ? Autre prêt",
+    "44_a- Financé vos études à l’USJ : Parents": "44-Comment avez-vous financé vos études à l’USJ ?",
+  
 }
 
 
@@ -2796,22 +2791,45 @@ def get_other_question_columns(original_data):
     """Return all survey questions not already used in the main indicators/components."""
     excluded = get_excluded_non_question_columns().union(get_used_dashboard_question_columns())
     candidate_cols = []
+
     for col in original_data.columns:
         col_str = str(col).strip()
         col_norm = normalize_question_key(col_str)
+
         if col_str in excluded:
             continue
+
         if col_norm in {"faculte_institut", "faculte institut", "faculte_institut_g", "faculty", "faculte", "institut"}:
             continue
+
         if "faculte_institut" in col_norm or col_norm.startswith("faculte institut"):
             continue
+
+        # Keep only one dropdown item for Q44 financing.
+        # 44_a is used as the representative option, while the chart uses all Q44 items.
+        if any(col_norm.startswith(normalize_question_key(prefix)) for prefix in [
+            "44_b-", "44_c-", "44_d-", "44_e-", "44_f-", "44_g-"
+        ]):
+            continue
+
         if col_str.startswith("Score "):
             continue
+
         if original_data[col].dropna().empty:
             continue
+
         if not is_probable_survey_question(col_str):
             continue
+
         candidate_cols.append(col_str)
+
+    import re
+
+    def sort_key(x):
+        m = re.match(r"^\s*(\d+)", str(x))
+        return (int(m.group(1)) if m else 9999, str(x))
+
+    return sorted(candidate_cols, key=sort_key)
 
     import re
     def sort_key(x):
