@@ -844,6 +844,87 @@ SCORE_LABELS = {
     "Score frais / autres universités": "Frais / autres universités",
 }
 
+OTHER_QUESTION_LABELS = {
+    "3- ‎Dans votre institution (Faculté, Institut ou École), vous a-t-on assigné un tuteur ?": "3-Dans votre institution, vous a-t-on assigné un tuteur ?",
+    "6- Etudié à l'étranger dans le cadre du programme d'échange ou d'une période de mobilité sortante durant votre parcours à l’USJ": "6-Avez-vous étudié à l'étranger dans le cadre d’un programme d’échange ou d’une mobilité sortante durant votre parcours à l’USJ ?",
+
+    "7_a- Présentation du CV": "7_a-Avez-vous été formé à l’USJ à : Présentation du CV",
+    "7_b- Recherche en ligne": "7_b-Avez-vous été formé à l’USJ à : Recherche d’emploi en ligne",
+    "7_c- Entretien d'embauche": "7_c-Avez-vous été formé à l’USJ à : Entretien d’embauche",
+
+    "8-Membre de la platforme interactive de L’USJ et la Fédération des Associations des Anciens lancé pour fédérer et animer le réseau des Alumni": "8-Êtes-vous membre de la plateforme interactive de l’USJ et de la Fédération des Associations des Anciens, lancée pour fédérer et animer le réseau Alumni ?",
+
+    "9- Avez-vous réalisé un stage durant votre parcours à l’USJ ?": "9-Avez-vous réalisé un stage durant votre parcours à l’USJ ?",
+    "9a- L’université vous aidé à trouver un stage": "9a-L’Université vous a-t-elle aidé à trouver un stage ?",
+    "9b_a- Canaux d’accès à votre stage : Service de l’insertion professionnelle de l’USJ": "9b_a-Par quel canal avez-vous accédé à votre stage ? Service de l’insertion professionnelle de l’USJ",
+    "9b_b- Canaux d’accès à votre stage : Institution USJ / enseignants": "9b_b-Par quel canal avez-vous accédé à votre stage ? Institution USJ / enseignants",
+    "9b_c- Canaux d’accès à votre stage : Réseau des anciens – Plateforme AlumniUSJ": "9b_c-Par quel canal avez-vous accédé à votre stage ? Réseau des anciens / Plateforme AlumniUSJ",
+    "9b_d- Canaux d’accès à votre stage : Participation à des concours USJ": "9b_d-Par quel canal avez-vous accédé à votre stage ? Participation à des concours USJ",
+    "9b_e- Canaux d’accès à votre stage : Sites Web de l'entreprise": "9b_e-Par quel canal avez-vous accédé à votre stage ? Sites web de l’entreprise",
+    "9b_f- Canaux d’accès à votre stage :Médias sociaux": "9b_f-Par quel canal avez-vous accédé à votre stage ? Médias sociaux",
+    "9b_g- Canaux d’accès à votre stage : Services de recrutement / Portails de recrutement": "9b_g-Par quel canal avez-vous accédé à votre stage ? Services ou portails de recrutement",
+    "9b_h- Canaux d’accès à votre stage : Relations personnelles et familiales": "9b_h-Par quel canal avez-vous accédé à votre stage ? Relations personnelles et familiales",
+    "9c- Êtes-vous satisfait de la qualité de votre stage ?": "9c-Êtes-vous satisfait de la qualité de votre stage ?",
+
+    "9d_a- L'expérience de stage a permis d'améliorer : La capacité à travailler en équipe": "9d_a-L’expérience de stage a-t-elle permis d’améliorer la capacité à travailler en équipe ?",
+    "9d_b- L'expérience de stage a permis d'améliorer : L'appréciation des valeurs éthiques": "9d_b-L’expérience de stage a-t-elle permis d’améliorer l’appréciation des valeurs éthiques ?",
+    "9d_c- L'expérience de stage a permis d'améliorer :Le développement professionnel": "9d_c-L’expérience de stage a-t-elle permis d’améliorer le développement professionnel ?",
+    "9d_d- L'expérience de stage a permis d'améliorer :Les compétences en matière de gestion du temps": "9d_d-L’expérience de stage a-t-elle permis d’améliorer les compétences en gestion du temps ?",
+    "9d_e- L'expérience de stage a permis d'améliorer :Le lien entre la théorie et la pratique": "9d_e-L’expérience de stage a-t-elle permis de renforcer le lien entre la théorie et la pratique ?",
+
+    "11-Avez-vous pris des cours d’anglais à l’USJ et comment évaluez-vous votre apprentissage ?": "11-Avez-vous pris des cours d’anglais à l’USJ et comment évaluez-vous votre apprentissage ?",
+    "12- Avez-vous contacté le Service de l’insertion professionnelle de l’USJ ?": "12-Avez-vous contacté le Service de l’insertion professionnelle de l’USJ ?",
+    "13-Avez-vous participé au Job Fair organisé par le Service ?": "13-Avez-vous participé au Job Fair organisé par le Service de l’insertion professionnelle ?",
+
+    "14_a- Recherche d’emploi": "14_a-Avez-vous suivi une formation du Service de l’insertion professionnelle sur : Recherche d’emploi",
+    "14_b- Compétences en entretien": "14_b-Avez-vous suivi une formation du Service de l’insertion professionnelle sur : Compétences en entretien",
+    "14_c- Compétences en communication": "14_c-Avez-vous suivi une formation du Service de l’insertion professionnelle sur : Compétences en communication",
+    "14_d- Compétences en présentation": "14_d-Avez-vous suivi une formation du Service de l’insertion professionnelle sur : Compétences en présentation",
+    "14_e- Compétences en leadership": "14_e-Avez-vous suivi une formation du Service de l’insertion professionnelle sur : Compétences en leadership",
+    "14_f- Connaissance de soi / prise de décision de carrière": "14_f-Avez-vous suivi une formation du Service de l’insertion professionnelle sur : Connaissance de soi et prise de décision de carrière",
+    "14_g- Démarrez votre propre entreprise": "14_g-Avez-vous suivi une formation du Service de l’insertion professionnelle sur : Démarrer votre propre entreprise",
+    "14_h- Comment créer et gérer une «persona» publique sur les réseaux sociaux": "14_h-Avez-vous suivi une formation du Service de l’insertion professionnelle sur : Créer et gérer une persona publique sur les réseaux sociaux",
+    "14_i- Créez votre propre blog": "14_i-Avez-vous suivi une formation du Service de l’insertion professionnelle sur : Créer votre propre blog",
+
+    "15-De manière générale, êtes-vous satisfait des formations que vous avez suivies au Service de l’insertion professionnelle de l’USJ ?": "15-De manière générale, êtes-vous satisfait des formations suivies au Service de l’insertion professionnelle de l’USJ ?",
+
+    "16_a-À l’USJ, dans la même discipline": "16_a-Envisagez-vous de poursuivre vos études à l’USJ dans la même discipline ?",
+    "16_b-À l’USJ, dans une autre discipline": "16_b-Envisagez-vous de poursuivre vos études à l’USJ dans une autre discipline ?",
+    "16_c-Dans une autre université au Liban": "16_c-Envisagez-vous de poursuivre vos études dans une autre université au Liban ?",
+    "16_d- Dans une autre université à l'étranger": "16_d-Envisagez-vous de poursuivre vos études dans une autre université à l’étranger ?",
+
+    "17- Exercer une activité rémunérée": "17-Avez-vous exercé une activité rémunérée durant votre parcours à l’USJ ?",
+
+    "21_a- Evaluation: La réputation de l’USJ m’a aidé à trouver un travail dont je suis satisfait": "21_a-Dans quelle mesure la réputation de l’USJ vous a-t-elle aidé à trouver un travail dont vous êtes satisfait ?",
+    "21_b- Evaluation: Mon diplôme m’a aidé à trouver un travail dont je suis satisfait": "21_b-Dans quelle mesure votre diplôme vous a-t-il aidé à trouver un travail dont vous êtes satisfait ?",
+    "21_c- Evaluation: Mon travail actuel est en adéquation avec mon domaine de formation": "21_c-Dans quelle mesure votre travail actuel est-il en adéquation avec votre domaine de formation ?",
+
+    "22-Prévoyez-vous de quitter le Liban ?": "22-Prévoyez-vous de quitter le Liban ?",
+
+    "24- Bénéficier d'une aide financière accordée par le Service social sur base de critères sociaux": "24-Avez-vous bénéficié d’une aide financière accordée par le Service social sur base de critères sociaux ?",
+    "24a- Dans quelle mesure en êtes-vous satisfait ?": "24a-Dans quelle mesure êtes-vous satisfait de cette aide financière ?",
+    "25- Bénéficier d'une bourse accordée par l’USJ sur base de critères non sociaux": "25-Avez-vous bénéficié d’une bourse accordée par l’USJ sur base de critères non sociaux ?",
+    "25a- Dans quelle mesure en êtes-vous satisfait ?": "25a-Dans quelle mesure êtes-vous satisfait de cette bourse ?",
+
+    "30_a- Au niveau de la Faculté / du Département": "30_a-Comment évaluez-vous la communication au niveau de la Faculté ou du Département ?",
+    "30_b- Au niveau de l’Université": "30_b-Comment évaluez-vous la communication au niveau de l’Université ?",
+
+    "31-Êtes-vous étudiant en situation de handicap ?": "31-Êtes-vous étudiant en situation de handicap ?",
+
+    "35-Consultez-vous le site de l'USJ ?": "35-Consultez-vous le site web de l’USJ ?",
+    "36-Suivez-vous les pages et comptes USJ sur les réseaux sociaux (Facebook, Linkedln, Twitter, YouTube, Instagram, …) ?": "36-Suivez-vous les pages et comptes de l’USJ sur les réseaux sociaux ?",
+    "37-À quelle fréquence visitez-vous les pages et comptes USJ sur les réseaux sociaux": "37-À quelle fréquence visitez-vous les pages et comptes de l’USJ sur les réseaux sociaux ?",
+    "38-Suivez-vous les pages et comptes de la Fédération des Associations des Anciens USJ sur les réseaux sociaux": "38-Suivez-vous les pages et comptes de la Fédération des Associations des Anciens USJ sur les réseaux sociaux ?",
+    "39-À quelle fréquence visitez-vous les pages et comptes de la Fédération des Associations des Anciens USJ sur les réseaux sociaux": "39-À quelle fréquence visitez-vous les pages et comptes de la Fédération des Associations des Anciens USJ sur les réseaux sociaux ?",
+
+    "44_a- Financé vos études à l’USJ : Parents": "44_a-Comment avez-vous financé vos études à l’USJ ? Parents",
+    "44_b- Financé vos études à l’USJ : Moi-même (emploi)": "44_b-Comment avez-vous financé vos études à l’USJ ? Moi-même par un emploi",
+    "44_c- Financé vos études à l’USJ : Bourse accordée par l'USJ sur bases de critères sociaux (Service social)": "44_c-Comment avez-vous financé vos études à l’USJ ? Bourse USJ sur critères sociaux",
+    "44_d- Financé vos études à l’USJ : Bourse accordée par l'USJ sur bases de critères non sociaux": "44_d-Comment avez-vous financé vos études à l’USJ ? Bourse USJ sur critères non sociaux",
+    "44_e- Financé vos études à l’USJ : Autre bourse": "44_e-Comment avez-vous financé vos études à l’USJ ? Autre bourse",
+    "44_f- Financé vos études à l’USJ : Prêt USJ": "44_f-Comment avez-vous financé vos études à l’USJ ? Prêt USJ",
+    "44_g- Financé vos études à l’USJ : Autre prêt": "44_g-Comment avez-vous financé vos études à l’USJ ? Autre prêt",
+}
 
 def build_year_summary(data, q43):
     rows = []
