@@ -914,9 +914,9 @@ OTHER_QUESTION_LABELS = {
 
     "17- Exercer une activité rémunérée": "17-Avez-vous exercé une activité rémunérée durant votre parcours à l’USJ ?",
 
-    "21_a- Evaluation: La réputation de l’USJ m’a aidé à trouver un travail dont je suis satisfait": "21_a-Dans quelle mesure la réputation de l’USJ vous a-t-elle aidé à trouver un travail dont vous êtes satisfait ?",
-    "21_b- Evaluation: Mon diplôme m’a aidé à trouver un travail dont je suis satisfait": "21_b-Dans quelle mesure votre diplôme vous a-t-il aidé à trouver un travail dont vous êtes satisfait ?",
-    "21_c- Evaluation: Mon travail actuel est en adéquation avec mon domaine de formation": "21_c-Dans quelle mesure votre travail actuel est-il en adéquation avec votre domaine de formation ?",
+    "21_a- Evaluation: La réputation de l’USJ m’a aidé à trouver un travail dont je suis satisfait": "21_a- Evaluation: La réputation de l’USJ m’a aidé à trouver un travail dont je suis satisfait",
+    "21_b- Evaluation: Mon diplôme m’a aidé à trouver un travail dont je suis satisfait": "21_b- Evaluation: Mon diplôme m’a aidé à trouver un travail dont je suis satisfait",
+    "21_c- Evaluation: Mon travail actuel est en adéquation avec mon domaine de formation": "21_c- Evaluation: Mon travail actuel est en adéquation avec mon domaine de formation",
 
     "22-Prévoyez-vous de quitter le Liban ?": "22-Prévoyez-vous de quitter le Liban ?",
 
