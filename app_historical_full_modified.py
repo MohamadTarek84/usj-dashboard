@@ -3006,7 +3006,15 @@ def summarize_other_questions_for_report(original_data, coded_filter_data, max_q
     out = out.sort_values(["Priorité", "N valide", "Pourcentage"], ascending=[False, False, False]).head(max_questions)
     return out.drop(columns=["Priorité"], errors="ignore")
 
-
+    Q44_FINANCING_ITEMS = {
+    "44_a- Financé vos études à l’USJ : Parents": "Parents",
+    "44_b- Financé vos études à l’USJ : Moi-même (emploi)": "Moi-même par un emploi",
+    "44_c- Financé vos études à l’USJ : Bourse accordée par l'USJ sur bases de critères sociaux (Service social)": "Bourse USJ sur critères sociaux",
+    "44_d- Financé vos études à l’USJ : Bourse accordée par l'USJ sur bases de critères non sociaux": "Bourse USJ sur critères non sociaux",
+    "44_e- Financé vos études à l’USJ : Autre bourse": "Autre bourse",
+    "44_f- Financé vos études à l’USJ : Prêt USJ": "Prêt USJ",
+    "44_g- Financé vos études à l’USJ : Autre prêt": "Autre prêt",
+}
 
 
 def page_other_questions():
@@ -3084,6 +3092,70 @@ def page_other_questions():
     selected_category_label = classify_other_question(selected_other_question, selected_series)
     dependency_label = clean_other_question_label(parent_col) if parent_col else "Aucune condition"
 
+    if selected_other_question.startswith("44_"):
+    rows = []
+
+    for col, label in Q44_FINANCING_ITEMS.items():
+        if col in df_original.columns:
+            responses, eligible_index, non_applicable_n, parent_col = get_applicable_response_series(
+                df_original,
+                df_filtered,
+                col
+            )
+
+            valid = responses.dropna()
+            total = len(valid)
+
+            yes_n = valid.astype(str).str.strip().str.lower().eq("oui").sum()
+            no_n = valid.astype(str).str.strip().str.lower().eq("non").sum()
+
+            if total > 0:
+                rows.append({
+                    "Modalité": label,
+                    "Oui (%)": yes_n / total * 100,
+                    "Non (%)": no_n / total * 100,
+                    "N valide": total
+                })
+
+    q44_df = pd.DataFrame(rows)
+
+    q44_long = q44_df.melt(
+        id_vars=["Modalité", "N valide"],
+        value_vars=["Oui (%)", "Non (%)"],
+        var_name="Réponse",
+        value_name="Pourcentage"
+    )
+
+    fig_q44 = px.bar(
+        q44_long,
+        x="Modalité",
+        y="Pourcentage",
+        color="Réponse",
+        text="Pourcentage",
+        barmode="group",
+        color_discrete_map={
+            "Oui (%)": USJ_GREEN,
+            "Non (%)": USJ_DARK_RED
+        },
+        hover_data={"N valide": True}
+    )
+
+    fig_q44.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
+    fig_q44.update_layout(
+        title="Modes de financement des études à l’USJ",
+        xaxis_title="Mode de financement",
+        yaxis_title="Pourcentage des réponses valides",
+        legend_title="Réponse",
+        yaxis=dict(range=[0, 100])
+    )
+
+    theme_layout(fig_q44, height=560)
+    st.plotly_chart(fig_q44, use_container_width=True, config={"displayModeBar": False})
+
+    return
+
+
+    
     k1, k2, k3, k4 = st.columns(4)
     with k1:
         insight_card("Catégorie", selected_category_label, "Lecture thématique", USJ_BLUE)
