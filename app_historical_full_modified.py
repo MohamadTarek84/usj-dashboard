@@ -3111,7 +3111,7 @@ def page_other_questions():
     dependency_label = clean_other_question_label(parent_col) if parent_col else "Aucune condition"
 
     if selected_other_question.startswith("44_"):
-    rows = []
+        rows = []
 
     for col, label in Q44_FINANCING_ITEMS.items():
         if col in df_original.columns:
