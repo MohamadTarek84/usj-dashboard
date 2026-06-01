@@ -914,9 +914,9 @@ OTHER_QUESTION_LABELS = {
 
     "17- Exercer une activité rémunérée": "17-Avez-vous exercé une activité rémunérée durant votre parcours à l’USJ ?",
 
-    "21_a- Evaluation: La réputation de l’USJ m’a aidé à trouver un travail dont je suis satisfait": "21_a- Evaluation: La réputation de l’USJ m’a aidé à trouver un travail dont je suis satisfait",
-    "21_b- Evaluation: Mon diplôme m’a aidé à trouver un travail dont je suis satisfait": "21_b- Evaluation: Mon diplôme m’a aidé à trouver un travail dont je suis satisfait",
-    "21_c- Evaluation: Mon travail actuel est en adéquation avec mon domaine de formation": "21_c- Evaluation: Mon travail actuel est en adéquation avec mon domaine de formation",
+    "21_a- Evaluation: La réputation de l’USJ m’a aidé à trouver un travail dont je suis satisfait": "21_a-Dans quelle mesure la réputation de l’USJ vous a-t-elle aidé à trouver un travail dont vous êtes satisfait ?",
+    "21_b- Evaluation: Mon diplôme m’a aidé à trouver un travail dont je suis satisfait": "21_b-Dans quelle mesure votre diplôme vous a-t-il aidé à trouver un travail dont vous êtes satisfait ?",
+    "21_c- Evaluation: Mon travail actuel est en adéquation avec mon domaine de formation": "21_c-Dans quelle mesure votre travail actuel est-il en adéquation avec votre domaine de formation ?",
 
     "22-Prévoyez-vous de quitter le Liban ?": "22-Prévoyez-vous de quitter le Liban ?",
 
@@ -2855,6 +2855,86 @@ def build_other_question_distribution(original_data, coded_filter_data, question
 
 
 
+def clean_question_for_narrative(question_label):
+    """Return a readable survey statement/question without technical prefixes."""
+    text = str(question_label).strip()
+    text = re.sub(r"^\s*\d+[a-zA-Z_]*\s*[-–—]\s*", "", text)
+    text = re.sub(r"^\s*Evaluation\s*:\s*", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
+
+
+def build_other_question_narrative(question_label, overall_distribution, n_valid, eligible_n, parent_col=None, dependency_label=None, non_applicable_n=0):
+    """Build a professional, data-driven narrative for complementary questions."""
+    if overall_distribution is None or overall_distribution.empty:
+        return "Aucune distribution exploitable n’est disponible pour cette question avec les filtres sélectionnés."
+
+    dist = overall_distribution.sort_values("Pourcentage", ascending=False).copy()
+    question_text = clean_question_for_narrative(question_label)
+    is_question = question_text.endswith("?")
+    respondent_word = "répondants concernés" if parent_col else "répondants"
+
+    first = dist.iloc[0]
+    if is_question:
+        opening = (
+            f"À la question <b>« {html_escape(question_text)} »</b>, "
+            f"<b>{first['Pourcentage']:.2f}%</b> des {respondent_word} ont répondu "
+            f"<b>« {html_escape(first['Réponse'])} »</b>"
+        )
+    else:
+        opening = (
+            f"Pour l’énoncé <b>« {html_escape(question_text)} »</b>, "
+            f"<b>{first['Pourcentage']:.2f}%</b> des {respondent_word} ont indiqué "
+            f"<b>« {html_escape(first['Réponse'])} »</b>"
+        )
+
+    follow_parts = []
+    for _, row in dist.iloc[1:4].iterrows():
+        follow_parts.append(
+            f"<b>{row['Pourcentage']:.2f}%</b> <b>« {html_escape(row['Réponse'])} »</b>"
+        )
+
+    if len(follow_parts) == 1:
+        continuation = f", suivis de {follow_parts[0]}."
+    elif len(follow_parts) == 2:
+        continuation = f", suivis de {follow_parts[0]} et de {follow_parts[1]}."
+    elif len(follow_parts) >= 3:
+        continuation = f", suivis de {follow_parts[0]}, de {follow_parts[1]} et de {follow_parts[2]}."
+    else:
+        continuation = "."
+
+    residual_text = ""
+    if len(dist) > 4:
+        residual = dist.iloc[4:]["Pourcentage"].sum()
+        residual_text = f" Les autres modalités regroupent <b>{residual:.2f}%</b> des réponses valides."
+
+    base_text = (
+        f" La lecture repose sur <b>{n_valid}</b> réponses valides"
+        f" sur une base applicable de <b>{eligible_n}</b> répondants."
+    )
+
+    conditional_text = ""
+    if parent_col:
+        conditional_text = (
+            f" Cette base est conditionnelle : elle exclut <b>{non_applicable_n}</b> répondants non concernés par la question filtre "
+            f"<b>« {html_escape(clean_question_for_narrative(dependency_label or parent_col))} »</b>."
+        )
+
+    dominant_share = float(first["Pourcentage"]) if pd.notna(first["Pourcentage"]) else np.nan
+    if pd.notna(dominant_share) and dominant_share >= 50:
+        decision_sentence = (
+            " Cette concentration autour de la modalité dominante indique une tendance relativement claire, "
+            "qui peut être mobilisée comme signal prioritaire dans l’analyse du périmètre sélectionné."
+        )
+    else:
+        decision_sentence = (
+            " La distribution montre une répartition relativement partagée des réponses, ce qui invite à interpréter le résultat avec nuance "
+            "et à examiner les écarts par année, faculté ou niveau lorsque ces filtres sont utilisés."
+        )
+
+    return opening + continuation + residual_text + base_text + conditional_text + decision_sentence
+
+
 def summarize_other_questions_for_report(original_data, coded_filter_data, max_questions=14):
     """Compact executive summary of complementary questions for the printable report.
 
@@ -2992,7 +3072,7 @@ def page_other_questions():
     with k3:
         insight_card("Données manquantes", safe_pct(missing_pct), "Parmi les répondants concernés", USJ_ORANGE if pd.notna(missing_pct) and missing_pct > 10 else USJ_GREEN)
     with k4:
-        insight_card("Nombre des modalités", unique_n, "Réponses distinctes", USJ_GOLD)
+        insight_card("Non applicable", non_applicable_n, "Exclus du dénominateur", USJ_BLUE_2)
 
     if eligible_n == 0:
         st.warning("Aucun répondant n’est applicable pour cette question avec les filtres sélectionnés.")
@@ -3074,12 +3154,20 @@ def page_other_questions():
                 f"tandis que <b>{non_applicable_n}</b> répondants sont considérés comme non applicables et exclus du taux de non-réponse."
             )
 
+        narrative_text = build_other_question_narrative(
+            selected_other_question_label,
+            overall.sort_values("Pourcentage", ascending=False),
+            n_valid=n_valid,
+            eligible_n=eligible_n,
+            parent_col=parent_col,
+            dependency_label=dependency_label,
+            non_applicable_n=non_applicable_n
+        )
+
         summary_box(
             f"""
             <span style='font-size:20px; font-weight:800; color:{USJ_BLUE};'>Lecture décisionnelle</span><br>
-            Pour cette question complémentaire, la réponse dominante est <b>{html_escape(top_resp['Réponse'])}</b>, avec
-            <b>{top_resp['Pourcentage']:.2f}%</b> des réponses valides.{second_text}{conditional_text}
-            Cette information apporte un éclairage contextuel aux indicateurs principaux et peut expliquer certains résultats observés dans les dimensions de satisfaction.
+            {narrative_text}
             """,
             color=USJ_BLUE,
             background="#F7F9FC"
