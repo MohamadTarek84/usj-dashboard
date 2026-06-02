@@ -1603,6 +1603,8 @@ def render_ranked_section_header(title, help_text, color_class="blue"):
     </div>
     """, unsafe_allow_html=True)
 
+def submit_login_code():
+    st.session_state["enter_login"] = True
 
 def login_page():
     st.markdown("""
@@ -1620,10 +1622,17 @@ def login_page():
             "Identifiant reçu par email",
             type="default",
             placeholder="Exemple : PSG001, DD001 ou ADMIN2032",
-            key="access_code"
+            key="access_code",
+            on_change=submit_login_code
         )
 
-        if st.button("Accéder au questionnaire", use_container_width=True):
+
+        enter_form = st.button(
+            "Accéder au questionnaire",
+            use_container_width=True
+        ) or st.session_state.pop("enter_login", False)
+
+        if enter_form:
             cleaned_code = code.strip().upper()
 
             if cleaned_code in DEMO_USERS:
