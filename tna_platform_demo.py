@@ -6,6 +6,7 @@ from datetime import datetime
 import pandas as pd
 import os
 import base64
+import textwrap
 
 DB_NAME = "tna_demo.db"
 
@@ -636,7 +637,6 @@ def apply_style():
     }}
 
     @media print {{
-        .platform-header,
         section[data-testid="stSidebar"],
         div[data-testid="stToolbar"],
         div[data-testid="stDecoration"],
@@ -684,7 +684,6 @@ def apply_style():
     }}
 
     @media print {{
-        .platform-header,
         section[data-testid="stSidebar"],
         div[data-testid="stToolbar"],
         div[data-testid="stDecoration"],
@@ -733,6 +732,347 @@ def apply_style():
 
         body {{
             background: white !important;
+        }}
+    }}
+
+    
+    .employee-grid-print {{
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 16px;
+        align-items: start;
+    }}
+
+    .employee-print-page {{
+        margin-bottom: 26px;
+        page-break-inside: avoid;
+        break-inside: avoid;
+    }}
+
+    .employee-main-card {{
+        margin-bottom: 12px;
+    }}
+
+    .employee-summary-card {{
+        margin-bottom: 14px;
+    }}
+
+    .empty-choice {{
+        color: #6B7688;
+        font-weight: 600;
+        padding: 8px 0;
+    }}
+
+    @media print {{
+        section[data-testid="stSidebar"],
+        div[data-testid="stToolbar"],
+        div[data-testid="stDecoration"],
+        div[data-testid="stStatusWidget"],
+        div[data-testid="stDownloadButton"],
+        iframe,
+        button,
+        .admin-action-button,
+        .no-print,
+        div[data-testid="stExpander"],
+        [data-testid="stMetric"],
+        hr {{
+            display: none !important;
+        }}
+
+        .platform-header {{
+            display: flex !important;
+            box-shadow: none !important;
+            border: 1px solid #DDE5F0 !important;
+            margin-bottom: 12px !important;
+            page-break-after: avoid !important;
+        }}
+
+        .main-hero {{
+            box-shadow: none !important;
+            margin-bottom: 12px !important;
+            page-break-after: avoid !important;
+        }}
+
+        .block-container {{
+            max-width: 100% !important;
+            padding: 0 !important;
+        }}
+
+        body,
+        .stApp {{
+            background: white !important;
+        }}
+
+        .employee-print-page {{
+            page-break-before: always !important;
+            break-before: page !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            min-height: 92vh !important;
+            box-sizing: border-box !important;
+            padding-top: 8px !important;
+        }}
+
+        .employee-print-page:first-of-type {{
+            page-break-before: auto !important;
+            break-before: auto !important;
+        }}
+
+        .employee-grid-print {{
+            display: grid !important;
+            grid-template-columns: 1fr 1fr 1fr !important;
+            gap: 12px !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }}
+
+        .visual-column,
+        .priority-card,
+        .card {{
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            box-shadow: none !important;
+        }}
+
+        .visual-column {{
+            min-height: auto !important;
+        }}
+
+        .priority-card {{
+            margin-bottom: 7px !important;
+        }}
+
+        .employee-main-card,
+        .employee-summary-card {{
+            page-break-after: avoid !important;
+            break-after: avoid !important;
+        }}
+
+        h1, h2, h3 {{
+            page-break-after: avoid !important;
+            break-after: avoid !important;
+        }}
+    }}
+
+    
+    @media print {{
+        .no-print,
+        section[data-testid="stSidebar"],
+        div[data-testid="stToolbar"],
+        div[data-testid="stDecoration"],
+        div[data-testid="stStatusWidget"],
+        div[data-testid="stDownloadButton"],
+        iframe,
+        button,
+        .admin-action-button,
+        div[data-testid="stExpander"],
+        [data-testid="stMetric"],
+        hr {{
+            display: none !important;
+        }}
+
+        .platform-header {{
+            display: flex !important;
+            box-shadow: none !important;
+            border: 1px solid #DDE5F0 !important;
+            margin-bottom: 12px !important;
+            page-break-after: avoid !important;
+        }}
+
+        .employee-print-page {{
+            page-break-before: always !important;
+            break-before: page !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            min-height: 92vh !important;
+            box-sizing: border-box !important;
+        }}
+
+        .employee-print-page:first-of-type {{
+            page-break-before: auto !important;
+            break-before: auto !important;
+        }}
+
+        .employee-grid-print,
+        .visual-column,
+        .priority-card,
+        .card {{
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }}
+    }}
+
+    
+    /* FINAL PRINT FIX */
+    @media print {{
+        .no-print,
+        section[data-testid="stSidebar"],
+        div[data-testid="stToolbar"],
+        div[data-testid="stDecoration"],
+        div[data-testid="stStatusWidget"],
+        div[data-testid="stDownloadButton"],
+        iframe,
+        button,
+        .admin-action-button,
+        div[data-testid="stExpander"],
+        [data-testid="stMetric"],
+        hr {{
+            display: none !important;
+        }}
+
+        .platform-header {{
+            display: flex !important;
+            box-shadow: none !important;
+            border: 1px solid #DDE5F0 !important;
+            margin-bottom: 12px !important;
+            page-break-after: avoid !important;
+            break-after: avoid !important;
+        }}
+
+        .main-hero {{
+            display: block !important;
+            box-shadow: none !important;
+            margin-bottom: 12px !important;
+            page-break-after: avoid !important;
+            break-after: avoid !important;
+        }}
+
+        .block-container {{
+            max-width: 100% !important;
+            padding: 0 !important;
+        }}
+
+        body,
+        .stApp {{
+            background: white !important;
+        }}
+
+        .employee-print-page {{
+            page-break-before: always !important;
+            break-before: page !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            min-height: 90vh !important;
+            box-sizing: border-box !important;
+            padding-top: 8px !important;
+        }}
+
+        .employee-print-page:first-of-type {{
+            page-break-before: auto !important;
+            break-before: auto !important;
+        }}
+
+        .employee-grid-print {{
+            display: grid !important;
+            grid-template-columns: 1fr 1fr 1fr !important;
+            gap: 12px !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }}
+
+        .visual-column,
+        .priority-card,
+        .card,
+        .employee-main-card,
+        .employee-summary-card {{
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            box-shadow: none !important;
+        }}
+
+        h1, h2, h3 {{
+            page-break-after: avoid !important;
+            break-after: avoid !important;
+        }}
+    }}
+
+    
+    /* FINAL PDF PRINT HEADER FIX */
+    @media print {{
+        .platform-header {{
+            display: flex !important;
+            visibility: visible !important;
+            box-shadow: none !important;
+            border: 1px solid #DDE5F0 !important;
+            border-radius: 12px !important;
+            margin-bottom: 16px !important;
+            padding: 12px 18px !important;
+            page-break-after: avoid !important;
+            break-after: avoid !important;
+        }}
+
+        .platform-logo {{
+            display: block !important;
+            visibility: visible !important;
+            max-height: 68px !important;
+            max-width: 145px !important;
+        }}
+
+        .header-title,
+        .header-subtitle {{
+            display: block !important;
+            visibility: visible !important;
+        }}
+
+        .no-print,
+        section[data-testid="stSidebar"],
+        div[data-testid="stToolbar"],
+        div[data-testid="stDecoration"],
+        div[data-testid="stStatusWidget"],
+        div[data-testid="stDownloadButton"],
+        iframe,
+        button,
+        .admin-action-button,
+        div[data-testid="stExpander"],
+        [data-testid="stMetric"],
+        hr,
+        label,
+        div[data-baseweb="select"],
+        .stSelectbox {{
+            display: none !important;
+            visibility: hidden !important;
+        }}
+
+        .block-container {{
+            max-width: 100% !important;
+            padding: 0 !important;
+        }}
+
+        body,
+        .stApp {{
+            background: white !important;
+        }}
+
+        .main-hero {{
+            box-shadow: none !important;
+            margin-bottom: 14px !important;
+            page-break-after: avoid !important;
+            break-after: avoid !important;
+        }}
+
+        .employee-print-page {{
+            page-break-before: always !important;
+            break-before: page !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            min-height: 90vh !important;
+            box-sizing: border-box !important;
+        }}
+
+        .employee-print-page:first-of-type {{
+            page-break-before: auto !important;
+            break-before: auto !important;
+        }}
+
+        .employee-grid-print,
+        .visual-column,
+        .priority-card,
+        .card,
+        .employee-main-card,
+        .employee-summary-card {{
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            box-shadow: none !important;
         }}
     }}
 
@@ -1441,78 +1781,80 @@ def render_director_form(user):
         st.success("Vos réponses ont été enregistrées avec succès.")
 
 
-def render_employee_visual_cards(employee_name, employee_ranked, director_ranked, final_themes, matched):
-    st.markdown(f"""
-    <div class="card gold-card">
-        <h3 style="margin-top:0; color:#001F5B;">Synthèse visuelle - {employee_name}</h3>
-        <div style="color:#5D697A; font-weight:600;">
-            Comparaison des priorités classées par l’employé, par le Doyen / Directeur, puis sélection finale proposée.
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+def render_employee_visual_cards(employee_name, employee_code, employee_department, employee_ranked, director_ranked, final_themes, matched):
+    def priority_card(css_class, rank_label, theme, badge=None):
+        badge_html = ""
+        if badge:
+            badge_html = f"<div class='priority-badge'>{badge}</div>"
 
-    c1, c2, c3 = st.columns(3)
+        return (
+            f"<div class='priority-card {css_class}'>"
+            f"<div class='priority-rank'>{rank_label}</div>"
+            f"<div class='priority-theme'>{theme}</div>"
+            f"{badge_html}"
+            f"</div>"
+        )
 
-    with c1:
-        st.markdown("""
-        <div class="visual-column visual-employee">
-            <div class="visual-column-title">Choix de l’employé</div>
-        """, unsafe_allow_html=True)
+    employee_cards = "".join([
+        priority_card("employee-card", f"Priorité {i}", theme)
+        for i, theme in enumerate(employee_ranked, start=1)
+    ])
 
-        for i, theme in enumerate(employee_ranked, start=1):
-            st.markdown(f"""
-            <div class="priority-card employee-card">
-                <div class="priority-rank">Priorité {i}</div>
-                <div class="priority-theme">{theme}</div>
-            </div>
-            """, unsafe_allow_html=True)
+    director_cards = "".join([
+        priority_card("director-card", f"Priorité {i}", theme)
+        for i, theme in enumerate(director_ranked, start=1)
+    ])
 
-        if not employee_ranked:
-            st.caption("Aucun choix employé.")
+    final_cards = "".join([
+        priority_card(
+            "final-card",
+            f"Priorité finale {i}",
+            theme,
+            "Thème commun" if theme in matched else "Décision / complément"
+        )
+        for i, theme in enumerate(final_themes, start=1)
+    ])
 
-        st.markdown("</div>", unsafe_allow_html=True)
+    if not employee_cards:
+        employee_cards = "<div class='empty-choice'>Aucun choix employé.</div>"
 
-    with c2:
-        st.markdown("""
-        <div class="visual-column visual-director">
-            <div class="visual-column-title">Choix du Doyen / Directeur</div>
-        """, unsafe_allow_html=True)
+    if not director_cards:
+        director_cards = "<div class='empty-choice'>Aucun choix directeur.</div>"
 
-        for i, theme in enumerate(director_ranked, start=1):
-            st.markdown(f"""
-            <div class="priority-card director-card">
-                <div class="priority-rank">Priorité {i}</div>
-                <div class="priority-theme">{theme}</div>
-            </div>
-            """, unsafe_allow_html=True)
+    if not final_cards:
+        final_cards = "<div class='empty-choice'>Aucun thème final.</div>"
 
-        if not director_ranked:
-            st.caption("Aucun choix directeur.")
+    html = (
+        "<section class='employee-print-page'>"
+        "<div class='card blue-card employee-main-card'>"
+        f"<h3 style='margin-top:0;'>{employee_name}</h3>"
+        f"<span class='pill'>Code : {employee_code}</span>"
+        f"<span class='pill pill-gold'>{employee_department}</span>"
+        "</div>"
+        "<div class='card gold-card employee-summary-card'>"
+        "<h3 style='margin-top:0; color:#001F5B;'>Synthèse visuelle</h3>"
+        "<div style='color:#5D697A; font-weight:600;'>"
+        "Comparaison des priorités classées par l’employé, par le Doyen / Directeur, puis sélection finale proposée."
+        "</div>"
+        "</div>"
+        "<div class='employee-grid-print'>"
+        "<div class='visual-column visual-employee'>"
+        "<div class='visual-column-title'>Choix de l’employé</div>"
+        f"{employee_cards}"
+        "</div>"
+        "<div class='visual-column visual-director'>"
+        "<div class='visual-column-title'>Choix du Doyen / Directeur</div>"
+        f"{director_cards}"
+        "</div>"
+        "<div class='visual-column visual-final'>"
+        "<div class='visual-column-title'>Thèmes finaux proposés</div>"
+        f"{final_cards}"
+        "</div>"
+        "</div>"
+        "</section>"
+    )
 
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    with c3:
-        st.markdown("""
-        <div class="visual-column visual-final">
-            <div class="visual-column-title">Thèmes finaux proposés</div>
-        """, unsafe_allow_html=True)
-
-        for i, theme in enumerate(final_themes, start=1):
-            badge = "Thème commun" if theme in matched else "Décision / complément"
-            st.markdown(f"""
-            <div class="priority-card final-card">
-                <div class="priority-rank">Priorité finale {i}</div>
-                <div class="priority-theme">{theme}</div>
-                <div class="priority-badge">{badge}</div>
-            </div>
-            """, unsafe_allow_html=True)
-
-        if not final_themes:
-            st.caption("Aucun thème final.")
-
-        st.markdown("</div>", unsafe_allow_html=True)
-
-
+    st.markdown(html, unsafe_allow_html=True)
 
 
 def build_admin_flat_exports(df, overrides):
@@ -1547,7 +1889,7 @@ def build_admin_flat_exports(df, overrides):
                     "Thème": theme
                 })
 
-        if row["Profil"] == "director":
+        elif row["Profil"] == "director":
             leader_themes = data.get("leader_ranked_themes", data.get("leader_selected_themes", []))
             for i, theme in enumerate(leader_themes, start=1):
                 theme_rows.append({
@@ -1575,7 +1917,6 @@ def build_admin_flat_exports(df, overrides):
                         "Thème": theme
                     })
 
-    # Build final selected themes per employee using latest responses and admin overrides.
     for code, user in DEMO_USERS.items():
         if user.get("role") != "psg":
             continue
@@ -1706,7 +2047,7 @@ def build_director_report_html(selected_director, df, overrides):
                 font-family: Arial, sans-serif;
                 color: #1B2A41;
                 background: #ffffff;
-                margin: 32px;
+                margin: 28px;
             }}
             .header {{
                 border-bottom: 4px solid #001F5B;
@@ -1756,7 +2097,6 @@ def build_director_report_html(selected_director, df, overrides):
                 min-height: 88vh;
                 box-sizing: border-box;
             }}
-
             .employee-card:first-of-type {{
                 page-break-before: auto;
                 break-before: auto;
@@ -1802,13 +2142,6 @@ def build_director_report_html(selected_director, df, overrides):
                 body {{
                     margin: 14mm;
                 }}
-
-                .header,
-                .leader {{
-                    page-break-inside: avoid;
-                    break-inside: avoid;
-                }}
-
                 .employee-card {{
                     page-break-before: always;
                     break-before: page;
@@ -1816,101 +2149,14 @@ def build_director_report_html(selected_director, df, overrides):
                     break-inside: avoid;
                     min-height: 90vh;
                 }}
-
                 .employee-card:first-of-type {{
                     page-break-before: auto;
                     break-before: auto;
                 }}
             }}
         
-    .admin-action-button {{
-        width: 100%;
-        min-height: 50px;
-        background: #001F5B;
-        color: #ffffff;
-        border: 0;
-        border-radius: 12px;
-        padding: 13px 18px;
-        font-weight: 400;
-        font-size: 15px;
-        cursor: pointer;
-        box-shadow: 0 6px 16px rgba(0,31,91,0.16);
-    }}
-
-    .admin-action-button:hover {{
-        background: #123E7C;
-        color: #ffffff;
-    }}
-
-    div[data-testid="stDownloadButton"] > button {{
-        width: 100% !important;
-        min-height: 50px !important;
-        background: #001F5B !important;
-        color: #ffffff !important;
-        border: 0 !important;
-        border-radius: 12px !important;
-        padding: 13px 18px !important;
-        font-weight: 400 !important;
-        font-size: 15px !important;
-        box-shadow: 0 6px 16px rgba(0,31,91,0.16) !important;
-    }}
-
-    div[data-testid="stDownloadButton"] > button:hover {{
-        background: #123E7C !important;
-        color: #ffffff !important;
-        border: 0 !important;
-    }}
-
     @media print {{
-        .platform-header,
-        section[data-testid="stSidebar"],
-        div[data-testid="stToolbar"],
-        div[data-testid="stDecoration"],
-        div[data-testid="stStatusWidget"],
-        div[data-testid="stDownloadButton"],
-        button,
-        .admin-action-button {{
-            display: none !important;
-        }}
-
-        .main-hero {{
-            box-shadow: none !important;
-            border-radius: 0 !important;
-        }}
-
-        .block-container {{
-            max-width: 100% !important;
-            padding: 0 !important;
-        }}
-    }}
-
-    
-    div[data-testid="stDownloadButton"] > button {{
-        width: 100% !important;
-        min-height: 50px !important;
-        height: 50px !important;
-        background: #001F5B !important;
-        color: #ffffff !important;
-        border: 0 !important;
-        border-radius: 12px !important;
-        padding: 13px 18px !important;
-        font-weight: 400 !important;
-        font-size: 15px !important;
-        line-height: 1.2 !important;
-        box-shadow: 0 6px 16px rgba(0,31,91,0.16) !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-    }}
-
-    div[data-testid="stDownloadButton"] > button:hover {{
-        background: #123E7C !important;
-        color: #ffffff !important;
-        border: 0 !important;
-    }}
-
-    @media print {{
-        .platform-header,
+        .no-print,
         section[data-testid="stSidebar"],
         div[data-testid="stToolbar"],
         div[data-testid="stDecoration"],
@@ -1919,11 +2165,76 @@ def build_director_report_html(selected_director, df, overrides):
         iframe,
         button,
         .admin-action-button,
-        .main-hero,
         div[data-testid="stExpander"],
         [data-testid="stMetric"],
         hr {{
             display: none !important;
+        }}
+
+        .platform-header {{
+            display: flex !important;
+            box-shadow: none !important;
+            border: 1px solid #DDE5F0 !important;
+            margin-bottom: 12px !important;
+            page-break-after: avoid !important;
+        }}
+
+        .employee-print-page {{
+            page-break-before: always !important;
+            break-before: page !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            min-height: 92vh !important;
+            box-sizing: border-box !important;
+        }}
+
+        .employee-print-page:first-of-type {{
+            page-break-before: auto !important;
+            break-before: auto !important;
+        }}
+
+        .employee-grid-print,
+        .visual-column,
+        .priority-card,
+        .card {{
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }}
+    }}
+
+    
+    /* FINAL PRINT FIX */
+    @media print {{
+        .no-print,
+        section[data-testid="stSidebar"],
+        div[data-testid="stToolbar"],
+        div[data-testid="stDecoration"],
+        div[data-testid="stStatusWidget"],
+        div[data-testid="stDownloadButton"],
+        iframe,
+        button,
+        .admin-action-button,
+        div[data-testid="stExpander"],
+        [data-testid="stMetric"],
+        hr {{
+            display: none !important;
+        }}
+
+        .platform-header {{
+            display: flex !important;
+            box-shadow: none !important;
+            border: 1px solid #DDE5F0 !important;
+            margin-bottom: 12px !important;
+            page-break-after: avoid !important;
+            break-after: avoid !important;
+        }}
+
+        .main-hero {{
+            display: block !important;
+            box-shadow: none !important;
+            margin-bottom: 12px !important;
+            page-break-after: avoid !important;
+            break-after: avoid !important;
         }}
 
         .block-container {{
@@ -1931,34 +2242,137 @@ def build_director_report_html(selected_director, df, overrides):
             padding: 0 !important;
         }}
 
-        .card.blue-card {{
-            page-break-before: always !important;
-            break-before: page !important;
-            margin-top: 0 !important;
+        body,
+        .stApp {{
+            background: white !important;
         }}
 
-        .card.blue-card:first-of-type {{
+        .employee-print-page {{
+            page-break-before: always !important;
+            break-before: page !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            min-height: 90vh !important;
+            box-sizing: border-box !important;
+            padding-top: 8px !important;
+        }}
+
+        .employee-print-page:first-of-type {{
             page-break-before: auto !important;
             break-before: auto !important;
         }}
 
-        .visual-column {{
+        .employee-grid-print {{
+            display: grid !important;
+            grid-template-columns: 1fr 1fr 1fr !important;
+            gap: 12px !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }}
+
+        .visual-column,
+        .priority-card,
+        .card,
+        .employee-main-card,
+        .employee-summary-card {{
             page-break-inside: avoid !important;
             break-inside: avoid !important;
             box-shadow: none !important;
         }}
 
-        .priority-card {{
+        h1, h2, h3 {{
+            page-break-after: avoid !important;
+            break-after: avoid !important;
+        }}
+    }}
+
+    
+    /* FINAL PDF PRINT HEADER FIX */
+    @media print {{
+        .platform-header {{
+            display: flex !important;
+            visibility: visible !important;
+            box-shadow: none !important;
+            border: 1px solid #DDE5F0 !important;
+            border-radius: 12px !important;
+            margin-bottom: 16px !important;
+            padding: 12px 18px !important;
+            page-break-after: avoid !important;
+            break-after: avoid !important;
+        }}
+
+        .platform-logo {{
+            display: block !important;
+            visibility: visible !important;
+            max-height: 68px !important;
+            max-width: 145px !important;
+        }}
+
+        .header-title,
+        .header-subtitle {{
+            display: block !important;
+            visibility: visible !important;
+        }}
+
+        .no-print,
+        section[data-testid="stSidebar"],
+        div[data-testid="stToolbar"],
+        div[data-testid="stDecoration"],
+        div[data-testid="stStatusWidget"],
+        div[data-testid="stDownloadButton"],
+        iframe,
+        button,
+        .admin-action-button,
+        div[data-testid="stExpander"],
+        [data-testid="stMetric"],
+        hr,
+        label,
+        div[data-baseweb="select"],
+        .stSelectbox {{
+            display: none !important;
+            visibility: hidden !important;
+        }}
+
+        .block-container {{
+            max-width: 100% !important;
+            padding: 0 !important;
+        }}
+
+        body,
+        .stApp {{
+            background: white !important;
+        }}
+
+        .main-hero {{
+            box-shadow: none !important;
+            margin-bottom: 14px !important;
+            page-break-after: avoid !important;
+            break-after: avoid !important;
+        }}
+
+        .employee-print-page {{
+            page-break-before: always !important;
+            break-before: page !important;
             page-break-inside: avoid !important;
             break-inside: avoid !important;
+            min-height: 90vh !important;
+            box-sizing: border-box !important;
         }}
 
-        h3 {{
-            page-break-after: avoid !important;
+        .employee-print-page:first-of-type {{
+            page-break-before: auto !important;
+            break-before: auto !important;
         }}
 
-        body {{
-            background: white !important;
+        .employee-grid-print,
+        .visual-column,
+        .priority-card,
+        .card,
+        .employee-main-card,
+        .employee-summary-card {{
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            box-shadow: none !important;
         }}
     }}
 
@@ -1993,20 +2407,18 @@ def render_save_pdf_button():
                 margin: 0;
                 padding: 0;
                 background: transparent;
-                font-family: inherit;
+                font-family: "Source Sans Pro", Arial, sans-serif;
             }
-
             .pdf-button {
                 width: 100%;
                 min-height: 50px;
                 background: #001F5B;
                 color: #ffffff;
-                border: none;
+                border: 0;
                 border-radius: 12px;
-                padding: 0.5rem 1rem;
-                font-family: "Source Sans Pro", sans-serif;
+                padding: 13px 18px;
                 font-weight: 400;
-                font-size: 14px;
+                font-size: 15px;
                 line-height: 1.2;
                 cursor: pointer;
                 box-shadow: 0 6px 16px rgba(0,31,91,0.16);
@@ -2015,37 +2427,12 @@ def render_save_pdf_button():
                 justify-content: center;
                 box-sizing: border-box;
             }
-
             .pdf-button:hover {
                 background: #123E7C;
             }
         
-    div[data-testid="stDownloadButton"] > button {{
-        width: 100% !important;
-        min-height: 50px !important;
-        height: 50px !important;
-        background: #001F5B !important;
-        color: #ffffff !important;
-        border: 0 !important;
-        border-radius: 12px !important;
-        padding: 13px 18px !important;
-        font-weight: 400 !important;
-        font-size: 15px !important;
-        line-height: 1.2 !important;
-        box-shadow: 0 6px 16px rgba(0,31,91,0.16) !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-    }}
-
-    div[data-testid="stDownloadButton"] > button:hover {{
-        background: #123E7C !important;
-        color: #ffffff !important;
-        border: 0 !important;
-    }}
-
     @media print {{
-        .platform-header,
+        .no-print,
         section[data-testid="stSidebar"],
         div[data-testid="stToolbar"],
         div[data-testid="stDecoration"],
@@ -2054,11 +2441,76 @@ def render_save_pdf_button():
         iframe,
         button,
         .admin-action-button,
-        .main-hero,
         div[data-testid="stExpander"],
         [data-testid="stMetric"],
         hr {{
             display: none !important;
+        }}
+
+        .platform-header {{
+            display: flex !important;
+            box-shadow: none !important;
+            border: 1px solid #DDE5F0 !important;
+            margin-bottom: 12px !important;
+            page-break-after: avoid !important;
+        }}
+
+        .employee-print-page {{
+            page-break-before: always !important;
+            break-before: page !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            min-height: 92vh !important;
+            box-sizing: border-box !important;
+        }}
+
+        .employee-print-page:first-of-type {{
+            page-break-before: auto !important;
+            break-before: auto !important;
+        }}
+
+        .employee-grid-print,
+        .visual-column,
+        .priority-card,
+        .card {{
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }}
+    }}
+
+    
+    /* FINAL PRINT FIX */
+    @media print {{
+        .no-print,
+        section[data-testid="stSidebar"],
+        div[data-testid="stToolbar"],
+        div[data-testid="stDecoration"],
+        div[data-testid="stStatusWidget"],
+        div[data-testid="stDownloadButton"],
+        iframe,
+        button,
+        .admin-action-button,
+        div[data-testid="stExpander"],
+        [data-testid="stMetric"],
+        hr {{
+            display: none !important;
+        }}
+
+        .platform-header {{
+            display: flex !important;
+            box-shadow: none !important;
+            border: 1px solid #DDE5F0 !important;
+            margin-bottom: 12px !important;
+            page-break-after: avoid !important;
+            break-after: avoid !important;
+        }}
+
+        .main-hero {{
+            display: block !important;
+            box-shadow: none !important;
+            margin-bottom: 12px !important;
+            page-break-after: avoid !important;
+            break-after: avoid !important;
         }}
 
         .block-container {{
@@ -2066,47 +2518,147 @@ def render_save_pdf_button():
             padding: 0 !important;
         }}
 
-        .card.blue-card {{
-            page-break-before: always !important;
-            break-before: page !important;
-            margin-top: 0 !important;
+        body,
+        .stApp {{
+            background: white !important;
         }}
 
-        .card.blue-card:first-of-type {{
+        .employee-print-page {{
+            page-break-before: always !important;
+            break-before: page !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            min-height: 90vh !important;
+            box-sizing: border-box !important;
+            padding-top: 8px !important;
+        }}
+
+        .employee-print-page:first-of-type {{
             page-break-before: auto !important;
             break-before: auto !important;
         }}
 
-        .visual-column {{
+        .employee-grid-print {{
+            display: grid !important;
+            grid-template-columns: 1fr 1fr 1fr !important;
+            gap: 12px !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }}
+
+        .visual-column,
+        .priority-card,
+        .card,
+        .employee-main-card,
+        .employee-summary-card {{
             page-break-inside: avoid !important;
             break-inside: avoid !important;
             box-shadow: none !important;
         }}
 
-        .priority-card {{
+        h1, h2, h3 {{
+            page-break-after: avoid !important;
+            break-after: avoid !important;
+        }}
+    }}
+
+    
+    /* FINAL PDF PRINT HEADER FIX */
+    @media print {{
+        .platform-header {{
+            display: flex !important;
+            visibility: visible !important;
+            box-shadow: none !important;
+            border: 1px solid #DDE5F0 !important;
+            border-radius: 12px !important;
+            margin-bottom: 16px !important;
+            padding: 12px 18px !important;
+            page-break-after: avoid !important;
+            break-after: avoid !important;
+        }}
+
+        .platform-logo {{
+            display: block !important;
+            visibility: visible !important;
+            max-height: 68px !important;
+            max-width: 145px !important;
+        }}
+
+        .header-title,
+        .header-subtitle {{
+            display: block !important;
+            visibility: visible !important;
+        }}
+
+        .no-print,
+        section[data-testid="stSidebar"],
+        div[data-testid="stToolbar"],
+        div[data-testid="stDecoration"],
+        div[data-testid="stStatusWidget"],
+        div[data-testid="stDownloadButton"],
+        iframe,
+        button,
+        .admin-action-button,
+        div[data-testid="stExpander"],
+        [data-testid="stMetric"],
+        hr,
+        label,
+        div[data-baseweb="select"],
+        .stSelectbox {{
+            display: none !important;
+            visibility: hidden !important;
+        }}
+
+        .block-container {{
+            max-width: 100% !important;
+            padding: 0 !important;
+        }}
+
+        body,
+        .stApp {{
+            background: white !important;
+        }}
+
+        .main-hero {{
+            box-shadow: none !important;
+            margin-bottom: 14px !important;
+            page-break-after: avoid !important;
+            break-after: avoid !important;
+        }}
+
+        .employee-print-page {{
+            page-break-before: always !important;
+            break-before: page !important;
             page-break-inside: avoid !important;
             break-inside: avoid !important;
+            min-height: 90vh !important;
+            box-sizing: border-box !important;
         }}
 
-        h3 {{
-            page-break-after: avoid !important;
+        .employee-print-page:first-of-type {{
+            page-break-before: auto !important;
+            break-before: auto !important;
         }}
 
-        body {{
-            background: white !important;
+        .employee-grid-print,
+        .visual-column,
+        .priority-card,
+        .card,
+        .employee-main-card,
+        .employee-summary-card {{
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            box-shadow: none !important;
         }}
     }}
 
     </style>
-
         <button class="pdf-button" onclick="window.parent.print();">
             Enregistrer le rapport en PDF
         </button>
         """,
         height=64
     )
-
-
 
 def render_admin_dashboard():
     st.markdown("""
@@ -2124,7 +2676,7 @@ def render_admin_dashboard():
         st.info("Aucune réponse enregistrée pour le moment.")
         return
 
-    st.caption("Données d’essai intégrées : 5 Doyens / Directeurs et 25 employés PSG. Les scénarios sont volontairement variés : plusieurs cas sans thème commun, quelques cas avec 1 thème commun, quelques cas avec 2 thèmes communs, et un cas avec 3 thèmes communs.")
+    st.markdown("<div class='no-print' style='color:#6B7688; font-size:0.95rem; line-height:1.6;'>Données d’essai intégrées : 5 Doyens / Directeurs et 25 employés PSG. Les scénarios sont volontairement variés : plusieurs cas sans thème commun, quelques cas avec 1 thème commun, quelques cas avec 2 thèmes communs, et un cas avec 3 thèmes communs.</div>", unsafe_allow_html=True)
 
     with st.sidebar:
         st.header("Filtres administrateur")
@@ -2306,14 +2858,6 @@ def render_admin_dashboard():
 
             matched, final = calculate_final_themes(employee_ranked, director_ranked)
 
-            st.markdown(f"""
-            <div class='card blue-card'>
-                <h3 style='margin-top:0;'>{emp['name']}</h3>
-                <span class='pill'>Code : {emp['code']}</span>
-                <span class='pill pill-gold'>{emp['department']}</span>
-            </div>
-            """, unsafe_allow_html=True)
-
             if emp["code"] in overrides:
                 st.caption(f"Priorités modifiées par l’administrateur le {overrides[emp['code']]['updated_at']}.")
 
@@ -2351,7 +2895,7 @@ def render_admin_dashboard():
                 st.divider()
 
             else:
-                render_employee_visual_cards(emp["name"], employee_ranked, director_ranked, final, matched)
+                render_employee_visual_cards(emp["name"], emp["code"], emp["department"], employee_ranked, director_ranked, final, matched)
                 st.divider()
 
     elif view == "Réponses PSG":
@@ -2507,4 +3051,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
