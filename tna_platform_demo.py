@@ -1993,7 +1993,7 @@ def render_save_pdf_button():
                 margin: 0;
                 padding: 0;
                 background: transparent;
-                font-family: "Source Sans Pro", Arial, sans-serif;
+                font-family: inherit;
             }
 
             .pdf-button {
@@ -2004,8 +2004,9 @@ def render_save_pdf_button():
                 border: 0;
                 border-radius: 12px;
                 padding: 13px 18px;
+                font-family: "Source Sans Pro", sans-serif;
                 font-weight: 400;
-                font-size: 15px;
+                font-size: 14px;
                 line-height: 1.2;
                 cursor: pointer;
                 box-shadow: 0 6px 16px rgba(0,31,91,0.16);
