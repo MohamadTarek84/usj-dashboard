@@ -2789,7 +2789,7 @@ def render_admin_dashboard():
 
         report_html = build_director_report_html(selected_director, df, overrides)
 
-        report_col1, report_col2 = st.columns(2)
+        report_col1 = st.container()
 
         with report_col1:
             st.download_button(
@@ -2800,15 +2800,7 @@ def render_admin_dashboard():
                 use_container_width=True
             )
 
-        with report_col2:
-            st.download_button(
-                "Enregistrer le rapport en PDF",
-                report_html.encode("utf-8"),
-                f"rapport_TNA_2026_{selected_director}.html",
-                "text/html",
-                use_container_width=True
-            )
-
+      
         st.markdown("### 1. Besoins sélectionnés par le Doyen / Directeur pour lui-même")
 
         st.markdown(f"""
