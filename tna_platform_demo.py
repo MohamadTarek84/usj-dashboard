@@ -9,8 +9,13 @@ import base64
 import textwrap
 
 from pathlib import Path
+import os
 
-DB_DIR = Path("/home/data")
+if os.path.exists("/home/site"):
+    DB_DIR = Path("/home/data")   # Azure App Service
+else:
+    DB_DIR = Path(".")            # Streamlit Cloud / local
+
 DB_DIR.mkdir(parents=True, exist_ok=True)
 
 DB_NAME = str(DB_DIR / "tna_demo.db")
