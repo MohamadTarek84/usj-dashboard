@@ -2058,6 +2058,39 @@ def build_director_report_html(selected_director, df, overrides):
                 background: #ffffff;
                 margin: 28px;
             }}
+
+            .report-logo-header {{
+                background: #ffffff;
+                border: 1px solid #DDE5F0;
+                border-radius: 18px;
+                padding: 14px 22px;
+                margin-bottom: 24px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+            }}
+
+            .report-logo {{
+                max-height: 70px;
+                max-width: 170px;
+            }}
+            
+            .report-center {{
+                text-align: center;
+                color: #001F5B;
+            }}
+            
+            .report-center-title {{
+                font-size: 26px;
+                font-weight: 500;
+            }}
+            
+            .report-center-subtitle {{
+                font-size: 16px;
+                color: #5D697A;
+                font-weight: 600;
+            }}
+            
             .header {{
                 border-bottom: 4px solid #001F5B;
                 padding-bottom: 16px;
@@ -2411,7 +2444,17 @@ def build_director_report_html(selected_director, df, overrides):
         <button class="print-btn" onclick="window.print()">
             Enregistrer en PDF
         </button>
-    
+
+        <div class="report-logo-header">
+            <img src="CFP LOGO.png" class="report-logo">
+            <div class="report-center">
+                <div class="report-center-title">Centre de Formation Professionnelle</div>
+                <div class="report-center-subtitle">Training Needs Assessment - TNA 2026</div>
+            </div>
+            <img src="USJ LOGO 150.png" class="report-logo">
+        </div>
+
+        
         <div class="header">
             <div class="kicker">Training Needs Assessment - TNA 2026</div>
             <h1>Rapport par Doyen / Directeur</h1>
