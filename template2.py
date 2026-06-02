@@ -23,7 +23,12 @@ from matplotlib.patches import FancyBboxPatch, Circle
 
 
 APP_TITLE = "PLAN STRATÉGIQUE USJ 2032"
-DB_PATH = Path("focus_group_responsesT2.db")
+
+DB_DIR = Path("/home/data")
+DB_DIR.mkdir(parents=True, exist_ok=True)
+
+DB_PATH = DB_DIR / "focus_group_responsesT2.db"
+
 LOGO_PATH = Path("LogoUAQ.png")
 INTRO_IMAGE_PATH = Path("Intro_schema.png")
 ANNEXE_A_PATH = Path("Annexe_A.png")
