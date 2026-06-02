@@ -2001,12 +2001,12 @@ def render_save_pdf_button():
                 min-height: 50px;
                 background: #001F5B;
                 color: #ffffff;
-                border: 0;
+                border: none;
                 border-radius: 12px;
-                padding: 13px 18px;
+                padding: 0.5rem 1rem;
                 font-family: "Source Sans Pro", sans-serif;
-                font-weight: 400;
-                font-size: 14px;
+                font-weight: 600;
+                font-size: 1rem;
                 line-height: 1.2;
                 cursor: pointer;
                 box-shadow: 0 6px 16px rgba(0,31,91,0.16);
