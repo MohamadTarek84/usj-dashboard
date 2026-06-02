@@ -382,10 +382,16 @@ def apply_style():
         fill: {USJ_BLUE} !important;
     }}
 
-    div[data-baseweb="select"] [aria-live="polite"],
-    div[data-baseweb="select"] [role="status"] {{
+    div[data-baseweb="select"] [aria-live],
+    div[data-baseweb="select"] [role="status"],
+    div[data-baseweb="select"] div[class*="a11y"],
+    div[data-baseweb="select"] div[class*="hidden"] {{
         display: none !important;
         visibility: hidden !important;
+        opacity: 0 !important;
+        height: 0 !important;
+        width: 0 !important;
+        overflow: hidden !important;
     }}
 
     div[data-baseweb="textarea"] textarea {{
