@@ -2146,10 +2146,29 @@ def build_director_report_html(selected_director, df, overrides):
                 color: #735C00;
                 font-weight: 700;
             }}
+
+            .print-btn {{
+                width: 100%;
+                background: #001F5B;
+                color: white;
+                border: 0;
+                border-radius: 12px;
+                padding: 14px;
+                font-size: 14px;
+                cursor: pointer;
+                margin-bottom: 20px;
+                box-shadow: 0 6px 16px rgba(0,31,91,0.16);
+            }}
+            
             @media print {{
                 body {{
                     margin: 14mm;
                 }}
+
+                .print-btn {{
+                    display: none;
+                }}
+                
                 .employee-card {{
                     page-break-before: always;
                     break-before: page;
@@ -2386,13 +2405,22 @@ def build_director_report_html(selected_director, df, overrides):
 
     </style>
     </head>
+
     <body>
+
+        <button class="print-btn" onclick="window.print()">
+            Enregistrer en PDF
+        </button>
+    
         <div class="header">
             <div class="kicker">Training Needs Assessment - TNA 2026</div>
             <h1>Rapport par Doyen / Directeur</h1>
             <p class="meta">{director_user['name']} | {director_user['faculty']} | {director_user['department']}</p>
             <p class="meta">Date de génération : {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</p>
         </div>
+
+
+    
 
         <section class="leader">
             <h2>Besoins de formation sélectionnés pour le leader</h2>
