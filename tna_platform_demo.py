@@ -2428,12 +2428,12 @@ def render_save_pdf_button():
                 padding: 13px 18px;
                 font-weight: 400;
                 font-size: 14px;
-                line-height: 1.2;
+                line-height: 50px;
                 cursor: pointer;
                 box-shadow: 0 6px 16px rgba(0,31,91,0.16);
-                display: flex;
-                align-items: center;
-                justify-content: center;
+                display: block;
+                text-align: center;
+                padding: 0;
                 box-sizing: border-box;
             }
             .pdf-button:hover {
