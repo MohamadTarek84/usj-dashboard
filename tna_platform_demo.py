@@ -2005,8 +2005,8 @@ def render_save_pdf_button():
                 border-radius: 12px;
                 padding: 0.5rem 1rem;
                 font-family: "Source Sans Pro", sans-serif;
-                font-weight: 600;
-                font-size: 1rem;
+                font-weight: 400;
+                font-size: 14px;
                 line-height: 1.2;
                 cursor: pointer;
                 box-shadow: 0 6px 16px rgba(0,31,91,0.16);
