@@ -382,6 +382,12 @@ def apply_style():
         fill: {USJ_BLUE} !important;
     }}
 
+    div[data-baseweb="select"] [aria-live="polite"],
+    div[data-baseweb="select"] [role="status"] {{
+        display: none !important;
+        visibility: hidden !important;
+    }}
+
     div[data-baseweb="textarea"] textarea {{
         background-color: #ffffff !important;
         color: {USJ_BLUE} !important;
