@@ -2416,7 +2416,7 @@ def render_save_pdf_button():
                 margin: 0;
                 padding: 0;
                 background: transparent;
-                font-family: "Source Sans Pro", sans-serif;
+                font-family: inherit;
             }
             .pdf-button {
                 width: 100%;
