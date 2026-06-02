@@ -6,6 +6,7 @@ from datetime import datetime
 import pandas as pd
 import os
 import base64
+import textwrap
 
 DB_NAME = "tna_demo.db"
 
@@ -853,6 +854,54 @@ def apply_style():
         }}
     }}
 
+    
+    @media print {{
+        .no-print,
+        section[data-testid="stSidebar"],
+        div[data-testid="stToolbar"],
+        div[data-testid="stDecoration"],
+        div[data-testid="stStatusWidget"],
+        div[data-testid="stDownloadButton"],
+        iframe,
+        button,
+        .admin-action-button,
+        div[data-testid="stExpander"],
+        [data-testid="stMetric"],
+        hr {{
+            display: none !important;
+        }}
+
+        .platform-header {{
+            display: flex !important;
+            box-shadow: none !important;
+            border: 1px solid #DDE5F0 !important;
+            margin-bottom: 12px !important;
+            page-break-after: avoid !important;
+        }}
+
+        .employee-print-page {{
+            page-break-before: always !important;
+            break-before: page !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            min-height: 92vh !important;
+            box-sizing: border-box !important;
+        }}
+
+        .employee-print-page:first-of-type {{
+            page-break-before: auto !important;
+            break-before: auto !important;
+        }}
+
+        .employee-grid-print,
+        .visual-column,
+        .priority-card,
+        .card {{
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }}
+    }}
+
     </style>
     """, unsafe_allow_html=True)
 
@@ -1564,73 +1613,73 @@ def render_employee_visual_cards(employee_name, employee_code, employee_departme
     final_cards = ""
 
     for i, theme in enumerate(employee_ranked, start=1):
-        employee_cards += f"""
-<div class="priority-card employee-card">
-    <div class="priority-rank">Priorité {i}</div>
-    <div class="priority-theme">{theme}</div>
-</div>
-"""
+        employee_cards += textwrap.dedent(f"""
+        <div class="priority-card employee-card">
+            <div class="priority-rank">Priorité {i}</div>
+            <div class="priority-theme">{theme}</div>
+        </div>
+        """).strip()
 
     if not employee_ranked:
         employee_cards = "<div class='empty-choice'>Aucun choix employé.</div>"
 
     for i, theme in enumerate(director_ranked, start=1):
-        director_cards += f"""
-<div class="priority-card director-card">
-    <div class="priority-rank">Priorité {i}</div>
-    <div class="priority-theme">{theme}</div>
-</div>
-"""
+        director_cards += textwrap.dedent(f"""
+        <div class="priority-card director-card">
+            <div class="priority-rank">Priorité {i}</div>
+            <div class="priority-theme">{theme}</div>
+        </div>
+        """).strip()
 
     if not director_ranked:
         director_cards = "<div class='empty-choice'>Aucun choix directeur.</div>"
 
     for i, theme in enumerate(final_themes, start=1):
         badge = "Thème commun" if theme in matched else "Décision / complément"
-        final_cards += f"""
-<div class="priority-card final-card">
-    <div class="priority-rank">Priorité finale {i}</div>
-    <div class="priority-theme">{theme}</div>
-    <div class="priority-badge">{badge}</div>
-</div>
-"""
+        final_cards += textwrap.dedent(f"""
+        <div class="priority-card final-card">
+            <div class="priority-rank">Priorité finale {i}</div>
+            <div class="priority-theme">{theme}</div>
+            <div class="priority-badge">{badge}</div>
+        </div>
+        """).strip()
 
     if not final_themes:
         final_cards = "<div class='empty-choice'>Aucun thème final.</div>"
 
-    html = f"""
-<section class="employee-print-page">
-    <div class="card blue-card employee-main-card">
-        <h3 style="margin-top:0;">{employee_name}</h3>
-        <span class="pill">Code : {employee_code}</span>
-        <span class="pill pill-gold">{employee_department}</span>
-    </div>
-
-    <div class="card gold-card employee-summary-card">
-        <h3 style="margin-top:0; color:#001F5B;">Synthèse visuelle</h3>
-        <div style="color:#5D697A; font-weight:600;">
-            Comparaison des priorités classées par l’employé, par le Doyen / Directeur, puis sélection finale proposée.
-        </div>
-    </div>
-
-    <div class="employee-grid-print">
-        <div class="visual-column visual-employee">
-            <div class="visual-column-title">Choix de l’employé</div>
-            {employee_cards}
+    html = textwrap.dedent(f"""
+    <section class="employee-print-page">
+        <div class="card blue-card employee-main-card">
+            <h3 style="margin-top:0;">{employee_name}</h3>
+            <span class="pill">Code : {employee_code}</span>
+            <span class="pill pill-gold">{employee_department}</span>
         </div>
 
-        <div class="visual-column visual-director">
-            <div class="visual-column-title">Choix du Doyen / Directeur</div>
-            {director_cards}
+        <div class="card gold-card employee-summary-card">
+            <h3 style="margin-top:0; color:#001F5B;">Synthèse visuelle</h3>
+            <div style="color:#5D697A; font-weight:600;">
+                Comparaison des priorités classées par l’employé, par le Doyen / Directeur, puis sélection finale proposée.
+            </div>
         </div>
 
-        <div class="visual-column visual-final">
-            <div class="visual-column-title">Thèmes finaux proposés</div>
-            {final_cards}
+        <div class="employee-grid-print">
+            <div class="visual-column visual-employee">
+                <div class="visual-column-title">Choix de l’employé</div>
+                {employee_cards}
+            </div>
+
+            <div class="visual-column visual-director">
+                <div class="visual-column-title">Choix du Doyen / Directeur</div>
+                {director_cards}
+            </div>
+
+            <div class="visual-column visual-final">
+                <div class="visual-column-title">Thèmes finaux proposés</div>
+                {final_cards}
+            </div>
         </div>
-    </div>
-</section>
-""".strip()
+    </section>
+    """).strip()
 
     st.markdown(html, unsafe_allow_html=True)
 
@@ -1932,7 +1981,55 @@ def build_director_report_html(selected_director, df, overrides):
                     break-before: auto;
                 }}
             }}
-        </style>
+        
+    @media print {{
+        .no-print,
+        section[data-testid="stSidebar"],
+        div[data-testid="stToolbar"],
+        div[data-testid="stDecoration"],
+        div[data-testid="stStatusWidget"],
+        div[data-testid="stDownloadButton"],
+        iframe,
+        button,
+        .admin-action-button,
+        div[data-testid="stExpander"],
+        [data-testid="stMetric"],
+        hr {{
+            display: none !important;
+        }}
+
+        .platform-header {{
+            display: flex !important;
+            box-shadow: none !important;
+            border: 1px solid #DDE5F0 !important;
+            margin-bottom: 12px !important;
+            page-break-after: avoid !important;
+        }}
+
+        .employee-print-page {{
+            page-break-before: always !important;
+            break-before: page !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            min-height: 92vh !important;
+            box-sizing: border-box !important;
+        }}
+
+        .employee-print-page:first-of-type {{
+            page-break-before: auto !important;
+            break-before: auto !important;
+        }}
+
+        .employee-grid-print,
+        .visual-column,
+        .priority-card,
+        .card {{
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }}
+    }}
+
+    </style>
     </head>
     <body>
         <div class="header">
@@ -1986,7 +2083,55 @@ def render_save_pdf_button():
             .pdf-button:hover {
                 background: #123E7C;
             }
-        </style>
+        
+    @media print {{
+        .no-print,
+        section[data-testid="stSidebar"],
+        div[data-testid="stToolbar"],
+        div[data-testid="stDecoration"],
+        div[data-testid="stStatusWidget"],
+        div[data-testid="stDownloadButton"],
+        iframe,
+        button,
+        .admin-action-button,
+        div[data-testid="stExpander"],
+        [data-testid="stMetric"],
+        hr {{
+            display: none !important;
+        }}
+
+        .platform-header {{
+            display: flex !important;
+            box-shadow: none !important;
+            border: 1px solid #DDE5F0 !important;
+            margin-bottom: 12px !important;
+            page-break-after: avoid !important;
+        }}
+
+        .employee-print-page {{
+            page-break-before: always !important;
+            break-before: page !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            min-height: 92vh !important;
+            box-sizing: border-box !important;
+        }}
+
+        .employee-print-page:first-of-type {{
+            page-break-before: auto !important;
+            break-before: auto !important;
+        }}
+
+        .employee-grid-print,
+        .visual-column,
+        .priority-card,
+        .card {{
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }}
+    }}
+
+    </style>
         <button class="pdf-button" onclick="window.parent.print();">
             Enregistrer le rapport en PDF
         </button>
