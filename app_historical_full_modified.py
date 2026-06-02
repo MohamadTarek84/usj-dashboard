@@ -1341,9 +1341,9 @@ with header_left:
 
 with header_right:
     if os.path.exists("LogoUAQ.png"):
-        st.image("LogoUAQ.png", width=260)
+        st.image("LogoUAQ.png", width=360)
     elif os.path.exists("usj_logo.png"):
-        st.image("usj_logo.png", width=170)
+        st.image("usj_logo.png", width=230)
 
 st.divider()
 
