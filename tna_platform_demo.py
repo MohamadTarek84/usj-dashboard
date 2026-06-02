@@ -2802,7 +2802,13 @@ def render_admin_dashboard():
             )
 
         with report_col2:
-            render_save_pdf_button()
+            st.download_button(
+                "Enregistrer le rapport en PDF",
+                report_html.encode("utf-8"),
+                f"rapport_TNA_2026_{selected_director}.html",
+                "text/html",
+                use_container_width=True
+            )
 
         st.markdown("### 1. Besoins sélectionnés par le Doyen / Directeur pour lui-même")
 
