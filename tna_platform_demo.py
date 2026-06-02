@@ -8,7 +8,12 @@ import os
 import base64
 import textwrap
 
-DB_NAME = "tna_demo.db"
+from pathlib import Path
+
+DB_DIR = Path("/home/data")
+DB_DIR.mkdir(parents=True, exist_ok=True)
+
+DB_NAME = str(DB_DIR / "tna_demo.db")
 
 USJ_BLUE = "#001F5B"
 USJ_RED = "#8B1538"
@@ -2465,7 +2470,7 @@ def build_director_report_html(selected_director, df, overrides):
             <div class="kicker">Training Needs Assessment - TNA 2026</div>
             <h1>Rapport par Doyen / Directeur</h1>
             <p class="meta">{director_user['name']} | {director_user['faculty']} | {director_user['department']}</p>
-            <p class="meta">Date de génération : {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</p>
+            <p class="meta">Date de génération : {datetime.now().strftime("%Y-%m-%d")}</p>
         </div>
 
 
