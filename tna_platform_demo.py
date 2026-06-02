@@ -2103,7 +2103,6 @@ def build_director_report_html(selected_director, df, overrides):
                 border-radius: 14px;
                 padding: 16px;
                 margin-bottom: 18px;
-                min-height: 88vh;
                 box-sizing: border-box;
             }}
             .employee-card:first-of-type {{
