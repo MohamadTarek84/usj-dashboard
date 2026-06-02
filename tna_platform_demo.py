@@ -636,6 +636,7 @@ def apply_style():
     }}
 
     @media print {{
+        .platform-header,
         section[data-testid="stSidebar"],
         div[data-testid="stToolbar"],
         div[data-testid="stDecoration"],
@@ -683,6 +684,7 @@ def apply_style():
     }}
 
     @media print {{
+        .platform-header,
         section[data-testid="stSidebar"],
         div[data-testid="stToolbar"],
         div[data-testid="stDecoration"],
@@ -731,125 +733,6 @@ def apply_style():
 
         body {{
             background: white !important;
-        }}
-    }}
-
-    
-    .employee-grid-print {{
-        display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
-        gap: 16px;
-        align-items: start;
-    }}
-
-    .employee-print-page {{
-        margin-bottom: 26px;
-        page-break-inside: avoid;
-        break-inside: avoid;
-    }}
-
-    .employee-main-card {{
-        margin-bottom: 12px;
-    }}
-
-    .employee-summary-card {{
-        margin-bottom: 14px;
-    }}
-
-    .empty-choice {{
-        color: #6B7688;
-        font-weight: 600;
-        padding: 8px 0;
-    }}
-
-    @media print {{
-        section[data-testid="stSidebar"],
-        div[data-testid="stToolbar"],
-        div[data-testid="stDecoration"],
-        div[data-testid="stStatusWidget"],
-        div[data-testid="stDownloadButton"],
-        iframe,
-        button,
-        .admin-action-button,
-        .no-print,
-        div[data-testid="stExpander"],
-        [data-testid="stMetric"],
-        hr {{
-            display: none !important;
-        }}
-
-        .platform-header {{
-            display: flex !important;
-            box-shadow: none !important;
-            border: 1px solid #DDE5F0 !important;
-            margin-bottom: 12px !important;
-            page-break-after: avoid !important;
-        }}
-
-        .main-hero {{
-            box-shadow: none !important;
-            margin-bottom: 12px !important;
-            page-break-after: avoid !important;
-        }}
-
-        .block-container {{
-            max-width: 100% !important;
-            padding: 0 !important;
-        }}
-
-        body,
-        .stApp {{
-            background: white !important;
-        }}
-
-        .employee-print-page {{
-            page-break-before: always !important;
-            break-before: page !important;
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-            min-height: 92vh !important;
-            box-sizing: border-box !important;
-            padding-top: 8px !important;
-        }}
-
-        .employee-print-page:first-of-type {{
-            page-break-before: auto !important;
-            break-before: auto !important;
-        }}
-
-        .employee-grid-print {{
-            display: grid !important;
-            grid-template-columns: 1fr 1fr 1fr !important;
-            gap: 12px !important;
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-        }}
-
-        .visual-column,
-        .priority-card,
-        .card {{
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-            box-shadow: none !important;
-        }}
-
-        .visual-column {{
-            min-height: auto !important;
-        }}
-
-        .priority-card {{
-            margin-bottom: 7px !important;
-        }}
-
-        .employee-main-card,
-        .employee-summary-card {{
-            page-break-after: avoid !important;
-            break-after: avoid !important;
-        }}
-
-        h1, h2, h3 {{
-            page-break-after: avoid !important;
-            break-after: avoid !important;
         }}
     }}
 
@@ -1558,79 +1441,670 @@ def render_director_form(user):
         st.success("Vos réponses ont été enregistrées avec succès.")
 
 
-def render_employee_visual_cards(employee_name, employee_code, employee_department, employee_ranked, director_ranked, final_themes, matched):
-    employee_cards = ""
-    director_cards = ""
-    final_cards = ""
-
-    for i, theme in enumerate(employee_ranked, start=1):
-        employee_cards += f"""
-        <div class="priority-card employee-card">
-            <div class="priority-rank">Priorité {i}</div>
-            <div class="priority-theme">{theme}</div>
-        </div>
-        """
-
-    if not employee_ranked:
-        employee_cards = "<div class='empty-choice'>Aucun choix employé.</div>"
-
-    for i, theme in enumerate(director_ranked, start=1):
-        director_cards += f"""
-        <div class="priority-card director-card">
-            <div class="priority-rank">Priorité {i}</div>
-            <div class="priority-theme">{theme}</div>
-        </div>
-        """
-
-    if not director_ranked:
-        director_cards = "<div class='empty-choice'>Aucun choix directeur.</div>"
-
-    for i, theme in enumerate(final_themes, start=1):
-        badge = "Thème commun" if theme in matched else "Décision / complément"
-        final_cards += f"""
-        <div class="priority-card final-card">
-            <div class="priority-rank">Priorité finale {i}</div>
-            <div class="priority-theme">{theme}</div>
-            <div class="priority-badge">{badge}</div>
-        </div>
-        """
-
-    if not final_themes:
-        final_cards = "<div class='empty-choice'>Aucun thème final.</div>"
-
+def render_employee_visual_cards(employee_name, employee_ranked, director_ranked, final_themes, matched):
     st.markdown(f"""
-    <section class="employee-print-page">
-        <div class="card blue-card employee-main-card">
-            <h3 style="margin-top:0;">{employee_name}</h3>
-            <span class="pill">Code : {employee_code}</span>
-            <span class="pill pill-gold">{employee_department}</span>
+    <div class="card gold-card">
+        <h3 style="margin-top:0; color:#001F5B;">Synthèse visuelle - {employee_name}</h3>
+        <div style="color:#5D697A; font-weight:600;">
+            Comparaison des priorités classées par l’employé, par le Doyen / Directeur, puis sélection finale proposée.
         </div>
-
-        <div class="card gold-card employee-summary-card">
-            <h3 style="margin-top:0; color:#001F5B;">Synthèse visuelle</h3>
-            <div style="color:#5D697A; font-weight:600;">
-                Comparaison des priorités classées par l’employé, par le Doyen / Directeur, puis sélection finale proposée.
-            </div>
-        </div>
-
-        <div class="employee-grid-print">
-            <div class="visual-column visual-employee">
-                <div class="visual-column-title">Choix de l’employé</div>
-                {employee_cards}
-            </div>
-
-            <div class="visual-column visual-director">
-                <div class="visual-column-title">Choix du Doyen / Directeur</div>
-                {director_cards}
-            </div>
-
-            <div class="visual-column visual-final">
-                <div class="visual-column-title">Thèmes finaux proposés</div>
-                {final_cards}
-            </div>
-        </div>
-    </section>
+    </div>
     """, unsafe_allow_html=True)
+
+    c1, c2, c3 = st.columns(3)
+
+    with c1:
+        st.markdown("""
+        <div class="visual-column visual-employee">
+            <div class="visual-column-title">Choix de l’employé</div>
+        """, unsafe_allow_html=True)
+
+        for i, theme in enumerate(employee_ranked, start=1):
+            st.markdown(f"""
+            <div class="priority-card employee-card">
+                <div class="priority-rank">Priorité {i}</div>
+                <div class="priority-theme">{theme}</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        if not employee_ranked:
+            st.caption("Aucun choix employé.")
+
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    with c2:
+        st.markdown("""
+        <div class="visual-column visual-director">
+            <div class="visual-column-title">Choix du Doyen / Directeur</div>
+        """, unsafe_allow_html=True)
+
+        for i, theme in enumerate(director_ranked, start=1):
+            st.markdown(f"""
+            <div class="priority-card director-card">
+                <div class="priority-rank">Priorité {i}</div>
+                <div class="priority-theme">{theme}</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        if not director_ranked:
+            st.caption("Aucun choix directeur.")
+
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    with c3:
+        st.markdown("""
+        <div class="visual-column visual-final">
+            <div class="visual-column-title">Thèmes finaux proposés</div>
+        """, unsafe_allow_html=True)
+
+        for i, theme in enumerate(final_themes, start=1):
+            badge = "Thème commun" if theme in matched else "Décision / complément"
+            st.markdown(f"""
+            <div class="priority-card final-card">
+                <div class="priority-rank">Priorité finale {i}</div>
+                <div class="priority-theme">{theme}</div>
+                <div class="priority-badge">{badge}</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        if not final_themes:
+            st.caption("Aucun thème final.")
+
+        st.markdown("</div>", unsafe_allow_html=True)
+
+
+
+
+def build_admin_flat_exports(df, overrides):
+    respondent_rows = []
+    theme_rows = []
+    final_rows = []
+
+    for _, row in df.iterrows():
+        respondent_rows.append({
+            "Code": row["Code"],
+            "Profil": row["Profil"],
+            "Nom": row["Nom"],
+            "Faculté": row["Faculté"],
+            "Institution": row["Institution"],
+            "Département": row["Département"],
+            "Date": row["Date"]
+        })
+
+        data = row["Données"]
+
+        if row["Profil"] == "psg":
+            themes = data.get("ranked_themes", data.get("selected_themes", []))
+            for i, theme in enumerate(themes, start=1):
+                theme_rows.append({
+                    "Code": row["Code"],
+                    "Nom": row["Nom"],
+                    "Profil": "PSG",
+                    "Faculté": row["Faculté"],
+                    "Département": row["Département"],
+                    "Source": "Choix employé",
+                    "Priorité": i,
+                    "Thème": theme
+                })
+
+        if row["Profil"] == "director":
+            leader_themes = data.get("leader_ranked_themes", data.get("leader_selected_themes", []))
+            for i, theme in enumerate(leader_themes, start=1):
+                theme_rows.append({
+                    "Code": row["Code"],
+                    "Nom": row["Nom"],
+                    "Profil": "Doyen / Directeur",
+                    "Faculté": row["Faculté"],
+                    "Département": row["Département"],
+                    "Source": "Choix leader",
+                    "Priorité": i,
+                    "Thème": theme
+                })
+
+            for emp in data.get("employees_training_needs", []):
+                director_themes = emp.get("ranked_themes_by_director", emp.get("selected_themes", []))
+                for i, theme in enumerate(director_themes, start=1):
+                    theme_rows.append({
+                        "Code": emp.get("employee_code", ""),
+                        "Nom": emp.get("employee_name", ""),
+                        "Profil": "PSG",
+                        "Faculté": row["Faculté"],
+                        "Département": emp.get("employee_department", ""),
+                        "Source": "Choix directeur pour employé",
+                        "Priorité": i,
+                        "Thème": theme
+                    })
+
+    # Build final selected themes per employee using latest responses and admin overrides.
+    for code, user in DEMO_USERS.items():
+        if user.get("role") != "psg":
+            continue
+
+        employee_response = latest_by_code(df, code)
+        director_code = user.get("director_code", "")
+        director_response = latest_by_code(df, director_code)
+
+        employee_original = []
+        if employee_response:
+            employee_original = employee_response["Données"].get(
+                "ranked_themes",
+                employee_response["Données"].get("selected_themes", [])
+            )
+
+        director_original = []
+        if director_response:
+            for item in director_response["Données"].get("employees_training_needs", []):
+                if item.get("employee_code") == code:
+                    director_original = item.get(
+                        "ranked_themes_by_director",
+                        item.get("selected_themes", [])
+                    )
+
+        employee_ranked = overrides.get(code, {}).get("employee_ranked", employee_original)
+        director_ranked = overrides.get(code, {}).get("director_ranked", director_original)
+
+        matched, final = calculate_final_themes(employee_ranked, director_ranked)
+
+        for i, theme in enumerate(final, start=1):
+            final_rows.append({
+                "Employee code": code,
+                "Employee name": user.get("name", ""),
+                "Director code": director_code,
+                "Faculty": user.get("faculty", ""),
+                "Department": user.get("department", ""),
+                "Final priority": i,
+                "Final theme": theme,
+                "Decision type": "Thème commun" if theme in matched else "Décision / complément selon priorité"
+            })
+
+    return (
+        pd.DataFrame(respondent_rows),
+        pd.DataFrame(theme_rows),
+        pd.DataFrame(final_rows)
+    )
+
+
+def build_director_report_html(selected_director, df, overrides):
+    director_user = DEMO_USERS[selected_director]
+    director_response = latest_by_code(df, selected_director)
+    employees = get_employees_for_director(selected_director)
+
+    leader_themes = []
+    if director_response:
+        leader_themes = director_response["Données"].get(
+            "leader_ranked_themes",
+            director_response["Données"].get("leader_selected_themes", [])
+        )
+
+    director_emp_map = {}
+    if director_response:
+        for item in director_response["Données"].get("employees_training_needs", []):
+            director_emp_map[item.get("employee_code")] = item
+
+    rows_html = ""
+
+    for emp in employees:
+        emp_response = latest_by_code(df, emp["code"])
+
+        employee_original = []
+        if emp_response:
+            employee_original = emp_response["Données"].get(
+                "ranked_themes",
+                emp_response["Données"].get("selected_themes", [])
+            )
+
+        director_original = []
+        if emp["code"] in director_emp_map:
+            director_original = director_emp_map[emp["code"]].get(
+                "ranked_themes_by_director",
+                director_emp_map[emp["code"]].get("selected_themes", [])
+            )
+
+        employee_ranked = overrides.get(emp["code"], {}).get("employee_ranked", employee_original)
+        director_ranked = overrides.get(emp["code"], {}).get("director_ranked", director_original)
+
+        matched, final = calculate_final_themes(employee_ranked, director_ranked)
+
+        employee_list = "".join([f"<li><b>P{i}</b> - {theme}</li>" for i, theme in enumerate(employee_ranked, start=1)])
+        director_list = "".join([f"<li><b>P{i}</b> - {theme}</li>" for i, theme in enumerate(director_ranked, start=1)])
+        final_list = "".join([
+            f"<li><b>P{i}</b> - {theme} <span>{'Thème commun' if theme in matched else 'Décision / complément'}</span></li>"
+            for i, theme in enumerate(final, start=1)
+        ])
+
+        rows_html += f"""
+        <section class="employee-card">
+            <h2>{emp['name']}</h2>
+            <p class="meta">Code : {emp['code']} | Département : {emp['department']}</p>
+            <div class="three-cols">
+                <div class="box employee">
+                    <h3>Choix de l’employé</h3>
+                    <ol>{employee_list}</ol>
+                </div>
+                <div class="box director">
+                    <h3>Choix du Doyen / Directeur</h3>
+                    <ol>{director_list}</ol>
+                </div>
+                <div class="box final">
+                    <h3>Thèmes finaux proposés</h3>
+                    <ol>{final_list}</ol>
+                </div>
+            </div>
+        </section>
+        """
+
+    leader_html = "".join([f"<li><b>P{i}</b> - {theme}</li>" for i, theme in enumerate(leader_themes, start=1)])
+
+    html = f"""
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <title>Rapport TNA 2026 - {director_user['name']}</title>
+        <style>
+            body {{
+                font-family: Arial, sans-serif;
+                color: #1B2A41;
+                background: #ffffff;
+                margin: 32px;
+            }}
+            .header {{
+                border-bottom: 4px solid #001F5B;
+                padding-bottom: 16px;
+                margin-bottom: 24px;
+            }}
+            .kicker {{
+                color: #8B1538;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.08em;
+                font-size: 12px;
+            }}
+            h1 {{
+                color: #001F5B;
+                margin: 8px 0 6px 0;
+                font-size: 28px;
+            }}
+            h2 {{
+                color: #001F5B;
+                margin-bottom: 6px;
+            }}
+            h3 {{
+                color: #001F5B;
+                margin-top: 0;
+            }}
+            .meta {{
+                color: #5D697A;
+                font-weight: 600;
+            }}
+            .leader {{
+                background: #F8EDEF;
+                border-left: 6px solid #8B1538;
+                border-radius: 12px;
+                padding: 14px 18px;
+                margin-bottom: 22px;
+            }}
+            .employee-card {{
+                page-break-before: always;
+                page-break-inside: avoid;
+                break-before: page;
+                break-inside: avoid;
+                border: 1px solid #DDE5F0;
+                border-radius: 14px;
+                padding: 16px;
+                margin-bottom: 18px;
+                min-height: 88vh;
+                box-sizing: border-box;
+            }}
+
+            .employee-card:first-of-type {{
+                page-break-before: auto;
+                break-before: auto;
+            }}
+            .three-cols {{
+                display: grid;
+                grid-template-columns: 1fr 1fr 1fr;
+                gap: 14px;
+            }}
+            .box {{
+                border-radius: 12px;
+                padding: 12px;
+                min-height: 120px;
+            }}
+            .employee {{
+                background: #EAF2F8;
+                border-left: 5px solid #001F5B;
+            }}
+            .director {{
+                background: #F8EDEF;
+                border-left: 5px solid #8B1538;
+            }}
+            .final {{
+                background: #FFF8DF;
+                border-left: 5px solid #C9A227;
+            }}
+            li {{
+                margin-bottom: 8px;
+                line-height: 1.35;
+            }}
+            span {{
+                display: inline-block;
+                margin-left: 6px;
+                font-size: 11px;
+                background: #ffffff;
+                border: 1px solid #C9A227;
+                border-radius: 999px;
+                padding: 3px 7px;
+                color: #735C00;
+                font-weight: 700;
+            }}
+            @media print {{
+                body {{
+                    margin: 14mm;
+                }}
+
+                .header,
+                .leader {{
+                    page-break-inside: avoid;
+                    break-inside: avoid;
+                }}
+
+                .employee-card {{
+                    page-break-before: always;
+                    break-before: page;
+                    page-break-inside: avoid;
+                    break-inside: avoid;
+                    min-height: 90vh;
+                }}
+
+                .employee-card:first-of-type {{
+                    page-break-before: auto;
+                    break-before: auto;
+                }}
+            }}
+        
+    .admin-action-button {{
+        width: 100%;
+        min-height: 50px;
+        background: #001F5B;
+        color: #ffffff;
+        border: 0;
+        border-radius: 12px;
+        padding: 13px 18px;
+        font-weight: 400;
+        font-size: 15px;
+        cursor: pointer;
+        box-shadow: 0 6px 16px rgba(0,31,91,0.16);
+    }}
+
+    .admin-action-button:hover {{
+        background: #123E7C;
+        color: #ffffff;
+    }}
+
+    div[data-testid="stDownloadButton"] > button {{
+        width: 100% !important;
+        min-height: 50px !important;
+        background: #001F5B !important;
+        color: #ffffff !important;
+        border: 0 !important;
+        border-radius: 12px !important;
+        padding: 13px 18px !important;
+        font-weight: 400 !important;
+        font-size: 15px !important;
+        box-shadow: 0 6px 16px rgba(0,31,91,0.16) !important;
+    }}
+
+    div[data-testid="stDownloadButton"] > button:hover {{
+        background: #123E7C !important;
+        color: #ffffff !important;
+        border: 0 !important;
+    }}
+
+    @media print {{
+        .platform-header,
+        section[data-testid="stSidebar"],
+        div[data-testid="stToolbar"],
+        div[data-testid="stDecoration"],
+        div[data-testid="stStatusWidget"],
+        div[data-testid="stDownloadButton"],
+        button,
+        .admin-action-button {{
+            display: none !important;
+        }}
+
+        .main-hero {{
+            box-shadow: none !important;
+            border-radius: 0 !important;
+        }}
+
+        .block-container {{
+            max-width: 100% !important;
+            padding: 0 !important;
+        }}
+    }}
+
+    
+    div[data-testid="stDownloadButton"] > button {{
+        width: 100% !important;
+        min-height: 50px !important;
+        height: 50px !important;
+        background: #001F5B !important;
+        color: #ffffff !important;
+        border: 0 !important;
+        border-radius: 12px !important;
+        padding: 13px 18px !important;
+        font-weight: 400 !important;
+        font-size: 15px !important;
+        line-height: 1.2 !important;
+        box-shadow: 0 6px 16px rgba(0,31,91,0.16) !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }}
+
+    div[data-testid="stDownloadButton"] > button:hover {{
+        background: #123E7C !important;
+        color: #ffffff !important;
+        border: 0 !important;
+    }}
+
+    @media print {{
+        .platform-header,
+        section[data-testid="stSidebar"],
+        div[data-testid="stToolbar"],
+        div[data-testid="stDecoration"],
+        div[data-testid="stStatusWidget"],
+        div[data-testid="stDownloadButton"],
+        iframe,
+        button,
+        .admin-action-button,
+        .main-hero,
+        div[data-testid="stExpander"],
+        [data-testid="stMetric"],
+        hr {{
+            display: none !important;
+        }}
+
+        .block-container {{
+            max-width: 100% !important;
+            padding: 0 !important;
+        }}
+
+        .card.blue-card {{
+            page-break-before: always !important;
+            break-before: page !important;
+            margin-top: 0 !important;
+        }}
+
+        .card.blue-card:first-of-type {{
+            page-break-before: auto !important;
+            break-before: auto !important;
+        }}
+
+        .visual-column {{
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            box-shadow: none !important;
+        }}
+
+        .priority-card {{
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }}
+
+        h3 {{
+            page-break-after: avoid !important;
+        }}
+
+        body {{
+            background: white !important;
+        }}
+    }}
+
+    </style>
+    </head>
+    <body>
+        <div class="header">
+            <div class="kicker">Training Needs Assessment - TNA 2026</div>
+            <h1>Rapport par Doyen / Directeur</h1>
+            <p class="meta">{director_user['name']} | {director_user['faculty']} | {director_user['department']}</p>
+            <p class="meta">Date de génération : {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</p>
+        </div>
+
+        <section class="leader">
+            <h2>Besoins de formation sélectionnés pour le leader</h2>
+            <ol>{leader_html}</ol>
+        </section>
+
+        {rows_html}
+    </body>
+    </html>
+    """
+
+    return html
+
+
+def render_save_pdf_button():
+    components.html(
+        """
+        <style>
+            html, body {
+                margin: 0;
+                padding: 0;
+                background: transparent;
+                font-family: "Source Sans Pro", Arial, sans-serif;
+            }
+
+            .pdf-button {
+                width: 100%;
+                min-height: 50px;
+                background: #001F5B;
+                color: #ffffff;
+                border: 0;
+                border-radius: 12px;
+                padding: 13px 18px;
+                font-weight: 400;
+                font-size: 15px;
+                line-height: 1.2;
+                cursor: pointer;
+                box-shadow: 0 6px 16px rgba(0,31,91,0.16);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-sizing: border-box;
+            }
+
+            .pdf-button:hover {
+                background: #123E7C;
+            }
+        
+    div[data-testid="stDownloadButton"] > button {{
+        width: 100% !important;
+        min-height: 50px !important;
+        height: 50px !important;
+        background: #001F5B !important;
+        color: #ffffff !important;
+        border: 0 !important;
+        border-radius: 12px !important;
+        padding: 13px 18px !important;
+        font-weight: 400 !important;
+        font-size: 15px !important;
+        line-height: 1.2 !important;
+        box-shadow: 0 6px 16px rgba(0,31,91,0.16) !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }}
+
+    div[data-testid="stDownloadButton"] > button:hover {{
+        background: #123E7C !important;
+        color: #ffffff !important;
+        border: 0 !important;
+    }}
+
+    @media print {{
+        .platform-header,
+        section[data-testid="stSidebar"],
+        div[data-testid="stToolbar"],
+        div[data-testid="stDecoration"],
+        div[data-testid="stStatusWidget"],
+        div[data-testid="stDownloadButton"],
+        iframe,
+        button,
+        .admin-action-button,
+        .main-hero,
+        div[data-testid="stExpander"],
+        [data-testid="stMetric"],
+        hr {{
+            display: none !important;
+        }}
+
+        .block-container {{
+            max-width: 100% !important;
+            padding: 0 !important;
+        }}
+
+        .card.blue-card {{
+            page-break-before: always !important;
+            break-before: page !important;
+            margin-top: 0 !important;
+        }}
+
+        .card.blue-card:first-of-type {{
+            page-break-before: auto !important;
+            break-before: auto !important;
+        }}
+
+        .visual-column {{
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            box-shadow: none !important;
+        }}
+
+        .priority-card {{
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }}
+
+        h3 {{
+            page-break-after: avoid !important;
+        }}
+
+        body {{
+            background: white !important;
+        }}
+    }}
+
+    </style>
+
+        <button class="pdf-button" onclick="window.parent.print();">
+            Enregistrer le rapport en PDF
+        </button>
+        """,
+        height=64
+    )
+
 
 
 def render_admin_dashboard():
@@ -1649,7 +2123,7 @@ def render_admin_dashboard():
         st.info("Aucune réponse enregistrée pour le moment.")
         return
 
-    st.markdown("<div class='no-print' style='color:#6B7688; font-size:0.95rem; line-height:1.6;'>Données d’essai intégrées : 5 Doyens / Directeurs et 25 employés PSG. Les scénarios sont volontairement variés : plusieurs cas sans thème commun, quelques cas avec 1 thème commun, quelques cas avec 2 thèmes communs, et un cas avec 3 thèmes communs.</div>", unsafe_allow_html=True)
+    st.caption("Données d’essai intégrées : 5 Doyens / Directeurs et 25 employés PSG. Les scénarios sont volontairement variés : plusieurs cas sans thème commun, quelques cas avec 1 thème commun, quelques cas avec 2 thèmes communs, et un cas avec 3 thèmes communs.")
 
     with st.sidebar:
         st.header("Filtres administrateur")
@@ -1831,6 +2305,14 @@ def render_admin_dashboard():
 
             matched, final = calculate_final_themes(employee_ranked, director_ranked)
 
+            st.markdown(f"""
+            <div class='card blue-card'>
+                <h3 style='margin-top:0;'>{emp['name']}</h3>
+                <span class='pill'>Code : {emp['code']}</span>
+                <span class='pill pill-gold'>{emp['department']}</span>
+            </div>
+            """, unsafe_allow_html=True)
+
             if emp["code"] in overrides:
                 st.caption(f"Priorités modifiées par l’administrateur le {overrides[emp['code']]['updated_at']}.")
 
@@ -1868,7 +2350,7 @@ def render_admin_dashboard():
                 st.divider()
 
             else:
-                render_employee_visual_cards(emp["name"], emp["code"], emp["department"], employee_ranked, director_ranked, final, matched)
+                render_employee_visual_cards(emp["name"], employee_ranked, director_ranked, final, matched)
                 st.divider()
 
     elif view == "Réponses PSG":
