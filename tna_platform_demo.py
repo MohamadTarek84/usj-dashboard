@@ -6,6 +6,7 @@ from datetime import datetime
 import pandas as pd
 import os
 import base64
+import textwrap
 
 DB_NAME = "tna_demo.db"
 
@@ -853,6 +854,138 @@ def apply_style():
         }}
     }}
 
+    
+    @media print {{
+        .no-print,
+        section[data-testid="stSidebar"],
+        div[data-testid="stToolbar"],
+        div[data-testid="stDecoration"],
+        div[data-testid="stStatusWidget"],
+        div[data-testid="stDownloadButton"],
+        iframe,
+        button,
+        .admin-action-button,
+        div[data-testid="stExpander"],
+        [data-testid="stMetric"],
+        hr {{
+            display: none !important;
+        }}
+
+        .platform-header {{
+            display: flex !important;
+            box-shadow: none !important;
+            border: 1px solid #DDE5F0 !important;
+            margin-bottom: 12px !important;
+            page-break-after: avoid !important;
+        }}
+
+        .employee-print-page {{
+            page-break-before: always !important;
+            break-before: page !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            min-height: 92vh !important;
+            box-sizing: border-box !important;
+        }}
+
+        .employee-print-page:first-of-type {{
+            page-break-before: auto !important;
+            break-before: auto !important;
+        }}
+
+        .employee-grid-print,
+        .visual-column,
+        .priority-card,
+        .card {{
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }}
+    }}
+
+    
+    /* FINAL PRINT FIX */
+    @media print {{
+        .no-print,
+        section[data-testid="stSidebar"],
+        div[data-testid="stToolbar"],
+        div[data-testid="stDecoration"],
+        div[data-testid="stStatusWidget"],
+        div[data-testid="stDownloadButton"],
+        iframe,
+        button,
+        .admin-action-button,
+        div[data-testid="stExpander"],
+        [data-testid="stMetric"],
+        hr {{
+            display: none !important;
+        }}
+
+        .platform-header {{
+            display: flex !important;
+            box-shadow: none !important;
+            border: 1px solid #DDE5F0 !important;
+            margin-bottom: 12px !important;
+            page-break-after: avoid !important;
+            break-after: avoid !important;
+        }}
+
+        .main-hero {{
+            display: block !important;
+            box-shadow: none !important;
+            margin-bottom: 12px !important;
+            page-break-after: avoid !important;
+            break-after: avoid !important;
+        }}
+
+        .block-container {{
+            max-width: 100% !important;
+            padding: 0 !important;
+        }}
+
+        body,
+        .stApp {{
+            background: white !important;
+        }}
+
+        .employee-print-page {{
+            page-break-before: always !important;
+            break-before: page !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            min-height: 90vh !important;
+            box-sizing: border-box !important;
+            padding-top: 8px !important;
+        }}
+
+        .employee-print-page:first-of-type {{
+            page-break-before: auto !important;
+            break-before: auto !important;
+        }}
+
+        .employee-grid-print {{
+            display: grid !important;
+            grid-template-columns: 1fr 1fr 1fr !important;
+            gap: 12px !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }}
+
+        .visual-column,
+        .priority-card,
+        .card,
+        .employee-main-card,
+        .employee-summary-card {{
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            box-shadow: none !important;
+        }}
+
+        h1, h2, h3 {{
+            page-break-after: avoid !important;
+            break-after: avoid !important;
+        }}
+    }}
+
     </style>
     """, unsafe_allow_html=True)
 
@@ -1564,41 +1697,41 @@ def render_employee_visual_cards(employee_name, employee_code, employee_departme
     final_cards = ""
 
     for i, theme in enumerate(employee_ranked, start=1):
-        employee_cards += f"""
+        employee_cards += textwrap.dedent(f"""
         <div class="priority-card employee-card">
             <div class="priority-rank">Priorité {i}</div>
             <div class="priority-theme">{theme}</div>
         </div>
-        """
+        """).strip()
 
     if not employee_ranked:
         employee_cards = "<div class='empty-choice'>Aucun choix employé.</div>"
 
     for i, theme in enumerate(director_ranked, start=1):
-        director_cards += f"""
+        director_cards += textwrap.dedent(f"""
         <div class="priority-card director-card">
             <div class="priority-rank">Priorité {i}</div>
             <div class="priority-theme">{theme}</div>
         </div>
-        """
+        """).strip()
 
     if not director_ranked:
         director_cards = "<div class='empty-choice'>Aucun choix directeur.</div>"
 
     for i, theme in enumerate(final_themes, start=1):
         badge = "Thème commun" if theme in matched else "Décision / complément"
-        final_cards += f"""
+        final_cards += textwrap.dedent(f"""
         <div class="priority-card final-card">
             <div class="priority-rank">Priorité finale {i}</div>
             <div class="priority-theme">{theme}</div>
             <div class="priority-badge">{badge}</div>
         </div>
-        """
+        """).strip()
 
     if not final_themes:
         final_cards = "<div class='empty-choice'>Aucun thème final.</div>"
 
-    st.markdown(f"""
+    html = textwrap.dedent(f"""
     <section class="employee-print-page">
         <div class="card blue-card employee-main-card">
             <h3 style="margin-top:0;">{employee_name}</h3>
@@ -1630,8 +1763,9 @@ def render_employee_visual_cards(employee_name, employee_code, employee_departme
             </div>
         </div>
     </section>
-    """, unsafe_allow_html=True)
+    """).strip()
 
+    st.markdown(html, unsafe_allow_html=True)
 
 
 def build_admin_flat_exports(df, overrides):
@@ -1931,7 +2065,139 @@ def build_director_report_html(selected_director, df, overrides):
                     break-before: auto;
                 }}
             }}
-        </style>
+        
+    @media print {{
+        .no-print,
+        section[data-testid="stSidebar"],
+        div[data-testid="stToolbar"],
+        div[data-testid="stDecoration"],
+        div[data-testid="stStatusWidget"],
+        div[data-testid="stDownloadButton"],
+        iframe,
+        button,
+        .admin-action-button,
+        div[data-testid="stExpander"],
+        [data-testid="stMetric"],
+        hr {{
+            display: none !important;
+        }}
+
+        .platform-header {{
+            display: flex !important;
+            box-shadow: none !important;
+            border: 1px solid #DDE5F0 !important;
+            margin-bottom: 12px !important;
+            page-break-after: avoid !important;
+        }}
+
+        .employee-print-page {{
+            page-break-before: always !important;
+            break-before: page !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            min-height: 92vh !important;
+            box-sizing: border-box !important;
+        }}
+
+        .employee-print-page:first-of-type {{
+            page-break-before: auto !important;
+            break-before: auto !important;
+        }}
+
+        .employee-grid-print,
+        .visual-column,
+        .priority-card,
+        .card {{
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }}
+    }}
+
+    
+    /* FINAL PRINT FIX */
+    @media print {{
+        .no-print,
+        section[data-testid="stSidebar"],
+        div[data-testid="stToolbar"],
+        div[data-testid="stDecoration"],
+        div[data-testid="stStatusWidget"],
+        div[data-testid="stDownloadButton"],
+        iframe,
+        button,
+        .admin-action-button,
+        div[data-testid="stExpander"],
+        [data-testid="stMetric"],
+        hr {{
+            display: none !important;
+        }}
+
+        .platform-header {{
+            display: flex !important;
+            box-shadow: none !important;
+            border: 1px solid #DDE5F0 !important;
+            margin-bottom: 12px !important;
+            page-break-after: avoid !important;
+            break-after: avoid !important;
+        }}
+
+        .main-hero {{
+            display: block !important;
+            box-shadow: none !important;
+            margin-bottom: 12px !important;
+            page-break-after: avoid !important;
+            break-after: avoid !important;
+        }}
+
+        .block-container {{
+            max-width: 100% !important;
+            padding: 0 !important;
+        }}
+
+        body,
+        .stApp {{
+            background: white !important;
+        }}
+
+        .employee-print-page {{
+            page-break-before: always !important;
+            break-before: page !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            min-height: 90vh !important;
+            box-sizing: border-box !important;
+            padding-top: 8px !important;
+        }}
+
+        .employee-print-page:first-of-type {{
+            page-break-before: auto !important;
+            break-before: auto !important;
+        }}
+
+        .employee-grid-print {{
+            display: grid !important;
+            grid-template-columns: 1fr 1fr 1fr !important;
+            gap: 12px !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }}
+
+        .visual-column,
+        .priority-card,
+        .card,
+        .employee-main-card,
+        .employee-summary-card {{
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            box-shadow: none !important;
+        }}
+
+        h1, h2, h3 {{
+            page-break-after: avoid !important;
+            break-after: avoid !important;
+        }}
+    }}
+
+    </style>
     </head>
     <body>
         <div class="header">
@@ -1985,7 +2251,139 @@ def render_save_pdf_button():
             .pdf-button:hover {
                 background: #123E7C;
             }
-        </style>
+        
+    @media print {{
+        .no-print,
+        section[data-testid="stSidebar"],
+        div[data-testid="stToolbar"],
+        div[data-testid="stDecoration"],
+        div[data-testid="stStatusWidget"],
+        div[data-testid="stDownloadButton"],
+        iframe,
+        button,
+        .admin-action-button,
+        div[data-testid="stExpander"],
+        [data-testid="stMetric"],
+        hr {{
+            display: none !important;
+        }}
+
+        .platform-header {{
+            display: flex !important;
+            box-shadow: none !important;
+            border: 1px solid #DDE5F0 !important;
+            margin-bottom: 12px !important;
+            page-break-after: avoid !important;
+        }}
+
+        .employee-print-page {{
+            page-break-before: always !important;
+            break-before: page !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            min-height: 92vh !important;
+            box-sizing: border-box !important;
+        }}
+
+        .employee-print-page:first-of-type {{
+            page-break-before: auto !important;
+            break-before: auto !important;
+        }}
+
+        .employee-grid-print,
+        .visual-column,
+        .priority-card,
+        .card {{
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }}
+    }}
+
+    
+    /* FINAL PRINT FIX */
+    @media print {{
+        .no-print,
+        section[data-testid="stSidebar"],
+        div[data-testid="stToolbar"],
+        div[data-testid="stDecoration"],
+        div[data-testid="stStatusWidget"],
+        div[data-testid="stDownloadButton"],
+        iframe,
+        button,
+        .admin-action-button,
+        div[data-testid="stExpander"],
+        [data-testid="stMetric"],
+        hr {{
+            display: none !important;
+        }}
+
+        .platform-header {{
+            display: flex !important;
+            box-shadow: none !important;
+            border: 1px solid #DDE5F0 !important;
+            margin-bottom: 12px !important;
+            page-break-after: avoid !important;
+            break-after: avoid !important;
+        }}
+
+        .main-hero {{
+            display: block !important;
+            box-shadow: none !important;
+            margin-bottom: 12px !important;
+            page-break-after: avoid !important;
+            break-after: avoid !important;
+        }}
+
+        .block-container {{
+            max-width: 100% !important;
+            padding: 0 !important;
+        }}
+
+        body,
+        .stApp {{
+            background: white !important;
+        }}
+
+        .employee-print-page {{
+            page-break-before: always !important;
+            break-before: page !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            min-height: 90vh !important;
+            box-sizing: border-box !important;
+            padding-top: 8px !important;
+        }}
+
+        .employee-print-page:first-of-type {{
+            page-break-before: auto !important;
+            break-before: auto !important;
+        }}
+
+        .employee-grid-print {{
+            display: grid !important;
+            grid-template-columns: 1fr 1fr 1fr !important;
+            gap: 12px !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }}
+
+        .visual-column,
+        .priority-card,
+        .card,
+        .employee-main-card,
+        .employee-summary-card {{
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            box-shadow: none !important;
+        }}
+
+        h1, h2, h3 {{
+            page-break-after: avoid !important;
+            break-after: avoid !important;
+        }}
+    }}
+
+    </style>
         <button class="pdf-button" onclick="window.parent.print();">
             Enregistrer le rapport en PDF
         </button>
