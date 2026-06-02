@@ -2792,12 +2792,36 @@ def render_admin_dashboard():
         report_col1 = st.container()
 
         with report_col1:
-            st.download_button(
-                "Télécharger le rapport du directeur",
-                report_html.encode("utf-8"),
-                f"rapport_TNA_2026_{selected_director}.html",
-                "text/html",
-                use_container_width=True
+            safe_report_html = json.dumps(report_html)
+        
+            components.html(
+                f"""
+                <button onclick="openReport()" style="
+                    width:100%;
+                    min-height:50px;
+                    background:#001F5B;
+                    color:white;
+                    border:0;
+                    border-radius:12px;
+                    font-size:14px;
+                    font-weight:400;
+                    cursor:pointer;
+                    box-shadow:0 6px 16px rgba(0,31,91,0.16);
+                ">
+                    Ouvrir le rapport du directeur
+                </button>
+        
+                <script>
+                function openReport() {{
+                    const html = {safe_report_html};
+                    const win = window.open("", "_blank");
+                    win.document.open();
+                    win.document.write(html);
+                    win.document.close();
+                }}
+                </script>
+                """,
+                height=64
             )
 
       
