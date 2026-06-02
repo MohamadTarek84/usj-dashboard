@@ -1565,22 +1565,22 @@ def render_employee_visual_cards(employee_name, employee_code, employee_departme
 
     for i, theme in enumerate(employee_ranked, start=1):
         employee_cards += f"""
-        <div class="priority-card employee-card">
-            <div class="priority-rank">Priorité {i}</div>
-            <div class="priority-theme">{theme}</div>
-        </div>
-        """
+<div class="priority-card employee-card">
+    <div class="priority-rank">Priorité {i}</div>
+    <div class="priority-theme">{theme}</div>
+</div>
+"""
 
     if not employee_ranked:
         employee_cards = "<div class='empty-choice'>Aucun choix employé.</div>"
 
     for i, theme in enumerate(director_ranked, start=1):
         director_cards += f"""
-        <div class="priority-card director-card">
-            <div class="priority-rank">Priorité {i}</div>
-            <div class="priority-theme">{theme}</div>
-        </div>
-        """
+<div class="priority-card director-card">
+    <div class="priority-rank">Priorité {i}</div>
+    <div class="priority-theme">{theme}</div>
+</div>
+"""
 
     if not director_ranked:
         director_cards = "<div class='empty-choice'>Aucun choix directeur.</div>"
@@ -1588,50 +1588,51 @@ def render_employee_visual_cards(employee_name, employee_code, employee_departme
     for i, theme in enumerate(final_themes, start=1):
         badge = "Thème commun" if theme in matched else "Décision / complément"
         final_cards += f"""
-        <div class="priority-card final-card">
-            <div class="priority-rank">Priorité finale {i}</div>
-            <div class="priority-theme">{theme}</div>
-            <div class="priority-badge">{badge}</div>
-        </div>
-        """
+<div class="priority-card final-card">
+    <div class="priority-rank">Priorité finale {i}</div>
+    <div class="priority-theme">{theme}</div>
+    <div class="priority-badge">{badge}</div>
+</div>
+"""
 
     if not final_themes:
         final_cards = "<div class='empty-choice'>Aucun thème final.</div>"
 
-    st.markdown(f"""
-    <section class="employee-print-page">
-        <div class="card blue-card employee-main-card">
-            <h3 style="margin-top:0;">{employee_name}</h3>
-            <span class="pill">Code : {employee_code}</span>
-            <span class="pill pill-gold">{employee_department}</span>
+    html = f"""
+<section class="employee-print-page">
+    <div class="card blue-card employee-main-card">
+        <h3 style="margin-top:0;">{employee_name}</h3>
+        <span class="pill">Code : {employee_code}</span>
+        <span class="pill pill-gold">{employee_department}</span>
+    </div>
+
+    <div class="card gold-card employee-summary-card">
+        <h3 style="margin-top:0; color:#001F5B;">Synthèse visuelle</h3>
+        <div style="color:#5D697A; font-weight:600;">
+            Comparaison des priorités classées par l’employé, par le Doyen / Directeur, puis sélection finale proposée.
+        </div>
+    </div>
+
+    <div class="employee-grid-print">
+        <div class="visual-column visual-employee">
+            <div class="visual-column-title">Choix de l’employé</div>
+            {employee_cards}
         </div>
 
-        <div class="card gold-card employee-summary-card">
-            <h3 style="margin-top:0; color:#001F5B;">Synthèse visuelle</h3>
-            <div style="color:#5D697A; font-weight:600;">
-                Comparaison des priorités classées par l’employé, par le Doyen / Directeur, puis sélection finale proposée.
-            </div>
+        <div class="visual-column visual-director">
+            <div class="visual-column-title">Choix du Doyen / Directeur</div>
+            {director_cards}
         </div>
 
-        <div class="employee-grid-print">
-            <div class="visual-column visual-employee">
-                <div class="visual-column-title">Choix de l’employé</div>
-                {employee_cards}
-            </div>
-
-            <div class="visual-column visual-director">
-                <div class="visual-column-title">Choix du Doyen / Directeur</div>
-                {director_cards}
-            </div>
-
-            <div class="visual-column visual-final">
-                <div class="visual-column-title">Thèmes finaux proposés</div>
-                {final_cards}
-            </div>
+        <div class="visual-column visual-final">
+            <div class="visual-column-title">Thèmes finaux proposés</div>
+            {final_cards}
         </div>
-    </section>
-    """, unsafe_allow_html=True)
+    </div>
+</section>
+""".strip()
 
+    st.markdown(html, unsafe_allow_html=True)
 
 
 def build_admin_flat_exports(df, overrides):
