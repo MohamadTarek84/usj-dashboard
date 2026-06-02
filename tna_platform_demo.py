@@ -2045,6 +2045,12 @@ def build_director_report_html(selected_director, df, overrides):
 
     leader_html = "".join([f"<li><b>P{i}</b> - {theme}</li>" for i, theme in enumerate(leader_themes, start=1)])
 
+    cfp_logo = image_to_base64(CFP_LOGO_PATH)
+    usj_logo = image_to_base64(USJ_LOGO_PATH)
+
+    cfp_logo_src = f"data:image/png;base64,{cfp_logo}" if cfp_logo else ""
+    usj_logo_src = f"data:image/png;base64,{usj_logo}" if usj_logo else ""
+    
     html = f"""
     <!DOCTYPE html>
     <html lang="fr">
@@ -2446,12 +2452,12 @@ def build_director_report_html(selected_director, df, overrides):
         </button>
 
         <div class="report-logo-header">
-            <img src="CFP LOGO.png" class="report-logo">
+            <img src="{cfp_logo_src}" class="report-logo">
             <div class="report-center">
                 <div class="report-center-title">Centre de Formation Professionnelle</div>
                 <div class="report-center-subtitle">Training Needs Assessment - TNA 2026</div>
             </div>
-            <img src="USJ LOGO 150.png" class="report-logo">
+            <img src="{usj_logo_src}" class="report-logo">
         </div>
 
         
