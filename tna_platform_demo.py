@@ -2418,7 +2418,7 @@ def render_save_pdf_button():
                 border-radius: 12px;
                 padding: 13px 18px;
                 font-weight: 400;
-                font-size: 15px;
+                font-size: 14px;
                 line-height: 1.2;
                 cursor: pointer;
                 box-shadow: 0 6px 16px rgba(0,31,91,0.16);
