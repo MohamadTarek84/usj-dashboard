@@ -2882,6 +2882,9 @@ def main():
     if st.session_state.get("admin_mode", False):
         html_block('<div class="admin-screen-only"><h2 style="color:#001F5B; margin-top:0;">Gestion des réponses</h2></div>')
 
+        st.write("DB path:", DB_PATH.resolve())
+        st.write("DB exists:", DB_PATH.exists())
+
         if not DB_PATH.exists():
             st.error("Database not found in this app environment.")
             st.stop()
