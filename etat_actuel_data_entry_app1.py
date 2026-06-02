@@ -15,7 +15,11 @@ import streamlit.components.v1 as components
 
 
 APP_TITLE = "PLAN STRATÉGIQUE USJ 2032"
-DB_PATH = Path("etat_actuel_responses.db")
+
+DB_DIR = Path("/home/data")
+DB_DIR.mkdir(parents=True, exist_ok=True)
+DB_PATH = DB_DIR / "etat_actuel_responses.db"
+
 LOGO_PATH = Path("LogoUAQ.png")
 INTRO_IMAGE_PATH = Path("Intro_schema.png")
 ANNEXE_A_PATH = Path("Annexe_A.png")
