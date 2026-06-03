@@ -3135,13 +3135,9 @@ box-sizing:border-box;
                 if field_index > 0:
                     html_block('<div class="admin-print-field-page-break"></div>')
 
-                col_original_section, col_admin_section = st.columns(2)
 
-                with col_original_section:
-                    render_admin_title_bar(field_name, USJ_BLUE)
+            render_admin_title_bar(field_name, USJ_RED)
 
-                with col_admin_section:
-                    render_admin_title_bar(field_name, USJ_RED)
 
                 for i in range(1, number_of_rows + 1):
                     row = original_section[i - 1] if i <= len(original_section) else {}
