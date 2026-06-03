@@ -3445,6 +3445,8 @@ margin-bottom:8px;
         # Auto-save admin modifications on every rerun
         save_admin_version_by_code(selected_draft_code, updated_all_admin_data)
 
+        st.info("Modifications admin enregistrées automatiquement.")
+
         with col_admin_save:
             if st.button(
                 "Enregistrer toutes les versions admin",
