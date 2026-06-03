@@ -337,6 +337,19 @@ def apply_usj_style():
     html_block(f"""
 <style>
 
+.admin-narrow-box {{
+    width: 75% !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+}}
+
+.st-key-download_export_csv button,
+.st-key-download_export_excel button {{
+    background-color: #6A1B9A !important;
+    border: 1px solid #6A1B9A !important;
+    color: white !important;
+}}
+
 .st-key-download_export_csv button,
 .st-key-download_export_excel button {{
     background-color: #6A1B9A !important;
