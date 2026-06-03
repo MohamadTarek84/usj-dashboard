@@ -3246,22 +3246,17 @@ margin-bottom:8px;
                     admin_value = saved_admin_value if str(saved_admin_value or "").strip() else original_value
 
                     html_block('<div class="admin-answer-row-wrapper">')
-                    col_original_answer, col_admin_answer = st.columns(2)
 
-                    with col_original_answer:
-                        render_admin_title_bar(f"Réponse {j + 1}", USJ_BLUE)
-                        render_original_answer_box(original_value)
+                    render_admin_title_bar(f"Réponse admin {j + 1}", USJ_RED)
 
-                    with col_admin_answer:
-                        render_admin_title_bar(f"Réponse admin {j + 1}", USJ_RED)
-                        updated_admin_section[key] = render_admin_edit_box(
-                            label=f"{section_label}_{key}",
-                            value=admin_value,
-                            key=f"admin_edit_{selected_draft_code}_{section_label}_{key}",
-                            height=95
-                        )
+                    updated_admin_section[key] = render_admin_edit_box(
+                        label=f"{section_label}_{key}",
+                        value=admin_value,
+                        key=f"admin_edit_{selected_draft_code}_{section_label}_{key}",
+                        height=95
+                    )
 
-            return updated_admin_section
+                    html_block('</div>')
 
 
         for section_index, (section_label, (main_key, sub_key)) in enumerate(section_map.items()):
