@@ -3161,15 +3161,16 @@ box-sizing:border-box;
 
                     
                     st.markdown(
-                            f'<div style="font-size:18px; font-weight:700; color:{USJ_RED}; margin:4px 0 6px 0;">Réponse {i}</div>',
-                            unsafe_allow_html=True
-                        )
-                        updated_admin_section[i - 1][field_name] = render_admin_edit_box(
-                            label=f"{section_label}_{field_name}_{i}",
-                            value=admin_value,
-                            key=f"admin_edit_{selected_draft_code}_{section_label}_{field_name}_{i}",
-                            height=95
-                        )
+                        f'<div style="font-size:18px; font-weight:700; color:{USJ_RED}; margin:4px 0 6px 0;">Réponse {i}</div>',
+                        unsafe_allow_html=True
+                    )
+
+                    updated_admin_section[i - 1][field_name] = render_admin_edit_box(
+                        label=f"{section_label}_{field_name}_{i}",
+                        value=admin_value,
+                        key=f"admin_edit_{selected_draft_code}_{section_label}_{field_name}_{i}",
+                        height=95
+                    )
 
                     html_block('</div>')
 
