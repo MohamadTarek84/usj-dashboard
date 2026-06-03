@@ -2970,6 +2970,13 @@ def main():
 
         selected_draft_code = selected_response.split(" | ")[0].strip()
 
+        if st.button("Effacer les réponses du groupe sélectionné", key="delete_selected_group_button"):
+            delete_response_by_code(selected_draft_code)
+            st.success(f"Les réponses du groupe {selected_draft_code} ont été effacées.")
+            st.rerun()
+
+
+        
         selected_row = admin_df[admin_df["draft_code"] == selected_draft_code].iloc[0]
 
         print_group_name = " - ".join(
