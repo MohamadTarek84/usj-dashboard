@@ -3174,11 +3174,10 @@ box-sizing:border-box;
             if original_section:
                 number_of_rows = max(5, len(original_section))
 
-            for field_index, field_name in enumerate(field_names):
-                if field_index > 0:
-                    html_block('<div class="admin-print-field-page-break"></div>')
+                        col_left, col_right = st.columns(2)
 
-                left_space, admin_col, right_space = st.columns([0.12, 0.76, 0.12])
+            for field_index, field_name in enumerate(field_names):
+                admin_col = col_left if field_index == 0 else col_right
 
                 with admin_col:
                     render_admin_title_bar(field_name, USJ_RED)
@@ -3207,10 +3206,14 @@ box-sizing:border-box;
                             height=95
                         )
 
-                st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown("<br>", unsafe_allow_html=True)
 
             return updated_admin_section
 
+
+
+
+            
         def render_dict_section(section_label, original_section):
             existing_admin_section = get_existing_admin_section(section_label, original_section)
             updated_admin_section = {}
