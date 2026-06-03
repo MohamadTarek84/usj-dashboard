@@ -3056,7 +3056,7 @@ box-sizing:border-box;
                 return original_section
             return existing
 
-       def render_list_section(section_label, original_section):
+    def render_list_section(section_label, original_section):
     existing_admin_section = get_existing_admin_section(section_label, original_section)
     updated_admin_section = []
 
