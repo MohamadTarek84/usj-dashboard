@@ -343,6 +343,13 @@ def apply_usj_style():
     margin-right: auto !important;
 }}
 
+div[class*="st-key-admin_edit_"] textarea {{
+    font-family: Candara, Calibri, Arial, sans-serif !important;
+    font-size: 20px !important;
+    font-weight: 400 !important;
+    line-height: 1.35 !important;
+}}
+
 .st-key-download_export_csv button,
 .st-key-download_export_excel button {{
     background-color: #6A1B9A !important;
