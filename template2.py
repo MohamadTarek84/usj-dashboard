@@ -1816,7 +1816,7 @@ def render_swot_analysis():
     Quels sont les éléments, facteurs, tendances, pratiques externes qui pourraient menacer l’évolution de l’Université ?
     </p>
 
-    <p style="font-size:22px; line-height:1.5; color:#0070C0; font-style:italic; margin-bottom:0;">
+    <p style="font-size:19px; line-height:1.5; color:#0070C0; font-style:italic; margin-bottom:0;">
     Nous vous remercions de bien vouloir compléter le tableau ci-dessous en indiquant au 
     <strong>maximum cinq opportunités et cinq menaces</strong>, avec un 
     <strong>maximum de 30 mots par ligne.</strong>
