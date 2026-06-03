@@ -954,7 +954,6 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
 
 @media print {{
 
-@media print {{
 
     @page {{
         size: A4 portrait;
@@ -984,6 +983,7 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
     .print-button-wrapper,
     div[data-testid="stButton"],
     div[data-testid="stDownloadButton"],
+    div[data-testid="stAlert"],
     div[data-testid="stSelectbox"],
     iframe,
     .admin-screen-only,
