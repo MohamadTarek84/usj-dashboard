@@ -3159,12 +3159,6 @@ box-sizing:border-box;
                     html_block('<div class="admin-answer-row-wrapper">')
                     
 
-                    
-                    st.markdown(
-                        f'<div style="font-size:18px; font-weight:700; color:{USJ_RED}; margin:4px 0 6px 0;">Réponse {i}</div>',
-                        unsafe_allow_html=True
-                    )
-
                     updated_admin_section[i - 1][field_name] = render_admin_edit_box(
                         label=f"{section_label}_{field_name}_{i}",
                         value=admin_value,
@@ -3247,7 +3241,6 @@ margin-bottom:8px;
 
                     html_block('<div class="admin-answer-row-wrapper">')
 
-                    render_admin_title_bar(f"Réponse admin {j + 1}", USJ_RED)
 
                     updated_admin_section[key] = render_admin_edit_box(
                         label=f"{section_label}_{key}",
