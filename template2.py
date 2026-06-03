@@ -772,7 +772,7 @@ button[kind="primary"] {{
 button[kind="primary"] p {{
     color: white !important;
     white-space: nowrap !important;
-    font-size: 16px !important;
+    font-size: 18px !important;
     font-weight: 700 !important;
 }}
 
