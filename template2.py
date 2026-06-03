@@ -3174,7 +3174,7 @@ box-sizing:border-box;
             if original_section:
                 number_of_rows = max(5, len(original_section))
 
-                        col_left, col_right = st.columns(2)
+            col_left, col_right = st.columns(2)
 
             for field_index, field_name in enumerate(field_names):
                 admin_col = col_left if field_index == 0 else col_right
