@@ -3172,12 +3172,16 @@ box-sizing:border-box;
                     html_block('<div class="admin-answer-row-wrapper">')
                     
 
-                    updated_admin_section[i - 1][field_name] = render_admin_edit_box(
-                        label=f"{section_label}_{field_name}_{i}",
-                        value=admin_value,
-                        key=f"admin_edit_{selected_draft_code}_{section_label}_{field_name}_{i}",
-                        height=95
-                    )
+
+                    left_space, admin_col, right_space = st.columns([0.12, 0.76, 0.12])
+
+                    with admin_col:
+                        updated_admin_section[i - 1][field_name] = render_admin_edit_box(
+                            label=f"{section_label}_{field_name}_{i}",
+                            value=admin_value,
+                            key=f"admin_edit_{selected_draft_code}_{section_label}_{field_name}_{i}",
+                            height=95
+                        )
 
                     html_block('</div>')
 
