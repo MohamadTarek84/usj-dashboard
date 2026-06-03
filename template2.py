@@ -3460,7 +3460,8 @@ margin-bottom:8px;
                 "Mot de passe reçu par email",
                 placeholder="",
                 key="login_draft_code",
-                on_change=submit_login_code
+                on_change=submit_login_code,
+                type="password"
             )
 
         with col_button:
