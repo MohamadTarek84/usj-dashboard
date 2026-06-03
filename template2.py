@@ -3547,11 +3547,11 @@ margin-bottom:8px;
                 if institution_default not in focus_group_options:
                     institution_default = "Sous groupe 1"
 
-                institution = st.selectbox(
+                institution = st.text_input(
                     "Focus groupe",
-                    options=focus_group_options,
-                    index=focus_group_options.index(institution_default),
-                    key="institution"
+                    value=institution_default,
+                    key="institution_locked",
+                    disabled=True
                 )
 
             with col2:
