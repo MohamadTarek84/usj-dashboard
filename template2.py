@@ -1739,23 +1739,12 @@ def render_swot_table(section_key, left_title, right_title):
 """)
 
     for i in range(1, 6):
-        col1, col2 = st.columns(2)
-
-        with col1:
-            left_value = word_limited_text_area(
-                label=f"{left_title} {i}",
-                key=f"{section_key}_{left_title}_{i}",
-                height=95,
-                max_words=30
-            )
-
-        with col2:
-            right_value = word_limited_text_area(
-                label=f"{right_title} {i}",
-                key=f"{section_key}_{right_title}_{i}",
-                height=95,
-                max_words=30
-            )
+        right_value = word_limited_text_area(
+            label=f"{right_title} {i}",
+            key=f"{section_key}_{right_title}_{i}",
+            height=95,
+            max_words=30
+        )
 
         rows.append({
             left_title: left_value,
