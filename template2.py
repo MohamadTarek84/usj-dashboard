@@ -2988,6 +2988,10 @@ def main():
             st.success(f"Les réponses du groupe {selected_draft_code} ont été effacées.")
             st.rerun()
 
+        if st.button("Autoriser ce groupe à modifier ses réponses", key="unlock_selected_group_button"):
+            unlock_response_by_code(selected_draft_code)
+            st.success(f"Le groupe {selected_draft_code} peut maintenant modifier ses réponses.")
+            st.rerun()
 
         
         selected_row = admin_df[admin_df["draft_code"] == selected_draft_code].iloc[0]
