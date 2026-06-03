@@ -1811,7 +1811,7 @@ def render_swot_analysis():
     Quels sont les éléments, facteurs, tendances, pratiques externes qui pourraient consolider la position de l’Université ?
     </p>
 
-    <p style="font-size:22px; line-height:1.5; color:{USJ_BLUE}; font-weight:700; margin-bottom:12px;">
+    <p style="font-size:19px; line-height:1.5; color:{USJ_BLUE}; font-weight:700; margin-bottom:12px;">
     4. <span style="color:#C00000; font-style:italic;">Menaces :</span>
     Quels sont les éléments, facteurs, tendances, pratiques externes qui pourraient menacer l’évolution de l’Université ?
     </p>
