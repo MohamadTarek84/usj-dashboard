@@ -3461,7 +3461,7 @@ margin-bottom:8px;
                 placeholder="",
                 key="login_draft_code",
                 on_change=submit_login_code,
-                type="password"
+                type="default"
             )
 
         with col_button:
