@@ -3193,11 +3193,7 @@ box-sizing:border-box;
                 else:
                     admin_value = original_value
 
-                col_original_answer, col_admin_answer = st.columns(2)
-
-                with col_original_answer:
-                    render_admin_title_bar(clean_admin_display_label(key), USJ_BLUE)
-                    render_original_answer_box(original_value)
+                
 
                 with col_admin_answer:
                     render_admin_title_bar(clean_admin_display_label(key), USJ_RED)
