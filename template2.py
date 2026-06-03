@@ -3194,8 +3194,6 @@ box-sizing:border-box;
                     admin_value = original_value
 
                 
-
-                with col_admin_answer:
                     render_admin_title_bar(clean_admin_display_label(key), USJ_RED)
                     updated_admin_section[key] = render_admin_edit_box(
                         label=f"{section_label}_{key}",
