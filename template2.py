@@ -3025,7 +3025,7 @@ def main():
             st.markdown(
                 f'''
 <div style="
-background-color:{color};
+background-color:#2F4F7F;
 color:white;
 padding:10px 14px;
 font-size:18px;
