@@ -3160,7 +3160,7 @@ box-sizing:border-box;
                     
 
                     
-                        st.markdown(
+                    st.markdown(
                             f'<div style="font-size:18px; font-weight:700; color:{USJ_RED}; margin:4px 0 6px 0;">Réponse {i}</div>',
                             unsafe_allow_html=True
                         )
