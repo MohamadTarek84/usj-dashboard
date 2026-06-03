@@ -336,6 +336,10 @@ def apply_usj_style():
     html_block(f"""
 <style>
 
+.st-key-login_draft_code input {{
+    -webkit-text-security: disc !important;
+}}
+
 .admin-narrow-box {{
     width: 75% !important;
     margin-left: auto !important;
