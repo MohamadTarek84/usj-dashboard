@@ -1728,15 +1728,9 @@ def render_swot_intro():
 def render_swot_table(section_key, left_title, right_title):
     rows = []
 
-    col1, col2 = st.columns(2)
+    col2 = st.container()
 
-    with col1:
-        html_block(f"""
-<div style="background:{USJ_BLUE}; color:white; padding:10px 12px; min-height:42px; display:flex; align-items:center; justify-content:center; font-weight:700; border-radius:6px;">
-    {left_title}
-</div>
-""")
-
+    
     with col2:
         html_block(f"""
 <div style="background:{USJ_BLUE}; color:white; padding:10px 12px; min-height:42px; display:flex; align-items:center; justify-content:center; font-weight:700; border-radius:6px;">
