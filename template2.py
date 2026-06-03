@@ -1696,13 +1696,13 @@ def render_swot_intro():
     </ul>
 
     <p style="font-size:19px; line-height:1.5; color:{USJ_BLUE}; font-weight:700; margin-bottom:12px;">
-    1. <span style="color:#C00000; font-style:italic;">Éléments de réussite – Forces :</span>
-    Quels sont les initiatives, processus ou projets universitaires actuels que vous appréciez le plus ?
+    1. <span style="color:#C00000; font-style:italic;">Forces :</span>
+    Quels sont les politiques, processus ou projets universitaires actuels qui constituent les éléments de réussite de l’Université ?
     </p>
 
     <p style="font-size:19px; line-height:1.5; color:{USJ_BLUE}; font-weight:700; margin-bottom:12px;">
-    2. <span style="color:#C00000; font-style:italic;">Initiatives à abandonner – Faiblesses :</span>
-    Quels sont les initiatives, processus ou projets universitaires actuels qui devraient être améliorés ou abandonnés ?
+    2. <span style="color:#C00000; font-style:italic;">Faiblesses :</span>
+    Quels sont les politiques, processus ou projets universitaires actuels à améliorer ?
     </p>
 
     <p style="font-size:19px; line-height:1.5; color:#0070C0; font-style:italic; margin-bottom:0;">
@@ -1808,12 +1808,12 @@ def render_swot_analysis():
 
     <p style="font-size:19px; line-height:1.5; color:{USJ_BLUE}; font-weight:700; margin-bottom:12px;">
     3. <span style="color:#C00000; font-style:italic;">Opportunités :</span>
-    Quels sont les éléments, facteurs, tendances, pratiques externes qui pourraient améliorer votre expérience à l’université et contribuer à votre succès ?
+    Quels sont les éléments, facteurs, tendances, pratiques externes qui pourraient consolider la position de l’Université ?
     </p>
 
     <p style="font-size:22px; line-height:1.5; color:{USJ_BLUE}; font-weight:700; margin-bottom:12px;">
     4. <span style="color:#C00000; font-style:italic;">Menaces :</span>
-    Quels sont les éléments, facteurs, tendances, pratiques externes qui pourraient menacer l’évolution de l’université ?
+    Quels sont les éléments, facteurs, tendances, pratiques externes qui pourraient menacer l’évolution de l’Université ?
     </p>
 
     <p style="font-size:22px; line-height:1.5; color:#0070C0; font-style:italic; margin-bottom:0;">
