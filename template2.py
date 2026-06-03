@@ -3151,6 +3151,11 @@ box-sizing:border-box;
 
                 render_admin_title_bar(field_name, USJ_RED)
 
+                left_space, admin_col, right_space = st.columns([0.12, 0.76, 0.12])
+
+                with admin_col:
+                    render_admin_title_bar(field_name, USJ_RED)
+
 
                 for i in range(1, number_of_rows + 1):
                     row = original_section[i - 1] if i <= len(original_section) else {}
@@ -3177,12 +3182,16 @@ box-sizing:border-box;
                     with admin_col:
                         render_admin_title_bar(field_name, USJ_RED)
                     
-                        updated_admin_section[i - 1][field_name] = render_admin_edit_box(
-                            label=f"{section_label}_{field_name}_{i}",
-                            value=admin_value,
-                            key=f"admin_edit_{selected_draft_code}_{section_label}_{field_name}_{i}",
-                            height=95
-                        )
+                   
+                        left_space, admin_col, right_space = st.columns([0.12, 0.76, 0.12])
+
+                        with admin_col:
+                            updated_admin_section[i - 1][field_name] = render_admin_edit_box(
+                                label=f"{section_label}_{field_name}_{i}",
+                                value=admin_value,
+                                key=f"admin_edit_{selected_draft_code}_{section_label}_{field_name}_{i}",
+                                height=95
+                            )
                     
 
                     html_block('</div>')
