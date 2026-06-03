@@ -1472,7 +1472,7 @@ def render_first_page_header():
         </h1>
 
         <p style="font-size:18px; font-weight:700; color:{USJ_BLUE_2}; margin:0; line-height:1.4;">
-            Analyse de l’état actuel et propositions <span style="font-size:18px; font-weight:700; color:{USJ_BLUE_2};">(pré-planification stratégique USJ)</span>
+            <span style="font-size:18px; font-weight:700; color:{USJ_BLUE_2};">Focus groupe</span>
         </p>
     </div>
 
