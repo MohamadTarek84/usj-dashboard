@@ -57,11 +57,10 @@ AUTHORIZED_TEST_CODES = {
     "USJ-TH-2032": {"responsable": "Tarek Halabi", "institution": ""},
 
     # Focus groups
-    "USJ-FG1-2032": {"responsable": "", "institution": "Sous groupe 1"},
-    "USJ-FG2-2032": {"responsable": "", "institution": "Sous groupe 2"},
-    "USJ-FG3-2032": {"responsable": "", "institution": "Sous groupe 3"},
-    "USJ-FG4-2032": {"responsable": "", "institution": "Sous groupe 4"},
-    "USJ-FG5-2032": {"responsable": "", "institution": "Sous groupe 5"},
+    "USJ-EC-FG1-2032": {"responsable": "", "institution": "Sous groupe 1"},
+    "USJ-EC-FG2-2032": {"responsable": "", "institution": "Sous groupe 2"},
+    "USJ-EC-FG3-2032": {"responsable": "", "institution": "Sous groupe 3"},
+    "USJ-EC-FG4-2032": {"responsable": "", "institution": "Sous groupe 4"},
 }
 
 def html_block(content):
