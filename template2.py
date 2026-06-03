@@ -3445,8 +3445,6 @@ margin-bottom:8px;
         # Auto-save admin modifications on every rerun
         save_admin_version_by_code(selected_draft_code, updated_all_admin_data)
 
-        st.info("Modifications admin enregistrées automatiquement.")
-
         with col_admin_save:
             if st.button(
                 "Enregistrer toutes les versions admin",
@@ -3454,8 +3452,11 @@ margin-bottom:8px;
                 use_container_width=True
             ):
                 save_admin_version_by_code(selected_draft_code, updated_all_admin_data)
-                st.success("Versions admin enregistrées sans modifier les réponses originales du groupe.")
+                st.session_state["admin_saved_message"] = True
                 st.rerun()
+
+        if st.session_state.pop("admin_saved_message", False):
+            st.success("Modifications admin enregistrées.")
 
         export_df = build_admin_export(df)
 
