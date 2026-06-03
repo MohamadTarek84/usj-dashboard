@@ -24,7 +24,11 @@ from matplotlib.patches import FancyBboxPatch, Circle
 
 APP_TITLE = "PLAN STRATÉGIQUE USJ 2032"
 
-DB_DIR = Path("/home/data")
+if Path("/home/site").exists():
+    DB_DIR = Path("/home/data")          # Azure persistent storage
+else:
+    DB_DIR = Path(".")                   # Streamlit Cloud / local
+
 DB_DIR.mkdir(parents=True, exist_ok=True)
 
 DB_PATH = DB_DIR / "focus_group_responsesT2.db"
