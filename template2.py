@@ -3275,6 +3275,7 @@ margin-bottom:8px;
 
                     html_block('</div>')
 
+            return updated_admin_section
 
         for section_index, (section_label, (main_key, sub_key)) in enumerate(section_map.items()):
             if section_index > 0:
