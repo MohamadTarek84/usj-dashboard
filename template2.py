@@ -2976,26 +2976,6 @@ def main():
         else:
             admin_data = {}
 
-        col_admin_title = st.container()
-
-       
-
-        with col_admin_title:
-            html_block(f"""
-<div class="admin-screen-only" style="
-background-color:#F8F3F5;
-padding:14px 22px;
-border-radius:10px;
-border-left:7px solid {USJ_RED};
-box-shadow:0 2px 10px rgba(0,0,0,0.08);
-margin-top:12px;
-margin-bottom:18px;
-">
-<h2 style="font-size:26px; color:{USJ_RED}; margin:0; font-weight:700;">
-    Version modifiée après présentation des réponses
-</h2>
-</div>
-""")
 
         section_map = {
             "I - Forces et faiblesses": ("swot_analysis", "facteurs_internes"),
