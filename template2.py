@@ -1147,6 +1147,10 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
         overflow: hidden !important;
     }}
 
+    .admin-conclusion-no-page-break {{
+        display: none !important;
+    }}
+
     .print-answer-block,
     .print-answer-text,
     .print-answer-content,
@@ -3258,7 +3262,7 @@ box-sizing:border-box;
 
             for i, phrase in enumerate(phrases, start=1):
                 if i > 1:
-                    html_block('<div class="admin-print-field-page-break"></div>')
+                    html_block('<div class="admin-conclusion-no-page-break"></div>')
 
                 st.markdown(
                     f"""
