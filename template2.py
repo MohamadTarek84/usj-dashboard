@@ -1747,7 +1747,6 @@ def render_swot_table(section_key, left_title, right_title):
         )
 
         rows.append({
-            left_title: left_value,
             right_title: right_value,
         })
 
