@@ -3136,7 +3136,7 @@ box-sizing:border-box;
                     html_block('<div class="admin-print-field-page-break"></div>')
 
 
-            render_admin_title_bar(field_name, USJ_RED)
+                render_admin_title_bar(field_name, USJ_RED)
 
 
                 for i in range(1, number_of_rows + 1):
