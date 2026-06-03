@@ -3157,16 +3157,9 @@ box-sizing:border-box;
                         updated_admin_section.append({})
 
                     html_block('<div class="admin-answer-row-wrapper">')
-                    col_original_answer, col_admin_answer = st.columns(2)
+                    
 
-                    with col_original_answer:
-                        st.markdown(
-                            f'<div style="font-size:18px; font-weight:700; color:{USJ_BLUE}; margin:4px 0 6px 0;">Réponse {i}</div>',
-                            unsafe_allow_html=True
-                        )
-                        render_original_answer_box(original_value)
-
-                    with col_admin_answer:
+                    
                         st.markdown(
                             f'<div style="font-size:18px; font-weight:700; color:{USJ_RED}; margin:4px 0 6px 0;">Réponse {i}</div>',
                             unsafe_allow_html=True
