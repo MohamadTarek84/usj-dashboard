@@ -336,10 +336,6 @@ def apply_usj_style():
     html_block(f"""
 <style>
 
-.st-key-login_draft_code input {{
-    -webkit-text-security: disc !important;
-}}
-
 .admin-narrow-box {{
     width: 75% !important;
     margin-left: auto !important;
@@ -2900,6 +2896,16 @@ def main():
     )
 
     apply_usj_style()
+
+    if not st.session_state.get("show_login_code", False):
+        html_block("""
+    <style>
+    .st-key-login_draft_code input {
+        -webkit-text-security: disc !important;
+    }
+    </style>
+    """)
+    
     init_db()
 
     st.session_state.setdefault("n_autres_rows", 1)
