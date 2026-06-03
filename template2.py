@@ -3081,8 +3081,6 @@ box-sizing:border-box;
             if not isinstance(original_section, list):
                 original_section = []
 
-            # Use the real expected fields for the SWOT sections.
-            # This avoids showing old long question labels or wrong keys from older saved drafts.
             if section_label == "I - Forces et faiblesses":
                 field_names = ["Forces", "Faiblesses"]
             elif section_label == "II - Opportunités et menaces":
@@ -3099,19 +3097,16 @@ box-sizing:border-box;
                 if not isinstance(row, dict):
                     return ""
 
-                # Exact match first.
                 if expected_field in row:
                     return row.get(expected_field, "")
 
                 expected_lower = expected_field.lower()
 
-                # Robust match for older keys such as long question labels.
                 for key, value in row.items():
                     key_lower = str(key).lower()
                     if expected_lower in key_lower:
                         return value
 
-                # Accent-safe fallback for Opportunités / Menaces.
                 if expected_field == "Opportunités":
                     for key, value in row.items():
                         if "opportun" in str(key).lower():
@@ -3125,11 +3120,6 @@ box-sizing:border-box;
                 return ""
 
             def get_admin_value(saved_admin_row, expected_field, original_value):
-                """
-                The admin version must start from the participant answer.
-                If a previously saved admin value is empty, keep showing the participant answer
-                so old test-code users and focus-group users always reopen with the participants' answers visible.
-                """
                 if not isinstance(saved_admin_row, dict):
                     return original_value
 
@@ -3166,53 +3156,34 @@ box-sizing:border-box;
                 if field_index > 0:
                     html_block('<div class="admin-print-field-page-break"></div>')
 
-
-                render_admin_title_bar(field_name, USJ_RED)
-
                 left_space, admin_col, right_space = st.columns([0.12, 0.76, 0.12])
 
                 with admin_col:
                     render_admin_title_bar(field_name, USJ_RED)
 
+                    for i in range(1, number_of_rows + 1):
+                        row = original_section[i - 1] if i <= len(original_section) else {}
+                        original_value = get_value_from_row(row, field_name)
 
-                for i in range(1, number_of_rows + 1):
-                    row = original_section[i - 1] if i <= len(original_section) else {}
-                    original_value = get_value_from_row(row, field_name)
+                        saved_admin_row = {}
+                        if (
+                            isinstance(existing_admin_section, list)
+                            and len(existing_admin_section) >= i
+                            and isinstance(existing_admin_section[i - 1], dict)
+                        ):
+                            saved_admin_row = existing_admin_section[i - 1]
 
-                    saved_admin_row = {}
-                    if (
-                        isinstance(existing_admin_section, list)
-                        and len(existing_admin_section) >= i
-                        and isinstance(existing_admin_section[i - 1], dict)
-                    ):
-                        saved_admin_row = existing_admin_section[i - 1]
+                        admin_value = get_admin_value(saved_admin_row, field_name, original_value)
 
-                    admin_value = get_admin_value(saved_admin_row, field_name, original_value)
+                        while len(updated_admin_section) < i:
+                            updated_admin_section.append({})
 
-                    while len(updated_admin_section) < i:
-                        updated_admin_section.append({})
-
-                    html_block('<div class="admin-answer-row-wrapper">')
-                  
-
-                    left_space, admin_col, right_space = st.columns([0.12, 0.76, 0.12])
-
-                    with admin_col:
-                        render_admin_title_bar(field_name, USJ_RED)
-                    
-                   
-                        left_space, admin_col, right_space = st.columns([0.12, 0.76, 0.12])
-
-                        with admin_col:
-                            updated_admin_section[i - 1][field_name] = render_admin_edit_box(
-                                label=f"{section_label}_{field_name}_{i}",
-                                value=admin_value,
-                                key=f"admin_edit_{selected_draft_code}_{section_label}_{field_name}_{i}",
-                                height=95
-                            )
-                    
-
-                    html_block('</div>')
+                        updated_admin_section[i - 1][field_name] = render_admin_edit_box(
+                            label=f"{section_label}_{field_name}_{i}",
+                            value=admin_value,
+                            key=f"admin_edit_{selected_draft_code}_{section_label}_{field_name}_{i}",
+                            height=95
+                        )
 
                 st.markdown("<br>", unsafe_allow_html=True)
 
