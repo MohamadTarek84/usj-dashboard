@@ -280,25 +280,12 @@ def preload_draft_into_session(data):
     for i in range(1, 6):
         st.session_state[f"priority_only_{i}"] = priorities_data.get(f"priorite_{i}", "")
 
-    phrases = [
-        "Nous souhaitons que l’USJ soit reconnue pour …",
-        "Nous souhaitons que nos étudiants disent que l’USJ …",
-        "L’USJ serait un excellent lieu de travail si …",
-    ]
-
     pour_finir = data.get("pour_finir", {})
 
-    for i, phrase in enumerate(phrases, start=1):
-        saved_phrase = pour_finir.get(phrase, {})
-
-        if isinstance(saved_phrase, dict):
-            st.session_state[f"pour_finir_{i}_1"] = saved_phrase.get("reponse_1", "")
-            st.session_state[f"pour_finir_{i}_2"] = saved_phrase.get("reponse_2", "")
-            st.session_state[f"pour_finir_{i}_3"] = saved_phrase.get("reponse_3", "")
-        else:
-            st.session_state[f"pour_finir_{i}_1"] = saved_phrase
-            st.session_state[f"pour_finir_{i}_2"] = ""
-            st.session_state[f"pour_finir_{i}_3"] = ""
+    for i in range(1, 4):
+        for j in range(2):
+            key = f"pour_finir_{i}_{j}"
+            st.session_state[key] = pour_finir.get(key, "")
 
 
 def flatten_response(row):
