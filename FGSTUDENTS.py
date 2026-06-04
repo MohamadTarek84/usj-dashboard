@@ -1474,7 +1474,7 @@ def render_first_page_header():
             height:auto;
             object-fit:contain;
             display:block;
-        ">
+        " 
         """
     else:
         logo_html = '<div style="color:#8B1538; font-weight:700;">LogoUAQ.png non trouvé</div>'
