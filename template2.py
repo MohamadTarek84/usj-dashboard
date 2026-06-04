@@ -267,12 +267,54 @@ def preload_draft_into_session(data):
     for theme, value in data.get("external_analysis", {}).items():
         st.session_state[f"external_{theme}"] = value
 
-    for section_key, rows in data.get("swot_analysis", {}).items():
-        prefix = "swot_internal" if section_key == "facteurs_internes" else "swot_external"
+    swot_saved = data.get("swot_analysis", {})
 
-        for i, row in enumerate(rows, start=1):
-            for col_name, value in row.items():
-                st.session_state[f"{prefix}_{col_name}_{i}"] = value
+    swot_config = {
+        "facteurs_internes": ("swot_internal", ["Forces", "Faiblesses"]),
+        "facteurs_externes": ("swot_external", ["Opportunités", "Menaces"]),
+    }
+
+    def clean_key(txt):
+        txt = str(txt or "").lower()
+        txt = txt.replace("é", "e").replace("è", "e").replace("ê", "e")
+        txt = txt.replace("à", "a").replace("ç", "c")
+        return txt
+
+    def get_swot_value(row, expected_field, field_index):
+        if not isinstance(row, dict):
+            return ""
+
+        if expected_field in row:
+            return row.get(expected_field, "")
+
+        expected_clean = clean_key(expected_field)
+
+        for k, v in row.items():
+            k_clean = clean_key(k)
+            if expected_clean in k_clean:
+                return v
+
+        values = list(row.values())
+        if field_index < len(values):
+            return values[field_index]
+
+        return ""
+
+    for section_key, (prefix, fields) in swot_config.items():
+        rows = swot_saved.get(section_key, [])
+
+        if not isinstance(rows, list):
+            rows = []
+
+        for i in range(1, 6):
+            row = rows[i - 1] if i <= len(rows) else {}
+
+            for field_index, field_name in enumerate(fields):
+                st.session_state[f"{prefix}_{field_name}_{i}"] = get_swot_value(
+                    row,
+                    field_name,
+                    field_index
+                )
 
 
     priorities_data = data.get("priorities_initiatives", {})
