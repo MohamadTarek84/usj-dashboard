@@ -3074,10 +3074,14 @@ box-sizing:border-box;
                 unsafe_allow_html=True
             )
 
-        def admin_autosave_callback():
-            st.session_state["admin_needs_autosave"] = True
-
-       
+        def render_admin_edit_box(label, value, key, height=95):
+            return st.text_area(
+                label=label,
+                value=str(value) if value else "",
+                height=height,
+                key=key,
+                label_visibility="collapsed"
+            )
 
         def get_existing_admin_section(section_label, original_section):
             existing = updated_all_admin_data.get(section_label)
