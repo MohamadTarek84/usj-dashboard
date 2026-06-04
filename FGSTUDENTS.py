@@ -3222,7 +3222,8 @@ box-sizing:border-box;
                 else:
                     admin_value = original_value
         
-                render_admin_title_bar(clean_admin_display_label(key), USJ_RED)
+                if section_label != "III - Priorités":
+                    render_admin_title_bar(clean_admin_display_label(key), USJ_RED)
         
                 updated_admin_section[key] = render_admin_edit_box(
                     label=f"{section_label}_{key}",
