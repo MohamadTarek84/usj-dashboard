@@ -3569,10 +3569,10 @@ margin-bottom:8px;
             with col3:
                 st.text_input(
                     "Date",
-                    value="2026-06-04",
+                    value="2026-06-05",
                     disabled=True
                 )
-                response_date = "2026-06-04"
+                response_date = "2026-06-05"
 
             st.markdown("---")
 
