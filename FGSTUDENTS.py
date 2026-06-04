@@ -2961,6 +2961,9 @@ def main():
             admin_df["statut"].fillna("")
         )
 
+        admin_df["fg_order"] = admin_df["draft_code"].astype(str).str.extract(r"FG(\d+)", expand=False).fillna(999).astype(int)
+        admin_df = admin_df.sort_values(["fg_order", "draft_code"]).reset_index(drop=True)
+        
         selected_response = st.selectbox(
             "Choisir un sous groupe",
             options=admin_df["display_label"].tolist()
