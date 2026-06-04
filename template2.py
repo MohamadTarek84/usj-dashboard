@@ -267,7 +267,6 @@ def preload_draft_into_session(data):
     for theme, value in data.get("external_analysis", {}).items():
         st.session_state[f"external_{theme}"] = value
 
-    st.write("DEBUG ORIGINAL SWOT:", data.get("swot_analysis"))
     
     swot_saved = data.get("swot_analysis", {})
 
