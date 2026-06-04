@@ -1694,24 +1694,23 @@ def render_swot_intro():
 <div style="background-color:#ffffff; padding:24px 34px 10px 34px; border-radius:12px; border:1px solid #E0E0E0; box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:6px;">
 
     <p style="font-size:19px; line-height:1.45; color:{USJ_BLUE}; font-weight:700; margin-bottom:10px;">
-    Thématiques à prendre en considération pour répondre aux questions 1 et 2 (au moins 6) :
+    Thématiques à prendre en considération pour répondre aux questions 1 et 2 :
     </p>
 
     <ul style="font-size:19px; line-height:1.45; color:{USJ_BLUE}; margin-top:0; margin-bottom:18px;">
-        <li>Soutenabilité financière</li>
-        <li>Gouvernance et Leadership (gestion, relation, représentation, etc.)</li>
-        <li>Stratégie académique et qualité d’enseignement</li>
-        <li>Recherche et Innovation</li>
-        <li>Ressources documentaires et Environnement digital</li>
-        <li>Succès des étudiants (recrutement, accompagnement, services de support, employabilité, etc.)</li>
-        <li>Ressources humaines</li>
-        <li>Stratégie et mobilité internationales</li>
-        <li>Mission sociétale</li>
-        <li>Espace et infrastructures</li>
-        <li>Environnement de travail</li>
+        <li>Qualité de l’enseignement (Accompagnement, Orientation, Tutorat, etc.)</li>
+        <li>Relation avec l’administration et les enseignants</li>
+        <li>Représentation des étudiants</li>
+        <li>Ressources documentaires, numériques et informatiques</li>
+        <li>Espace et infrastructure</li>
+        <li>Vie universitaire (Vie étudiante, Sport, Aide psychologique, etc.)</li>
         <li>Diversité et inclusion</li>
-        <li>Développement Durable (ODD)</li>
-        <li>Autre</li>
+        <li>Développement durable (ODD)</li>
+        <li>Mission sociétale</li>
+        <li>Mobilité internationale</li>
+        <li>Aide financière</li>
+        <li>Insertion professionnelle</li>
+        <li>Autres</li>
     </ul>
 
     <p style="font-size:19px; line-height:1.5; color:{USJ_BLUE}; font-weight:700; margin-bottom:12px;">
@@ -3616,7 +3615,7 @@ margin-bottom:8px;
 
         if st.session_state.get("read_only_submitted", False):
             st.info(
-                "Le rapport de votre institution a déjà été envoyé. "
+                "Le rapport de votre focus groupe a déjà été envoyé. "
                 "Les modifications ne sont plus possibles."
             )
             save_draft = False
