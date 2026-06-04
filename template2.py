@@ -3547,9 +3547,9 @@ margin-bottom:8px;
             draft = load_existing_draft_by_code(cleaned_code)
 
             if draft:
-                preload_draft_into_session(draft)
                 st.session_state["current_draft_code"] = cleaned_code
                 st.session_state["access_granted"] = True
+                st.session_state["force_reload_from_db"] = True
 
                 if draft.get("loaded_statut") == "Soumis":
                     st.session_state["read_only_submitted"] = True
@@ -3572,6 +3572,17 @@ margin-bottom:8px;
 
         html_block('</div>')
         st.stop()
+
+    if (
+    st.session_state.get("access_granted", False)
+    and not st.session_state.get("admin_mode", False)
+    and st.session_state.get("current_draft_code", "")
+):
+    if st.session_state.pop("force_reload_from_db", False) or st.session_state.get("read_only_submitted", False):
+        draft_reload = load_existing_draft_by_code(st.session_state["current_draft_code"])
+        if draft_reload:
+            preload_draft_into_session(draft_reload)
+            st.session_state["read_only_submitted"] = draft_reload.get("loaded_statut") == "Soumis"
 
     mode = "Saisir une réponse"
 
