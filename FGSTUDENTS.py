@@ -3077,15 +3077,7 @@ box-sizing:border-box;
         def admin_autosave_callback():
             st.session_state["admin_needs_autosave"] = True
 
-        def render_admin_edit_box(label, value, key, height=95):
-            return st.text_area(
-                label=label,
-                value=str(value) if value else "",
-                height=height,
-                key=key,
-                label_visibility="collapsed",
-                on_change=admin_autosave_callback
-            )
+       
 
         def get_existing_admin_section(section_label, original_section):
             existing = updated_all_admin_data.get(section_label)
@@ -3404,8 +3396,7 @@ margin-bottom:8px;
 
        
         # Auto-save admin modifications on every rerun
-        if selected_draft_code and updated_all_admin_data:
-            save_admin_version_by_code(selected_draft_code, updated_all_admin_data)
+        
 
         df = load_responses()
 
