@@ -3401,7 +3401,7 @@ margin-bottom:8px;
        
         # Auto-save admin modifications on every rerun
         if selected_draft_code and updated_all_admin_data:
-        save_admin_version_by_code(selected_draft_code, updated_all_admin_data)
+            save_admin_version_by_code(selected_draft_code, updated_all_admin_data)
 
         df = load_responses()
 
