@@ -3325,6 +3325,15 @@ margin-bottom:8px;
                         height=95
                     )
 
+            if st.button(
+                "Enregistrer les réponses modifiées",
+                key=f"save_admin_section_{section_index}_{selected_draft_code}",
+                use_container_width=True
+            ):
+                save_admin_version_by_code(selected_draft_code, updated_all_admin_data)
+                st.success("Les réponses modifiées ont été enregistrées.")
+                st.rerun()
+
             if section_label == "II - Opportunités et menaces":
                 render_swot_image_download_block(updated_all_admin_data, selected_row)
 
