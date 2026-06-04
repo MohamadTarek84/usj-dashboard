@@ -31,7 +31,7 @@ else:
 
 DB_DIR.mkdir(parents=True, exist_ok=True)
 
-DB_PATH = DB_DIR / "focus_group_responsesT2.db"
+DB_PATH = DB_DIR / "focus_group_students.db"
 
 LOGO_PATH = Path("LogoUAQ.png")
 INTRO_IMAGE_PATH = Path("Intro_schema.png")
@@ -57,10 +57,10 @@ AUTHORIZED_TEST_CODES = {
     "USJ-TH-2032": {"responsable": "Tarek Halabi", "institution": ""},
 
     # Focus groups
-    "USJ-EC-FG1-2032": {"responsable": "", "institution": "Sous groupe 1"},
-    "USJ-EC-FG2-2032": {"responsable": "", "institution": "Sous groupe 2"},
-    "USJ-EC-FG3-2032": {"responsable": "", "institution": "Sous groupe 3"},
-    "USJ-EC-FG4-2032": {"responsable": "", "institution": "Sous groupe 4"},
+    "USJ-ETU-FG1-2032": {"responsable": "", "institution": "Sous groupe 1"},
+    "USJ-ETU-FG2-2032": {"responsable": "", "institution": "Sous groupe 2"},
+    "USJ-ETU-FG3-2032": {"responsable": "", "institution": "Sous groupe 3"},
+    "USJ-ETU-FG4-2032": {"responsable": "", "institution": "Sous groupe 4"},
 }
 
 def html_block(content):
