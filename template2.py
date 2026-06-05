@@ -201,7 +201,7 @@ def load_existing_draft_by_code(draft_code):
     row = cur.execute("""
         SELECT data_json, statut
         FROM responses
-        WHERE draft_code = ?
+        WHERE UPPER(TRIM(draft_code)) = ?
         ORDER BY id DESC
         LIMIT 1
     """, (draft_code,)).fetchone()
