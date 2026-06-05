@@ -1921,11 +1921,16 @@ def render_pour_finir():
         col_label, col_boxes, col_empty = st.columns([260, 520, 1], gap="small")
 
         with col_label:
+
+            display_phrase = phrase
+            if i == 2:
+                display_phrase = "Nous souhaitons que les employeurs disent que les étudiants de l’USJ<br>sont …"
+        
             html_block(f"""
-<div class="pour-finir-screen-label" style="font-size:17px; line-height:1.35; color:{USJ_BLUE}; font-weight:700; margin-top:8px; white-space:nowrap;">
-    &bull; {phrase}
-</div>
-""")
+        <div class="pour-finir-screen-label" style="font-size:17px; line-height:1.35; color:{USJ_BLUE}; font-weight:700; margin-top:8px; white-space:nowrap;">
+            &bull; {display_phrase}
+        </div>
+        """)
 
         with col_boxes:
            
