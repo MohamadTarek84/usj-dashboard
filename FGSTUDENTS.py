@@ -1563,27 +1563,17 @@ def count_words(text):
         return 0
     return len(str(text).split())
 
-
 def word_limited_text_area(label, key, height=300, max_words=500):
     read_only = st.session_state.get("read_only_submitted", False)
 
-    if max_words == 30:
-        value = st.text_input(
-            label=label,
-            key=key,
-            placeholder="",
-            label_visibility="collapsed",
-            disabled=read_only
-        )
-    else:
-        value = st.text_area(
-            label=label,
-            key=key,
-            height=height,
-            placeholder="",
-            label_visibility="collapsed",
-            disabled=read_only
-        )
+    value = st.text_area(
+        label=label,
+        key=key,
+        height=height,
+        placeholder="Merci de saisir votre réponse ici (au maximum 30 mots)" if max_words == 30 else f"Merci de saisir votre réponse ici (au maximum {max_words} mots)",
+        label_visibility="collapsed",
+        disabled=read_only
+    )
 
     word_count = count_words(value)
 
@@ -1616,6 +1606,8 @@ def word_limited_text_area(label, key, height=300, max_words=500):
 """)
 
     return value
+
+
 
 def render_internal_analysis():
     return {}
