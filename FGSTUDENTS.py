@@ -1641,7 +1641,7 @@ def render_external_intro():
 def render_external_analysis():
     external_themes = [
         "Exigences ministérielles et Environnement réglementaire",
-        "Marché du travail et Associations professionnelles",
+        "Marché du travail et relations avec les employeurs",
         "Institutions paires : Concurrence et Benchmarking (si des informations précises sont disponibles prière de les fournir dans un document à part si nécessaire)",
         "L’Intelligence artificielle",
         "Attractivité vis-à-vis des élèves des écoles",
