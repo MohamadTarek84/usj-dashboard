@@ -803,9 +803,7 @@ div[data-testid="InputInstructions"] {{
     height: 0px !important;
 }}
 
-textarea + div {{
-    display: none !important;
-}}
+
 
 hr {{
     border: none !important;
