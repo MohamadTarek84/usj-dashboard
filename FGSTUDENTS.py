@@ -1522,7 +1522,8 @@ def render_fixed_introduction():
         </p>
 
         <p style="text-align:justify; font-size:19px; line-height:1.55; color:{USJ_BLUE};">
-        L’élaboration de ce plan stratégique se décline en plusieurs étapes (voir le schéma ci-dessous), dont la première est consacrée à <strong>l’analyse de données relatives à l’état actuel de l’Université</strong>. L’ensemble des acteurs de l’Université, ainsi que les parties prenantes, sont invités à y contribuer. Ce Focus groupe a pour objectif de vous accompagner dans la formulation de constats partagés, des pratiques existantes et des expériences vécues, afin d’identifier <strong>les forces à consolider, les fragilités à traiter, les opportunités de développement et les risques à maîtriser à l’échelle de l’Université</strong>.
+        L’élaboration de ce plan stratégique se décline en plusieurs étapes (voir le schéma ci-dessous), dont la première est consacrée à <strong>l’analyse de données relatives à l’état actuel de l’Université</strong>. L’ensemble des acteurs de l’Université, ainsi que les parties prenantes, sont invités à y contribuer. Ce Focus groupe a pour objectif d’identifier <strong>les forces à consolider, les fragilités à traiter,
+les opportunités de développement et les risques à maîtriser à l’échelle de l’Université</strong>.
         </p>
 
         {image_html}
