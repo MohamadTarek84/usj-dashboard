@@ -1938,11 +1938,15 @@ def render_pour_finir():
             for j in range(2):
                 key = f"pour_finir_{i}_{j}"
 
+                current_value = st.session_state.get(key, "")
+
                 pour_finir[key] = st.text_input(
                     label=key,
+                    value=current_value,
                     key=key,
                     label_visibility="collapsed",
-                    disabled=read_only
+                    disabled=read_only,
+                    on_change=lambda: st.session_state.update({"autosave_requested": True})
                 )
 
     return pour_finir
