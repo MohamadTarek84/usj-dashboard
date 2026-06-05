@@ -559,6 +559,8 @@ div[data-testid="stTextArea"] textarea {{
     border-radius: 6px !important;
     color: #000000 !important;
     -webkit-text-fill-color: #000000 !important;
+    opacity: 1 !important;
+    caret-color: #000000 !important;
     box-shadow: none !important;
 }}
 
