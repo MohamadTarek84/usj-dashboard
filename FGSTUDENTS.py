@@ -1573,7 +1573,7 @@ def word_limited_text_area(label, key, height=300, max_words=500):
         label=label,
         key=key,
         height=height,
-        placeholder=f"Merci de saisir votre réponse ici (au maximum {max_words} mots)",
+        placeholder=None,
         label_visibility="collapsed",
         disabled=read_only
     )
