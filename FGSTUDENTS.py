@@ -1817,7 +1817,7 @@ def render_swot_analysis():
     </p>
 
     <ul style="font-size:19px; line-height:1.45; color:{USJ_BLUE}; margin-top:0; margin-bottom:18px;">
-        <li>Marché du travail et Associations professionnelles</li>
+        <li>Marché du travail et relations avec les employeurs</li>
         <li>Concurrence avec les autres universités</li>
         <li>Intelligence artificielle</li>
         <li>Réputation et image</li>
@@ -1908,8 +1908,8 @@ def render_pour_finir():
 
     phrases = [
         "Nous souhaitons que l’USJ soit reconnue pour …",
-        "Nous souhaitons que nos étudiants disent que l’USJ …",
-        "L’USJ serait un excellent lieu de travail si …",
+        "Nous souhaitons que les employeurs disent que les étudiants de l’USJ sont …",
+        "L’USJ serait un meilleur lieu de vie universitaire si …",
     ]
 
     for i, phrase in enumerate(phrases, start=1):
