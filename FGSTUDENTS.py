@@ -3730,9 +3730,11 @@ margin-bottom:8px;
             st.session_state.get("quick_save_after_section_ii_clicked", False),
         ])
 
-        auto_save_needed = st.session_state.get("auto_save_needed", False)
 
-        if save_draft or submit_final or quick_save_clicked or auto_save_needed:
+        autosave_requested = st.session_state.get("autosave_requested", False)
+
+        if save_draft or submit_final or quick_save_clicked or autosave_requested:
+        
             word_limit_errors = []
 
             word_limit_errors.extend(
@@ -3804,7 +3806,7 @@ margin-bottom:8px;
 
             try:
                 draft_code = save_response(metadata, data)
-                st.session_state["current_draft_code"] = draft_code
+                st.session_state["autosave_requested"] = False
                 st.session_state["current_draft_code"] = draft_code
 
                 if quick_save_clicked:
