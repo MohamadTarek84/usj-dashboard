@@ -1569,7 +1569,8 @@ def word_limited_text_area(label, key, height=300, max_words=500):
         placeholder=f"Merci de saisir votre réponse ici (au maximum {max_words} mots)",
         label_visibility="collapsed",
         disabled=read_only,
-
+        on_change=lambda: st.session_state.update({"auto_save_needed": True})
+    
         # ADDED
         # max_chars=max_chars
     )
@@ -3718,7 +3719,7 @@ margin-bottom:8px;
             st.session_state.get("quick_save_after_section_ii_clicked", False),
         ])
 
-        if save_draft or submit_final or quick_save_clicked:
+        if save_draft or submit_final or quick_save_clicked or st.session_state.pop("auto_save_needed", False):
             word_limit_errors = []
 
             word_limit_errors.extend(
