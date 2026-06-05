@@ -1575,7 +1575,8 @@ def word_limited_text_area(label, key, height=300, max_words=500):
         height=height,
         placeholder="Merci de saisir votre réponse ici (au maximum 30 mots)" if max_words == 30 else f"Merci de saisir votre réponse ici (au maximum {max_words} mots)",
         label_visibility="collapsed",
-        disabled=read_only
+        disabled=read_only,
+        on_change=lambda: st.session_state.update({"autosave_requested": True})
     )
 
     word_count = count_words(value)
