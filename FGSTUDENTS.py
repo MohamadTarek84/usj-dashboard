@@ -1924,7 +1924,7 @@ def render_pour_finir():
 
             display_phrase = phrase
             if i == 2:
-                display_phrase = "Nous souhaitons que les employeurs disent que les étudiants de l’USJ<br>sont …"
+                display_phrase = "Nous souhaitons que les employeurs disent que<br>les étudiants de l’USJ sont …"
         
             html_block(f"""
         <div class="pour-finir-screen-label" style="font-size:17px; line-height:1.35; color:{USJ_BLUE}; font-weight:700; margin-top:8px; white-space:nowrap;">
