@@ -269,16 +269,24 @@ def preload_draft_into_session(data):
 
     for section_key, rows in data.get("swot_analysis", {}).items():
         prefix = "swot_internal" if section_key == "facteurs_internes" else "swot_external"
-
+    
         for i, row in enumerate(rows, start=1):
-            for col_name, value in row.items():
-                st.session_state[f"{prefix}_{col_name}_{i}"] = value
+            if section_key == "facteurs_internes":
+                st.session_state[f"{prefix}_Forces_{i}"] = row.get("Forces", "")
+                st.session_state[f"{prefix}_Faiblesses_{i}"] = row.get("Faiblesses", "")
+    
+            elif section_key == "facteurs_externes":
+                st.session_state[f"{prefix}_Opportunités_{i}"] = row.get("Opportunités", "")
+                st.session_state[f"{prefix}_Menaces_{i}"] = row.get("Menaces", "")
 
 
     priorities_data = data.get("priorities_initiatives", {})
 
     for i in range(1, 6):
-        st.session_state[f"priority_only_{i}"] = priorities_data.get(f"priorite_{i}", "")
+        st.session_state[f"priority_only_{i}"] = priorities_data.get(
+            f"priorite_{i}",
+            priorities_data.get(f"priority_only_{i}", "")
+        )
 
     pour_finir = data.get("pour_finir", {})
 
