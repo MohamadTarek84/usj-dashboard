@@ -1193,14 +1193,18 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
 
     div[data-testid="stTextArea"],
     div[data-testid="stTextArea"] > div,
-    div[data-testid="stTextArea"] textarea {{
-        display: none !important;
-        height: 0 !important;
-        min-height: 0 !important;
-        max-height: 0 !important;
-        margin: 0 !important;
-        padding: 0 !important;
+    div[data-testid="stTextArea"] textarea,
+    .admin-original-answer-box {{
+        display: block !important;
+        min-height: 14mm !important;
+        height: 14mm !important;
+        max-height: 14mm !important;
+        margin-top: 0 !important;
+        margin-bottom: 0.3mm !important;
+        box-sizing: border-box !important;
         overflow: hidden !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
     }}
 
     .admin-original-answer-box {{
