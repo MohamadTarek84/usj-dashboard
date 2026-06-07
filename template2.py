@@ -57,10 +57,10 @@ AUTHORIZED_TEST_CODES = {
     "USJ-TH-2032": {"responsable": "Tarek Halabi", "institution": ""},
 
     # Focus groups
-    "USJ-EC-FG1-2032": {"responsable": "", "institution": "Sous groupe 1"},
-    "USJ-EC-FG2-2032": {"responsable": "", "institution": "Sous groupe 2"},
-    "USJ-EC-FG3-2032": {"responsable": "", "institution": "Sous groupe 3"},
-    "USJ-EC-FG4-2032": {"responsable": "", "institution": "Sous groupe 4"},
+    # "USJ-EC-FG1-2032": {"responsable": "", "institution": "Sous groupe 1"},
+    # "USJ-EC-FG2-2032": {"responsable": "", "institution": "Sous groupe 2"},
+    # "USJ-EC-FG3-2032": {"responsable": "", "institution": "Sous groupe 3"},
+    # "USJ-EC-FG4-2032": {"responsable": "", "institution": "Sous groupe 4"},
 }
 
 def html_block(content):
@@ -1197,12 +1197,12 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
     .admin-original-answer-box {{
         display: block !important;
         min-height: 14mm !important;
-        height: 14mm !important;
-        max-height: 14mm !important;
+        height: auto !important;
+        max-height: none !important;
         margin-top: 0 !important;
-        margin-bottom: 0.3mm !important;
+        margin-bottom: 1.5mm !important;
         box-sizing: border-box !important;
-        overflow: hidden !important;
+        overflow: visible !important;
         break-inside: avoid !important;
         page-break-inside: avoid !important;
     }}
@@ -1213,9 +1213,14 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
         color: #000000 !important;
         -webkit-text-fill-color: #000000 !important;
         font-size: 10.5px !important;
-        line-height: 1.18 !important;
+        line-height: 1.25 !important;
         padding: 6px !important;
         resize: none !important;
+        overflow: visible !important;
+        height: auto !important;
+        min-height: 14mm !important;
+        max-height: none !important;
+        white-space: pre-wrap !important;
     }}
 
     .admin-answer-row-wrapper {{
