@@ -1207,6 +1207,13 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
         page-break-inside: avoid !important;
     }}
 
+    div[class*="st-key-admin_edit_"][class*="Conclusion"] textarea {{
+        height: 16mm !important;
+        min-height: 16mm !important;
+        max-height: 16mm !important;
+    }}
+
+    
     div[data-testid="stTextArea"] textarea {{
         background-color: #E3DED9 !important;
         border: 1.5px solid #595959 !important;
