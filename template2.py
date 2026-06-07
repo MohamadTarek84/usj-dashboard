@@ -1217,9 +1217,9 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
         padding: 6px !important;
         resize: none !important;
         overflow: visible !important;
-        height: auto !important;
-        min-height: 14mm !important;
-        max-height: none !important;
+        height: 28mm !important;
+        min-height: 28mm !important;
+        max-height: 28mm !important;
         white-space: pre-wrap !important;
     }}
 
