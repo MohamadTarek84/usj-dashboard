@@ -3331,7 +3331,7 @@ margin-bottom:8px;
                         label=f"{section_label}_{key}",
                         value=admin_value,
                         key=f"admin_edit_{selected_draft_code}_{section_label}_{key}",
-                        height=95
+                        height=75
                     )
 
                     html_block('</div>')
