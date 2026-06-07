@@ -1193,15 +1193,18 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
 
     div[data-testid="stTextArea"],
     div[data-testid="stTextArea"] > div,
-    div[data-testid="stTextArea"] textarea {{
-        display: none !important;
-    }}
-    
+    div[data-testid="stTextArea"] textarea,
     .admin-original-answer-box {{
         display: block !important;
-        height: auto !important;
-        max-height: none !important;
-        overflow: visible !important;
+        min-height: 28mm !important;
+        height: 28mm !important;
+        max-height: 28mm !important;
+        margin-top: 0 !important;
+        margin-bottom: 1.5mm !important;
+        box-sizing: border-box !important;
+        overflow: hidden !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
     }}
 
     div[data-testid="stTextArea"] textarea {{
@@ -3122,26 +3125,13 @@ box-sizing:border-box;
             )
 
         def render_admin_edit_box(label, value, key, height=95):
-            edited_value = st.text_area(
+            return st.text_area(
                 label=label,
                 value=str(value) if value else "",
                 height=height,
                 key=key,
                 label_visibility="collapsed"
             )
-        
-            safe_value = html_lib.escape(str(edited_value or "")).replace("\n", "<br>")
-        
-            if not safe_value.strip():
-                safe_value = "&nbsp;"
-        
-            html_block(f"""
-        <div class="print-answer-text">
-            <div class="print-answer-content print-answer-content-filled">{safe_value}</div>
-        </div>
-        """)
-        
-            return edited_value
 
         def get_existing_admin_section(section_label, original_section):
             existing = updated_all_admin_data.get(section_label)
