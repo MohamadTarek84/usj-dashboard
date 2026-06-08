@@ -1361,7 +1361,7 @@ def seed_trial_data(force=False):
         data = {
             "leader_ranked_themes": response["leader"],
             "leader_selected_themes": response["leader"],
-            "leader_other_themes": "Donnée d’essai générée automatiquement.",
+            "leader_other_themes": "",
             "employees_training_needs": employees_training_needs
         }
 
