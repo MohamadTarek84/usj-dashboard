@@ -8,6 +8,7 @@ import os
 import base64
 import textwrap
 from io import BytesIO
+import plotly.express as px
 
 from pathlib import Path
 import os
@@ -2136,6 +2137,54 @@ def build_theme_frequency_excel_report(df):
 
     output.seek(0)
     return output
+    
+def build_theme_frequency_dataframe(df):
+    rows = []
+
+    for _, row in df.iterrows():
+        data = row["Données"]
+
+        if row["Profil"] == "psg":
+            themes = data.get("ranked_themes", data.get("selected_themes", []))
+
+            for priority, theme in enumerate(themes, start=1):
+                rows.append({
+                    "Thème": theme,
+                    "Source": "Employés",
+                    "Priorité": priority,
+                    "Nom": row["Nom"],
+                    "Faculté": row["Faculté"],
+                    "Département": row["Département"]
+                })
+
+        elif row["Profil"] == "director":
+            leader_themes = data.get("leader_ranked_themes", data.get("leader_selected_themes", []))
+
+            for priority, theme in enumerate(leader_themes, start=1):
+                rows.append({
+                    "Thème": theme,
+                    "Source": "Doyens / Directeurs",
+                    "Priorité": priority,
+                    "Nom": row["Nom"],
+                    "Faculté": row["Faculté"],
+                    "Département": row["Département"]
+                })
+
+            for emp in data.get("employees_training_needs", []):
+                director_themes = emp.get("ranked_themes_by_director", emp.get("selected_themes", []))
+
+                for priority, theme in enumerate(director_themes, start=1):
+                    rows.append({
+                        "Thème": theme,
+                        "Source": "Doyens / Directeurs pour employés",
+                        "Priorité": priority,
+                        "Nom": emp.get("employee_name", ""),
+                        "Faculté": row["Faculté"],
+                        "Département": emp.get("employee_department", "")
+                    })
+
+    return pd.DataFrame(rows)
+
 
 def build_director_report_html(selected_director, df, overrides):
     director_user = DEMO_USERS[selected_director]
