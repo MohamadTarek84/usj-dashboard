@@ -1473,13 +1473,14 @@ def ranked_select_with_defaults(label, options, key_prefix, defaults=None):
 def calculate_final_themes(employee_ranked, director_ranked):
     """
     Final selection method:
-    1. Check common themes first, regardless of priority position.
-    2. If Employee P1 and Director P1 are the same, select it automatically.
-    3. If Employee P1 and Director P1 are different, select both first.
-    4. If two themes are already selected from Priority 1 and Priority 2 is different,
-       the next decision goes to the Director, not to the employee.
-    5. Complete until 3 themes are selected.
+    1. Common themes are always selected first.
+    2. If there are 3 common themes, final = the 3 common themes.
+    3. If there are 2 common themes, add 1 extra theme from the director.
+    4. If there is 1 common theme, add 2 extra themes from the director.
+    5. If there is no common theme, select 2 themes from the director and 1 theme from the employee.
+    6. Final list always contains maximum 3 themes.
     """
+
     employee_ranked = employee_ranked or []
     director_ranked = director_ranked or []
 
@@ -1489,65 +1490,69 @@ def calculate_final_themes(employee_ranked, director_ranked):
     employee_set = set(employee_ranked)
     director_set = set(director_ranked)
 
+    common_themes = [
+        theme for theme in employee_ranked
+        if theme in director_set
+    ]
+
     def add_theme(theme, is_common=False):
         if theme and theme not in final and len(final) < 3:
             final.append(theme)
             if is_common and theme not in matched:
                 matched.append(theme)
 
-    # Case A: same Priority 1.
-    if len(employee_ranked) >= 1 and len(director_ranked) >= 1:
-        if employee_ranked[0] == director_ranked[0]:
-            add_theme(employee_ranked[0], is_common=True)
-        else:
-            # Case B: two different Priority 1 themes are both retained.
-            add_theme(employee_ranked[0], is_common=employee_ranked[0] in director_set)
-            add_theme(director_ranked[0], is_common=director_ranked[0] in employee_set)
+    # 1. Add common themes first
+    for theme in common_themes:
+        add_theme(theme, is_common=True)
 
-    # Prioritize common themes appearing anywhere in both lists.
-    # This preserves the idea that shared needs are stronger, even if priorities differ.
+    # 2. Count how many non-common themes are needed
+    remaining_slots = 3 - len(final)
+
+    # Case A: 3 common themes
+    if remaining_slots <= 0:
+        return matched[:3], final[:3]
+
+    # Case B: 2 common themes, director chooses 1 extra
+    # Case C: 1 common theme, director chooses 2 extra
+    # Case D: 0 common themes, director chooses 2 and employee chooses 1
+    director_slots = min(2, remaining_slots)
+
+    if len(common_themes) == 2:
+        director_slots = 1
+
+    elif len(common_themes) == 1:
+        director_slots = 2
+
+    elif len(common_themes) == 0:
+        director_slots = 2
+
+    # 3. Add director choices first
+    added_director = 0
+
+    for theme in director_ranked:
+        if len(final) >= 3:
+            break
+
+        if theme not in common_themes and added_director < director_slots:
+            before_count = len(final)
+            add_theme(theme, is_common=False)
+
+            if len(final) > before_count:
+                added_director += 1
+
+    # 4. Add employee choice only if needed
     for theme in employee_ranked:
         if len(final) >= 3:
             break
-        if theme in director_set:
-            add_theme(theme, is_common=True)
 
-    # If two themes were already retained from P1 conflict, and P2 differs,
-    # the next choice is the director's Priority 2.
-    if len(final) == 2:
-        director_p2 = director_ranked[1] if len(director_ranked) > 1 else ""
-        employee_p2 = employee_ranked[1] if len(employee_ranked) > 1 else ""
+        if theme not in common_themes:
+            add_theme(theme, is_common=False)
 
-        if director_p2 and director_p2 != employee_p2:
-            add_theme(director_p2, is_common=director_p2 in employee_set)
-
-    # Continue rank by rank with director priority first, then employee.
-    # This respects the requested rule when arbitration is needed.
-    for rank_index in range(1, 3):
+    # 5. Emergency fallback if still incomplete
+    for theme in director_ranked + employee_ranked:
         if len(final) >= 3:
             break
 
-        director_theme = director_ranked[rank_index] if len(director_ranked) > rank_index else ""
-        employee_theme = employee_ranked[rank_index] if len(employee_ranked) > rank_index else ""
-
-        add_theme(director_theme, is_common=director_theme in employee_set)
-
-        if len(final) >= 3:
-            break
-
-        add_theme(employee_theme, is_common=employee_theme in director_set)
-
-    # Final fallback, still director first then employee.
-    fallback_candidates = []
-    for rank_index in range(3):
-        if len(director_ranked) > rank_index:
-            fallback_candidates.append(director_ranked[rank_index])
-        if len(employee_ranked) > rank_index:
-            fallback_candidates.append(employee_ranked[rank_index])
-
-    for theme in fallback_candidates:
-        if len(final) >= 3:
-            break
         add_theme(theme, is_common=theme in employee_set and theme in director_set)
 
     return matched[:3], final[:3]
