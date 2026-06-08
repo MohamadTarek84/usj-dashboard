@@ -78,45 +78,44 @@ DD_LEADER_THEMES = [
 
 
 DEMO_USERS = {
-    "PSG001": {"role": "psg", "name": "Nour Haddad", "faculty": "Faculté des Sciences", "institution": "USJ", "department": "Service des Études", "director_code": "DD001"},
-    "PSG002": {"role": "psg", "name": "Karim Mansour", "faculty": "Faculté des Sciences", "institution": "USJ", "department": "Service des Études", "director_code": "DD001"},
-    "PSG003": {"role": "psg", "name": "Maya Khoury", "faculty": "Faculté des Sciences", "institution": "USJ", "department": "Service Informatique", "director_code": "DD001"},
-    "PSG004": {"role": "psg", "name": "Elias Saad", "faculty": "Faculté des Sciences", "institution": "USJ", "department": "Service Informatique", "director_code": "DD001"},
-    "PSG005": {"role": "psg", "name": "Rita Nader", "faculty": "Faculté des Sciences", "institution": "USJ", "department": "Service Administratif", "director_code": "DD001"},
+    "PSG001": {"role": "psg", "name": "Nour Haddad", "poste": "Chargée de scolarité", "faculty": "Faculté des Sciences", "institution": "USJ", "department": "Service des Études", "director_code": "DD001"},
+    "PSG002": {"role": "psg", "name": "Karim Mansour", "poste": "Assistant administratif", "faculty": "Faculté des Sciences", "institution": "USJ", "department": "Service des Études", "director_code": "DD001"},
+    "PSG003": {"role": "psg", "name": "Maya Khoury", "poste": "Technicienne informatique", "faculty": "Faculté des Sciences", "institution": "USJ", "department": "Service Informatique", "director_code": "DD001"},
+    "PSG004": {"role": "psg", "name": "Elias Saad", "poste": "Technicien informatique", "faculty": "Faculté des Sciences", "institution": "USJ", "department": "Service Informatique", "director_code": "DD001"},
+    "PSG005": {"role": "psg", "name": "Rita Nader", "poste": "Assistante administrative", "faculty": "Faculté des Sciences", "institution": "USJ", "department": "Service Administratif", "director_code": "DD001"},
 
-    "PSG006": {"role": "psg", "name": "Paul Tannous", "faculty": "Faculté de Médecine", "institution": "USJ", "department": "Secrétariat académique", "director_code": "DD002"},
-    "PSG007": {"role": "psg", "name": "Nadine Abi Rached", "faculty": "Faculté de Médecine", "institution": "USJ", "department": "Laboratoire", "director_code": "DD002"},
-    "PSG008": {"role": "psg", "name": "Georges Saliba", "faculty": "Faculté de Médecine", "institution": "USJ", "department": "Accueil étudiants", "director_code": "DD002"},
-    "PSG009": {"role": "psg", "name": "Sarah Karam", "faculty": "Faculté de Médecine", "institution": "USJ", "department": "Coordination administrative", "director_code": "DD002"},
-    "PSG010": {"role": "psg", "name": "Fadi Younes", "faculty": "Faculté de Médecine", "institution": "USJ", "department": "Support pédagogique", "director_code": "DD002"},
+    "PSG006": {"role": "psg", "name": "Paul Tannous", "poste": "Secrétaire académique", "faculty": "Faculté de Médecine", "institution": "USJ", "department": "Secrétariat académique", "director_code": "DD002"},
+    "PSG007": {"role": "psg", "name": "Nadine Abi Rached", "poste": "Technicienne de laboratoire", "faculty": "Faculté de Médecine", "institution": "USJ", "department": "Laboratoire", "director_code": "DD002"},
+    "PSG008": {"role": "psg", "name": "Georges Saliba", "poste": "Chargé d’accueil étudiants", "faculty": "Faculté de Médecine", "institution": "USJ", "department": "Accueil étudiants", "director_code": "DD002"},
+    "PSG009": {"role": "psg", "name": "Sarah Karam", "poste": "Coordinatrice administrative", "faculty": "Faculté de Médecine", "institution": "USJ", "department": "Coordination administrative", "director_code": "DD002"},
+    "PSG010": {"role": "psg", "name": "Fadi Younes", "poste": "Assistant support pédagogique", "faculty": "Faculté de Médecine", "institution": "USJ", "department": "Support pédagogique", "director_code": "DD002"},
 
-    "PSG011": {"role": "psg", "name": "Lina Farah", "faculty": "Faculté de Gestion et de Management", "institution": "USJ", "department": "Scolarité", "director_code": "DD003"},
-    "PSG012": {"role": "psg", "name": "Marc Azar", "faculty": "Faculté de Gestion et de Management", "institution": "USJ", "department": "Relations entreprises", "director_code": "DD003"},
-    "PSG013": {"role": "psg", "name": "Hala Daher", "faculty": "Faculté de Gestion et de Management", "institution": "USJ", "department": "Communication", "director_code": "DD003"},
-    "PSG014": {"role": "psg", "name": "Joe Sfeir", "faculty": "Faculté de Gestion et de Management", "institution": "USJ", "department": "Administration", "director_code": "DD003"},
-    "PSG015": {"role": "psg", "name": "Mona Raad", "faculty": "Faculté de Gestion et de Management", "institution": "USJ", "department": "Assurance qualité", "director_code": "DD003"},
+    "PSG011": {"role": "psg", "name": "Lina Farah", "poste": "Chargée de scolarité", "faculty": "Faculté de Gestion et de Management", "institution": "USJ", "department": "Scolarité", "director_code": "DD003"},
+    "PSG012": {"role": "psg", "name": "Marc Azar", "poste": "Chargé des relations entreprises", "faculty": "Faculté de Gestion et de Management", "institution": "USJ", "department": "Relations entreprises", "director_code": "DD003"},
+    "PSG013": {"role": "psg", "name": "Hala Daher", "poste": "Chargée de communication", "faculty": "Faculté de Gestion et de Management", "institution": "USJ", "department": "Communication", "director_code": "DD003"},
+    "PSG014": {"role": "psg", "name": "Joe Sfeir", "poste": "Assistant administratif", "faculty": "Faculté de Gestion et de Management", "institution": "USJ", "department": "Administration", "director_code": "DD003"},
+    "PSG015": {"role": "psg", "name": "Mona Raad", "poste": "Chargée assurance qualité", "faculty": "Faculté de Gestion et de Management", "institution": "USJ", "department": "Assurance qualité", "director_code": "DD003"},
 
-    "PSG016": {"role": "psg", "name": "Tania Helou", "faculty": "Faculté des Lettres et des Sciences Humaines", "institution": "USJ", "department": "Bibliothèque", "director_code": "DD004"},
-    "PSG017": {"role": "psg", "name": "Rami Chidiac", "faculty": "Faculté des Lettres et des Sciences Humaines", "institution": "USJ", "department": "Secrétariat", "director_code": "DD004"},
-    "PSG018": {"role": "psg", "name": "Dina Aoun", "faculty": "Faculté des Lettres et des Sciences Humaines", "institution": "USJ", "department": "Vie étudiante", "director_code": "DD004"},
-    "PSG019": {"role": "psg", "name": "Michel Najjar", "faculty": "Faculté des Lettres et des Sciences Humaines", "institution": "USJ", "department": "Support académique", "director_code": "DD004"},
-    "PSG020": {"role": "psg", "name": "Carla Haddad", "faculty": "Faculté des Lettres et des Sciences Humaines", "institution": "USJ", "department": "Communication", "director_code": "DD004"},
+    "PSG016": {"role": "psg", "name": "Tania Helou", "poste": "Bibliothécaire", "faculty": "Faculté des Lettres et des Sciences Humaines", "institution": "USJ", "department": "Bibliothèque", "director_code": "DD004"},
+    "PSG017": {"role": "psg", "name": "Rami Chidiac", "poste": "Secrétaire administratif", "faculty": "Faculté des Lettres et des Sciences Humaines", "institution": "USJ", "department": "Secrétariat", "director_code": "DD004"},
+    "PSG018": {"role": "psg", "name": "Dina Aoun", "poste": "Chargée de vie étudiante", "faculty": "Faculté des Lettres et des Sciences Humaines", "institution": "USJ", "department": "Vie étudiante", "director_code": "DD004"},
+    "PSG019": {"role": "psg", "name": "Michel Najjar", "poste": "Assistant support académique", "faculty": "Faculté des Lettres et des Sciences Humaines", "institution": "USJ", "department": "Support académique", "director_code": "DD004"},
+    "PSG020": {"role": "psg", "name": "Carla Haddad", "poste": "Chargée de communication", "faculty": "Faculté des Lettres et des Sciences Humaines", "institution": "USJ", "department": "Communication", "director_code": "DD004"},
 
-    "PSG021": {"role": "psg", "name": "Sami Bassil", "faculty": "Faculté d’Ingénierie", "institution": "USJ", "department": "Laboratoires", "director_code": "DD005"},
-    "PSG022": {"role": "psg", "name": "Layal Matar", "faculty": "Faculté d’Ingénierie", "institution": "USJ", "department": "Support technique", "director_code": "DD005"},
-    "PSG023": {"role": "psg", "name": "Anthony Ghosn", "faculty": "Faculté d’Ingénierie", "institution": "USJ", "department": "Scolarité", "director_code": "DD005"},
-    "PSG024": {"role": "psg", "name": "Mireille Daher", "faculty": "Faculté d’Ingénierie", "institution": "USJ", "department": "Coordination administrative", "director_code": "DD005"},
-    "PSG025": {"role": "psg", "name": "Patrick Bou Saab", "faculty": "Faculté d’Ingénierie", "institution": "USJ", "department": "Innovation et projets", "director_code": "DD005"},
+    "PSG021": {"role": "psg", "name": "Sami Bassil", "poste": "Technicien de laboratoire", "faculty": "Faculté d’Ingénierie", "institution": "USJ", "department": "Laboratoires", "director_code": "DD005"},
+    "PSG022": {"role": "psg", "name": "Layal Matar", "poste": "Technicienne support technique", "faculty": "Faculté d’Ingénierie", "institution": "USJ", "department": "Support technique", "director_code": "DD005"},
+    "PSG023": {"role": "psg", "name": "Anthony Ghosn", "poste": "Chargé de scolarité", "faculty": "Faculté d’Ingénierie", "institution": "USJ", "department": "Scolarité", "director_code": "DD005"},
+    "PSG024": {"role": "psg", "name": "Mireille Daher", "poste": "Coordinatrice administrative", "faculty": "Faculté d’Ingénierie", "institution": "USJ", "department": "Coordination administrative", "director_code": "DD005"},
+    "PSG025": {"role": "psg", "name": "Patrick Bou Saab", "poste": "Chargé innovation et projets", "faculty": "Faculté d’Ingénierie", "institution": "USJ", "department": "Innovation et projets", "director_code": "DD005"},
 
-    "DD001": {"role": "director", "name": "Dr. Rami Haddad", "faculty": "Faculté des Sciences", "institution": "USJ", "department": "Direction"},
-    "DD002": {"role": "director", "name": "Dr. Carla Mansour", "faculty": "Faculté de Médecine", "institution": "USJ", "department": "Direction"},
-    "DD003": {"role": "director", "name": "Dr. Joseph Khoury", "faculty": "Faculté de Gestion et de Management", "institution": "USJ", "department": "Direction"},
-    "DD004": {"role": "director", "name": "Dr. Nadine Farhat", "faculty": "Faculté des Lettres et des Sciences Humaines", "institution": "USJ", "department": "Direction"},
-    "DD005": {"role": "director", "name": "Dr. Marc Saad", "faculty": "Faculté d’Ingénierie", "institution": "USJ", "department": "Direction"},
+    "DD001": {"role": "director", "name": "Dr. Rami Haddad", "poste": "Doyen", "faculty": "Faculté des Sciences", "institution": "USJ", "department": "Direction"},
+    "DD002": {"role": "director", "name": "Dr. Carla Mansour", "poste": "Doyenne", "faculty": "Faculté de Médecine", "institution": "USJ", "department": "Direction"},
+    "DD003": {"role": "director", "name": "Dr. Joseph Khoury", "poste": "Doyen", "faculty": "Faculté de Gestion et de Management", "institution": "USJ", "department": "Direction"},
+    "DD004": {"role": "director", "name": "Dr. Nadine Farhat", "poste": "Doyenne", "faculty": "Faculté des Lettres et des Sciences Humaines", "institution": "USJ", "department": "Direction"},
+    "DD005": {"role": "director", "name": "Dr. Marc Saad", "poste": "Doyen", "faculty": "Faculté d’Ingénierie", "institution": "USJ", "department": "Direction"},
 
-    "ADMIN2032": {"role": "admin", "name": "Administrateur TNA", "faculty": "USJ", "institution": "USJ", "department": "Administration Centrale"}
+    "ADMIN2032": {"role": "admin", "name": "Administrateur TNA", "poste": "Administrateur", "faculty": "USJ", "institution": "USJ", "department": "Administration Centrale"}
 }
-
 
 TRIAL_PSG_RESPONSES = {
     # DD001 - mixed cases
@@ -1578,7 +1577,7 @@ def render_form_hero(profile_label, title, objective):
 
 
 def render_identity_cards(user):
-    c1, c2, c3 = st.columns(3)
+    c1, c2, c3, c4 = st.columns(4)
 
     with c1:
         st.markdown(f"""
@@ -1591,12 +1590,20 @@ def render_identity_cards(user):
     with c2:
         st.markdown(f"""
         <div class="identity-card">
+            <div class="identity-label">Poste</div>
+            <div class="identity-value">{user.get('poste', '')}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with c3:
+        st.markdown(f"""
+        <div class="identity-card">
             <div class="identity-label">Faculté / Institution</div>
             <div class="identity-value">{user['faculty']}</div>
         </div>
         """, unsafe_allow_html=True)
 
-    with c3:
+    with c4:
         st.markdown(f"""
         <div class="identity-card">
             <div class="identity-label">Département</div>
