@@ -3078,69 +3078,69 @@ def render_admin_dashboard():
     if st.session_state.get("show_theme_visuals", False):
         theme_visual_df = build_theme_frequency_dataframe(df)
 
-        employees_df = theme_visual_df[
-            theme_visual_df["Source"] == "Employés"
+        employee_related_df = theme_visual_df[
+            theme_visual_df["Source"].isin([
+                "Employés",
+                "Doyens / Directeurs pour employés"
+            ])
         ]
 
-        directors_df = theme_visual_df[
+        employee_related_counts = (
+            employee_related_df
+            .groupby(["Thème", "Source"])
+            .size()
+            .reset_index(name="Fréquence")
+        )
+
+        fig_employee_related = px.bar(
+            employee_related_counts,
+            x="Fréquence",
+            y="Thème",
+            color="Source",
+            orientation="h",
+            text="Fréquence",
+            title="Thèmes liés aux employés : choix des employés et des Doyens / Directeurs"
+        )
+
+        fig_employee_related.update_traces(textposition="inside")
+
+        fig_employee_related.update_layout(
+            barmode="stack",
+            yaxis={"categoryorder": "total ascending"},
+            height=750
+        )
+
+        st.plotly_chart(fig_employee_related, use_container_width=True)
+
+        director_only_df = theme_visual_df[
             theme_visual_df["Source"] == "Doyens / Directeurs"
         ]
 
-        employees_counts = (
-            employees_df
+        director_only_counts = (
+            director_only_df
             .groupby("Thème")
             .size()
             .reset_index(name="Fréquence")
             .sort_values("Fréquence", ascending=False)
         )
 
-        directors_counts = (
-            directors_df
-            .groupby("Thème")
-            .size()
-            .reset_index(name="Fréquence")
-            .sort_values("Fréquence", ascending=False)
-        )
-
-        st.markdown("## Thèmes sélectionnés par les employés")
-
-        fig_emp = px.bar(
-            employees_counts,
+        fig_director_only = px.bar(
+            director_only_counts,
             x="Fréquence",
             y="Thème",
             orientation="h",
             text="Fréquence",
-            title="Fréquence des thèmes sélectionnés par les employés"
+            title="Thèmes sélectionnés par les Doyens / Directeurs pour eux-mêmes"
         )
 
-        fig_emp.update_traces(textposition="outside")
+        fig_director_only.update_traces(textposition="outside")
 
-        fig_emp.update_layout(
+        fig_director_only.update_layout(
             yaxis={"categoryorder": "total ascending"},
-            height=700
+            height=600
         )
 
-        st.plotly_chart(fig_emp, use_container_width=True)
-
-        st.markdown("## Thèmes sélectionnés par les Doyens / Directeurs")
-
-        fig_dir = px.bar(
-            directors_counts,
-            x="Fréquence",
-            y="Thème",
-            orientation="h",
-            text="Fréquence",
-            title="Fréquence des thèmes sélectionnés par les Doyens / Directeurs"
-        )
-
-        fig_dir.update_traces(textposition="outside")
-
-        fig_dir.update_layout(
-            yaxis={"categoryorder": "total ascending"},
-            height=700
-        )
-
-        st.plotly_chart(fig_dir, use_container_width=True)
+        st.plotly_chart(fig_director_only, use_container_width=True)
 
         st.download_button(
             "Télécharger les données de visualisation CSV",
@@ -3150,6 +3150,7 @@ def render_admin_dashboard():
             use_container_width=True
         )
 
+    
     directors = [
         code for code, user in DEMO_USERS.items()
         if user.get("role") == "director"
