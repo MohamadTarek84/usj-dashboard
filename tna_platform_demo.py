@@ -3229,7 +3229,7 @@ def render_admin_dashboard():
                 render_employee_visual_cards(emp["name"], emp["code"], emp["department"], employee_ranked, director_ranked, final, matched)
                 st.divider()
 
-        elif view == "Visualisation des thèmes":
+    elif view == "Visualisation des thèmes":
         st.markdown("### Visualisation des thèmes sélectionnés")
 
         theme_visual_df = build_theme_frequency_dataframe(df)
