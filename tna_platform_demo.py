@@ -1878,7 +1878,21 @@ def render_director_form(user):
                     "ranked_themes",
                     emp_data.get("selected_themes", [])
                 )
-                employee_other_themes = emp_data.get("other_themes", "")
+                employee_other_themes = str(emp_data.get("other_themes", "") or "").strip()
+
+                demo_placeholder_values = {
+                    "Donnée d’essai générée automatiquement.",
+                    "Donnée d'essai générée automatiquement.",
+                    "Donnée d’essai générée automatiquement",
+                    "Donnée d'essai générée automatiquement",
+                    "Donnée d’essai générée automatiquement par le directeur.",
+                    "Donnée d'essai générée automatiquement par le directeur.",
+                    "Donnée d’essai générée automatiquement par le directeur",
+                    "Donnée d'essai générée automatiquement par le directeur"
+                }
+
+                if employee_other_themes in demo_placeholder_values:
+                    employee_other_themes = ""
 
                 st.markdown("**Réponses déjà soumises par l’employé :**")
                 render_theme_pills(employee_submitted_themes, "pill")
