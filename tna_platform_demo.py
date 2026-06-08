@@ -3229,88 +3229,120 @@ def render_admin_dashboard():
                 render_employee_visual_cards(emp["name"], emp["code"], emp["department"], employee_ranked, director_ranked, final, matched)
                 st.divider()
 
-    elif view == "Visualisation des thèmes":
-            st.markdown("### Visualisation des thèmes sélectionnés")
-    
-            theme_visual_df = build_theme_frequency_dataframe(df)
-    
-            if theme_visual_df.empty:
-                st.info("Aucune donnée disponible pour la visualisation.")
-            else:
-                source_filter = st.multiselect(
-                    "Source des sélections",
-                    options=sorted(theme_visual_df["Source"].unique()),
-                    default=sorted(theme_visual_df["Source"].unique())
-                )
-    
+        elif view == "Visualisation des thèmes":
+        st.markdown("### Visualisation des thèmes sélectionnés")
+
+        theme_visual_df = build_theme_frequency_dataframe(df)
+
+        if theme_visual_df.empty:
+            st.info("Aucune donnée disponible pour la visualisation.")
+        else:
+            source_filter = st.multiselect(
+                "Source des sélections",
+                options=sorted(theme_visual_df["Source"].unique()),
+                default=sorted(theme_visual_df["Source"].unique())
+            )
+
+            generate_visual = st.button(
+                "Générer la visualisation des thèmes",
+                use_container_width=True
+            )
+
+            if generate_visual:
+                st.session_state["show_theme_visuals"] = True
+
+            if st.session_state.get("show_theme_visuals", False):
                 filtered_visual_df = theme_visual_df[
                     theme_visual_df["Source"].isin(source_filter)
                 ]
-    
-                frequency_df = (
-                    filtered_visual_df
-                    .groupby(["Thème", "Source"])
-                    .size()
-                    .reset_index(name="Fréquence")
-                )
-    
-                total_df = (
-                    filtered_visual_df
-                    .groupby("Thème")
-                    .size()
-                    .reset_index(name="Fréquence totale")
-                    .sort_values("Fréquence totale", ascending=False)
-                )
-    
-                fig_total = px.bar(
-                    total_df,
-                    x="Fréquence totale",
-                    y="Thème",
-                    orientation="h",
-                    title="Fréquence totale de sélection par thème"
-                )
-    
-                fig_total.update_layout(
-                    yaxis={"categoryorder": "total ascending"},
-                    height=700
-                )
-    
-                st.plotly_chart(fig_total, use_container_width=True)
-    
-                fig_source = px.bar(
-                    frequency_df,
-                    x="Fréquence",
-                    y="Thème",
-                    color="Source",
-                    orientation="h",
-                    barmode="group",
-                    title="Comparaison des sélections par source"
-                )
-    
-                fig_source.update_layout(
-                    yaxis={"categoryorder": "total ascending"},
-                    height=750
-                )
-    
-                st.plotly_chart(fig_source, use_container_width=True)
-    
-                st.markdown("### Tableau détaillé")
-                st.dataframe(
-                    filtered_visual_df,
-                    use_container_width=True,
-                    hide_index=True
-                )
-    
-                st.download_button(
-                    "Télécharger les données de visualisation CSV",
-                    filtered_visual_df.to_csv(index=False).encode("utf-8-sig"),
-                    "tna_visualisation_themes.csv",
-                    "text/csv",
-                    use_container_width=True
-                )
-            
-    
-    elif view == "Réponses PSG":
+
+                if filtered_visual_df.empty:
+                    st.warning("Aucune donnée disponible avec les filtres sélectionnés.")
+                else:
+                    frequency_df = (
+                        filtered_visual_df
+                        .groupby(["Thème", "Source"])
+                        .size()
+                        .reset_index(name="Fréquence")
+                    )
+
+                    total_df = (
+                        filtered_visual_df
+                        .groupby("Thème")
+                        .size()
+                        .reset_index(name="Fréquence totale")
+                        .sort_values("Fréquence totale", ascending=False)
+                    )
+
+                    fig_total = px.bar(
+                        total_df,
+                        x="Fréquence totale",
+                        y="Thème",
+                        orientation="h",
+                        title="Fréquence totale de sélection par thème"
+                    )
+
+                    fig_total.update_layout(
+                        yaxis={"categoryorder": "total ascending"},
+                        height=700
+                    )
+
+                    st.plotly_chart(fig_total, use_container_width=True)
+
+                    fig_source = px.bar(
+                        frequency_df,
+                        x="Fréquence",
+                        y="Thème",
+                        color="Source",
+                        orientation="h",
+                        barmode="group",
+                        title="Comparaison des sélections par source"
+                    )
+
+                    fig_source.update_layout(
+                        yaxis={"categoryorder": "total ascending"},
+                        height=750
+                    )
+
+                    st.plotly_chart(fig_source, use_container_width=True)
+
+                    report_html = f"""
+                    <html>
+                    <head>
+                        <meta charset="utf-8">
+                        <title>Visualisation des thèmes TNA 2026</title>
+                    </head>
+                    <body>
+                        <h1>Visualisation des thèmes sélectionnés - TNA 2026</h1>
+                        {fig_total.to_html(full_html=False, include_plotlyjs="cdn")}
+                        <br><br>
+                        {fig_source.to_html(full_html=False, include_plotlyjs=False)}
+                    </body>
+                    </html>
+                    """
+
+                    st.download_button(
+                        "Télécharger la visualisation HTML",
+                        data=report_html.encode("utf-8"),
+                        file_name="tna_visualisation_themes.html",
+                        mime="text/html",
+                        use_container_width=True
+                    )
+
+                    st.download_button(
+                        "Télécharger les données de visualisation CSV",
+                        filtered_visual_df.to_csv(index=False).encode("utf-8-sig"),
+                        "tna_visualisation_themes.csv",
+                        "text/csv",
+                        use_container_width=True
+                    )
+
+                    st.markdown("### Tableau détaillé")
+                    st.dataframe(
+                        filtered_visual_df,
+                        use_container_width=True,
+                        hide_index=True
+                    )
         
         st.markdown("### Réponses PSG")
 
