@@ -1150,6 +1150,21 @@ def init_db():
     """)
 
     c.execute("""
+        CREATE TABLE IF NOT EXISTS custom_users (
+            code TEXT PRIMARY KEY,
+            role TEXT,
+            name TEXT,
+            poste TEXT,
+            faculty TEXT,
+            institution TEXT,
+            department TEXT,
+            director_code TEXT,
+            created_by TEXT,
+            created_at TEXT
+        )
+    """)
+
+    c.execute("""
         CREATE TABLE IF NOT EXISTS app_meta (
             key TEXT PRIMARY KEY,
             value TEXT
@@ -1158,6 +1173,90 @@ def init_db():
 
     conn.commit()
     conn.close()
+
+
+
+def load_custom_users():
+    conn = sqlite3.connect(DB_NAME)
+    rows = conn.execute("""
+        SELECT code, role, name, poste, faculty, institution, department, director_code
+        FROM custom_users
+    """).fetchall()
+    conn.close()
+
+    users = {}
+
+    for code, role, name, poste, faculty, institution, department, director_code in rows:
+        users[code] = {
+            "role": role,
+            "name": name,
+            "poste": poste or "",
+            "faculty": faculty or "",
+            "institution": institution or "USJ",
+            "department": department or "",
+            "director_code": director_code or ""
+        }
+
+    return users
+
+
+def get_all_users():
+    users = DEMO_USERS.copy()
+    users.update(load_custom_users())
+    return users
+
+
+def get_user_by_code(code):
+    code = str(code).strip().upper()
+
+    if code in DEMO_USERS:
+        return DEMO_USERS[code]
+
+    custom_users = load_custom_users()
+    return custom_users.get(code)
+
+
+def custom_user_exists(code):
+    code = str(code).strip().upper()
+
+    if code in DEMO_USERS:
+        return True
+
+    conn = sqlite3.connect(DB_NAME)
+    row = conn.execute(
+        "SELECT code FROM custom_users WHERE code = ?",
+        (code,)
+    ).fetchone()
+    conn.close()
+
+    return row is not None
+
+
+def add_custom_employee(code, name, poste, faculty, institution, department, director_code):
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+
+    c.execute("""
+        INSERT INTO custom_users (
+            code, role, name, poste, faculty, institution, department, director_code, created_by, created_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        str(code).strip().upper(),
+        "psg",
+        str(name).strip(),
+        str(poste).strip(),
+        str(faculty).strip(),
+        str(institution).strip() or "USJ",
+        str(department).strip(),
+        str(director_code).strip().upper(),
+        st.session_state.get("code", ""),
+        datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    ))
+
+    conn.commit()
+    conn.close()
+
 
 
 def save_response(user, data):
@@ -1387,12 +1486,15 @@ def load_admin_theme_overrides():
 
 def get_employees_for_director(director_code):
     employees = []
+    all_users = get_all_users()
 
-    for code, info in DEMO_USERS.items():
+    for code, info in all_users.items():
         if info.get("role") == "psg" and info.get("director_code") == director_code:
             emp = info.copy()
             emp["code"] = code
             employees.append(emp)
+
+    employees = sorted(employees, key=lambda x: x.get("code", ""))
 
     return employees
 
@@ -1659,10 +1761,12 @@ def login_page():
         if enter_form:
             cleaned_code = code.strip().upper()
 
-            if cleaned_code in DEMO_USERS:
+            user_info = get_user_by_code(cleaned_code)
+
+            if user_info:
                 st.session_state["logged_in"] = True
                 st.session_state["code"] = cleaned_code
-                st.session_state["user"] = DEMO_USERS[cleaned_code]
+                st.session_state["user"] = user_info
                 st.rerun()
             else:
                 st.error("Code non reconnu.")
@@ -1750,40 +1854,6 @@ def render_director_form(user):
 
     employees = get_employees_for_director(st.session_state["code"])
 
-    st.markdown("### Ajouter un employé non présent dans la base")
-
-    if "additional_director_employees" not in st.session_state:
-        st.session_state["additional_director_employees"] = []
-
-    with st.expander("+ Ajouter un employé", expanded=False):
-        new_emp_name = st.text_input("Nom de l’employé", key="new_emp_name")
-        new_emp_poste = st.text_input("Poste", key="new_emp_poste")
-        new_emp_department = st.text_input("Département", key="new_emp_department")
-
-        if st.button("Ajouter cet employé", use_container_width=True):
-            if not new_emp_name.strip() or not new_emp_department.strip():
-                st.warning("Veuillez saisir au minimum le nom et le département.")
-            else:
-                new_code = f"ADD{len(st.session_state['additional_director_employees']) + 1:03d}"
-
-                st.session_state["additional_director_employees"].append({
-                    "code": new_code,
-                    "name": new_emp_name.strip(),
-                    "poste": new_emp_poste.strip(),
-                    "faculty": user.get("faculty", ""),
-                    "institution": user.get("institution", ""),
-                    "department": new_emp_department.strip(),
-                    "director_code": st.session_state["code"]
-                })
-
-                st.success("Employé ajouté à la liste.")
-                st.rerun()
-
-    employees = employees + st.session_state["additional_director_employees"]
-
-
-    
-
     render_ranked_section_header(
         "B. Besoins de formation de vos employés",
         f"{len(employees)} employé(s) lié(s) à votre compte. Pour chaque employé, veuillez classer exactement 3 thèmes prioritaires.",
@@ -1819,6 +1889,54 @@ def render_director_form(user):
                 "selected_themes": emp_ranked,
                 "other_themes": emp_other
             })
+
+    st.markdown("### Ajouter un employé non présent dans la base")
+
+    with st.expander("+ Ajouter un employé", expanded=False):
+        new_emp_code = st.text_input(
+            "Code de l’employé",
+            key="new_emp_code",
+            placeholder="Exemple : PSG026"
+        )
+
+        new_emp_name = st.text_input(
+            "Nom de l’employé",
+            key="new_emp_name"
+        )
+
+        new_emp_poste = st.text_input(
+            "Poste",
+            key="new_emp_poste"
+        )
+
+        new_emp_department = st.text_input(
+            "Département",
+            key="new_emp_department"
+        )
+
+        if st.button("Ajouter cet employé", use_container_width=True):
+            cleaned_new_code = new_emp_code.strip().upper()
+
+            if not cleaned_new_code or not new_emp_name.strip() or not new_emp_department.strip():
+                st.warning("Veuillez saisir au minimum le code, le nom et le département.")
+            elif custom_user_exists(cleaned_new_code):
+                st.warning("Ce code existe déjà. Veuillez utiliser un autre code.")
+            else:
+                add_custom_employee(
+                    code=cleaned_new_code,
+                    name=new_emp_name,
+                    poste=new_emp_poste,
+                    faculty=user.get("faculty", ""),
+                    institution=user.get("institution", "USJ"),
+                    department=new_emp_department,
+                    director_code=st.session_state["code"]
+                )
+
+                st.success(
+                    f"Employé ajouté avec le code {cleaned_new_code}. "
+                    "Il peut maintenant accéder à sa page avec ce code."
+                )
+                st.rerun()
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -1984,7 +2102,7 @@ def build_admin_flat_exports(df, overrides):
                         "Thème": theme
                     })
 
-    for code, user in DEMO_USERS.items():
+    for code, user in get_all_users().items():
         if user.get("role") != "psg":
             continue
 
