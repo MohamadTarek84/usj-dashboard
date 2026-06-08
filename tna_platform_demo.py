@@ -2171,12 +2171,15 @@ def build_theme_frequency_dataframe(df):
                 })
 
             for emp in data.get("employees_training_needs", []):
-                director_themes = emp.get("ranked_themes_by_director", emp.get("selected_themes", []))
+                director_themes = emp.get(
+                    "ranked_themes_by_director",
+                    emp.get("selected_themes", [])
+                )
 
                 for priority, theme in enumerate(director_themes, start=1):
                     rows.append({
                         "Thème": theme,
-                        "Source": "Doyens / Directeurs",
+                        "Source": "Doyens / Directeurs pour employés",
                         "Priorité": priority,
                         "Nom": emp.get("employee_name", ""),
                         "Faculté": row["Faculté"],
@@ -2184,6 +2187,147 @@ def build_theme_frequency_dataframe(df):
                     })
 
     return pd.DataFrame(rows)
+
+
+def render_theme_visualization_dashboard(df):
+    st.markdown("### Visualisation générale des thèmes")
+
+    if st.button(
+        "Générer les figures des thèmes sélectionnés",
+        use_container_width=True,
+        key="generate_theme_visuals_main"
+    ):
+        st.session_state["show_theme_visuals"] = True
+
+    if not st.session_state.get("show_theme_visuals", False):
+        return
+
+    theme_visual_df = build_theme_frequency_dataframe(df)
+
+    if theme_visual_df.empty:
+        st.info("Aucune donnée disponible pour générer les figures.")
+        return
+
+    employee_related_df = theme_visual_df[
+        theme_visual_df["Source"].isin([
+            "Employés",
+            "Doyens / Directeurs pour employés"
+        ])
+    ]
+
+    employee_related_counts = (
+        employee_related_df
+        .groupby(["Thème", "Source"])
+        .size()
+        .reset_index(name="Fréquence")
+    )
+
+    st.markdown("#### 1. Thèmes liés aux employés")
+
+    if employee_related_counts.empty:
+        st.info("Aucune donnée disponible pour les thèmes liés aux employés.")
+    else:
+        fig_employee_related = px.bar(
+            employee_related_counts,
+            x="Fréquence",
+            y="Thème",
+            color="Source",
+            orientation="h",
+            barmode="group",
+            text="Fréquence",
+            title="Thèmes liés aux employés : choix des employés et choix des Doyens / Directeurs"
+        )
+
+        fig_employee_related.update_traces(
+            textposition="outside",
+            cliponaxis=False
+        )
+
+        fig_employee_related.update_layout(
+            yaxis={"categoryorder": "total ascending"},
+            height=850,
+            margin=dict(l=260, r=80, t=70, b=40),
+            legend_title_text="Source"
+        )
+
+        st.plotly_chart(fig_employee_related, use_container_width=True)
+
+    director_only_df = theme_visual_df[
+        theme_visual_df["Source"] == "Doyens / Directeurs"
+    ]
+
+    director_only_counts = (
+        director_only_df
+        .groupby("Thème")
+        .size()
+        .reset_index(name="Fréquence")
+        .sort_values("Fréquence", ascending=False)
+    )
+
+    st.markdown("#### 2. Thèmes liés uniquement aux Doyens / Directeurs")
+
+    if director_only_counts.empty:
+        st.info("Aucune donnée disponible pour les thèmes liés aux Doyens / Directeurs.")
+    else:
+        fig_director_only = px.bar(
+            director_only_counts,
+            x="Fréquence",
+            y="Thème",
+            orientation="h",
+            text="Fréquence",
+            title="Thèmes sélectionnés par les Doyens / Directeurs pour eux-mêmes"
+        )
+
+        fig_director_only.update_traces(
+            textposition="outside",
+            cliponaxis=False
+        )
+
+        fig_director_only.update_layout(
+            yaxis={"categoryorder": "total ascending"},
+            height=600,
+            margin=dict(l=260, r=80, t=70, b=40),
+            showlegend=False
+        )
+
+        st.plotly_chart(fig_director_only, use_container_width=True)
+
+    report_html = f"""
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <title>Visualisation des thèmes TNA 2026</title>
+    </head>
+    <body>
+        <h1>Visualisation générale des thèmes sélectionnés - TNA 2026</h1>
+        <h2>1. Thèmes liés aux employés</h2>
+        {fig_employee_related.to_html(full_html=False, include_plotlyjs="cdn") if not employee_related_counts.empty else "<p>Aucune donnée.</p>"}
+        <br><br>
+        <h2>2. Thèmes liés uniquement aux Doyens / Directeurs</h2>
+        {fig_director_only.to_html(full_html=False, include_plotlyjs=False) if not director_only_counts.empty else "<p>Aucune donnée.</p>"}
+    </body>
+    </html>
+    """
+
+    d1, d2 = st.columns(2)
+
+    with d1:
+        st.download_button(
+            "Télécharger la visualisation HTML",
+            data=report_html.encode("utf-8"),
+            file_name="tna_visualisation_themes.html",
+            mime="text/html",
+            use_container_width=True
+        )
+
+    with d2:
+        st.download_button(
+            "Télécharger les données de visualisation CSV",
+            theme_visual_df.to_csv(index=False).encode("utf-8-sig"),
+            "tna_visualisation_themes.csv",
+            "text/csv",
+            use_container_width=True
+        )
 
 
 def build_director_report_html(selected_director, df, overrides):
@@ -2973,7 +3117,14 @@ def render_admin_dashboard():
         st.info("Aucune réponse enregistrée pour le moment.")
         return
 
-    st.markdown("<div class='no-print' style='color:#6B7688; font-size:0.95rem; line-height:1.6;'>Données d’essai intégrées : 5 Doyens / Directeurs et 25 employés PSG. Les scénarios sont volontairement variés : plusieurs cas sans thème commun, quelques cas avec 1 thème commun, quelques cas avec 2 thèmes communs, et un cas avec 3 thèmes communs.</div>", unsafe_allow_html=True)
+    st.markdown(
+        "<div class='no-print' style='color:#6B7688; font-size:0.95rem; line-height:1.6;'>"
+        "Données d’essai intégrées : 5 Doyens / Directeurs et 25 employés PSG. "
+        "Les scénarios sont volontairement variés : plusieurs cas sans thème commun, quelques cas avec 1 thème commun, "
+        "quelques cas avec 2 thèmes communs, et un cas avec 3 thèmes communs."
+        "</div>",
+        unsafe_allow_html=True
+    )
 
     with st.sidebar:
         st.header("Filtres administrateur")
@@ -3025,7 +3176,6 @@ def render_admin_dashboard():
     st.divider()
 
     respondents_export, themes_export, final_export = build_admin_flat_exports(df, overrides)
-
     theme_frequency_excel = build_theme_frequency_excel_report(df)
 
     with st.expander("Exports administrateur", expanded=False):
@@ -3067,90 +3217,13 @@ def render_admin_dashboard():
                 use_container_width=True
             )
 
-    st.markdown("### Visualisation générale des thèmes")
+    render_theme_visualization_dashboard(df)
 
-    if st.button(
-        "Générer les figures des thèmes sélectionnés",
-        use_container_width=True
-    ):
-        st.session_state["show_theme_visuals"] = True
+    if view == "Visualisation des thèmes":
+        return
 
-    if st.session_state.get("show_theme_visuals", False):
-        theme_visual_df = build_theme_frequency_dataframe(df)
+    st.divider()
 
-        employee_related_df = theme_visual_df[
-            theme_visual_df["Source"].isin([
-                "Employés",
-                "Doyens / Directeurs pour employés"
-            ])
-        ]
-
-        employee_related_counts = (
-            employee_related_df
-            .groupby(["Thème", "Source"])
-            .size()
-            .reset_index(name="Fréquence")
-        )
-
-        fig_employee_related = px.bar(
-            employee_related_counts,
-            x="Fréquence",
-            y="Thème",
-            color="Source",
-            orientation="h",
-            text="Fréquence",
-            title="Thèmes liés aux employés : choix des employés et des Doyens / Directeurs"
-        )
-
-        fig_employee_related.update_traces(textposition="inside")
-
-        fig_employee_related.update_layout(
-            barmode="stack",
-            yaxis={"categoryorder": "total ascending"},
-            height=750
-        )
-
-        st.plotly_chart(fig_employee_related, use_container_width=True)
-
-        director_only_df = theme_visual_df[
-            theme_visual_df["Source"] == "Doyens / Directeurs"
-        ]
-
-        director_only_counts = (
-            director_only_df
-            .groupby("Thème")
-            .size()
-            .reset_index(name="Fréquence")
-            .sort_values("Fréquence", ascending=False)
-        )
-
-        fig_director_only = px.bar(
-            director_only_counts,
-            x="Fréquence",
-            y="Thème",
-            orientation="h",
-            text="Fréquence",
-            title="Thèmes sélectionnés par les Doyens / Directeurs pour eux-mêmes"
-        )
-
-        fig_director_only.update_traces(textposition="outside")
-
-        fig_director_only.update_layout(
-            yaxis={"categoryorder": "total ascending"},
-            height=600
-        )
-
-        st.plotly_chart(fig_director_only, use_container_width=True)
-
-        st.download_button(
-            "Télécharger les données de visualisation CSV",
-            theme_visual_df.to_csv(index=False).encode("utf-8-sig"),
-            "tna_visualisation_themes.csv",
-            "text/csv",
-            use_container_width=True
-        )
-
-    
     directors = [
         code for code, user in DEMO_USERS.items()
         if user.get("role") == "director"
@@ -3174,42 +3247,38 @@ def render_admin_dashboard():
 
         report_html = build_director_report_html(selected_director, df, overrides)
 
-        report_col1 = st.container()
+        safe_report_html = json.dumps(report_html)
 
-        with report_col1:
-            safe_report_html = json.dumps(report_html)
-        
-            components.html(
-                f"""
-                <button onclick="openReport()" style="
-                    width:100%;
-                    min-height:50px;
-                    background:#001F5B;
-                    color:white;
-                    border:0;
-                    border-radius:12px;
-                    font-size:14px;
-                    font-weight:400;
-                    cursor:pointer;
-                    box-shadow:0 6px 16px rgba(0,31,91,0.16);
-                ">
-                    Ouvrir le rapport du directeur
-                </button>
-        
-                <script>
-                function openReport() {{
-                    const html = {safe_report_html};
-                    const win = window.open("", "_blank");
-                    win.document.open();
-                    win.document.write(html);
-                    win.document.close();
-                }}
-                </script>
-                """,
-                height=64
-            )
+        components.html(
+            f"""
+            <button onclick="openReport()" style="
+                width:100%;
+                min-height:50px;
+                background:#001F5B;
+                color:white;
+                border:0;
+                border-radius:12px;
+                font-size:14px;
+                font-weight:400;
+                cursor:pointer;
+                box-shadow:0 6px 16px rgba(0,31,91,0.16);
+            ">
+                Ouvrir le rapport du directeur
+            </button>
 
-      
+            <script>
+            function openReport() {{
+                const html = {safe_report_html};
+                const win = window.open("", "_blank");
+                win.document.open();
+                win.document.write(html);
+                win.document.close();
+            }}
+            </script>
+            """,
+            height=64
+        )
+
         st.markdown("### 1. Besoins sélectionnés par le Doyen / Directeur pour lui-même")
 
         st.markdown(f"""
@@ -3310,124 +3379,18 @@ def render_admin_dashboard():
                 st.divider()
 
             else:
-                render_employee_visual_cards(emp["name"], emp["code"], emp["department"], employee_ranked, director_ranked, final, matched)
+                render_employee_visual_cards(
+                    emp["name"],
+                    emp["code"],
+                    emp["department"],
+                    employee_ranked,
+                    director_ranked,
+                    final,
+                    matched
+                )
                 st.divider()
 
-    elif view == "Visualisation des thèmes":
-        st.markdown("### Visualisation des thèmes sélectionnés")
-
-        theme_visual_df = build_theme_frequency_dataframe(df)
-
-        if theme_visual_df.empty:
-            st.info("Aucune donnée disponible pour la visualisation.")
-        else:
-            source_filter = st.multiselect(
-                "Source des sélections",
-                options=sorted(theme_visual_df["Source"].unique()),
-                default=sorted(theme_visual_df["Source"].unique())
-            )
-
-            generate_visual = st.button(
-                "Générer la visualisation des thèmes",
-                use_container_width=True
-            )
-
-            if generate_visual:
-                st.session_state["show_theme_visuals"] = True
-
-            if st.session_state.get("show_theme_visuals", False):
-                filtered_visual_df = theme_visual_df[
-                    theme_visual_df["Source"].isin(source_filter)
-                ]
-
-                if filtered_visual_df.empty:
-                    st.warning("Aucune donnée disponible avec les filtres sélectionnés.")
-                else:
-                    frequency_df = (
-                        filtered_visual_df
-                        .groupby(["Thème", "Source"])
-                        .size()
-                        .reset_index(name="Fréquence")
-                    )
-
-                    total_df = (
-                        filtered_visual_df
-                        .groupby("Thème")
-                        .size()
-                        .reset_index(name="Fréquence totale")
-                        .sort_values("Fréquence totale", ascending=False)
-                    )
-
-                    fig_total = px.bar(
-                        total_df,
-                        x="Fréquence totale",
-                        y="Thème",
-                        orientation="h",
-                        title="Fréquence totale de sélection par thème"
-                    )
-
-                    fig_total.update_layout(
-                        yaxis={"categoryorder": "total ascending"},
-                        height=700
-                    )
-
-                    st.plotly_chart(fig_total, use_container_width=True)
-
-                    fig_source = px.bar(
-                        frequency_df,
-                        x="Fréquence",
-                        y="Thème",
-                        color="Source",
-                        orientation="h",
-                        barmode="group",
-                        title="Comparaison des sélections par source"
-                    )
-
-                    fig_source.update_layout(
-                        yaxis={"categoryorder": "total ascending"},
-                        height=750
-                    )
-
-                    st.plotly_chart(fig_source, use_container_width=True)
-
-                    report_html = f"""
-                    <html>
-                    <head>
-                        <meta charset="utf-8">
-                        <title>Visualisation des thèmes TNA 2026</title>
-                    </head>
-                    <body>
-                        <h1>Visualisation des thèmes sélectionnés - TNA 2026</h1>
-                        {fig_total.to_html(full_html=False, include_plotlyjs="cdn")}
-                        <br><br>
-                        {fig_source.to_html(full_html=False, include_plotlyjs=False)}
-                    </body>
-                    </html>
-                    """
-
-                    st.download_button(
-                        "Télécharger la visualisation HTML",
-                        data=report_html.encode("utf-8"),
-                        file_name="tna_visualisation_themes.html",
-                        mime="text/html",
-                        use_container_width=True
-                    )
-
-                    st.download_button(
-                        "Télécharger les données de visualisation CSV",
-                        filtered_visual_df.to_csv(index=False).encode("utf-8-sig"),
-                        "tna_visualisation_themes.csv",
-                        "text/csv",
-                        use_container_width=True
-                    )
-
-                    st.markdown("### Tableau détaillé")
-                    st.dataframe(
-                        filtered_visual_df,
-                        use_container_width=True,
-                        hide_index=True
-                    )
-        
+    elif view == "Réponses PSG":
         st.markdown("### Réponses PSG")
 
         psg_df = filtered[filtered["Profil"] == "psg"].copy()
@@ -3545,6 +3508,7 @@ def render_admin_dashboard():
             "tna_reponses.csv",
             "text/csv"
         )
+
 
 
 def main():
