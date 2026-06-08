@@ -1750,6 +1750,40 @@ def render_director_form(user):
 
     employees = get_employees_for_director(st.session_state["code"])
 
+    st.markdown("### Ajouter un employé non présent dans la base")
+
+    if "additional_director_employees" not in st.session_state:
+        st.session_state["additional_director_employees"] = []
+
+    with st.expander("+ Ajouter un employé", expanded=False):
+        new_emp_name = st.text_input("Nom de l’employé", key="new_emp_name")
+        new_emp_poste = st.text_input("Poste", key="new_emp_poste")
+        new_emp_department = st.text_input("Département", key="new_emp_department")
+
+        if st.button("Ajouter cet employé", use_container_width=True):
+            if not new_emp_name.strip() or not new_emp_department.strip():
+                st.warning("Veuillez saisir au minimum le nom et le département.")
+            else:
+                new_code = f"ADD{len(st.session_state['additional_director_employees']) + 1:03d}"
+
+                st.session_state["additional_director_employees"].append({
+                    "code": new_code,
+                    "name": new_emp_name.strip(),
+                    "poste": new_emp_poste.strip(),
+                    "faculty": user.get("faculty", ""),
+                    "institution": user.get("institution", ""),
+                    "department": new_emp_department.strip(),
+                    "director_code": st.session_state["code"]
+                })
+
+                st.success("Employé ajouté à la liste.")
+                st.rerun()
+
+    employees = employees + st.session_state["additional_director_employees"]
+
+
+    
+
     render_ranked_section_header(
         "B. Besoins de formation de vos employés",
         f"{len(employees)} employé(s) lié(s) à votre compte. Pour chaque employé, veuillez classer exactement 3 thèmes prioritaires.",
