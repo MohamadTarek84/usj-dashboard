@@ -2976,8 +2976,10 @@ def render_admin_dashboard():
 
     respondents_export, themes_export, final_export = build_admin_flat_exports(df, overrides)
 
+    theme_frequency_excel = build_theme_frequency_excel_report(df)
+
     with st.expander("Exports administrateur", expanded=False):
-        ex1, ex2, ex3 = st.columns(3)
+        ex1, ex2, ex3, ex4 = st.columns(4)
 
         with ex1:
             st.download_button(
@@ -3005,6 +3007,15 @@ def render_admin_dashboard():
                 "text/csv",
                 use_container_width=True
             )
+
+        with ex4:
+        st.download_button(
+            "Rapport Excel par thème",
+            data=theme_frequency_excel,
+            file_name="tna_rapport_frequence_par_theme.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            use_container_width=True
+        )
 
     directors = [
         code for code, user in DEMO_USERS.items()
