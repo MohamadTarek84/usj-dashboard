@@ -3310,7 +3310,7 @@ def render_admin_dashboard():
                 )
             
     
-        elif view == "Réponses PSG":
+    elif view == "Réponses PSG":
         
         st.markdown("### Réponses PSG")
 
