@@ -1861,6 +1861,7 @@ def render_director_form(user):
     )
 
     employee_training_needs = []
+    director_visible_df = load_responses()
 
     for emp in employees:
         with st.expander(f"{emp['name']} | {emp['department']}", expanded=True):
@@ -1868,6 +1869,29 @@ def render_director_form(user):
                 f"<span class='pill'>Code : {emp['code']}</span><span class='pill pill-gold'>{emp['department']}</span>",
                 unsafe_allow_html=True
             )
+
+            emp_response = latest_by_code(director_visible_df, emp["code"])
+
+            if emp_response:
+                emp_data = emp_response["Données"]
+                employee_submitted_themes = emp_data.get(
+                    "ranked_themes",
+                    emp_data.get("selected_themes", [])
+                )
+                employee_other_themes = emp_data.get("other_themes", "")
+
+                st.markdown("**Réponses déjà soumises par l’employé :**")
+                render_theme_pills(employee_submitted_themes, "pill")
+
+                if employee_other_themes:
+                    st.markdown(f"""
+                    <div class='card blue-card'>
+                        <b>Autre(s) thème(s) proposé(s) par l’employé :</b><br>
+                        {employee_other_themes}
+                    </div>
+                    """, unsafe_allow_html=True)
+            else:
+                st.info("Cet employé n’a pas encore soumis ses réponses.")
 
             emp_ranked = unique_ranked_select(
                 f"Classement des 3 thèmes prioritaires pour {emp['name']} :",
