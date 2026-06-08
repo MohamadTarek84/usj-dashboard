@@ -7,6 +7,7 @@ import pandas as pd
 import os
 import base64
 import textwrap
+from io import BytesIO
 
 from pathlib import Path
 import os
@@ -1995,6 +1996,146 @@ def build_admin_flat_exports(df, overrides):
         pd.DataFrame(final_rows)
     )
 
+def build_theme_frequency_excel_report(df):
+    detail_rows = []
+
+    for _, row in df.iterrows():
+        data = row["Données"]
+
+        if row["Profil"] == "psg":
+            themes = data.get("ranked_themes", data.get("selected_themes", []))
+
+            for priority, theme in enumerate(themes, start=1):
+                detail_rows.append({
+                    "Thème": theme,
+                    "Source": "Employé",
+                    "Priorité": priority,
+                    "Code répondant": row["Code"],
+                    "Nom": row["Nom"],
+                    "Profil": "PSG",
+                    "Faculté": row["Faculté"],
+                    "Institution": row["Institution"],
+                    "Département": row["Département"],
+                    "Date": row["Date"]
+                })
+
+        elif row["Profil"] == "director":
+            leader_themes = data.get("leader_ranked_themes", data.get("leader_selected_themes", []))
+
+            for priority, theme in enumerate(leader_themes, start=1):
+                detail_rows.append({
+                    "Thème": theme,
+                    "Source": "Doyen / Directeur pour lui-même",
+                    "Priorité": priority,
+                    "Code répondant": row["Code"],
+                    "Nom": row["Nom"],
+                    "Profil": "Doyen / Directeur",
+                    "Faculté": row["Faculté"],
+                    "Institution": row["Institution"],
+                    "Département": row["Département"],
+                    "Date": row["Date"]
+                })
+
+            for emp in data.get("employees_training_needs", []):
+                director_themes = emp.get("ranked_themes_by_director", emp.get("selected_themes", []))
+
+                for priority, theme in enumerate(director_themes, start=1):
+                    detail_rows.append({
+                        "Thème": theme,
+                        "Source": "Doyen / Directeur pour employé",
+                        "Priorité": priority,
+                        "Code répondant": emp.get("employee_code", ""),
+                        "Nom": emp.get("employee_name", ""),
+                        "Profil": "PSG évalué par Doyen / Directeur",
+                        "Faculté": row["Faculté"],
+                        "Institution": row["Institution"],
+                        "Département": emp.get("employee_department", ""),
+                        "Date": row["Date"]
+                    })
+
+    details_df = pd.DataFrame(detail_rows)
+
+    if details_df.empty:
+        summary_df = pd.DataFrame(columns=[
+            "Thème",
+            "Sélections employés",
+            "Sélections Doyens / Directeurs pour eux-mêmes",
+            "Sélections Doyens / Directeurs pour employés",
+            "Total sélections Doyens / Directeurs",
+            "Total général"
+        ])
+    else:
+        summary_df = (
+            details_df
+            .pivot_table(
+                index="Thème",
+                columns="Source",
+                values="Code répondant",
+                aggfunc="count",
+                fill_value=0
+            )
+            .reset_index()
+        )
+
+        for col in [
+            "Employé",
+            "Doyen / Directeur pour lui-même",
+            "Doyen / Directeur pour employé"
+        ]:
+            if col not in summary_df.columns:
+                summary_df[col] = 0
+
+        summary_df["Total sélections Doyens / Directeurs"] = (
+            summary_df["Doyen / Directeur pour lui-même"]
+            + summary_df["Doyen / Directeur pour employé"]
+        )
+
+        summary_df["Total général"] = (
+            summary_df["Employé"]
+            + summary_df["Total sélections Doyens / Directeurs"]
+        )
+
+        summary_df = summary_df.rename(columns={
+            "Employé": "Sélections employés",
+            "Doyen / Directeur pour lui-même": "Sélections Doyens / Directeurs pour eux-mêmes",
+            "Doyen / Directeur pour employé": "Sélections Doyens / Directeurs pour employés"
+        })
+
+        summary_df = summary_df[
+            [
+                "Thème",
+                "Sélections employés",
+                "Sélections Doyens / Directeurs pour eux-mêmes",
+                "Sélections Doyens / Directeurs pour employés",
+                "Total sélections Doyens / Directeurs",
+                "Total général"
+            ]
+        ].sort_values("Total général", ascending=False)
+
+    output = BytesIO()
+
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        summary_df.to_excel(writer, sheet_name="Synthèse par thème", index=False)
+        details_df.to_excel(writer, sheet_name="Détails par thème", index=False)
+
+        if not details_df.empty:
+            for theme in sorted(details_df["Thème"].dropna().unique()):
+                safe_sheet_name = (
+                    theme[:31]
+                    .replace("/", "-")
+                    .replace("\\", "-")
+                    .replace("*", "")
+                    .replace("?", "")
+                    .replace(":", "")
+                    .replace("[", "")
+                    .replace("]", "")
+                )
+
+                theme_df = details_df[details_df["Thème"] == theme].copy()
+                theme_df.to_excel(writer, sheet_name=safe_sheet_name, index=False)
+
+    output.seek(0)
+    return output
 
 def build_director_report_html(selected_director, df, overrides):
     director_user = DEMO_USERS[selected_director]
