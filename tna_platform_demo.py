@@ -3009,13 +3009,13 @@ def render_admin_dashboard():
             )
 
         with ex4:
-        st.download_button(
-            "Rapport Excel par thème",
-            data=theme_frequency_excel,
-            file_name="tna_rapport_frequence_par_theme.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            use_container_width=True
-        )
+            st.download_button(
+                "Rapport Excel par thème",
+                data=theme_frequency_excel,
+                file_name="tna_rapport_frequence_par_theme.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True
+            )
 
     directors = [
         code for code, user in DEMO_USERS.items()
