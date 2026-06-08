@@ -2176,7 +2176,7 @@ def build_theme_frequency_dataframe(df):
                 for priority, theme in enumerate(director_themes, start=1):
                     rows.append({
                         "Thème": theme,
-                        "Source": "Doyens / Directeurs pour employés",
+                        "Source": "Doyens / Directeurs",
                         "Priorité": priority,
                         "Nom": emp.get("employee_name", ""),
                         "Faculté": row["Faculté"],
