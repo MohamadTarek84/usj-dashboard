@@ -3078,67 +3078,73 @@ def render_admin_dashboard():
     if st.session_state.get("show_theme_visuals", False):
         theme_visual_df = build_theme_frequency_dataframe(df)
 
-        source_filter = st.multiselect(
-            "Source des sélections",
-            options=sorted(theme_visual_df["Source"].unique()),
-            default=sorted(theme_visual_df["Source"].unique()),
-            key="theme_visual_source_filter_main"
-        )
-
-        filtered_visual_df = theme_visual_df[
-            theme_visual_df["Source"].isin(source_filter)
+        employees_df = theme_visual_df[
+            theme_visual_df["Source"] == "Employés"
         ]
 
-        frequency_df = (
-            filtered_visual_df
-            .groupby(["Thème", "Source"])
-            .size()
-            .reset_index(name="Fréquence")
-        )
+        directors_df = theme_visual_df[
+            theme_visual_df["Source"] == "Doyens / Directeurs"
+        ]
 
-        total_df = (
-            filtered_visual_df
+        employees_counts = (
+            employees_df
             .groupby("Thème")
             .size()
-            .reset_index(name="Fréquence totale")
-            .sort_values("Fréquence totale", ascending=False)
+            .reset_index(name="Fréquence")
+            .sort_values("Fréquence", ascending=False)
         )
 
-        fig_total = px.bar(
-            total_df,
-            x="Fréquence totale",
+        directors_counts = (
+            directors_df
+            .groupby("Thème")
+            .size()
+            .reset_index(name="Fréquence")
+            .sort_values("Fréquence", ascending=False)
+        )
+
+        st.markdown("## Thèmes sélectionnés par les employés")
+
+        fig_emp = px.bar(
+            employees_counts,
+            x="Fréquence",
             y="Thème",
             orientation="h",
-            title="Fréquence totale de sélection par thème"
+            text="Fréquence",
+            title="Fréquence des thèmes sélectionnés par les employés"
         )
 
-        fig_total.update_layout(
+        fig_emp.update_traces(textposition="outside")
+
+        fig_emp.update_layout(
             yaxis={"categoryorder": "total ascending"},
             height=700
         )
 
-        st.plotly_chart(fig_total, use_container_width=True)
+        st.plotly_chart(fig_emp, use_container_width=True)
 
-        fig_source = px.bar(
-            frequency_df,
+        st.markdown("## Thèmes sélectionnés par les Doyens / Directeurs")
+
+        fig_dir = px.bar(
+            directors_counts,
             x="Fréquence",
             y="Thème",
-            color="Source",
             orientation="h",
-            barmode="group",
-            title="Comparaison des sélections par source"
+            text="Fréquence",
+            title="Fréquence des thèmes sélectionnés par les Doyens / Directeurs"
         )
 
-        fig_source.update_layout(
+        fig_dir.update_traces(textposition="outside")
+
+        fig_dir.update_layout(
             yaxis={"categoryorder": "total ascending"},
-            height=750
+            height=700
         )
 
-        st.plotly_chart(fig_source, use_container_width=True)
+        st.plotly_chart(fig_dir, use_container_width=True)
 
         st.download_button(
             "Télécharger les données de visualisation CSV",
-            filtered_visual_df.to_csv(index=False).encode("utf-8-sig"),
+            theme_visual_df.to_csv(index=False).encode("utf-8-sig"),
             "tna_visualisation_themes.csv",
             "text/csv",
             use_container_width=True
