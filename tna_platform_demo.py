@@ -2988,6 +2988,7 @@ def render_admin_dashboard():
             [
                 "Synthèse directeur-employés",
                 "Modifier les priorités",
+                "Visualisation des thèmes",
                 "Réponses PSG",
                 "Réponses Doyens / Directeurs",
                 "Départements",
@@ -3228,7 +3229,89 @@ def render_admin_dashboard():
                 render_employee_visual_cards(emp["name"], emp["code"], emp["department"], employee_ranked, director_ranked, final, matched)
                 st.divider()
 
-    elif view == "Réponses PSG":
+        elif view == "Visualisation des thèmes":
+            st.markdown("### Visualisation des thèmes sélectionnés")
+    
+            theme_visual_df = build_theme_frequency_dataframe(df)
+    
+            if theme_visual_df.empty:
+                st.info("Aucune donnée disponible pour la visualisation.")
+            else:
+                source_filter = st.multiselect(
+                    "Source des sélections",
+                    options=sorted(theme_visual_df["Source"].unique()),
+                    default=sorted(theme_visual_df["Source"].unique())
+                )
+    
+                filtered_visual_df = theme_visual_df[
+                    theme_visual_df["Source"].isin(source_filter)
+                ]
+    
+                frequency_df = (
+                    filtered_visual_df
+                    .groupby(["Thème", "Source"])
+                    .size()
+                    .reset_index(name="Fréquence")
+                )
+    
+                total_df = (
+                    filtered_visual_df
+                    .groupby("Thème")
+                    .size()
+                    .reset_index(name="Fréquence totale")
+                    .sort_values("Fréquence totale", ascending=False)
+                )
+    
+                fig_total = px.bar(
+                    total_df,
+                    x="Fréquence totale",
+                    y="Thème",
+                    orientation="h",
+                    title="Fréquence totale de sélection par thème"
+                )
+    
+                fig_total.update_layout(
+                    yaxis={"categoryorder": "total ascending"},
+                    height=700
+                )
+    
+                st.plotly_chart(fig_total, use_container_width=True)
+    
+                fig_source = px.bar(
+                    frequency_df,
+                    x="Fréquence",
+                    y="Thème",
+                    color="Source",
+                    orientation="h",
+                    barmode="group",
+                    title="Comparaison des sélections par source"
+                )
+    
+                fig_source.update_layout(
+                    yaxis={"categoryorder": "total ascending"},
+                    height=750
+                )
+    
+                st.plotly_chart(fig_source, use_container_width=True)
+    
+                st.markdown("### Tableau détaillé")
+                st.dataframe(
+                    filtered_visual_df,
+                    use_container_width=True,
+                    hide_index=True
+                )
+    
+                st.download_button(
+                    "Télécharger les données de visualisation CSV",
+                    filtered_visual_df.to_csv(index=False).encode("utf-8-sig"),
+                    "tna_visualisation_themes.csv",
+                    "text/csv",
+                    use_container_width=True
+                )
+            
+    
+        elif view == "Réponses PSG":
+        
         st.markdown("### Réponses PSG")
 
         psg_df = filtered[filtered["Profil"] == "psg"].copy()
