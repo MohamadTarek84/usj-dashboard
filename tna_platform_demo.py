@@ -1322,7 +1322,7 @@ def seed_trial_data(force=False):
         data = {
             "ranked_themes": ranked_themes,
             "selected_themes": ranked_themes,
-            "other_themes": "Donnée d’essai générée automatiquement.",
+            "other_themes": "",
             "director_code": user.get("director_code", "")
         }
 
@@ -1355,7 +1355,7 @@ def seed_trial_data(force=False):
                 "employee_department": emp["department"],
                 "ranked_themes_by_director": ranked_themes,
                 "selected_themes": ranked_themes,
-                "other_themes": "Donnée d’essai générée automatiquement par le directeur."
+                "other_themes": ""
             })
 
         data = {
