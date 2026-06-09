@@ -431,7 +431,6 @@ def apply_style():
     }}
 
     .pill-red {{ background:#F8EDEF; color:{USJ_RED}; }}
-    .pill-gold {{ background:#FFF8DF; color:#735C00; }}
     .pill-green {{ background:#E9F7EF; color:#146C43; }}
     .pill-final {{ background:#FFF8DF; color:{USJ_BLUE}; border:1px solid #E6D58D; }}
 
@@ -1775,7 +1774,7 @@ def render_director_form(user):
 
             with info_col:
                 st.markdown(
-                    f"<span class='pill'>Code : {emp['code']}</span><span class='pill pill-gold'>{emp['department']}</span>",
+                    f"<span class='pill'>Code : {emp['code']}</span>",
                     unsafe_allow_html=True
                 )
 
@@ -1959,7 +1958,6 @@ def render_employee_visual_cards(employee_name, employee_code, employee_departme
         "<div class='card blue-card employee-main-card'>"
         f"<h3 style='margin-top:0;'>{employee_name}</h3>"
         f"<span class='pill'>Code : {employee_code}</span>"
-        f"<span class='pill pill-gold'>{employee_department}</span>"
         "</div>"
         "<div class='card gold-card employee-summary-card'>"
         "<h3 style='margin-top:0; color:#001F5B;'>Synthèse visuelle</h3>"
@@ -3379,7 +3377,6 @@ def render_admin_dashboard():
         <div class='card red-card'>
             <h3 style='margin-top:0;'>{director_user['name']}</h3>
             <span class='pill pill-red'>{director_user['faculty']}</span>
-            <span class='pill pill-gold'>{director_user['department']}</span>
         </div>
         """, unsafe_allow_html=True)
 
