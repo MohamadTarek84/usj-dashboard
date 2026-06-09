@@ -1706,20 +1706,20 @@ def render_swot_intro():
     </p>
 
     <ul style="font-size:19px; line-height:1.45; color:{USJ_BLUE}; margin-top:0; margin-bottom:18px;">
-        <div>Soutenabilité financière</div>
-        <div>Gouvernance et Leadership (gestion, relation, représentation, etc.)</div>
-        <div>Stratégie académique et qualité d’enseignement</div>
-        <div>Recherche et Innovation</div>
-        <div>Ressources documentaires et Environnement digital</div>
-        <div>Succès des étudiants (recrutement, accompagnement, services de support, employabilité, etc.)</div>
-        <div>Ressources humaines</div>
-        <div>Stratégie et mobilité internationales</div>
-        <div>Mission sociétale</div>
-        <div>Espace et infrastructures</div>
-        <div>Environnement de travail</div>
-        <div>Diversité et inclusion</div>
-        <div>Développement Durable (ODD)</div>
-        <div>Autre</div>
+        <li>Soutenabilité financière</li>
+        <li>Gouvernance et Leadership (gestion, relation, représentation, etc.)</li>
+        <li>Stratégie académique et qualité d’enseignement</li>
+        <li>Recherche et Innovation</li>
+        <li>Ressources documentaires et Environnement digital</li>
+        <li>Succès des étudiants (recrutement, accompagnement, services de support, employabilité, etc.)</li>
+        <li>Ressources humaines</li>
+        <li>Stratégie et mobilité internationales</li>
+        <li>Mission sociétale</li>
+        <li>Espace et infrastructures</li>
+        <li>Environnement de travail</li>
+        <li>Diversité et inclusion</li>
+        <li>Développement Durable (ODD)</li>
+        <li>Autre</li>
     </ul>
 
     <p style="font-size:19px; line-height:1.5; color:{USJ_BLUE}; font-weight:700; margin-bottom:12px;">
@@ -1825,7 +1825,7 @@ def render_swot_analysis():
     </p>
 
     <ul style="font-size:19px; line-height:1.45; color:{USJ_BLUE}; margin-top:0; margin-bottom:18px;">
-        <li>é du travail et relations avec les employeurs</li>
+        <li>Marché du travail et relations avec les employeurs</li>
         <li>Concurrence avec les autres universités</li>
         <li>Intelligence artificielle</li>
         <li>Réputation et image</li>
