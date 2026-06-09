@@ -267,13 +267,18 @@ def apply_style():
         visibility: hidden !important;
     }}
 
-    div[data-testid="stToolbar"],
-    div[data-testid="stDecoration"],
-    div[data-testid="stStatusWidget"],
-    #MainMenu,
-    header {{
+    header,
+    [data-testid="stHeader"],
+    [data-testid="stToolbar"],
+    [data-testid="stDecoration"],
+    [data-testid="stStatusWidget"],
+    [data-testid="stMainMenu"],
+    [data-testid="stDeployButton"],
+    .stDeployButton,
+    #MainMenu {{
         display: none !important;
         visibility: hidden !important;
+        height: 0 !important;
     }}
     
     .stApp {{
