@@ -80,43 +80,73 @@ DD_LEADER_THEMES = [
 
 
 DEMO_USERS = {
-    "PSG001": {"role": "psg", "name": "Nour Haddad", "poste": "Chargée de scolarité", "faculty": "Faculté des Sciences", "institution": "USJ", "department": "Service des Études", "director_code": "DD001"},
-    "PSG002": {"role": "psg", "name": "Karim Mansour", "poste": "Assistant administratif", "faculty": "Faculté des Sciences", "institution": "USJ", "department": "Service des Études", "director_code": "DD001"},
-    "PSG003": {"role": "psg", "name": "Maya Khoury", "poste": "Technicienne informatique", "faculty": "Faculté des Sciences", "institution": "USJ", "department": "Service Informatique", "director_code": "DD001"},
-    "PSG004": {"role": "psg", "name": "Elias Saad", "poste": "Technicien informatique", "faculty": "Faculté des Sciences", "institution": "USJ", "department": "Service Informatique", "director_code": "DD001"},
-    "PSG005": {"role": "psg", "name": "Rita Nader", "poste": "Assistante administrative", "faculty": "Faculté des Sciences", "institution": "USJ", "department": "Service Administratif", "director_code": "DD001"},
+    # =========================
+    # SRH - PSG
+    # =========================
+    "707619": {"role": "psg", "name": "Edgard BARADHY", "poste": "Préposé aux remboursements médicaux et à la SG", "faculty": "SRH", "institution": "SRH", "department": "", "email": "edgard...", "director_name": "Gladys GHRAICHY", "director_code": "703095", "director_email": "gladys..."},
+    "701304": {"role": "psg", "name": "Joëlle BAZ TRABOULSI", "poste": "Directeur-adjoint - Administration du personnel", "faculty": "SRH", "institution": "SRH", "department": "", "email": "joelle...", "director_name": "Gladys GHRAICHY", "director_code": "703095", "director_email": "gladys..."},
+    "711919": {"role": "psg", "name": "Pamela BERBERI FADDOUL", "poste": "Coordinateur - Bureau des assurances", "faculty": "SRH", "institution": "SRH", "department": "", "email": "pamela...", "director_name": "Gladys GHRAICHY", "director_code": "703095", "director_email": "gladys..."},
+    "717400": {"role": "psg", "name": "Michelle BITAR", "poste": "Chargée de support administratif", "faculty": "SRH", "institution": "SRH", "department": "", "email": "michelle...", "director_name": "Gladys GHRAICHY", "director_code": "703095", "director_email": "gladys..."},
+    "712197": {"role": "psg", "name": "Grace BOU DOUMIT DARGHAM", "poste": "Gestionnaire de paie", "faculty": "SRH", "institution": "SRH", "department": "", "email": "grace...", "director_name": "Gladys GHRAICHY", "director_code": "703095", "director_email": "gladys..."},
+    "701696": {"role": "psg", "name": "Rana CHAAYA MHAWEJ", "poste": "Directeur-adjoint - assurances", "faculty": "SRH", "institution": "SRH", "department": "", "email": "rana...", "director_name": "Gladys GHRAICHY", "director_code": "703095", "director_email": "gladys..."},
+    "701813": {"role": "psg", "name": "Yolla CHAMMAS (EL) ABI NASR", "poste": "Gestionnaire de projets et de communication RH", "faculty": "SRH", "institution": "SRH", "department": "", "email": "yolla...", "director_name": "Gladys GHRAICHY", "director_code": "703095", "director_email": "gladys..."},
+    "713286": {"role": "psg", "name": "Sara HAWHA", "poste": "Chargé de support administratif", "faculty": "SRH", "institution": "SRH", "department": "", "email": "sara...", "director_name": "Gladys GHRAICHY", "director_code": "703095", "director_email": "gladys..."},
+    "703865": {"role": "psg", "name": "Antoine ISHAK", "poste": "Représentant du personnel auprès de la CNSS et du ministère du travail", "faculty": "SRH", "institution": "SRH", "department": "", "email": "antoine...", "director_name": "Gladys GHRAICHY", "director_code": "703095", "director_email": "gladys..."},
+    "709975": {"role": "psg", "name": "Joseph KANAAN", "poste": "Agent administratif", "faculty": "SRH", "institution": "SRH", "department": "", "email": "joseph...", "director_name": "Gladys GHRAICHY", "director_code": "703095", "director_email": "gladys..."},
+    "715394": {"role": "psg", "name": "Angela KASSIS (EL)", "poste": "Assistant(e) RH", "faculty": "SRH", "institution": "SRH", "department": "", "email": "angela...", "director_name": "Gladys GHRAICHY", "director_code": "703095", "director_email": "gladys..."},
+    "704400": {"role": "psg", "name": "Marie KHAIRALLAH", "poste": "Chef d'unité - paie des vacataires", "faculty": "SRH", "institution": "SRH", "department": "", "email": "marie...", "director_name": "Gladys GHRAICHY", "director_code": "703095", "director_email": "gladys..."},
+    "709782": {"role": "psg", "name": "Claudine MOUBARAK COSTANTINE", "poste": "Coordinateur d'inclusion", "faculty": "SRH", "institution": "SRH", "department": "", "email": "claudine...", "director_name": "Gladys GHRAICHY", "director_code": "703095", "director_email": "gladys..."},
+    "712070": {"role": "psg", "name": "Hind NASTA MOUSSA", "poste": "Agent de numérisation", "faculty": "SRH", "institution": "SRH", "department": "", "email": "hind...", "director_name": "Gladys GHRAICHY", "director_code": "703095", "director_email": "gladys..."},
+    "706239": {"role": "psg", "name": "Hâla RISHA BALDO", "poste": "Assistant aux affaires administratives", "faculty": "SRH", "institution": "SRH", "department": "", "email": "hala...", "director_name": "Gladys GHRAICHY", "director_code": "703095", "director_email": "gladys..."},
+    "715995": {"role": "psg", "name": "Diala SEMAN CHALHOUB", "poste": "Chargé de recrutement", "faculty": "SRH", "institution": "SRH", "department": "", "email": "diala...", "director_name": "Gladys GHRAICHY", "director_code": "703095", "director_email": "gladys..."},
+    "716185": {"role": "psg", "name": "Sara Maria SOUEIDY (EL)", "poste": "Assistant de paie", "faculty": "SRH", "institution": "SRH", "department": "", "email": "sarah...", "director_name": "Gladys GHRAICHY", "director_code": "703095", "director_email": "gladys..."},
+    "716498": {"role": "psg", "name": "Ranine TABET", "poste": "Chargé de support administratif", "faculty": "SRH", "institution": "SRH", "department": "", "email": "ranine...", "director_name": "Gladys GHRAICHY", "director_code": "703095", "director_email": "gladys..."},
+    "710743": {"role": "psg", "name": "Sarah ZAHREDDINE", "poste": "Gestionnaire RH", "faculty": "SRH", "institution": "SRH", "department": "", "email": "sarah...", "director_name": "Gladys GHRAICHY", "director_code": "703095", "director_email": "gladys..."},
 
-    "PSG006": {"role": "psg", "name": "Paul Tannous", "poste": "Secrétaire académique", "faculty": "Faculté de Médecine", "institution": "USJ", "department": "Secrétariat académique", "director_code": "DD002"},
-    "PSG007": {"role": "psg", "name": "Nadine Abi Rached", "poste": "Technicienne de laboratoire", "faculty": "Faculté de Médecine", "institution": "USJ", "department": "Laboratoire", "director_code": "DD002"},
-    "PSG008": {"role": "psg", "name": "Georges Saliba", "poste": "Chargé d’accueil étudiants", "faculty": "Faculté de Médecine", "institution": "USJ", "department": "Accueil étudiants", "director_code": "DD002"},
-    "PSG009": {"role": "psg", "name": "Sarah Karam", "poste": "Coordinatrice administrative", "faculty": "Faculté de Médecine", "institution": "USJ", "department": "Coordination administrative", "director_code": "DD002"},
-    "PSG010": {"role": "psg", "name": "Fadi Younes", "poste": "Assistant support pédagogique", "faculty": "Faculté de Médecine", "institution": "USJ", "department": "Support pédagogique", "director_code": "DD002"},
+    # =========================
+    # CFP - PSG
+    # =========================
+    "717612": {"role": "psg", "name": "Angel BAHOUT MRAD", "poste": "Chef d'unité - formation continue", "faculty": "CFP", "institution": "CFP", "department": "", "email": "angel...", "director_name": "Fadi HAGE", "director_code": "703328", "director_email": "fadi..."},
+    "715919": {"role": "psg", "name": "Josiane DIAB MAALOUF KHALAF", "poste": "Développeur d'affaires", "faculty": "CFP", "institution": "CFP", "department": "", "email": "josiane...", "director_name": "Fadi HAGE", "director_code": "703328", "director_email": "fadi..."},
+    "719455": {"role": "psg", "name": "Elissa MAKHOUL", "poste": "Chargé de communication", "faculty": "CFP", "institution": "CFP", "department": "", "email": "elissa...", "director_name": "Fadi HAGE", "director_code": "703328", "director_email": "fadi..."},
+    "718851": {"role": "psg", "name": "Elyse SAADEH DIBO", "poste": "Chargé de support administratif", "faculty": "CFP", "institution": "CFP", "department": "", "email": "elyse...", "director_name": "Fadi HAGE", "director_code": "703328", "director_email": "fadi..."},
+    "718491": {"role": "psg", "name": "Albert YAMMINE", "poste": "Coordinateur de la formation continue", "faculty": "CFP", "institution": "CFP", "department": "", "email": "albert...", "director_name": "Fadi HAGE", "director_code": "703328", "director_email": "fadi..."},
 
-    "PSG011": {"role": "psg", "name": "Lina Farah", "poste": "Chargée de scolarité", "faculty": "Faculté de Gestion et de Management", "institution": "USJ", "department": "Scolarité", "director_code": "DD003"},
-    "PSG012": {"role": "psg", "name": "Marc Azar", "poste": "Chargé des relations entreprises", "faculty": "Faculté de Gestion et de Management", "institution": "USJ", "department": "Relations entreprises", "director_code": "DD003"},
-    "PSG013": {"role": "psg", "name": "Hala Daher", "poste": "Chargée de communication", "faculty": "Faculté de Gestion et de Management", "institution": "USJ", "department": "Communication", "director_code": "DD003"},
-    "PSG014": {"role": "psg", "name": "Joe Sfeir", "poste": "Assistant administratif", "faculty": "Faculté de Gestion et de Management", "institution": "USJ", "department": "Administration", "director_code": "DD003"},
-    "PSG015": {"role": "psg", "name": "Mona Raad", "poste": "Chargée assurance qualité", "faculty": "Faculté de Gestion et de Management", "institution": "USJ", "department": "Assurance qualité", "director_code": "DD003"},
+    # =========================
+    # DIRECTORS
+    # =========================
+    "703095": {
+        "role": "director",
+        "name": "Gladys GHRAICHY",
+        "poste": "Directeur du service des ressources humaines",
+        "faculty": "SRH",
+        "institution": "SRH",
+        "department": "",
+        "email": "gladys..."
+    },
 
-    "PSG016": {"role": "psg", "name": "Tania Helou", "poste": "Bibliothécaire", "faculty": "Faculté des Lettres et des Sciences Humaines", "institution": "USJ", "department": "Bibliothèque", "director_code": "DD004"},
-    "PSG017": {"role": "psg", "name": "Rami Chidiac", "poste": "Secrétaire administratif", "faculty": "Faculté des Lettres et des Sciences Humaines", "institution": "USJ", "department": "Secrétariat", "director_code": "DD004"},
-    "PSG018": {"role": "psg", "name": "Dina Aoun", "poste": "Chargée de vie étudiante", "faculty": "Faculté des Lettres et des Sciences Humaines", "institution": "USJ", "department": "Vie étudiante", "director_code": "DD004"},
-    "PSG019": {"role": "psg", "name": "Michel Najjar", "poste": "Assistant support académique", "faculty": "Faculté des Lettres et des Sciences Humaines", "institution": "USJ", "department": "Support académique", "director_code": "DD004"},
-    "PSG020": {"role": "psg", "name": "Carla Haddad", "poste": "Chargée de communication", "faculty": "Faculté des Lettres et des Sciences Humaines", "institution": "USJ", "department": "Communication", "director_code": "DD004"},
+    "703328": {
+        "role": "director",
+        "name": "Fadi HAGE",
+        "poste": "Directeur",
+        "faculty": "CFP",
+        "institution": "CFP",
+        "department": "",
+        "email": "fadi..."
+    },
 
-    "PSG021": {"role": "psg", "name": "Sami Bassil", "poste": "Technicien de laboratoire", "faculty": "Faculté d’Ingénierie", "institution": "USJ", "department": "Laboratoires", "director_code": "DD005"},
-    "PSG022": {"role": "psg", "name": "Layal Matar", "poste": "Technicienne support technique", "faculty": "Faculté d’Ingénierie", "institution": "USJ", "department": "Support technique", "director_code": "DD005"},
-    "PSG023": {"role": "psg", "name": "Anthony Ghosn", "poste": "Chargé de scolarité", "faculty": "Faculté d’Ingénierie", "institution": "USJ", "department": "Scolarité", "director_code": "DD005"},
-    "PSG024": {"role": "psg", "name": "Mireille Daher", "poste": "Coordinatrice administrative", "faculty": "Faculté d’Ingénierie", "institution": "USJ", "department": "Coordination administrative", "director_code": "DD005"},
-    "PSG025": {"role": "psg", "name": "Patrick Bou Saab", "poste": "Chargé innovation et projets", "faculty": "Faculté d’Ingénierie", "institution": "USJ", "department": "Innovation et projets", "director_code": "DD005"},
-
-    "DD001": {"role": "director", "name": "Dr. Rami Haddad", "poste": "Doyen", "faculty": "Faculté des Sciences", "institution": "USJ", "department": "Direction"},
-    "DD002": {"role": "director", "name": "Dr. Carla Mansour", "poste": "Doyenne", "faculty": "Faculté de Médecine", "institution": "USJ", "department": "Direction"},
-    "DD003": {"role": "director", "name": "Dr. Joseph Khoury", "poste": "Doyen", "faculty": "Faculté de Gestion et de Management", "institution": "USJ", "department": "Direction"},
-    "DD004": {"role": "director", "name": "Dr. Nadine Farhat", "poste": "Doyenne", "faculty": "Faculté des Lettres et des Sciences Humaines", "institution": "USJ", "department": "Direction"},
-    "DD005": {"role": "director", "name": "Dr. Marc Saad", "poste": "Doyen", "faculty": "Faculté d’Ingénierie", "institution": "USJ", "department": "Direction"},
-
-    "ADMIN2032": {"role": "admin", "name": "Administrateur TNA", "poste": "Administrateur", "faculty": "USJ", "institution": "USJ", "department": "Administration Centrale"}
+    # =========================
+    # ADMIN
+    # =========================
+    "ADMIN2032": {
+        "role": "admin",
+        "name": "Administrateur TNA",
+        "poste": "Administrateur",
+        "faculty": "USJ",
+        "institution": "USJ",
+        "department": "",
+        "email": ""
+    }
 }
 
 TRIAL_PSG_RESPONSES = {
