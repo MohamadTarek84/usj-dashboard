@@ -3002,8 +3002,9 @@ def main():
     render_first_page_header()
 
     ADMIN_CODE = "USJ-ADMIN-2032"
+    TEMP_ADMIN_CODE_MIREILLE = "MIREILLE-ADMIN-TEST"
 
-    if st.session_state.get("current_draft_code", "").strip().upper() == ADMIN_CODE:
+    if st.session_state.get("current_draft_code", "").strip().upper() in [ADMIN_CODE, TEMP_ADMIN_CODE_MIREILLE]:
         st.session_state["access_granted"] = True
         st.session_state["admin_mode"] = True
 
@@ -3600,7 +3601,7 @@ margin-bottom:8px;
                 st.warning("Veuillez saisir un code personnel de reprise avant d’accéder au formulaire.")
                 return
 
-            if cleaned_code == ADMIN_CODE:
+            if cleaned_code in [ADMIN_CODE, TEMP_ADMIN_CODE_MIREILLE]:
                 st.session_state["access_granted"] = True
                 st.session_state["admin_mode"] = True
                 st.session_state["current_draft_code"] = cleaned_code
