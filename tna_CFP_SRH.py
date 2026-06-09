@@ -3232,23 +3232,8 @@ def render_admin_dashboard():
 
 
 
-    profiles = ["Tous"]
-    if not df.empty:
-        profiles += sorted(df["Profil"].dropna().unique().tolist())
-    selected_profile = st.selectbox("Profil", profiles)
-
-    faculties = ["Toutes"]
-    if not df.empty:
-        faculties += sorted(df["Faculté"].dropna().unique().tolist())
-    selected_faculty = st.selectbox("Faculté / institution", faculties)
-
     filtered = df.copy()
 
-    if not filtered.empty and selected_profile != "Tous":
-        filtered = filtered[filtered["Profil"] == selected_profile]
-
-    if not filtered.empty and selected_faculty != "Toutes":
-        filtered = filtered[filtered["Faculté"] == selected_faculty]
 
     total_psg_users = len([
         code for code, user in all_users.items()
