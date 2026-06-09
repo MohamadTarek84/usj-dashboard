@@ -1745,10 +1745,14 @@ def render_swot_intro():
 def render_swot_table(section_key, left_title, right_title):
     rows = []
 
-    row_count_key = f"{section_key}_rows"
+    left_count_key = f"{section_key}_{left_title}_rows"
+    right_count_key = f"{section_key}_{right_title}_rows"
 
-    if row_count_key not in st.session_state:
-        st.session_state[row_count_key] = 5
+    if left_count_key not in st.session_state:
+        st.session_state[left_count_key] = 5
+
+    if right_count_key not in st.session_state:
+        st.session_state[right_count_key] = 5
 
     col1, col2 = st.columns(2)
 
@@ -1766,36 +1770,59 @@ def render_swot_table(section_key, left_title, right_title):
 </div>
 """)
 
-    for i in range(1, st.session_state[row_count_key] + 1):
+    total_rows = max(
+        st.session_state[left_count_key],
+        st.session_state[right_count_key]
+    )
+
+    for i in range(1, total_rows + 1):
         col1, col2 = st.columns(2)
 
+        left_value = ""
+        right_value = ""
+
         with col1:
-            left_value = word_limited_text_area(
-                label=f"{left_title} {i}",
-                key=f"{section_key}_{left_title}_{i}",
-                height=95,
-                max_words=30
-            )
+            if i <= st.session_state[left_count_key]:
+                left_value = word_limited_text_area(
+                    label=f"{left_title} {i}",
+                    key=f"{section_key}_{left_title}_{i}",
+                    height=95,
+                    max_words=30
+                )
 
         with col2:
-            right_value = word_limited_text_area(
-                label=f"{right_title} {i}",
-                key=f"{section_key}_{right_title}_{i}",
-                height=95,
-                max_words=30
-            )
+            if i <= st.session_state[right_count_key]:
+                right_value = word_limited_text_area(
+                    label=f"{right_title} {i}",
+                    key=f"{section_key}_{right_title}_{i}",
+                    height=95,
+                    max_words=30
+                )
 
         rows.append({
             left_title: left_value,
             right_title: right_value,
         })
 
-    if st.button(
-        f"+ Ajouter {left_title} / {right_title}",
-        key=f"add_{section_key}"
-    ):
-        st.session_state[row_count_key] += 1
-        st.rerun()
+    col_add_left, col_add_right = st.columns(2)
+
+    with col_add_left:
+        if st.button(
+            "+",
+            key=f"add_{section_key}_{left_title}",
+            help=f"Ajouter {left_title}"
+        ):
+            st.session_state[left_count_key] += 1
+            st.rerun()
+
+    with col_add_right:
+        if st.button(
+            "+",
+            key=f"add_{section_key}_{right_title}",
+            help=f"Ajouter {right_title}"
+        ):
+            st.session_state[right_count_key] += 1
+            st.rerun()
 
     return rows
 
