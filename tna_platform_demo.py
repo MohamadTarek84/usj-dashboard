@@ -1165,6 +1165,17 @@ def init_db():
     """)
 
     c.execute("""
+        CREATE TABLE IF NOT EXISTS director_employee_exclusions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            director_code TEXT,
+            employee_code TEXT,
+            removed_by TEXT,
+            removed_at TEXT,
+            UNIQUE(director_code, employee_code)
+        )
+    """)
+
+    c.execute("""
         CREATE TABLE IF NOT EXISTS app_meta (
             key TEXT PRIMARY KEY,
             value TEXT
@@ -1173,7 +1184,6 @@ def init_db():
 
     conn.commit()
     conn.close()
-
 
 
 def load_custom_users():
