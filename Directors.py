@@ -270,12 +270,20 @@ def preload_draft_into_session(data):
 
     for section_key, rows in data.get("swot_analysis", {}).items():
         prefix = "swot_internal" if section_key == "facteurs_internes" else "swot_external"
-    
+
+        if section_key == "facteurs_internes":
+            st.session_state[f"{prefix}_Forces_rows"] = max(5, len(rows))
+            st.session_state[f"{prefix}_Faiblesses_rows"] = max(5, len(rows))
+
+        elif section_key == "facteurs_externes":
+            st.session_state[f"{prefix}_Opportunités_rows"] = max(5, len(rows))
+            st.session_state[f"{prefix}_Menaces_rows"] = max(5, len(rows))
+
         for i, row in enumerate(rows, start=1):
             if section_key == "facteurs_internes":
                 st.session_state[f"{prefix}_Forces_{i}"] = row.get("Forces", "")
                 st.session_state[f"{prefix}_Faiblesses_{i}"] = row.get("Faiblesses", "")
-    
+
             elif section_key == "facteurs_externes":
                 st.session_state[f"{prefix}_Opportunités_{i}"] = row.get("Opportunités", "")
                 st.session_state[f"{prefix}_Menaces_{i}"] = row.get("Menaces", "")
