@@ -1855,6 +1855,14 @@ def render_director_form(user):
 
     render_identity_cards(user)
 
+    saved_data = load_latest_response_for_code(st.session_state["code"])
+    saved_leader_ranked = saved_data.get("leader_ranked_themes", [])
+    saved_leader_other = saved_data.get("leader_other_themes", "")
+    saved_employees_map = {
+        item.get("employee_code"): item
+        for item in saved_data.get("employees_training_needs", [])
+    }
+
     st.markdown("<br>", unsafe_allow_html=True)
 
     render_ranked_section_header(
@@ -1934,6 +1942,10 @@ def render_director_form(user):
             else:
                 st.info("Cet employé n’a pas encore soumis ses réponses.")
 
+            saved_emp_item = saved_employees_map.get(emp["code"], {})
+            saved_emp_ranked = saved_emp_item.get("ranked_themes_by_director", [])
+            saved_emp_other = saved_emp_item.get("other_themes", "")
+            
             emp_ranked = unique_ranked_select(
                 f"Classement des 3 thèmes prioritaires pour {emp['name']} :",
                 PSG_THEMES,
@@ -1942,6 +1954,7 @@ def render_director_form(user):
 
             emp_other = st.text_area(
                 f"Autre(s) besoin(s) spécifique(s) pour {emp['name']}",
+                value=saved_emp_other,
                 key=f"other_{emp['code']}",
                 placeholder="Indiquez ici un besoin particulier, si nécessaire."
             )
