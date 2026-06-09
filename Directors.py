@@ -1706,19 +1706,20 @@ def render_swot_intro():
     </p>
 
     <ul style="font-size:19px; line-height:1.45; color:{USJ_BLUE}; margin-top:0; margin-bottom:18px;">
-        <li>Qualité de l’enseignement (Accompagnement, Orientation, Tutorat, etc.)</li>
-        <li>Relation avec l’administration et les enseignants</li>
-        <li>Représentation des étudiants</li>
-        <li>Ressources documentaires, numériques et informatiques</li>
-        <li>Espace et infrastructure</li>
-        <li>Vie universitaire (Vie étudiante, Sport, Aide psychologique, etc.)</li>
-        <li>Diversité et inclusion</li>
-        <li>Développement durable (ODD)</li>
-        <li>Mission sociétale</li>
-        <li>Mobilité internationale</li>
-        <li>Aide financière</li>
-        <li>Insertion professionnelle</li>
-        <li>Autres</li>
+        <div>Soutenabilité financière</div>
+        <div>Gouvernance et Leadership (gestion, relation, représentation, etc.)</div>
+        <div>Stratégie académique et qualité d’enseignement</div>
+        <div>Recherche et Innovation</div>
+        <div>Ressources documentaires et Environnement digital</div>
+        <div>Succès des étudiants (recrutement, accompagnement, services de support, employabilité, etc.)</div>
+        <div>Ressources humaines</div>
+        <div>Stratégie et mobilité internationales</div>
+        <div>Mission sociétale</div>
+        <div>Espace et infrastructures</div>
+        <div>Environnement de travail</div>
+        <div>Diversité et inclusion</div>
+        <div>Développement Durable (ODD)</div>
+        <div>Autre</div>
     </ul>
 
     <p style="font-size:19px; line-height:1.5; color:{USJ_BLUE}; font-weight:700; margin-bottom:12px;">
@@ -1915,8 +1916,8 @@ def render_pour_finir():
 
     phrases = [
         "Nous souhaitons que l’USJ soit reconnue pour …",
-        "Nous souhaitons que les employeurs disent que les étudiants de l’USJ sont …",
-        "L’USJ serait un meilleur lieu de vie universitaire si …",
+        "Nous souhaitons que nos étudiants disent que l’USJ …",
+        "L’USJ serait un meilleur lieu de travail si …",
     ]
 
     for i, phrase in enumerate(phrases, start=1):
@@ -1926,7 +1927,7 @@ def render_pour_finir():
 
             display_phrase = phrase
             if i == 2:
-                display_phrase = "Nous souhaitons que les employeurs disent que<br>les étudiants de l’USJ sont …"
+                display_phrase = "Nous souhaitons que que nos étudiants disent que l’USJ …"
         
             html_block(f"""
         <div class="pour-finir-screen-label" style="font-size:17px; line-height:1.35; color:{USJ_BLUE}; font-weight:700; margin-top:8px; white-space:nowrap;">
@@ -3266,8 +3267,8 @@ box-sizing:border-box;
 
             phrases = [
                 "Nous souhaitons que l’USJ soit reconnue pour …",
-                "Nous souhaitons que les employeurs disent que les étudiants de l’USJ sont …",
-                "L’USJ serait un meilleur lieu de vie universitaire si …",
+                "Nous souhaitons que nos étudiants disent que l’USJ …",
+                "L’USJ serait un meilleur lieu de travail si …",
             ]
 
             for i, phrase in enumerate(phrases, start=1):
