@@ -3218,18 +3218,7 @@ def render_admin_dashboard():
         st.success("Les réponses ont été réinitialisées.")
         st.rerun()
 
-    view = st.selectbox(
-        "Vue à afficher",
-        [
-            "Synthèse directeur-employés",
-            "Modifier les priorités",
-            "Visualisation des thèmes",
-            "Réponses PSG",
-            "Réponses Doyens / Directeurs",
-            "Base de données"
-        ]
-    )
-
+    view = "Modifier les priorités"
 
 
     filtered = df.copy()
