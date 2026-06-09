@@ -1763,7 +1763,7 @@ def render_form_hero(profile_label, title, objective):
 
 
 def render_identity_cards(user):
-    c1, c2, c3, c4 = st.columns(4)
+    c1, c2, c3 = st.columns(3)
 
     with c1:
         st.markdown(f"""
@@ -1785,15 +1785,7 @@ def render_identity_cards(user):
         st.markdown(f"""
         <div class="identity-card">
             <div class="identity-label">Faculté / Institution</div>
-            <div class="identity-value">{user['faculty']}</div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    with c4:
-        st.markdown(f"""
-        <div class="identity-card">
-            <div class="identity-label">Département</div>
-            <div class="identity-value">{user['department']}</div>
+            <div class="identity-value">{user.get('institution', user.get('faculty', ''))}</div>
         </div>
         """, unsafe_allow_html=True)
 
