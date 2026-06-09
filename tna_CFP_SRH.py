@@ -1892,15 +1892,15 @@ def render_psg_form(user):
                 st.warning("Veuillez sélectionner exactement 3 thèmes classés par ordre de priorité.")
                 return
 
-        data = {
-            "ranked_themes": ranked_themes,
-            "selected_themes": ranked_themes,
-            "other_themes": other_themes,
-            "director_code": user.get("director_code", "")
-        }
+            data = {
+                "ranked_themes": ranked_themes,
+                "selected_themes": ranked_themes,
+                "other_themes": other_themes,
+                "director_code": user.get("director_code", "")
+            }
 
-        save_response(user, data)
-        st.success("Vos réponses ont été enregistrées avec succès.")
+            save_response(user, data)
+            st.success("Vos réponses ont été enregistrées avec succès.")
 
 
 def render_director_form(user):
