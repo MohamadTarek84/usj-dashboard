@@ -3218,7 +3218,7 @@ def render_admin_dashboard():
         st.success("Les réponses ont été réinitialisées.")
         st.rerun()
 
-    view = "Modifier les priorités"
+    view = "Synthèse directeur-employés"
 
 
     filtered = df.copy()
