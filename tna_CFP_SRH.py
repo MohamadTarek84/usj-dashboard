@@ -1059,16 +1059,6 @@ def render_platform_header():
     </div>
     """, unsafe_allow_html=True)
 
-c.execute("""
-    CREATE TABLE IF NOT EXISTS director_employee_exclusions (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        director_code TEXT,
-        employee_code TEXT,
-        removed_by TEXT,
-        removed_at TEXT,
-        UNIQUE(director_code, employee_code)
-    )
-""")
     
 def init_db():
     conn = sqlite3.connect(DB_NAME)
@@ -1118,6 +1108,17 @@ def init_db():
         CREATE TABLE IF NOT EXISTS app_meta (
             key TEXT PRIMARY KEY,
             value TEXT
+        )
+    """)
+
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS director_employee_exclusions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            director_code TEXT,
+            employee_code TEXT,
+            removed_by TEXT,
+            removed_at TEXT,
+            UNIQUE(director_code, employee_code)
         )
     """)
 
