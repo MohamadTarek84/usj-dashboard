@@ -267,12 +267,7 @@ def apply_style():
         visibility: hidden !important;
     }}
 
-    .stButton button[kind="secondary"] {{
-        background-color: #DCEBFF !important;
-        color: #001F5B !important;
-        border: 1px solid #AFCBFF !important;
-        font-weight: 600 !important;
-    }}
+    
 
     header,
     [data-testid="stHeader"],
