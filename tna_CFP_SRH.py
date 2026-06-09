@@ -1976,6 +1976,30 @@ def render_director_form(user):
                     st.success(f"{emp['name']} a été retiré de votre liste.")
                     st.rerun()
 
+            validate_col, status_col = st.columns([1.4, 4])
+
+            with validate_col:
+                if is_employee_validated(emp["code"]):
+                    st.button(
+                        "Validé",
+                        key=f"validated_employee_{emp['code']}",
+                        use_container_width=True,
+                        disabled=True
+                    )
+                else:
+                    if st.button(
+                        "Valider",
+                        key=f"validate_employee_{emp['code']}",
+                        use_container_width=True
+                    ):
+                        validate_employee_response(emp["code"])
+                        st.success(f"Les réponses de {emp['name']} ont été validées.")
+                        st.rerun()
+
+            with status_col:
+                if is_employee_validated(emp["code"]):
+                    st.success("Réponses validées.")
+
             emp_response = latest_by_code(director_visible_df, emp["code"])
 
             if emp_response:
