@@ -3230,17 +3230,7 @@ def render_admin_dashboard():
         ]
     )
 
-        view = st.selectbox(
-            "Vue à afficher",
-            [
-                "Synthèse directeur-employés",
-                "Modifier les priorités",
-                "Visualisation des thèmes",
-                "Réponses PSG",
-                "Réponses Doyens / Directeurs",
-                "Base de données"
-            ]
-        )
+
 
         profiles = ["Tous"]
         if not df.empty:
