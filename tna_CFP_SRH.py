@@ -1885,8 +1885,8 @@ def render_director_form(user):
     st.markdown("<br>", unsafe_allow_html=True)
 
     if st.button("Soumettre mes réponses", use_container_width=True):
-        if len(leader_ranked) != 3:
-            st.warning("Veuillez sélectionner exactement 3 thèmes pour vous-même.")
+        if len(leader_ranked) < 1:
+            st.warning("Veuillez sélectionner au moins 1 thème pour vous-même.")
             return
 
         incomplete = [
