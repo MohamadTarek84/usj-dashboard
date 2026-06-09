@@ -2004,15 +2004,6 @@ def render_director_form(user):
             st.warning("Veuillez sélectionner exactement 3 thèmes pour vous-même.")
             return
 
-        incomplete = [
-            emp["employee_name"]
-            for emp in employee_training_needs
-            if len(emp["ranked_themes_by_director"]) != 3
-        ]
-
-        if incomplete:
-            st.warning("Veuillez sélectionner exactement 3 thèmes pour chaque employé : " + ", ".join(incomplete))
-            return
 
         data = {
             "leader_ranked_themes": leader_ranked,
