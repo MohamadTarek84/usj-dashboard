@@ -1784,6 +1784,10 @@ def render_psg_form(user):
 
     render_identity_cards(user)
 
+    saved_data = load_latest_response_for_code(st.session_state["code"])
+    saved_ranked = saved_data.get("ranked_themes", [])
+    saved_other = saved_data.get("other_themes", "")
+
     st.markdown("<br>", unsafe_allow_html=True)
 
     render_ranked_section_header(
@@ -1792,14 +1796,16 @@ def render_psg_form(user):
         "blue"
     )
 
-    ranked_themes = unique_ranked_select(
+    ranked_themes = ranked_select_with_defaults(
         "Vos 3 thèmes de formation prioritaires :",
         PSG_THEMES,
-        "psg_ranked"
+        "psg_ranked",
+        saved_ranked
     )
 
     other_themes = st.text_area(
         "Autre(s) thème(s) ou sujet(s) de formation proposés",
+        value=saved_other,
         key="psg_other",
         placeholder="Indiquez ici un thème non présent dans la liste, si nécessaire."
     )
