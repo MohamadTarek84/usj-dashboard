@@ -1718,7 +1718,7 @@ def login_page():
         code = st.text_input(
             "Identifiant reçu par email",
             type="default",
-            placeholder="Exemple : PSG001, DD001 ou ADMIN2032",
+            placeholder="",
             key="access_code",
             on_change=submit_login_code
         )
