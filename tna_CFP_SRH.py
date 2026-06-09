@@ -3266,7 +3266,10 @@ def render_admin_dashboard():
 
     valid_user_codes = set(DEMO_USERS.keys())
     
-    filtered_valid = filtered[filtered["Code"].isin(valid_user_codes)]
+    if filtered.empty or "Code" not in filtered.columns:
+        filtered_valid = pd.DataFrame(columns=["Code", "Profil"])
+    else:
+        filtered_valid = filtered[filtered["Code"].isin(valid_user_codes)]
     
     total_psg_users = len([
         code for code, user in DEMO_USERS.items()
