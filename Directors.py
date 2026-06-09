@@ -391,21 +391,20 @@ div[class*="st-key-admin_edit_"] textarea {{
     color: white !important;
 }}
 
-.st-key-add_swot_internal_Forces button,
-.st-key-add_swot_internal_Faiblesses button,
-.st-key-add_swot_external_Opportunités button,
-.st-key-add_swot_external_Menaces button {{
+/* SWOT add buttons */
+div[class*="st-key-add_swot_"] button {{
     background-color: #8B1538 !important;
-    border-color: #8B1538 !important;
+    border: 1px solid #8B1538 !important;
     color: white !important;
 }}
 
-.st-key-add_swot_internal_Forces button:hover,
-.st-key-add_swot_internal_Faiblesses button:hover,
-.st-key-add_swot_external_Opportunités button:hover,
-.st-key-add_swot_external_Menaces button:hover {{
+div[class*="st-key-add_swot_"] button:hover {{
     background-color: #761130 !important;
-    border-color: #761130 !important;
+    border: 1px solid #761130 !important;
+    color: white !important;
+}}
+
+div[class*="st-key-add_swot_"] button p {{
     color: white !important;
 }}
 
