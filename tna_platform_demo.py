@@ -1971,8 +1971,7 @@ def render_director_form(user):
                 "other_themes": emp_other
             })
 
-    st.markdown("### Ajouter un employé non présent dans la base")
-
+    
     with st.expander("+ Ajouter un employé", expanded=False):
         new_emp_code = st.text_input(
             "Code de l’employé",
