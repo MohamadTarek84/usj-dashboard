@@ -1871,14 +1871,16 @@ def render_director_form(user):
         "red"
     )
 
-    leader_ranked = unique_ranked_select(
+    leader_ranked = ranked_select_with_defaults(
         "Vos 3 thématiques prioritaires :",
         DD_LEADER_THEMES,
-        "leader_ranked"
+        "leader_ranked",
+        saved_leader_ranked
     )
 
     leader_other = st.text_area(
         "Autre(s) thème(s) proposés pour vous-même",
+        value=saved_leader_other,
         key="leader_other",
         placeholder="Indiquez ici un thème de leadership non présent dans la liste, si nécessaire."
     )
