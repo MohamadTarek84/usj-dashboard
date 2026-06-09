@@ -1165,17 +1165,6 @@ def init_db():
     """)
 
     c.execute("""
-        CREATE TABLE IF NOT EXISTS director_employee_exclusions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            director_code TEXT,
-            employee_code TEXT,
-            removed_by TEXT,
-            removed_at TEXT,
-            UNIQUE(director_code, employee_code)
-        )
-    """)
-
-    c.execute("""
         CREATE TABLE IF NOT EXISTS app_meta (
             key TEXT PRIMARY KEY,
             value TEXT
@@ -1184,6 +1173,7 @@ def init_db():
 
     conn.commit()
     conn.close()
+
 
 
 def load_custom_users():
@@ -1267,6 +1257,41 @@ def add_custom_employee(code, name, poste, faculty, institution, department, dir
     conn.commit()
     conn.close()
 
+
+
+def get_removed_employee_codes_for_director(director_code):
+    conn = sqlite3.connect(DB_NAME)
+    rows = conn.execute("""
+        SELECT employee_code
+        FROM director_employee_exclusions
+        WHERE director_code = ?
+    """, (str(director_code).strip().upper(),)).fetchall()
+    conn.close()
+
+    return {row[0] for row in rows}
+
+
+def remove_employee_from_director(director_code, employee_code):
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+
+    c.execute("""
+        INSERT OR IGNORE INTO director_employee_exclusions (
+            director_code,
+            employee_code,
+            removed_by,
+            removed_at
+        )
+        VALUES (?, ?, ?, ?)
+    """, (
+        str(director_code).strip().upper(),
+        str(employee_code).strip().upper(),
+        st.session_state.get("code", ""),
+        datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    ))
+
+    conn.commit()
+    conn.close()
 
 
 def save_response(user, data):
@@ -1497,9 +1522,15 @@ def load_admin_theme_overrides():
 def get_employees_for_director(director_code):
     employees = []
     all_users = get_all_users()
+    director_code = str(director_code).strip().upper()
+    removed_codes = get_removed_employee_codes_for_director(director_code)
 
     for code, info in all_users.items():
-        if info.get("role") == "psg" and info.get("director_code") == director_code:
+        if (
+            info.get("role") == "psg"
+            and info.get("director_code") == director_code
+            and code not in removed_codes
+        ):
             emp = info.copy()
             emp["code"] = code
             employees.append(emp)
@@ -1844,12 +1875,12 @@ def render_director_form(user):
 
     render_ranked_section_header(
         "A. Vos besoins de formation en tant que leader",
-        "Veuillez choisir de 1 à 3 thématiques, dans l’ordre d’importance pour votre rôle de direction.",
+        "Veuillez choisir exactement 3 thématiques, dans l’ordre d’importance pour votre rôle de direction.",
         "red"
     )
 
     leader_ranked = unique_ranked_select(
-        "Vos thématiques prioritaires :",
+        "Vos 3 thématiques prioritaires :",
         DD_LEADER_THEMES,
         "leader_ranked"
     )
@@ -1875,10 +1906,26 @@ def render_director_form(user):
 
     for emp in employees:
         with st.expander(f"{emp['name']} | {emp['department']}", expanded=True):
-            st.markdown(
-                f"<span class='pill'>Code : {emp['code']}</span><span class='pill pill-gold'>{emp['department']}</span>",
-                unsafe_allow_html=True
-            )
+            info_col, remove_col = st.columns([6, 1])
+
+            with info_col:
+                st.markdown(
+                    f"<span class='pill'>Code : {emp['code']}</span><span class='pill pill-gold'>{emp['department']}</span>",
+                    unsafe_allow_html=True
+                )
+
+            with remove_col:
+                if st.button(
+                    "Retirer",
+                    key=f"remove_employee_{emp['code']}",
+                    use_container_width=True
+                ):
+                    remove_employee_from_director(
+                        st.session_state["code"],
+                        emp["code"]
+                    )
+                    st.success(f"{emp['name']} a été retiré de votre liste.")
+                    st.rerun()
 
             emp_response = latest_by_code(director_visible_df, emp["code"])
 
@@ -1888,21 +1935,7 @@ def render_director_form(user):
                     "ranked_themes",
                     emp_data.get("selected_themes", [])
                 )
-                employee_other_themes = str(emp_data.get("other_themes", "") or "").strip()
-
-                demo_placeholder_values = {
-                    "Donnée d’essai générée automatiquement.",
-                    "Donnée d'essai générée automatiquement.",
-                    "Donnée d’essai générée automatiquement",
-                    "Donnée d'essai générée automatiquement",
-                    "Donnée d’essai générée automatiquement par le directeur.",
-                    "Donnée d'essai générée automatiquement par le directeur.",
-                    "Donnée d’essai générée automatiquement par le directeur",
-                    "Donnée d'essai générée automatiquement par le directeur"
-                }
-
-                if employee_other_themes in demo_placeholder_values:
-                    employee_other_themes = ""
+                employee_other_themes = emp_data.get("other_themes", "")
 
                 st.markdown("**Réponses déjà soumises par l’employé :**")
                 render_theme_pills(employee_submitted_themes, "pill")
@@ -1989,10 +2022,20 @@ def render_director_form(user):
     st.markdown("<br>", unsafe_allow_html=True)
 
     if st.button("Soumettre mes réponses", use_container_width=True):
-        if len(leader_ranked) < 1:
-            st.warning("Veuillez sélectionner au moins 1 thème pour vous-même.")
+        if len(leader_ranked) != 3:
+            st.warning("Veuillez sélectionner exactement 3 thèmes pour vous-même.")
             return
-        
+
+        incomplete = [
+            emp["employee_name"]
+            for emp in employee_training_needs
+            if len(emp["ranked_themes_by_director"]) != 3
+        ]
+
+        if incomplete:
+            st.warning("Veuillez sélectionner exactement 3 thèmes pour chaque employé : " + ", ".join(incomplete))
+            return
+
         data = {
             "leader_ranked_themes": leader_ranked,
             "leader_selected_themes": leader_ranked,
@@ -2189,17 +2232,6 @@ def build_admin_flat_exports(df, overrides):
 
 def build_theme_frequency_excel_report(df):
     detail_rows = []
-    other_theme_rows = []
-
-    def clean_other_text(value):
-        value = str(value or "").strip()
-        blocked_values = [
-            "Donnée d’essai générée automatiquement.",
-            "Donnée d’essai générée automatiquement par le directeur."
-        ]
-        if value in blocked_values:
-            return ""
-        return value
 
     for _, row in df.iterrows():
         data = row["Données"]
@@ -2221,21 +2253,6 @@ def build_theme_frequency_excel_report(df):
                     "Date": row["Date"]
                 })
 
-            other_text = clean_other_text(data.get("other_themes", ""))
-
-            if other_text:
-                other_theme_rows.append({
-                    "Source": "Employé",
-                    "Code répondant": row["Code"],
-                    "Nom": row["Nom"],
-                    "Profil": "PSG",
-                    "Faculté": row["Faculté"],
-                    "Institution": row["Institution"],
-                    "Département": row["Département"],
-                    "Autre thème proposé": other_text,
-                    "Date": row["Date"]
-                })
-
         elif row["Profil"] == "director":
             leader_themes = data.get("leader_ranked_themes", data.get("leader_selected_themes", []))
 
@@ -2250,21 +2267,6 @@ def build_theme_frequency_excel_report(df):
                     "Faculté": row["Faculté"],
                     "Institution": row["Institution"],
                     "Département": row["Département"],
-                    "Date": row["Date"]
-                })
-
-            leader_other = clean_other_text(data.get("leader_other_themes", ""))
-
-            if leader_other:
-                other_theme_rows.append({
-                    "Source": "Doyen / Directeur pour lui-même",
-                    "Code répondant": row["Code"],
-                    "Nom": row["Nom"],
-                    "Profil": "Doyen / Directeur",
-                    "Faculté": row["Faculté"],
-                    "Institution": row["Institution"],
-                    "Département": row["Département"],
-                    "Autre thème proposé": leader_other,
                     "Date": row["Date"]
                 })
 
@@ -2285,23 +2287,7 @@ def build_theme_frequency_excel_report(df):
                         "Date": row["Date"]
                     })
 
-                emp_other = clean_other_text(emp.get("other_themes", ""))
-
-                if emp_other:
-                    other_theme_rows.append({
-                        "Source": "Doyen / Directeur pour employé",
-                        "Code répondant": emp.get("employee_code", ""),
-                        "Nom": emp.get("employee_name", ""),
-                        "Profil": "PSG évalué par Doyen / Directeur",
-                        "Faculté": row["Faculté"],
-                        "Institution": row["Institution"],
-                        "Département": emp.get("employee_department", ""),
-                        "Autre thème proposé": emp_other,
-                        "Date": row["Date"]
-                    })
-
     details_df = pd.DataFrame(detail_rows)
-    other_themes_df = pd.DataFrame(other_theme_rows)
 
     if details_df.empty:
         summary_df = pd.DataFrame(columns=[
@@ -2365,7 +2351,6 @@ def build_theme_frequency_excel_report(df):
     with pd.ExcelWriter(output, engine="openpyxl") as writer:
         summary_df.to_excel(writer, sheet_name="Synthèse par thème", index=False)
         details_df.to_excel(writer, sheet_name="Détails par thème", index=False)
-        other_themes_df.to_excel(writer, sheet_name="Autres thèmes proposés", index=False)
 
         if not details_df.empty:
             for theme in sorted(details_df["Thème"].dropna().unique()):
