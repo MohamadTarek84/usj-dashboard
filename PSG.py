@@ -31,7 +31,7 @@ else:
 
 DB_DIR.mkdir(parents=True, exist_ok=True)
 
-DB_PATH = DB_DIR / "focus_group_directors.db"
+DB_PATH = DB_DIR / "focus_group_psg.db"
 
 LOGO_PATH = Path("LogoUAQ.png")
 INTRO_IMAGE_PATH = Path("Intro_schema.png")
@@ -57,11 +57,10 @@ AUTHORIZED_TEST_CODES = {
     "USJ-TH-2032": {"responsable": "Tarek Halabi", "institution": ""},
 
     # Focus groups
-    "USJ-DIR-FG1-2032": {"responsable": "", "institution": "Sous groupe 1"},
-    "USJ-DIR-FG2-2032": {"responsable": "", "institution": "Sous groupe 2"},
-    "USJ-DIR-FG3-2032": {"responsable": "", "institution": "Sous groupe 3"},
-    "USJ-DIR-FG4-2032": {"responsable": "", "institution": "Sous groupe 4"},
-    "USJ-DIR-FG5-2032": {"responsable": "", "institution": "Sous groupe 5"},
+    "USJ-PSG-FG1-2032": {"responsable": "", "institution": "Sous groupe 1"},
+    "USJ-PSG-FG2-2032": {"responsable": "", "institution": "Sous groupe 2"},
+    "USJ-PSG-FG3-2032": {"responsable": "", "institution": "Sous groupe 3"},
+    "USJ-PSG-FG4-2032": {"responsable": "", "institution": "Sous groupe 4"},
 }
 
 def html_block(content):
@@ -147,7 +146,7 @@ def save_response(metadata, data):
                 data_json = ?
             WHERE id = ?
         """, (
-            "2026-06-10",
+            "2026-06-12",
             responsable,
             institution,
             email,
@@ -3699,10 +3698,10 @@ margin-bottom:8px;
             with col3:
                 st.text_input(
                     "Date",
-                    value="2026-06-10",
+                    value="2026-06-12",
                     disabled=True
                 )
-                response_date = "2026-06-10"
+                response_date = "2026-06-12"
 
             st.markdown("---")
 
