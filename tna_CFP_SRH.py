@@ -3215,10 +3215,7 @@ def render_admin_dashboard():
     with st.sidebar:
         st.header("Filtres administrateur")
 
-        if st.button("Charger / réinitialiser les données d’essai", use_container_width=True):
-            seed_trial_data(force=True)
-            st.success("Données d’essai chargées.")
-            st.rerun()
+        
 
         view = st.selectbox(
             "Vue à afficher",
@@ -3606,7 +3603,6 @@ def main():
 
     apply_style()
     init_db()
-    seed_trial_data(force=False)
     render_platform_header()
 
     if "logged_in" not in st.session_state:
