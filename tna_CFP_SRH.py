@@ -3206,6 +3206,30 @@ def render_admin_dashboard():
     with st.sidebar:
         st.header("Filtres administrateur")
 
+
+    if st.button("Réinitialiser les réponses", use_container_width=True):
+        conn = sqlite3.connect(DB_NAME)
+        c = conn.cursor()
+        c.execute("DELETE FROM responses")
+        c.execute("DELETE FROM admin_theme_overrides")
+        c.execute("DELETE FROM employee_validations")
+        conn.commit()
+        conn.close()
+        st.success("Les réponses ont été réinitialisées.")
+        st.rerun()
+
+    view = st.selectbox(
+        "Vue à afficher",
+        [
+            "Synthèse directeur-employés",
+            "Modifier les priorités",
+            "Visualisation des thèmes",
+            "Réponses PSG",
+            "Réponses Doyens / Directeurs",
+            "Base de données"
+        ]
+    )
+
         view = st.selectbox(
             "Vue à afficher",
             [
