@@ -3431,7 +3431,6 @@ def main():
 
     apply_style()
     init_db()
-    seed_trial_data(force=False)
     render_platform_header()
 
     if "logged_in" not in st.session_state:
