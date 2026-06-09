@@ -3203,20 +3203,21 @@ def render_admin_dashboard():
         st.info("Aucune réponse enregistrée pour le moment.")
         return
 
-    st.markdown(
-        "<div class='no-print' style='color:#6B7688; font-size:0.95rem; line-height:1.6;'>"
-        "Données d’essai intégrées : 5 Doyens / Directeurs et 25 employés PSG. "
-        "Les scénarios sont volontairement variés : plusieurs cas sans thème commun, quelques cas avec 1 thème commun, "
-        "quelques cas avec 2 thèmes communs, et un cas avec 3 thèmes communs."
-        "</div>",
-        unsafe_allow_html=True
-    )
+    
 
     with st.sidebar:
         st.header("Filtres administrateur")
-
-        
-
+    
+        if st.button("Supprimer les anciennes réponses d’essai", use_container_width=True):
+            conn = sqlite3.connect(DB_NAME)
+            c = conn.cursor()
+            c.execute("DELETE FROM responses")
+            c.execute("DELETE FROM admin_theme_overrides")
+            conn.commit()
+            conn.close()
+            st.success("Anciennes réponses supprimées.")
+            st.rerun()
+    
         view = st.selectbox(
             "Vue à afficher",
             [
@@ -3225,7 +3226,6 @@ def render_admin_dashboard():
                 "Visualisation des thèmes",
                 "Réponses PSG",
                 "Réponses Doyens / Directeurs",
-                "Départements",
                 "Base de données"
             ]
         )
@@ -3250,11 +3250,10 @@ def render_admin_dashboard():
     if selected_department != "Tous":
         filtered = filtered[filtered["Département"] == selected_department]
 
-    k1, k2, k3, k4 = st.columns(4)
+    k1, k2, k3 = st.columns(3)
     k1.metric("Réponses", len(filtered))
     k2.metric("PSG", len(filtered[filtered["Profil"] == "psg"]))
     k3.metric("Doyens / Directeurs", len(filtered[filtered["Profil"] == "director"]))
-    k4.metric("Départements", filtered["Département"].nunique())
 
     st.divider()
 
