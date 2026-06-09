@@ -1834,12 +1834,12 @@ def render_director_form(user):
 
     render_ranked_section_header(
         "A. Vos besoins de formation en tant que leader",
-        "Veuillez choisir exactement 3 thématiques, dans l’ordre d’importance pour votre rôle de direction.",
+        "Veuillez choisir de 1 à 3 thématiques, dans l’ordre d’importance pour votre rôle de direction.",
         "red"
     )
 
     leader_ranked = unique_ranked_select(
-        "Vos 3 thématiques prioritaires :",
+        "Vos thématiques prioritaires :",
         DD_LEADER_THEMES,
         "leader_ranked"
     )
@@ -1979,8 +1979,8 @@ def render_director_form(user):
     st.markdown("<br>", unsafe_allow_html=True)
 
     if st.button("Soumettre mes réponses", use_container_width=True):
-        if len(leader_ranked) != 3:
-            st.warning("Veuillez sélectionner exactement 3 thèmes pour vous-même.")
+        if len(leader_ranked) < 1:
+            st.warning("Veuillez sélectionner au moins 1 thème pour vous-même.")
             return
         
         data = {
