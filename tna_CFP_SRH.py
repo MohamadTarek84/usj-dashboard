@@ -1774,7 +1774,25 @@ def login_page():
 
         st.caption("Utilisez l’identifiant reçu par email.")
 
+def load_latest_response_for_code(code):
+    conn = sqlite3.connect(DB_NAME)
+    row = conn.execute("""
+        SELECT data_json
+        FROM responses
+        WHERE respondent_code = ?
+        ORDER BY submitted_at DESC
+        LIMIT 1
+    """, (str(code).strip().upper(),)).fetchone()
+    conn.close()
 
+    if not row:
+        return {}
+
+    try:
+        return json.loads(row[0])
+    except Exception:
+        return {}
+    
 def render_psg_form(user):
     render_form_hero(
         "Personnel de soutien et de gestion",
