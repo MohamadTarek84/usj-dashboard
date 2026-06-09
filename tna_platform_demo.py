@@ -2179,6 +2179,17 @@ def build_admin_flat_exports(df, overrides):
 
 def build_theme_frequency_excel_report(df):
     detail_rows = []
+    other_theme_rows = []
+
+    def clean_other_text(value):
+        value = str(value or "").strip()
+        blocked_values = [
+            "Donnée d’essai générée automatiquement.",
+            "Donnée d’essai générée automatiquement par le directeur."
+        ]
+        if value in blocked_values:
+            return ""
+        return value
 
     for _, row in df.iterrows():
         data = row["Données"]
@@ -2200,6 +2211,21 @@ def build_theme_frequency_excel_report(df):
                     "Date": row["Date"]
                 })
 
+            other_text = clean_other_text(data.get("other_themes", ""))
+
+            if other_text:
+                other_theme_rows.append({
+                    "Source": "Employé",
+                    "Code répondant": row["Code"],
+                    "Nom": row["Nom"],
+                    "Profil": "PSG",
+                    "Faculté": row["Faculté"],
+                    "Institution": row["Institution"],
+                    "Département": row["Département"],
+                    "Autre thème proposé": other_text,
+                    "Date": row["Date"]
+                })
+
         elif row["Profil"] == "director":
             leader_themes = data.get("leader_ranked_themes", data.get("leader_selected_themes", []))
 
@@ -2214,6 +2240,21 @@ def build_theme_frequency_excel_report(df):
                     "Faculté": row["Faculté"],
                     "Institution": row["Institution"],
                     "Département": row["Département"],
+                    "Date": row["Date"]
+                })
+
+            leader_other = clean_other_text(data.get("leader_other_themes", ""))
+
+            if leader_other:
+                other_theme_rows.append({
+                    "Source": "Doyen / Directeur pour lui-même",
+                    "Code répondant": row["Code"],
+                    "Nom": row["Nom"],
+                    "Profil": "Doyen / Directeur",
+                    "Faculté": row["Faculté"],
+                    "Institution": row["Institution"],
+                    "Département": row["Département"],
+                    "Autre thème proposé": leader_other,
                     "Date": row["Date"]
                 })
 
@@ -2234,7 +2275,23 @@ def build_theme_frequency_excel_report(df):
                         "Date": row["Date"]
                     })
 
+                emp_other = clean_other_text(emp.get("other_themes", ""))
+
+                if emp_other:
+                    other_theme_rows.append({
+                        "Source": "Doyen / Directeur pour employé",
+                        "Code répondant": emp.get("employee_code", ""),
+                        "Nom": emp.get("employee_name", ""),
+                        "Profil": "PSG évalué par Doyen / Directeur",
+                        "Faculté": row["Faculté"],
+                        "Institution": row["Institution"],
+                        "Département": emp.get("employee_department", ""),
+                        "Autre thème proposé": emp_other,
+                        "Date": row["Date"]
+                    })
+
     details_df = pd.DataFrame(detail_rows)
+    other_themes_df = pd.DataFrame(other_theme_rows)
 
     if details_df.empty:
         summary_df = pd.DataFrame(columns=[
@@ -2298,6 +2355,7 @@ def build_theme_frequency_excel_report(df):
     with pd.ExcelWriter(output, engine="openpyxl") as writer:
         summary_df.to_excel(writer, sheet_name="Synthèse par thème", index=False)
         details_df.to_excel(writer, sheet_name="Détails par thème", index=False)
+        other_themes_df.to_excel(writer, sheet_name="Autres thèmes proposés", index=False)
 
         if not details_df.empty:
             for theme in sorted(details_df["Thème"].dropna().unique()):
