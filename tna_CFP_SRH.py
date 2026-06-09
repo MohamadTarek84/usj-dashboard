@@ -27,7 +27,6 @@ USJ_RED = "#8B1538"
 USJ_GOLD = "#C9A227"
 USJ_TEXT = "#1B2A41"
 USJ_LIGHT_BLUE = "#EAF2F8"
-DEMO_DATA_VERSION = "varied_scenarios_v2"
 
 CFP_LOGO_PATH = "CFP LOGO.png"
 USJ_LOGO_PATH = "USJ LOGO 150.png"
@@ -149,6 +148,96 @@ DEMO_USERS = {
     }
 }
 
+TRIAL_PSG_RESPONSES = {
+    # DD001 - mixed cases
+    "PSG001": ["Communication constructive", "Diversité culturelle", "Communication écrite"],          # 0 common with director
+    "PSG002": ["Outils intelligence artificielle", "Gestion du temps", "Communication écrite"],         # 1 common
+    "PSG003": ["Bureautique-Excel", "Outils intelligence artificielle", "Gestion de projets"],          # 2 common
+    "PSG004": ["Résolution de conflits", "Communication orale", "Team building"],                      # 0 common
+    "PSG005": ["Customer service", "Gestion du stress", "Communication constructive"],                  # 3 common
+
+    # DD002 - mostly low/no agreement
+    "PSG006": ["Santé mentale", "Gestion du stress", "Intelligence émotionnelle"],                     # 1 common
+    "PSG007": ["Bureautique-Excel", "Ergonomie", "Gestion du temps"],                                  # 0 common
+    "PSG008": ["Customer service", "Communication orale", "Diversité culturelle"],                      # 1 common
+    "PSG009": ["Gestion de projets", "Collaboration", "Communication écrite"],                         # 0 common
+    "PSG010": ["Outils intelligence artificielle", "Bureautique-PowerPoint", "Création de contenu-Réseaux sociaux"], # 2 common
+
+    # DD003 - varied business/admin cases
+    "PSG011": ["Gestion financière", "Bureautique-Excel", "Esprit critique et résolution de problèmes"], # 0 common
+    "PSG012": ["Communication orale", "Public speaking and Body language", "Customer service"],          # 1 common
+    "PSG013": ["Branding", "Création de contenu-Réseaux sociaux", "Customer service"],                  # 2 common
+    "PSG014": ["Gestion du changement en milieu universitaire", "Gestion de projets", "Collaboration"], # 0 common
+    "PSG015": ["Esprit critique et résolution de problèmes", "Bureautique-Excel", "Communication écrite"], # 1 common
+
+    # DD004 - mostly no common themes
+    "PSG016": ["Communication écrite", "Bureautique-Word", "Customer service"],                         # 0 common
+    "PSG017": ["Gestion du temps", "Gestion du stress", "Collaboration"],                              # 1 common
+    "PSG018": ["Inclusion", "Diversité culturelle", "Intelligence interpersonnelle"],                   # 0 common
+    "PSG019": ["Outils intelligence artificielle", "Bureautique-PowerPoint", "Gestion de projets"],     # 2 common
+    "PSG020": ["Branding", "Communication orale", "Création de contenu-Réseaux sociaux"],               # 0 common
+
+    # DD005 - technical/project cases
+    "PSG021": ["Ergonomie", "Gestion de projets", "Bureautique-Excel"],                                 # 1 common
+    "PSG022": ["Outils intelligence artificielle", "Esprit critique et résolution de problèmes", "Communication constructive"], # 0 common
+    "PSG023": ["Customer service", "Gestion du temps", "Communication écrite"],                          # 1 common
+    "PSG024": ["Collaboration", "Gestion du changement en milieu universitaire", "Team building"],       # 2 common
+    "PSG025": ["Outils intelligence artificielle", "Gestion de projets", "Esprit critique et résolution de problèmes"] # 0 common
+}
+
+
+TRIAL_DIRECTOR_RESPONSES = {
+    "DD001": {
+        "leader": ["Data-driven decision making", "Outils intelligence artificielle-IA", "Strategic decision making"],
+        "employees": {
+            "PSG001": ["Gestion financière", "Ergonomie", "Bureautique-PowerPoint"],                    # 0 common
+            "PSG002": ["Collaboration", "Outils intelligence artificielle", "Customer service"],        # 1 common, not same priority
+            "PSG003": ["Gestion de projets", "Bureautique-Excel", "Team building"],                     # 2 common
+            "PSG004": ["Bureautique-Excel", "Bien-être au travail", "Gestion financière"],              # 0 common
+            "PSG005": ["Customer service", "Gestion du stress", "Communication constructive"]           # 3 common
+        }
+    },
+    "DD002": {
+        "leader": ["Crisis management and institutional resilience", "Gestion budgétaire", "Change management in academic institutions"],
+        "employees": {
+            "PSG006": ["Bien-être au travail", "Santé mentale", "Mindfulness"],                         # 1 common
+            "PSG007": ["Communication constructive", "Collaboration", "Bureautique-PowerPoint"],        # 0 common
+            "PSG008": ["Gestion du temps", "Diversité culturelle", "Ergonomie"],                        # 1 common
+            "PSG009": ["Customer service", "Gestion du stress", "Bureautique-Excel"],                   # 0 common
+            "PSG010": ["Branding", "Bureautique-PowerPoint", "Outils intelligence artificielle"]        # 2 common
+        }
+    },
+    "DD003": {
+        "leader": ["Strategic decision making", "Digital marketing", "Gestion financière"],
+        "employees": {
+            "PSG011": ["Communication orale", "Gestion du temps", "Customer service"],                  # 0 common
+            "PSG012": ["Gestion financière", "Customer service", "Bureautique-Excel"],                  # 1 common
+            "PSG013": ["Branding", "Customer service", "Gestion de projets"],                           # 2 common
+            "PSG014": ["Santé mentale", "Bureautique-Word", "Ergonomie"],                               # 0 common
+            "PSG015": ["Communication écrite", "Team building", "Gestion du stress"]                    # 1 common
+        }
+    },
+    "DD004": {
+        "leader": ["Agile management", "Change management in academic institutions", "Data-driven decision making"],
+        "employees": {
+            "PSG016": ["Collaboration", "Gestion de projets", "Ergonomie"],                             # 0 common
+            "PSG017": ["Branding", "Collaboration", "Bureautique-PowerPoint"],                          # 1 common
+            "PSG018": ["Bureautique-Excel", "Customer service", "Gestion financière"],                   # 0 common
+            "PSG019": ["Gestion de projets", "Outils intelligence artificielle", "Communication orale"], # 2 common
+            "PSG020": ["Gestion du stress", "Bureautique-Word", "Customer service"]                     # 0 common
+        }
+    },
+    "DD005": {
+        "leader": ["Outils intelligence artificielle-IA", "Data-driven decision making", "Gestion budgétaire"],
+        "employees": {
+            "PSG021": ["Gestion du temps", "Ergonomie", "Customer service"],                            # 1 common
+            "PSG022": ["Bureautique-Word", "Team building", "Gestion financière"],                      # 0 common
+            "PSG023": ["Communication orale", "Customer service", "Gestion financière"],                # 1 common
+            "PSG024": ["Team building", "Bureautique-Excel", "Collaboration"],                          # 2 common
+            "PSG025": ["Customer service", "Communication orale", "Ergonomie"]                         # 0 common
+        }
+    }
+}
 
 
 def image_to_base64(image_path):
@@ -431,6 +520,7 @@ def apply_style():
     }}
 
     .pill-red {{ background:#F8EDEF; color:{USJ_RED}; }}
+    .pill-gold {{ background:#FFF8DF; color:#735C00; }}
     .pill-green {{ background:#E9F7EF; color:#146C43; }}
     .pill-final {{ background:#FFF8DF; color:{USJ_BLUE}; border:1px solid #E6D58D; }}
 
@@ -1058,7 +1148,7 @@ def render_platform_header():
     </div>
     """, unsafe_allow_html=True)
 
-    
+
 def init_db():
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
@@ -1107,17 +1197,6 @@ def init_db():
         CREATE TABLE IF NOT EXISTS app_meta (
             key TEXT PRIMARY KEY,
             value TEXT
-        )
-    """)
-
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS director_employee_exclusions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            director_code TEXT,
-            employee_code TEXT,
-            removed_by TEXT,
-            removed_at TEXT,
-            UNIQUE(director_code, employee_code)
         )
     """)
 
@@ -1267,28 +1346,6 @@ def save_response(user, data):
     conn.close()
 
 
-def trial_data_is_complete():
-    expected_codes = set(TRIAL_PSG_RESPONSES.keys()) | set(TRIAL_DIRECTOR_RESPONSES.keys())
-
-    conn = sqlite3.connect(DB_NAME)
-
-    existing_codes = {
-        row[0]
-        for row in conn.execute("SELECT DISTINCT respondent_code FROM responses").fetchall()
-    }
-
-    version_row = conn.execute(
-        "SELECT value FROM app_meta WHERE key = ?",
-        ("demo_data_version",)
-    ).fetchone()
-
-    conn.close()
-
-    version_ok = version_row is not None and version_row[0] == DEMO_DATA_VERSION
-
-    return expected_codes.issubset(existing_codes) and version_ok
-
-
 
 
 def load_responses():
@@ -1300,10 +1357,21 @@ def load_responses():
     """).fetchall()
     conn.close()
 
+    current_codes = {
+        str(code).strip().upper()
+        for code, user in get_all_users().items()
+        if user.get("role") in ["psg", "director"]
+    }
+
     records = []
 
     for row in rows:
         code, role, name, faculty, institution, department, data_json, submitted_at = row
+        code = str(code).strip().upper()
+
+        # Ignore old trial/demo responses still stored in SQLite, without deleting any real data.
+        if code not in current_codes:
+            continue
 
         try:
             data = json.loads(data_json)
@@ -1316,12 +1384,12 @@ def load_responses():
             "Nom": name,
             "Faculté": faculty,
             "Institution": institution,
-            "Département": department,
             "Date": submitted_at,
             "Données": data
         })
 
     return pd.DataFrame(records)
+
 
 
 def save_admin_theme_override(employee_code, employee_ranked, director_ranked):
@@ -1599,7 +1667,7 @@ def render_form_hero(profile_label, title, objective):
 
 
 def render_identity_cards(user):
-    c1, c2, c3 = st.columns(3)
+    c1, c2, c3, c4 = st.columns(4)
 
     with c1:
         st.markdown(f"""
@@ -1621,7 +1689,15 @@ def render_identity_cards(user):
         st.markdown(f"""
         <div class="identity-card">
             <div class="identity-label">Faculté / Institution</div>
-            <div class="identity-value">{user.get('institution', user.get('faculty', ''))}</div>
+            <div class="identity-value">{user['faculty']}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with c4:
+        st.markdown(f"""
+        <div class="identity-card">
+            <div class="identity-label">Département</div>
+            <div class="identity-value">{user['department']}</div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -1676,7 +1752,7 @@ def login_page():
             else:
                 st.error("Code non reconnu.")
 
-        st.caption("Codes demo : PSG001 à PSG025, DD001 à DD005, ADMIN2032")
+        st.caption("Utilisez l’identifiant reçu par email.")
 
 
 def render_psg_form(user):
@@ -1730,7 +1806,7 @@ def render_director_form(user):
     render_form_hero(
         "Doyens et Directeurs",
         "Questionnaire d’analyse des besoins en formation - Doyens et Directeurs",
-        "Ce questionnaire vise à identifier vos besoins en formation en tant que leader ainsi que les besoins de développement de votre département. Les résultats nous aideront à concevoir des programmes de formation qui soutiennent le leadership, améliorent la performance des équipes et s’alignent sur les objectifs de l’université.<br><br><b>Il vous faudra environ 10 minutes pour le compléter. Vos réponses resteront confidentielles.</b>"
+        "Ce questionnaire vise à identifier vos besoins en formation en tant que leader ainsi que les besoins de développement de vos employés. Les résultats nous aideront à concevoir des programmes de formation qui soutiennent le leadership, améliorent la performance des équipes et s’alignent sur les objectifs de l’université.<br><br><b>Il vous faudra environ 10 minutes pour le compléter. Vos réponses resteront confidentielles.</b>"
     )
 
     render_identity_cards(user)
@@ -1739,7 +1815,7 @@ def render_director_form(user):
 
     render_ranked_section_header(
         "A. Vos besoins de formation en tant que leader",
-        "Veuillez choisir exactement 3 thématiques, dans l’ordre d’importance pour votre rôle de direction.",
+        "Veuillez choisir au moins 1 thématique, dans l’ordre d’importance pour votre rôle de direction.",
         "red"
     )
 
@@ -1761,7 +1837,7 @@ def render_director_form(user):
 
     render_ranked_section_header(
         "B. Besoins de formation de vos employés",
-        f"{len(employees)} employé(s) lié(s) à votre compte. Pour chaque employé, veuillez classer exactement 3 thèmes prioritaires.",
+        f"{len(employees)} employé(s) lié(s) à votre compte. Pour chaque employé, vous pouvez classer jusqu’à 3 thèmes prioritaires.",
         "gold"
     )
 
@@ -1769,12 +1845,12 @@ def render_director_form(user):
     director_visible_df = load_responses()
 
     for emp in employees:
-        with st.expander(f"{emp['name']} | {emp['department']}", expanded=True):
+        with st.expander(f"{emp['name']}", expanded=True):
             info_col, remove_col = st.columns([6, 1])
 
             with info_col:
                 st.markdown(
-                    f"<span class='pill'>Code : {emp['code']}</span>",
+                    f"<span class='pill'>Code : {emp['code']}</span><span class='pill pill-gold'>{emp['department']}</span>",
                     unsafe_allow_html=True
                 )
 
@@ -1829,7 +1905,7 @@ def render_director_form(user):
             employee_training_needs.append({
                 "employee_code": emp["code"],
                 "employee_name": emp["name"],
-                "employee_department": emp["department"],
+                "employee_department": "",
                 "ranked_themes_by_director": emp_ranked,
                 "selected_themes": emp_ranked,
                 "other_themes": emp_other
@@ -1853,16 +1929,11 @@ def render_director_form(user):
             key="new_emp_poste"
         )
 
-        new_emp_department = st.text_input(
-            "Département",
-            key="new_emp_department"
-        )
-
         if st.button("Ajouter cet employé", use_container_width=True):
             cleaned_new_code = new_emp_code.strip().upper()
 
-            if not cleaned_new_code or not new_emp_name.strip() or not new_emp_department.strip():
-                st.warning("Veuillez saisir au minimum le code, le nom et le département.")
+            if not cleaned_new_code or not new_emp_name.strip():
+                st.warning("Veuillez saisir au minimum le code et le nom.")
             elif custom_user_exists(cleaned_new_code):
                 st.warning("Ce code existe déjà. Veuillez utiliser un autre code.")
             else:
@@ -1872,7 +1943,7 @@ def render_director_form(user):
                     poste=new_emp_poste,
                     faculty=user.get("faculty", ""),
                     institution=user.get("institution", "USJ"),
-                    department=new_emp_department,
+                    department="",
                     director_code=st.session_state["code"]
                 )
 
@@ -1885,10 +1956,19 @@ def render_director_form(user):
     st.markdown("<br>", unsafe_allow_html=True)
 
     if st.button("Soumettre mes réponses", use_container_width=True):
-        if len(leader_ranked) < 1:
-            st.warning("Veuillez sélectionner au moins 1 thème pour vous-même.")
+        if len(leader_ranked) != 3:
+            st.warning("Veuillez sélectionner exactement 3 thèmes pour vous-même.")
             return
 
+        incomplete = [
+            emp["employee_name"]
+            for emp in employee_training_needs
+            if len(emp["ranked_themes_by_director"]) != 3
+        ]
+
+        if incomplete:
+            st.warning("Veuillez sélectionner exactement 3 thèmes pour chaque employé : " + ", ".join(incomplete))
+            return
 
         data = {
             "leader_ranked_themes": leader_ranked,
@@ -1949,6 +2029,7 @@ def render_employee_visual_cards(employee_name, employee_code, employee_departme
         "<div class='card blue-card employee-main-card'>"
         f"<h3 style='margin-top:0;'>{employee_name}</h3>"
         f"<span class='pill'>Code : {employee_code}</span>"
+        f"<span class='pill pill-gold'>{employee_department}</span>"
         "</div>"
         "<div class='card gold-card employee-summary-card'>"
         "<h3 style='margin-top:0; color:#001F5B;'>Synthèse visuelle</h3>"
@@ -1988,7 +2069,7 @@ def build_admin_flat_exports(df, overrides):
             "Nom": row["Nom"],
             "Faculté": row["Faculté"],
             "Institution": row["Institution"],
-            "Département": row["Département"],
+            "Département": "",
             "Date": row["Date"]
         })
 
@@ -2002,7 +2083,7 @@ def build_admin_flat_exports(df, overrides):
                     "Nom": row["Nom"],
                     "Profil": "PSG",
                     "Faculté": row["Faculté"],
-                    "Département": row["Département"],
+                    "Département": "",
                     "Source": "Choix employé",
                     "Priorité": i,
                     "Thème": theme
@@ -2016,7 +2097,7 @@ def build_admin_flat_exports(df, overrides):
                     "Nom": row["Nom"],
                     "Profil": "Doyen / Directeur",
                     "Faculté": row["Faculté"],
-                    "Département": row["Département"],
+                    "Département": "",
                     "Source": "Choix leader",
                     "Priorité": i,
                     "Thème": theme
@@ -2030,7 +2111,7 @@ def build_admin_flat_exports(df, overrides):
                         "Nom": emp.get("employee_name", ""),
                         "Profil": "PSG",
                         "Faculté": row["Faculté"],
-                        "Département": emp.get("employee_department", ""),
+                        "Département": "",
                         "Source": "Choix directeur pour employé",
                         "Priorité": i,
                         "Thème": theme
@@ -2071,7 +2152,7 @@ def build_admin_flat_exports(df, overrides):
                 "Employee name": user.get("name", ""),
                 "Director code": director_code,
                 "Faculty": user.get("faculty", ""),
-                "Department": user.get("department", ""),
+                "Department": "",
                 "Final priority": i,
                 "Final theme": theme,
                 "Decision type": "Thème commun" if theme in matched else "Décision / complément selon priorité"
@@ -2102,7 +2183,7 @@ def build_theme_frequency_excel_report(df):
                     "Profil": "PSG",
                     "Faculté": row["Faculté"],
                     "Institution": row["Institution"],
-                    "Département": row["Département"],
+                    "Département": "",
                     "Date": row["Date"]
                 })
 
@@ -2119,7 +2200,7 @@ def build_theme_frequency_excel_report(df):
                     "Profil": "Doyen / Directeur",
                     "Faculté": row["Faculté"],
                     "Institution": row["Institution"],
-                    "Département": row["Département"],
+                    "Département": "",
                     "Date": row["Date"]
                 })
 
@@ -2136,7 +2217,7 @@ def build_theme_frequency_excel_report(df):
                         "Profil": "PSG évalué par Doyen / Directeur",
                         "Faculté": row["Faculté"],
                         "Institution": row["Institution"],
-                        "Département": emp.get("employee_department", ""),
+                        "Département": "",
                         "Date": row["Date"]
                     })
 
@@ -2240,7 +2321,7 @@ def build_theme_frequency_dataframe(df):
                     "Priorité": priority,
                     "Nom": row["Nom"],
                     "Faculté": row["Faculté"],
-                    "Département": row["Département"]
+                    "Département": ""
                 })
 
         elif row["Profil"] == "director":
@@ -2253,7 +2334,7 @@ def build_theme_frequency_dataframe(df):
                     "Priorité": priority,
                     "Nom": row["Nom"],
                     "Faculté": row["Faculté"],
-                    "Département": row["Département"]
+                    "Département": ""
                 })
 
             for emp in data.get("employees_training_needs", []):
@@ -2269,7 +2350,7 @@ def build_theme_frequency_dataframe(df):
                         "Priorité": priority,
                         "Nom": emp.get("employee_name", ""),
                         "Faculté": row["Faculté"],
-                        "Département": emp.get("employee_department", "")
+                        "Département": ""
                     })
 
     return pd.DataFrame(rows)
@@ -2416,8 +2497,10 @@ def render_theme_visualization_dashboard(df):
         )
 
 
+
 def build_director_report_html(selected_director, df, overrides):
-    director_user = DEMO_USERS[selected_director]
+    all_users = get_all_users()
+    director_user = all_users[selected_director]
     director_response = latest_by_code(df, selected_director)
     employees = get_employees_for_director(selected_director)
 
@@ -2467,7 +2550,7 @@ def build_director_report_html(selected_director, df, overrides):
         rows_html += f"""
         <section class="employee-card">
             <h2>{emp['name']}</h2>
-            <p class="meta">Code : {emp['code']} | Département : {emp['department']}</p>
+            <p class="meta">Code : {emp['code']}</p>
             <div class="three-cols">
                 <div class="box employee">
                     <h3>Choix de l’employé</h3>
@@ -2492,7 +2575,9 @@ def build_director_report_html(selected_director, df, overrides):
 
     cfp_logo_src = f"data:image/png;base64,{cfp_logo}" if cfp_logo else ""
     usj_logo_src = f"data:image/png;base64,{usj_logo}" if usj_logo else ""
-    
+
+    director_affiliation = director_user.get("institution", director_user.get("faculty", ""))
+
     html = f"""
     <!DOCTYPE html>
     <html lang="fr">
@@ -2522,23 +2607,23 @@ def build_director_report_html(selected_director, df, overrides):
                 max-height: 70px;
                 max-width: 170px;
             }}
-            
+
             .report-center {{
                 text-align: center;
                 color: #001F5B;
             }}
-            
+
             .report-center-title {{
                 font-size: 26px;
                 font-weight: 500;
             }}
-            
+
             .report-center-subtitle {{
                 font-size: 16px;
                 color: #5D697A;
                 font-weight: 600;
             }}
-            
+
             .header {{
                 border-bottom: 4px solid #001F5B;
                 padding-bottom: 16px;
@@ -2640,7 +2725,7 @@ def build_director_report_html(selected_director, df, overrides):
                 margin-bottom: 20px;
                 box-shadow: 0 6px 16px rgba(0,31,91,0.16);
             }}
-            
+
             @media print {{
                 body {{
                     margin: 14mm;
@@ -2649,7 +2734,7 @@ def build_director_report_html(selected_director, df, overrides):
                 .print-btn {{
                     display: none;
                 }}
-                
+
                 .employee-card {{
                     page-break-before: always;
                     break-before: page;
@@ -2662,229 +2747,7 @@ def build_director_report_html(selected_director, df, overrides):
                     break-before: auto;
                 }}
             }}
-        
-    @media print {{
-        .no-print,
-        section[data-testid="stSidebar"],
-        div[data-testid="stToolbar"],
-        div[data-testid="stDecoration"],
-        div[data-testid="stStatusWidget"],
-        div[data-testid="stDownloadButton"],
-        iframe,
-        button,
-        .admin-action-button,
-        div[data-testid="stExpander"],
-        [data-testid="stMetric"],
-        hr {{
-            display: none !important;
-        }}
-
-        .platform-header {{
-            display: flex !important;
-            box-shadow: none !important;
-            border: 1px solid #DDE5F0 !important;
-            margin-bottom: 12px !important;
-            page-break-after: avoid !important;
-        }}
-
-        .employee-print-page {{
-            page-break-before: always !important;
-            break-before: page !important;
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-            min-height: 92vh !important;
-            box-sizing: border-box !important;
-        }}
-
-        .employee-print-page:first-of-type {{
-            page-break-before: auto !important;
-            break-before: auto !important;
-        }}
-
-        .employee-grid-print,
-        .visual-column,
-        .priority-card,
-        .card {{
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-        }}
-    }}
-
-    
-    /* FINAL PRINT FIX */
-    @media print {{
-        .no-print,
-        section[data-testid="stSidebar"],
-        div[data-testid="stToolbar"],
-        div[data-testid="stDecoration"],
-        div[data-testid="stStatusWidget"],
-        div[data-testid="stDownloadButton"],
-        iframe,
-        button,
-        .admin-action-button,
-        div[data-testid="stExpander"],
-        [data-testid="stMetric"],
-        hr {{
-            display: none !important;
-        }}
-
-        .platform-header {{
-            display: flex !important;
-            box-shadow: none !important;
-            border: 1px solid #DDE5F0 !important;
-            margin-bottom: 12px !important;
-            page-break-after: avoid !important;
-            break-after: avoid !important;
-        }}
-
-        .main-hero {{
-            display: block !important;
-            box-shadow: none !important;
-            margin-bottom: 12px !important;
-            page-break-after: avoid !important;
-            break-after: avoid !important;
-        }}
-
-        .block-container {{
-            max-width: 100% !important;
-            padding: 0 !important;
-        }}
-
-        body,
-        .stApp {{
-            background: white !important;
-        }}
-
-        .employee-print-page {{
-            page-break-before: always !important;
-            break-before: page !important;
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-            min-height: 90vh !important;
-            box-sizing: border-box !important;
-            padding-top: 8px !important;
-        }}
-
-        .employee-print-page:first-of-type {{
-            page-break-before: auto !important;
-            break-before: auto !important;
-        }}
-
-        .employee-grid-print {{
-            display: grid !important;
-            grid-template-columns: 1fr 1fr 1fr !important;
-            gap: 12px !important;
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-        }}
-
-        .visual-column,
-        .priority-card,
-        .card,
-        .employee-main-card,
-        .employee-summary-card {{
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-            box-shadow: none !important;
-        }}
-
-        h1, h2, h3 {{
-            page-break-after: avoid !important;
-            break-after: avoid !important;
-        }}
-    }}
-
-    
-    /* FINAL PDF PRINT HEADER FIX */
-    @media print {{
-        .platform-header {{
-            display: flex !important;
-            visibility: visible !important;
-            box-shadow: none !important;
-            border: 1px solid #DDE5F0 !important;
-            border-radius: 12px !important;
-            margin-bottom: 16px !important;
-            padding: 12px 18px !important;
-            page-break-after: avoid !important;
-            break-after: avoid !important;
-        }}
-
-        .platform-logo {{
-            display: block !important;
-            visibility: visible !important;
-            max-height: 68px !important;
-            max-width: 145px !important;
-        }}
-
-        .header-title,
-        .header-subtitle {{
-            display: block !important;
-            visibility: visible !important;
-        }}
-
-        .no-print,
-        section[data-testid="stSidebar"],
-        div[data-testid="stToolbar"],
-        div[data-testid="stDecoration"],
-        div[data-testid="stStatusWidget"],
-        div[data-testid="stDownloadButton"],
-        iframe,
-        button,
-        .admin-action-button,
-        div[data-testid="stExpander"],
-        [data-testid="stMetric"],
-        hr,
-        label,
-        div[data-baseweb="select"],
-        .stSelectbox {{
-            display: none !important;
-            visibility: hidden !important;
-        }}
-
-        .block-container {{
-            max-width: 100% !important;
-            padding: 0 !important;
-        }}
-
-        body,
-        .stApp {{
-            background: white !important;
-        }}
-
-        .main-hero {{
-            box-shadow: none !important;
-            margin-bottom: 14px !important;
-            page-break-after: avoid !important;
-            break-after: avoid !important;
-        }}
-
-        .employee-print-page {{
-            page-break-before: always !important;
-            break-before: page !important;
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-            min-height: 90vh !important;
-            box-sizing: border-box !important;
-        }}
-
-        .employee-print-page:first-of-type {{
-            page-break-before: auto !important;
-            break-before: auto !important;
-        }}
-
-        .employee-grid-print,
-        .visual-column,
-        .priority-card,
-        .card,
-        .employee-main-card,
-        .employee-summary-card {{
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-            box-shadow: none !important;
-        }}
-    }}
-
-    </style>
+        </style>
     </head>
 
     <body>
@@ -2902,16 +2765,12 @@ def build_director_report_html(selected_director, df, overrides):
             <img src="{usj_logo_src}" class="report-logo">
         </div>
 
-        
         <div class="header">
             <div class="kicker">Training Needs Assessment - TNA 2026</div>
             <h1>Rapport par Doyen / Directeur</h1>
-            <p class="meta">{director_user['name']} | {director_user['faculty']} | {director_user['department']}</p>
+            <p class="meta">{director_user['name']} | {director_affiliation}</p>
             <p class="meta">Date de génération : {datetime.now().strftime("%Y-%m-%d")}</p>
         </div>
-
-
-    
 
         <section class="leader">
             <h2>Besoins de formation sélectionnés pour le leader</h2>
@@ -2924,6 +2783,7 @@ def build_director_report_html(selected_director, df, overrides):
     """
 
     return html
+
 
 
 def render_save_pdf_button():
@@ -3187,6 +3047,7 @@ def render_save_pdf_button():
         height=64
     )
 
+
 def render_admin_dashboard():
     st.markdown("""
     <div class="main-hero">
@@ -3198,26 +3059,20 @@ def render_admin_dashboard():
 
     df = load_responses()
     overrides = load_admin_theme_overrides()
+    all_users = get_all_users()
 
-    if df.empty:
-        st.info("Aucune réponse enregistrée pour le moment.")
-        return
+    valid_user_codes = {
+        str(code).strip().upper()
+        for code, user in all_users.items()
+        if user.get("role") in ["psg", "director"]
+    }
 
-    
+    if not df.empty:
+        df = df[df["Code"].astype(str).str.upper().isin(valid_user_codes)].copy()
 
     with st.sidebar:
         st.header("Filtres administrateur")
-    
-        if st.button("Supprimer les anciennes réponses d’essai", use_container_width=True):
-            conn = sqlite3.connect(DB_NAME)
-            c = conn.cursor()
-            c.execute("DELETE FROM responses")
-            c.execute("DELETE FROM admin_theme_overrides")
-            conn.commit()
-            conn.close()
-            st.success("Anciennes réponses supprimées.")
-            st.rerun()
-    
+
         view = st.selectbox(
             "Vue à afficher",
             [
@@ -3230,30 +3085,46 @@ def render_admin_dashboard():
             ]
         )
 
-        profiles = ["Tous"] + sorted(df["Profil"].unique().tolist())
+        profiles = ["Tous"]
+        if not df.empty:
+            profiles += sorted(df["Profil"].dropna().unique().tolist())
         selected_profile = st.selectbox("Profil", profiles)
 
-        faculties = ["Toutes"] + sorted(df["Faculté"].unique().tolist())
+        faculties = ["Toutes"]
+        if not df.empty:
+            faculties += sorted(df["Faculté"].dropna().unique().tolist())
         selected_faculty = st.selectbox("Faculté / institution", faculties)
-
-        departments = ["Tous"] + sorted(df["Département"].unique().tolist())
-        selected_department = st.selectbox("Département", departments)
 
     filtered = df.copy()
 
-    if selected_profile != "Tous":
+    if not filtered.empty and selected_profile != "Tous":
         filtered = filtered[filtered["Profil"] == selected_profile]
 
-    if selected_faculty != "Toutes":
+    if not filtered.empty and selected_faculty != "Toutes":
         filtered = filtered[filtered["Faculté"] == selected_faculty]
 
-    if selected_department != "Tous":
-        filtered = filtered[filtered["Département"] == selected_department]
+    total_psg_users = len([
+        code for code, user in all_users.items()
+        if user.get("role") == "psg"
+    ])
+
+    total_director_users = len([
+        code for code, user in all_users.items()
+        if user.get("role") == "director"
+    ])
+
+    unique_respondents = 0 if filtered.empty else filtered["Code"].nunique()
+    unique_psg_responses = 0 if filtered.empty else filtered[filtered["Profil"] == "psg"]["Code"].nunique()
+    unique_director_responses = 0 if filtered.empty else filtered[filtered["Profil"] == "director"]["Code"].nunique()
 
     k1, k2, k3 = st.columns(3)
-    k1.metric("Réponses", len(filtered))
-    k2.metric("PSG", len(filtered[filtered["Profil"] == "psg"]))
-    k3.metric("Doyens / Directeurs", len(filtered[filtered["Profil"] == "director"]))
+    k1.metric("Répondants uniques", unique_respondents)
+    k2.metric("PSG", f"{unique_psg_responses} / {total_psg_users}")
+    k3.metric("Doyens / Directeurs", f"{unique_director_responses} / {total_director_users}")
+
+    if df.empty:
+        st.info("Aucune réponse enregistrée pour le moment.")
+        return
 
     st.divider()
 
@@ -3307,12 +3178,12 @@ def render_admin_dashboard():
     st.divider()
 
     directors = [
-        code for code, user in DEMO_USERS.items()
+        code for code, user in all_users.items()
         if user.get("role") == "director"
     ]
 
     director_labels = {
-        code: f"{DEMO_USERS[code]['name']} | {DEMO_USERS[code]['faculty']}"
+        code: f"{all_users[code]['name']} | {all_users[code].get('institution', all_users[code].get('faculty', ''))}"
         for code in directors
     }
 
@@ -3324,11 +3195,10 @@ def render_admin_dashboard():
             key=f"admin_director_selector_{view}"
         )
 
-        director_user = DEMO_USERS[selected_director]
+        director_user = all_users[selected_director]
         director_response = latest_by_code(df, selected_director)
 
         report_html = build_director_report_html(selected_director, df, overrides)
-
         safe_report_html = json.dumps(report_html)
 
         components.html(
@@ -3366,7 +3236,7 @@ def render_admin_dashboard():
         st.markdown(f"""
         <div class='card red-card'>
             <h3 style='margin-top:0;'>{director_user['name']}</h3>
-            <span class='pill pill-red'>{director_user['faculty']}</span>
+            <span class='pill pill-red'>{director_user.get('institution', director_user.get('faculty', ''))}</span>
         </div>
         """, unsafe_allow_html=True)
 
@@ -3392,8 +3262,8 @@ def render_admin_dashboard():
         if view == "Modifier les priorités":
             st.markdown("### Modification administrative des priorités par employé")
             st.info(
-                "L’administrateur peut modifier les trois thèmes classés par l’employé "
-                "et les trois thèmes classés par le Doyen / Directeur. Ces modifications sont enregistrées "
+                "L’administrateur peut modifier les thèmes classés par l’employé "
+                "et les thèmes classés par le Doyen / Directeur. Ces modifications sont enregistrées "
                 "dans une table administrative séparée."
             )
         else:
@@ -3450,8 +3320,8 @@ def render_admin_dashboard():
                     key=f"save_override_{emp['code']}",
                     use_container_width=True
                 ):
-                    if len(admin_employee_ranked) != 3 or len(admin_director_ranked) != 3:
-                        st.warning("Veuillez sélectionner exactement 3 thèmes pour l’employé et 3 thèmes pour le directeur.")
+                    if len(admin_employee_ranked) > 3 or len(admin_director_ranked) > 3:
+                        st.warning("Veuillez sélectionner au maximum 3 thèmes pour chaque classement.")
                     else:
                         save_admin_theme_override(emp["code"], admin_employee_ranked, admin_director_ranked)
                         st.success(f"Priorités modifiées pour {emp['name']}.")
@@ -3463,7 +3333,7 @@ def render_admin_dashboard():
                 render_employee_visual_cards(
                     emp["name"],
                     emp["code"],
-                    emp["department"],
+                    "",
                     employee_ranked,
                     director_ranked,
                     final,
@@ -3485,7 +3355,7 @@ def render_admin_dashboard():
                 st.markdown(f"""
                 <div class='card blue-card'>
                     <b>{row['Nom']}</b><br>
-                    {row['Faculté']} | {row['Département']} | {row['Date']}
+                    {row['Faculté']} | {row['Date']}
                 </div>
                 """, unsafe_allow_html=True)
 
@@ -3505,7 +3375,7 @@ def render_admin_dashboard():
                 st.markdown(f"""
                 <div class='card red-card'>
                     <b>{row['Nom']}</b><br>
-                    {row['Faculté']} | {row['Département']} | {row['Date']}
+                    {row['Faculté']} | {row['Date']}
                 </div>
                 """, unsafe_allow_html=True)
 
@@ -3520,7 +3390,7 @@ def render_admin_dashboard():
                 for emp in data.get("employees_training_needs", []):
                     st.markdown(f"""
                     <div class='card'>
-                        <b>{emp.get('employee_name')}</b> | {emp.get('employee_department')}
+                        <b>{emp.get('employee_name')}</b>
                     </div>
                     """, unsafe_allow_html=True)
 
@@ -3529,53 +3399,13 @@ def render_admin_dashboard():
                         "pill"
                     )
 
-    elif view == "Départements":
-        st.markdown("### Analyse par département")
-
-        theme_rows = []
-
-        for _, row in filtered.iterrows():
-            data = row["Données"]
-
-            if row["Profil"] == "psg":
-                for theme in data.get("ranked_themes", data.get("selected_themes", [])):
-                    theme_rows.append({
-                        "Département": row["Département"],
-                        "Source": "PSG",
-                        "Thème": theme
-                    })
-
-            elif row["Profil"] == "director":
-                for emp in data.get("employees_training_needs", []):
-                    for theme in emp.get("ranked_themes_by_director", emp.get("selected_themes", [])):
-                        theme_rows.append({
-                            "Département": emp.get("employee_department"),
-                            "Source": "Directeur pour employé",
-                            "Thème": theme
-                        })
-
-        if not theme_rows:
-            st.info("Aucune donnée disponible.")
-        else:
-            theme_df = pd.DataFrame(theme_rows)
-
-            dept = st.selectbox(
-                "Choisir un département",
-                sorted(theme_df["Département"].dropna().unique())
-            )
-
-            sub = theme_df[theme_df["Département"] == dept]
-
-            counts = sub["Thème"].value_counts().reset_index()
-            counts.columns = ["Thème", "Nombre"]
-
-            st.bar_chart(counts.set_index("Thème"), use_container_width=True)
-            st.dataframe(sub, use_container_width=True, hide_index=True)
-
     elif view == "Base de données":
         st.markdown("### Base de données filtrée")
 
-        display_df = filtered.drop(columns=["Données"])
+        display_df = filtered.drop(columns=["Données"]) if not filtered.empty else pd.DataFrame()
+
+        if "Département" in display_df.columns:
+            display_df = display_df.drop(columns=["Département"])
 
         st.dataframe(
             display_df,
@@ -3601,6 +3431,7 @@ def main():
 
     apply_style()
     init_db()
+    seed_trial_data(force=False)
     render_platform_header()
 
     if "logged_in" not in st.session_state:
