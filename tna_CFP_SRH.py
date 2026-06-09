@@ -267,6 +267,13 @@ def apply_style():
         visibility: hidden !important;
     }}
 
+    .stButton button[kind="secondary"] {{
+        background-color: #DCEBFF !important;
+        color: #001F5B !important;
+        border: 1px solid #AFCBFF !important;
+        font-weight: 600 !important;
+    }}
+
     header,
     [data-testid="stHeader"],
     [data-testid="stToolbar"],
@@ -1976,29 +1983,6 @@ def render_director_form(user):
                     st.success(f"{emp['name']} a été retiré de votre liste.")
                     st.rerun()
 
-            validate_col, status_col = st.columns([1.4, 4])
-
-            with validate_col:
-                if is_employee_validated(emp["code"]):
-                    st.button(
-                        "Validé",
-                        key=f"validated_employee_{emp['code']}",
-                        use_container_width=True,
-                        disabled=True
-                    )
-                else:
-                    if st.button(
-                        "Valider",
-                        key=f"validate_employee_{emp['code']}",
-                        use_container_width=True
-                    ):
-                        validate_employee_response(emp["code"])
-                        st.success(f"Les réponses de {emp['name']} ont été validées.")
-                        st.rerun()
-
-            with status_col:
-                if is_employee_validated(emp["code"]):
-                    st.success("Réponses validées.")
 
             emp_response = latest_by_code(director_visible_df, emp["code"])
 
@@ -2040,6 +2024,32 @@ def render_director_form(user):
                 placeholder="Indiquez ici un besoin particulier, si nécessaire."
             )
 
+            validate_col, status_col = st.columns([1.4, 4])
+
+            with validate_col:
+                if is_employee_validated(emp["code"]):
+                    st.button(
+                        "Validé",
+                        key=f"validated_employee_{emp['code']}",
+                        use_container_width=False,
+                        disabled=True
+                    )
+                else:
+                    if st.button(
+                        "Valider",
+                        key=f"validate_employee_{emp['code']}",
+                        use_container_width=False
+                    ):
+                        validate_employee_response(emp["code"])
+                        st.success(f"Les réponses de {emp['name']} ont été validées.")
+                        st.rerun()
+
+            with status_col:
+                if is_employee_validated(emp["code"]):
+                    st.success("Réponses validées.")
+
+
+            
             employee_training_needs.append({
                 "employee_code": emp["code"],
                 "employee_name": emp["name"],
