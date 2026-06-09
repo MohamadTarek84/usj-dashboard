@@ -63,4 +63,4 @@ jobs:
         with:
           app-name: 'PSGFG'
           slot-name: 'Production'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_7DE9FF98E7134AA686D4AA07FBB66DDC }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_2D280FB5801C4130B698F2CA2E8702B4 }}
