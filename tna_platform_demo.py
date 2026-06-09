@@ -1522,7 +1522,6 @@ def load_admin_theme_overrides():
 def get_employees_for_director(director_code):
     employees = []
     all_users = get_all_users()
-    director_code = str(director_code).strip().upper()
     removed_codes = get_removed_employee_codes_for_director(director_code)
 
     for code, info in all_users.items():
@@ -1533,9 +1532,16 @@ def get_employees_for_director(director_code):
         ):
             emp = info.copy()
             emp["code"] = code
+            emp["is_custom"] = code not in DEMO_USERS
             employees.append(emp)
 
-    employees = sorted(employees, key=lambda x: x.get("code", ""))
+    employees = sorted(
+        employees,
+        key=lambda x: (
+            1 if x.get("is_custom") else 0,
+            x.get("code", "")
+        )
+    )
 
     return employees
 
