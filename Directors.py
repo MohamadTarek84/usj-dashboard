@@ -31,7 +31,7 @@ else:
 
 DB_DIR.mkdir(parents=True, exist_ok=True)
 
-DB_PATH = DB_DIR / "focus_group_students.db"
+DB_PATH = DB_DIR / "focus_group_directors.db"
 
 LOGO_PATH = Path("LogoUAQ.png")
 INTRO_IMAGE_PATH = Path("Intro_schema.png")
@@ -1825,7 +1825,7 @@ def render_swot_analysis():
     </p>
 
     <ul style="font-size:19px; line-height:1.45; color:{USJ_BLUE}; margin-top:0; margin-bottom:18px;">
-        <li>Marché du travail et relations avec les employeurs</li>
+        <li>é du travail et relations avec les employeurs</li>
         <li>Concurrence avec les autres universités</li>
         <li>Intelligence artificielle</li>
         <li>Réputation et image</li>
