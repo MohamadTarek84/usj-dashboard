@@ -1229,6 +1229,27 @@ def init_db():
         )
     """)
 
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS director_employee_exclusions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            director_code TEXT,
+            employee_code TEXT,
+            removed_by TEXT,
+            removed_at TEXT,
+            UNIQUE(director_code, employee_code)
+        )
+    """)
+
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS employee_validations (
+            employee_code TEXT PRIMARY KEY,
+            validated_by TEXT,
+            validated_at TEXT
+        )
+    """)
+
+    
+    
     conn.commit()
     conn.close()
 
@@ -1540,7 +1561,7 @@ def unique_ranked_select(label, options, key_prefix):
     return [x for x in [p1, p2, p3] if x]
 
 
-def ranked_select_with_defaults(label, options, key_prefix, defaults=None):
+def ranked_select_with_defaults(label, options, key_prefix, defaults=None, disabled=False):
     defaults = defaults or []
     defaults = [x for x in defaults if x in options]
 
@@ -1558,7 +1579,8 @@ def ranked_select_with_defaults(label, options, key_prefix, defaults=None):
             "Priorité 1",
             options_1,
             index=options_1.index(p1_default) if p1_default in options_1 else 0,
-            key=f"{key_prefix}_p1"
+            key=f"{key_prefix}_p1",
+            disabled=disabled
         )
 
     with c2:
@@ -1568,7 +1590,8 @@ def ranked_select_with_defaults(label, options, key_prefix, defaults=None):
             "Priorité 2",
             options_2,
             index=options_2.index(p2_default) if p2_default in options_2 else 0,
-            key=f"{key_prefix}_p2"
+            key=f"{key_prefix}_p2",
+            disabled=disabled
         )
 
     with c3:
@@ -1578,7 +1601,8 @@ def ranked_select_with_defaults(label, options, key_prefix, defaults=None):
             "Priorité 3",
             options_3,
             index=options_3.index(p3_default) if p3_default in options_3 else 0,
-            key=f"{key_prefix}_p3"
+            key=f"{key_prefix}_p3",
+            disabled=disabled
         )
 
     return [x for x in [p1, p2, p3] if x]
@@ -1792,7 +1816,32 @@ def load_latest_response_for_code(code):
         return json.loads(row[0])
     except Exception:
         return {}
-    
+
+def is_employee_validated(employee_code):
+    conn = sqlite3.connect(DB_NAME)
+    row = conn.execute(
+        "SELECT employee_code FROM employee_validations WHERE employee_code = ?",
+        (str(employee_code).strip().upper(),)
+    ).fetchone()
+    conn.close()
+    return row is not None
+
+
+def validate_employee_response(employee_code):
+    conn = sqlite3.connect(DB_NAME)
+    conn.execute("""
+        INSERT OR REPLACE INTO employee_validations (
+            employee_code, validated_by, validated_at
+        )
+        VALUES (?, ?, ?)
+    """, (
+        str(employee_code).strip().upper(),
+        st.session_state.get("code", ""),
+        datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    ))
+    conn.commit()
+    conn.close()
+
 def render_psg_form(user):
     render_form_hero(
         "Personnel de soutien et de gestion",
@@ -1805,6 +1854,7 @@ def render_psg_form(user):
     saved_data = load_latest_response_for_code(st.session_state["code"])
     saved_ranked = saved_data.get("ranked_themes", [])
     saved_other = saved_data.get("other_themes", "")
+    read_only = is_employee_validated(st.session_state["code"])
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -1818,22 +1868,27 @@ def render_psg_form(user):
         "Vos 3 thèmes de formation prioritaires :",
         PSG_THEMES,
         "psg_ranked",
-        saved_ranked
+        saved_ranked,
+        disabled=read_only
     )
 
     other_themes = st.text_area(
         "Autre(s) thème(s) ou sujet(s) de formation proposés",
         value=saved_other,
         key="psg_other",
-        placeholder="Indiquez ici un thème non présent dans la liste, si nécessaire."
+        placeholder="Indiquez ici un thème non présent dans la liste, si nécessaire.",
+        disabled=read_only
     )
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    if st.button("Soumettre mes réponses", use_container_width=True):
-        if len(ranked_themes) != 3:
-            st.warning("Veuillez sélectionner exactement 3 thèmes classés par ordre de priorité.")
-            return
+    if read_only:
+        st.info("Vos réponses ont été validées par votre directeur. Vous pouvez les consulter en lecture seule.")
+    else:
+        if st.button("Soumettre mes réponses", use_container_width=True):
+            if len(ranked_themes) != 3:
+                st.warning("Veuillez sélectionner exactement 3 thèmes classés par ordre de priorité.")
+                return
 
         data = {
             "ranked_themes": ranked_themes,
