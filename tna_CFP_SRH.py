@@ -266,6 +266,15 @@ def apply_style():
         display: none !important;
         visibility: hidden !important;
     }}
+
+    div[data-testid="stToolbar"],
+    div[data-testid="stDecoration"],
+    div[data-testid="stStatusWidget"],
+    #MainMenu,
+    header {{
+        display: none !important;
+        visibility: hidden !important;
+    }}
     
     .stApp {{
         background: linear-gradient(180deg, #F7FAFE 0%, #EEF3F9 100%);
