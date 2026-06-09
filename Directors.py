@@ -391,6 +391,24 @@ div[class*="st-key-admin_edit_"] textarea {{
     color: white !important;
 }}
 
+.st-key-add_swot_internal_Forces button,
+.st-key-add_swot_internal_Faiblesses button,
+.st-key-add_swot_external_Opportunités button,
+.st-key-add_swot_external_Menaces button {{
+    background-color: #8B1538 !important;
+    border-color: #8B1538 !important;
+    color: white !important;
+}}
+
+.st-key-add_swot_internal_Forces button:hover,
+.st-key-add_swot_internal_Faiblesses button:hover,
+.st-key-add_swot_external_Opportunités button:hover,
+.st-key-add_swot_external_Menaces button:hover {{
+    background-color: #761130 !important;
+    border-color: #761130 !important;
+    color: white !important;
+}}
+
 .st-key-download_export_csv button,
 .st-key-download_export_excel button {{
     background-color: #6A1B9A !important;
