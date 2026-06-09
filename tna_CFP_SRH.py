@@ -3455,6 +3455,18 @@ def main():
 
     user = st.session_state["user"]
 
+    if user["role"] != "admin":
+        st.markdown(
+            """
+            <style>
+            section[data-testid="stSidebar"] {
+                display: none !important;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
+
     if user["role"] == "psg":
         render_psg_form(user)
 
