@@ -251,6 +251,22 @@ def image_to_base64(image_path):
 def apply_style():
     st.markdown(f"""
     <style>
+
+    section[data-testid="stSidebar"],
+    div[data-testid="stSidebar"],
+    [data-testid="stSidebar"] {{
+        display: none !important;
+        visibility: hidden !important;
+        width: 0 !important;
+        min-width: 0 !important;
+        max-width: 0 !important;
+    }}
+
+    [data-testid="collapsedControl"] {{
+        display: none !important;
+        visibility: hidden !important;
+    }}
+    
     .stApp {{
         background: linear-gradient(180deg, #F7FAFE 0%, #EEF3F9 100%);
         color: {USJ_TEXT};
