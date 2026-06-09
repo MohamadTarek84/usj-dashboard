@@ -57,10 +57,11 @@ AUTHORIZED_TEST_CODES = {
     "USJ-TH-2032": {"responsable": "Tarek Halabi", "institution": ""},
 
     # Focus groups
-    # "USJ-ETU-FG1-2032": {"responsable": "", "institution": "Sous groupe 1"},
-    # "USJ-ETU-FG2-2032": {"responsable": "", "institution": "Sous groupe 2"},
-    # "USJ-ETU-FG3-2032": {"responsable": "", "institution": "Sous groupe 3"},
-    # "USJ-ETU-FG4-2032": {"responsable": "", "institution": "Sous groupe 4"},
+    "USJ-DIR-FG1-2032": {"responsable": "", "institution": "Sous groupe 1"},
+    "USJ-DIR-FG2-2032": {"responsable": "", "institution": "Sous groupe 2"},
+    "USJ-DIR-FG3-2032": {"responsable": "", "institution": "Sous groupe 3"},
+    "USJ-DIR-FG4-2032": {"responsable": "", "institution": "Sous groupe 4"},
+    "USJ-DIR-FG5-2032": {"responsable": "", "institution": "Sous groupe 4"},
 }
 
 def html_block(content):
@@ -146,7 +147,7 @@ def save_response(metadata, data):
                 data_json = ?
             WHERE id = ?
         """, (
-            "2026-06-05",
+            "2026-06-10",
             responsable,
             institution,
             email,
@@ -3601,10 +3602,10 @@ margin-bottom:8px;
             with col3:
                 st.text_input(
                     "Date",
-                    value="2026-06-05",
+                    value="2026-06-10",
                     disabled=True
                 )
-                response_date = "2026-06-05"
+                response_date = "2026-06-10"
 
             st.markdown("---")
 
