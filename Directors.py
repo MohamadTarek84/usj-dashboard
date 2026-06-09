@@ -1745,6 +1745,11 @@ def render_swot_intro():
 def render_swot_table(section_key, left_title, right_title):
     rows = []
 
+    row_count_key = f"{section_key}_rows"
+
+    if row_count_key not in st.session_state:
+        st.session_state[row_count_key] = 5
+
     col1, col2 = st.columns(2)
 
     with col1:
@@ -1761,7 +1766,7 @@ def render_swot_table(section_key, left_title, right_title):
 </div>
 """)
 
-    for i in range(1, 6):
+    for i in range(1, st.session_state[row_count_key] + 1):
         col1, col2 = st.columns(2)
 
         with col1:
@@ -1785,8 +1790,14 @@ def render_swot_table(section_key, left_title, right_title):
             right_title: right_value,
         })
 
-    return rows
+    if st.button(
+        f"+ Ajouter {left_title} / {right_title}",
+        key=f"add_{section_key}"
+    ):
+        st.session_state[row_count_key] += 1
+        st.rerun()
 
+    return rows
 
 def render_swot_analysis():
     swot_data = {}
