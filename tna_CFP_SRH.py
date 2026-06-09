@@ -3117,6 +3117,30 @@ def render_admin_dashboard():
     unique_psg_responses = 0 if filtered.empty else filtered[filtered["Profil"] == "psg"]["Code"].nunique()
     unique_director_responses = 0 if filtered.empty else filtered[filtered["Profil"] == "director"]["Code"].nunique()
 
+    valid_user_codes = set(DEMO_USERS.keys())
+    
+    filtered_valid = filtered[filtered["Code"].isin(valid_user_codes)]
+    
+    total_psg_users = len([
+        code for code, user in DEMO_USERS.items()
+        if user.get("role") == "psg"
+    ])
+    
+    total_director_users = len([
+        code for code, user in DEMO_USERS.items()
+        if user.get("role") == "director"
+    ])
+    
+    unique_psg_responses = filtered_valid[
+        filtered_valid["Profil"] == "psg"
+    ]["Code"].nunique()
+    
+    unique_director_responses = filtered_valid[
+        filtered_valid["Profil"] == "director"
+    ]["Code"].nunique()
+    
+    unique_respondents = unique_psg_responses + unique_director_responses
+    
     k1, k2, k3 = st.columns(3)
     k1.metric("Répondants uniques", unique_respondents)
     k2.metric("PSG", f"{unique_psg_responses} / {total_psg_users}")
