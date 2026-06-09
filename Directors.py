@@ -1489,7 +1489,7 @@ def render_first_page_header():
         </h1>
 
         <p style="font-size:18px; font-weight:700; color:{USJ_BLUE_2}; margin:0; line-height:1.4;">
-            <span style="font-size:26px; font-weight:700; color:{USJ_BLUE_2};">Focus groupe - Étudiants</span>
+            <span style="font-size:26px; font-weight:700; color:{USJ_BLUE_2};">Focus groupe</span>
         </p>
     </div>
 
