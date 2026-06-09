@@ -270,20 +270,52 @@ def preload_draft_into_session(data):
 
     for section_key, rows in data.get("swot_analysis", {}).items():
         prefix = "swot_internal" if section_key == "facteurs_internes" else "swot_external"
-
+    
         if section_key == "facteurs_internes":
-            st.session_state[f"{prefix}_Forces_rows"] = max(5, len(rows))
-            st.session_state[f"{prefix}_Faiblesses_rows"] = max(5, len(rows))
-
+            forces_count = max(
+                5,
+                max(
+                    [i for i, row in enumerate(rows, start=1) if str(row.get("Forces", "")).strip()],
+                    default=5
+                )
+            )
+    
+            faiblesses_count = max(
+                5,
+                max(
+                    [i for i, row in enumerate(rows, start=1) if str(row.get("Faiblesses", "")).strip()],
+                    default=5
+                )
+            )
+    
+            st.session_state[f"{prefix}_Forces_rows"] = forces_count
+            st.session_state[f"{prefix}_Faiblesses_rows"] = faiblesses_count
+    
         elif section_key == "facteurs_externes":
-            st.session_state[f"{prefix}_Opportunités_rows"] = max(5, len(rows))
-            st.session_state[f"{prefix}_Menaces_rows"] = max(5, len(rows))
-
+            opportunites_count = max(
+                5,
+                max(
+                    [i for i, row in enumerate(rows, start=1) if str(row.get("Opportunités", "")).strip()],
+                    default=5
+                )
+            )
+    
+            menaces_count = max(
+                5,
+                max(
+                    [i for i, row in enumerate(rows, start=1) if str(row.get("Menaces", "")).strip()],
+                    default=5
+                )
+            )
+    
+            st.session_state[f"{prefix}_Opportunités_rows"] = opportunites_count
+            st.session_state[f"{prefix}_Menaces_rows"] = menaces_count
+    
         for i, row in enumerate(rows, start=1):
             if section_key == "facteurs_internes":
                 st.session_state[f"{prefix}_Forces_{i}"] = row.get("Forces", "")
                 st.session_state[f"{prefix}_Faiblesses_{i}"] = row.get("Faiblesses", "")
-
+    
             elif section_key == "facteurs_externes":
                 st.session_state[f"{prefix}_Opportunités_{i}"] = row.get("Opportunités", "")
                 st.session_state[f"{prefix}_Menaces_{i}"] = row.get("Menaces", "")
