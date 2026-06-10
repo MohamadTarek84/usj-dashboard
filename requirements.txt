@@ -8,3 +8,4 @@ scipy
 matplotlib
 sqlalchemy
 psycopg2-binary
+xlsxwriter
