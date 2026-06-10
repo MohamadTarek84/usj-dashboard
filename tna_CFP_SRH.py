@@ -1769,12 +1769,20 @@ def login_page():
     </div>
     """, unsafe_allow_html=True)
 
+    st.markdown("""
+    <style>
+    .st-key-access_code input {
+        -webkit-text-security: disc !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
     col1, col2, col3 = st.columns([1, 1.2, 1])
 
     with col2:
         code = st.text_input(
             "Ajoutez votre code d’accès",
-            type="password",
+            type="default",
             placeholder="",
             key="access_code",
             on_change=submit_login_code
@@ -1804,7 +1812,6 @@ def login_page():
                 st.rerun()
             else:
                 st.error("Code d’accès non reconnu.")
-
 
 def load_latest_response_for_code(code):
     conn = sqlite3.connect(DB_NAME)
