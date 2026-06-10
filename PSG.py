@@ -1870,26 +1870,6 @@ def render_swot_table(section_key, left_title, right_title):
             right_title: right_value,
         })
 
-    col_add_left, col_add_right = st.columns(2)
-
-    with col_add_left:
-        if st.button(
-            "+",
-            key=f"add_{section_key}_{left_title}",
-            help=f"Ajouter {left_title}"
-        ):
-            st.session_state[left_count_key] += 1
-            st.rerun()
-
-    with col_add_right:
-        if st.button(
-            "+",
-            key=f"add_{section_key}_{right_title}",
-            help=f"Ajouter {right_title}"
-        ):
-            st.session_state[right_count_key] += 1
-            st.rerun()
-
     return rows
 
 def render_swot_analysis():
@@ -3291,9 +3271,14 @@ box-sizing:border-box;
 
                 return original_value
 
-            number_of_rows = 5
-            if original_section:
-                number_of_rows = max(5, len(original_section))
+            admin_rows_key = f"admin_rows_{selected_draft_code}_{section_label}"
+
+            if admin_rows_key not in st.session_state:
+                admin_existing_len = len(existing_admin_section) if isinstance(existing_admin_section, list) else 0
+                original_len = len(original_section) if isinstance(original_section, list) else 0
+                st.session_state[admin_rows_key] = max(5, admin_existing_len, original_len)
+            
+            number_of_rows = st.session_state[admin_rows_key]
 
             col_left, col_right = st.columns(2)
 
