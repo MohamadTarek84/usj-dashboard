@@ -2980,6 +2980,45 @@ def render_swot_image_download_block(updated_admin_data, selected_row):
 def trigger_admin_autosave():
     st.session_state["admin_autosave_requested"] = True
 
+
+def offline_text_backup_safe():
+    components.html("""
+<script>
+(function() {
+    const PREFIX = "USJ_SAFE_BACKUP_";
+
+    function getKey(el) {
+        const parent = el.closest('[class*="st-key-"]');
+        if (!parent) return null;
+        const keyClass = Array.from(parent.classList).find(c => c.startsWith("st-key-"));
+        if (!keyClass) return null;
+        return PREFIX + keyClass;
+    }
+
+    function attachBackup() {
+        const doc = window.parent.document;
+        const fields = doc.querySelectorAll("textarea, input[type='text']");
+
+        fields.forEach(function(el) {
+            if (el.dataset.usjBackupAttached === "1") return;
+
+            const key = getKey(el);
+            if (!key) return;
+
+            el.dataset.usjBackupAttached = "1";
+
+            el.addEventListener("input", function() {
+                localStorage.setItem(key, el.value);
+            });
+        });
+    }
+
+    setTimeout(attachBackup, 1500);
+    setInterval(attachBackup, 5000);
+})();
+</script>
+""", height=0)
+
 def main():
     st.set_page_config(
         page_title=APP_TITLE,
@@ -2990,6 +3029,7 @@ def main():
 
     apply_usj_style()
     keep_session_alive()
+    offline_text_backup_safe()
     
     if not st.session_state.get("show_login_code", False):
         html_block("""
