@@ -121,8 +121,7 @@ DEMO_USERS = {
         "faculty": "SRH",
         "institution": "SRH",
         "department": "",
-        "email": "gladys...",
-        "password": "703095SRH2026"
+        "email": "gladys..."
     },
 
     "703328": {
@@ -132,8 +131,7 @@ DEMO_USERS = {
         "faculty": "CFP",
         "institution": "CFP",
         "department": "",
-        "email": "fadi...",
-        "password": "703328CFP2026"
+        "email": "fadi..."
     },
 
     # =========================
@@ -1774,19 +1772,11 @@ def login_page():
     col1, col2, col3 = st.columns([1, 1.2, 1])
 
     with col2:
-        ldap = st.text_input(
-            "Ajoutez votre code LDAP",
-            type="default",
-            placeholder="",
-            key="access_ldap",
-            on_change=submit_login_code
-        )
-
-        password = st.text_input(
+        code = st.text_input(
             "Ajoutez votre code d’accès",
             type="password",
             placeholder="",
-            key="access_password",
+            key="access_code",
             on_change=submit_login_code
         )
 
@@ -1796,22 +1786,24 @@ def login_page():
         ) or st.session_state.pop("enter_login", False)
 
         if enter_form:
-            cleaned_ldap = ldap.strip().upper()
-            cleaned_password = password.strip()
+            cleaned_code = code.strip().upper()
 
-            if not cleaned_ldap or not cleaned_password:
-                st.warning("Veuillez saisir votre LDAP et votre code d’accès.")
+            if not cleaned_code:
+                st.warning("Veuillez saisir votre code d’accès.")
                 st.stop()
 
-            user_info = get_user_by_code(cleaned_ldap)
+            user_info = get_user_by_code(cleaned_code)
 
-            if user_info and cleaned_password == user_info.get("password", ""):
+            if user_info:
+                ldap_code = user_info.get("ldap", cleaned_code)
+
                 st.session_state["logged_in"] = True
-                st.session_state["code"] = cleaned_ldap
+                st.session_state["code"] = ldap_code
+                st.session_state["login_code"] = cleaned_code
                 st.session_state["user"] = user_info
                 st.rerun()
             else:
-                st.error("LDAP ou code d’accès incorrect.")          
+                st.error("Code d’accès non reconnu.")
 
 
 def load_latest_response_for_code(code):
