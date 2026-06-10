@@ -114,7 +114,7 @@ DEMO_USERS = {
     # =========================
     # DIRECTORS
     # =========================
-    "703095": {
+    "703095SRH2026": {
         "role": "director",
         "name": "Gladys GHRAICHY",
         "poste": "Directeur du service des ressources humaines",
@@ -124,7 +124,7 @@ DEMO_USERS = {
         "email": "gladys..."
     },
 
-    "703328": {
+    "703328CFP2026": {
         "role": "director",
         "name": "Fadi HAGE",
         "poste": "Directeur",
