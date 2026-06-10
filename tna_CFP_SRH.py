@@ -121,7 +121,8 @@ DEMO_USERS = {
         "faculty": "SRH",
         "institution": "SRH",
         "department": "",
-        "email": "gladys..."
+        "email": "gladys...",
+        "password": "703095SRH2026"
     },
 
     "703328": {
@@ -131,7 +132,8 @@ DEMO_USERS = {
         "faculty": "CFP",
         "institution": "CFP",
         "department": "",
-        "email": "fadi..."
+        "email": "fadi...",
+        "password": "703328CFP2026"
     },
 
     # =========================
@@ -1759,6 +1761,7 @@ def render_ranked_section_header(title, help_text, color_class="blue"):
 def submit_login_code():
     st.session_state["enter_login"] = True
 
+
 def login_page():
     st.markdown("""
     <div class="main-hero">
@@ -1771,14 +1774,21 @@ def login_page():
     col1, col2, col3 = st.columns([1, 1.2, 1])
 
     with col2:
-        code = st.text_input(
+        ldap = st.text_input(
             "Ajoutez votre code LDAP",
             type="default",
             placeholder="",
-            key="access_code",
+            key="access_ldap",
             on_change=submit_login_code
         )
 
+        password = st.text_input(
+            "Ajoutez votre code d’accès",
+            type="password",
+            placeholder="",
+            key="access_password",
+            on_change=submit_login_code
+        )
 
         enter_form = st.button(
             "Accéder au questionnaire",
@@ -1786,17 +1796,22 @@ def login_page():
         ) or st.session_state.pop("enter_login", False)
 
         if enter_form:
-            cleaned_code = code.strip().upper()
+            cleaned_ldap = ldap.strip().upper()
+            cleaned_password = password.strip()
 
-            user_info = get_user_by_code(cleaned_code)
+            if not cleaned_ldap or not cleaned_password:
+                st.warning("Veuillez saisir votre LDAP et votre code d’accès.")
+                st.stop()
 
-            if user_info:
+            user_info = get_user_by_code(cleaned_ldap)
+
+            if user_info and cleaned_password == user_info.get("password", ""):
                 st.session_state["logged_in"] = True
-                st.session_state["code"] = cleaned_code
+                st.session_state["code"] = cleaned_ldap
                 st.session_state["user"] = user_info
                 st.rerun()
             else:
-                st.error("Code non reconnu.")
+                st.error("LDAP ou code d’accès incorrect.")          
 
 
 def load_latest_response_for_code(code):
