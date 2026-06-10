@@ -1173,7 +1173,7 @@ def render_platform_header():
         <div class="logo-side left-logo">{cfp_html}</div>
         <div class="header-center">
             <div class="header-title">Centre de Formation Professionnelle</div>
-            <div class="header-subtitle">Training Needs Assessment - TNA 2026</div>
+            <div class="header-subtitle">Training Needs Assessment - TNA 2026-2027</div>
         </div>
         <div class="logo-side right-logo">{usj_html}</div>
     </div>
@@ -1714,7 +1714,7 @@ def render_theme_pills(themes, css_class="pill"):
 def render_form_hero(profile_label, title, objective):
     st.markdown(f"""
     <div class="main-hero">
-        <div class="hero-kicker">TNA 2026 | {profile_label}</div>
+        <div class="hero-kicker">TNA 2026-2027 | {profile_label}</div>
         <div class="hero-title">{title}</div>
         <div class="hero-subtitle">{objective}</div>
     </div>
