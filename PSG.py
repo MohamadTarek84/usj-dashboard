@@ -2977,6 +2977,8 @@ def render_swot_image_download_block(updated_admin_data, selected_row):
         key=f"download_interactive_swot_html_{safe_code}"
     )
 
+def trigger_admin_autosave():
+    st.session_state["admin_autosave_requested"] = True
     
 def main():
     st.set_page_config(
@@ -3181,7 +3183,10 @@ box-sizing:border-box;
 ''',
                 unsafe_allow_html=True
             )
-
+        
+        def trigger_admin_autosave():
+            st.session_state["admin_autosave_requested"] = True
+            
         def render_admin_edit_box(label, value, key, height=95):
             return st.text_area(
                 label=label,
