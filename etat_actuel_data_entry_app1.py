@@ -8,6 +8,7 @@ import html as html_lib
 from datetime import datetime
 from pathlib import Path
 from io import BytesIO
+from pathlib import Path
 
 import pandas as pd
 import streamlit as st
@@ -16,7 +17,13 @@ import streamlit.components.v1 as components
 
 APP_TITLE = "PLAN STRATÉGIQUE USJ 2032"
 
-DB_DIR = Path("/home/data")
+from pathlib import Path
+
+if Path("/home/site").exists():
+    DB_DIR = Path("/home/data")   # Azure
+else:
+    DB_DIR = Path(".")            # Streamlit Cloud / Local
+
 DB_DIR.mkdir(parents=True, exist_ok=True)
 DB_PATH = DB_DIR / "etat_actuel_responses.db"
 
