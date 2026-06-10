@@ -3704,7 +3704,8 @@ margin-bottom:8px;
                 responsable = st.text_input(
                     "Nom des participants",
                     key="responsable",
-                    placeholder="Nom 1, Nom 2, Nom 3..."
+                    placeholder="Nom 1, Nom 2, Nom 3...",
+                    on_change=lambda: st.session_state.update({"autosave_requested": True})
                 )
 
             with col3:
