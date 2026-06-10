@@ -1772,7 +1772,7 @@ def login_page():
 
     with col2:
         code = st.text_input(
-            "Identifiant reçu par email",
+            "Ajoutez votre code LDAP",
             type="default",
             placeholder="",
             key="access_code",
@@ -1798,7 +1798,7 @@ def login_page():
             else:
                 st.error("Code non reconnu.")
 
-        st.caption("Utilisez l’identifiant reçu par email.")
+        st.caption("Utilisez votre code LDAP.")
 
 def load_latest_response_for_code(code):
     conn = sqlite3.connect(DB_NAME)
@@ -1907,7 +1907,7 @@ def render_director_form(user):
     render_form_hero(
         "Doyens et Directeurs",
         "Questionnaire d’analyse des besoins en formation - Doyens et Directeurs",
-        "Ce questionnaire vise à identifier vos besoins en formation en tant que leader ainsi que les besoins de développement de vos employés. Les résultats nous aideront à concevoir des programmes de formation qui soutiennent le leadership, améliorent la performance des équipes et s’alignent sur les objectifs de l’université.<br><br><b>Il vous faudra environ 10 minutes pour le compléter. Vos réponses resteront confidentielles.</b>"
+        "Ce questionnaire vise à identifier vos besoins en formation en tant que leader ainsi que les besoins de développement de vos employés. Les résultats nous aideront à concevoir des programmes de formation qui soutiennent le leadership, améliorent la performance des équipes et s’alignent sur les objectifs de l’université.<br><br><b>Il vous faudra environ 10 minutes pour le compléter.</b>"
     )
 
     render_identity_cards(user)
@@ -2596,10 +2596,10 @@ def render_theme_visualization_dashboard(df):
     <html>
     <head>
         <meta charset="utf-8">
-        <title>Visualisation des thèmes TNA 2026</title>
+        <title>Visualisation des thèmes TNA 2026/2027</title>
     </head>
     <body>
-        <h1>Visualisation générale des thèmes sélectionnés - TNA 2026</h1>
+        <h1>Visualisation générale des thèmes sélectionnés - TNA 2026/2027</h1>
         <h2>1. Thèmes liés aux employés</h2>
         {fig_employee_related.to_html(full_html=False, include_plotlyjs="cdn") if not employee_related_counts.empty else "<p>Aucune donnée.</p>"}
         <br><br>
