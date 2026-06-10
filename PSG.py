@@ -2980,42 +2980,6 @@ def render_swot_image_download_block(updated_admin_data, selected_row):
 def trigger_admin_autosave():
     st.session_state["admin_autosave_requested"] = True
 
-def local_offline_backup():
-    components.html("""
-<script>
-function backupFields() {
-    const doc = window.parent.document;
-    const fields = doc.querySelectorAll("textarea, input[type='text']");
-
-    fields.forEach(function(el) {
-        const parent = el.closest('[class*="st-key-"]');
-        if (!parent) return;
-
-        const keyClass = Array.from(parent.classList).find(c => c.startsWith("st-key-"));
-        if (!keyClass) return;
-
-        const storageKey = "USJ_OFFLINE_BACKUP_" + keyClass;
-
-        // Restore if empty
-        const saved = localStorage.getItem(storageKey);
-        if (saved && el.value.trim() === "") {
-            el.value = saved;
-            el.dispatchEvent(new Event("input", { bubbles: true }));
-            el.dispatchEvent(new Event("change", { bubbles: true }));
-        }
-
-        // Save locally while typing, even offline
-        el.addEventListener("input", function() {
-            localStorage.setItem(storageKey, el.value);
-        });
-    });
-}
-
-setTimeout(backupFields, 1500);
-setInterval(backupFields, 3000);
-</script>
-""", height=0)
- 
 def main():
     st.set_page_config(
         page_title=APP_TITLE,
@@ -3026,8 +2990,7 @@ def main():
 
     apply_usj_style()
     keep_session_alive()
-    local_offline_backup()
-
+    
     if not st.session_state.get("show_login_code", False):
         html_block("""
     <style>
