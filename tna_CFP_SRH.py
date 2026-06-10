@@ -1798,7 +1798,6 @@ def login_page():
             else:
                 st.error("Code non reconnu.")
 
-        st.caption("Utilisez votre code LDAP.")
 
 def load_latest_response_for_code(code):
     conn = sqlite3.connect(DB_NAME)
