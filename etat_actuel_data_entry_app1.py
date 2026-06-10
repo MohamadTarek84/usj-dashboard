@@ -1194,7 +1194,8 @@ def render_stakeholder_table():
                     key=f"stakeholder_category_autre_{i}",
                     label_visibility="collapsed",
                     placeholder="Autre, préciser",
-                    disabled=read_only
+                    disabled=read_only,
+                    on_change=trigger_autosave
                 )
             else:
                 categorie = st.selectbox(
@@ -1204,7 +1205,8 @@ def render_stakeholder_table():
                     placeholder="Choisir une catégorie",
                     key=f"stakeholder_category_{i}",
                     label_visibility="collapsed",
-                    disabled=read_only
+                    disabled=read_only,
+                    on_change=trigger_autosave
                 )
 
         with col1:
@@ -1213,7 +1215,8 @@ def render_stakeholder_table():
                 key=f"stakeholder_nom_{i}",
                 label_visibility="collapsed",
                 placeholder="",
-                disabled=read_only
+                disabled=read_only,
+                on_change=trigger_autosave
             )
 
         with col2:
@@ -1222,7 +1225,8 @@ def render_stakeholder_table():
                 key=f"stakeholder_poste_{i}",
                 label_visibility="collapsed",
                 placeholder="",
-                disabled=read_only
+                disabled=read_only,
+                on_change=trigger_autosave
             )
 
         with col3:
@@ -1231,7 +1235,8 @@ def render_stakeholder_table():
                 key=f"stakeholder_organisme_{i}",
                 label_visibility="collapsed",
                 placeholder="",
-                disabled=read_only
+                disabled=read_only,
+                on_change=trigger_autosave
             )
 
         if any([
