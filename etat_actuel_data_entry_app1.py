@@ -1285,7 +1285,9 @@ def count_words(text):
         return 0
     return len(str(text).split())
 
-
+def trigger_autosave():
+    st.session_state["autosave_requested"] = True
+    
 def word_limited_text_area(label, key, height=300, max_words=500):
     read_only = st.session_state.get("read_only_submitted", False)
 
@@ -1299,7 +1301,8 @@ def word_limited_text_area(label, key, height=300, max_words=500):
         placeholder=f"Merci de saisir votre réponse ici (au maximum {max_words} mots)",
         label_visibility="collapsed",
         disabled=read_only,
-
+        on_change=trigger_autosave,
+    
         # ADDED
         # max_chars=max_chars
     )
@@ -1682,19 +1685,22 @@ def render_pour_finir():
                 f"{phrase} 1",
                 key=f"pour_finir_{i}_1",
                 label_visibility="collapsed",
-                disabled=read_only
+                disabled=read_only,
+                on_change=trigger_autosave
             )
             r2 = st.text_input(
                 f"{phrase} 2",
                 key=f"pour_finir_{i}_2",
                 label_visibility="collapsed",
-                disabled=read_only
+                disabled=read_only,
+                on_change=trigger_autosave
             )
             r3 = st.text_input(
                 f"{phrase} 3",
                 key=f"pour_finir_{i}_3",
                 label_visibility="collapsed",
-                disabled=read_only
+                disabled=read_only,
+                on_change=trigger_autosave
             )
 
         printable_r1 = html_lib.escape(r1 or "") or "&nbsp;"
@@ -2167,7 +2173,11 @@ def main():
             quick_save_after_priorities,
         ])
 
-        if save_draft or submit_final or quick_save_clicked:
+        autosave_requested = st.session_state.get("autosave_requested", False)
+
+        if save_draft or submit_final or quick_save_clicked or autosave_requested:
+
+        
             word_limit_errors = []
 
             word_limit_errors.extend(
@@ -2240,6 +2250,7 @@ def main():
             try:
                 draft_code = save_response(metadata, data)
                 st.session_state["current_draft_code"] = draft_code
+                st.session_state["autosave_requested"] = False
 
                 if quick_save_clicked:
                     st.session_state["quick_save_success_key"] = st.session_state.get("last_quick_save_key", "")
