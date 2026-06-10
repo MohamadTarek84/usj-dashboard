@@ -293,6 +293,25 @@ button[kind="primary"] {{
 </style>
 ''', unsafe_allow_html=True)
 
+div[data-testid="stFileUploader"] button {{
+    height: auto !important;
+    min-height: 42px !important;
+    width: auto !important;
+    min-width: 95px !important;
+    padding: 8px 14px !important;
+    font-size: 14px !important;
+    white-space: nowrap !important;
+    line-height: 1.2 !important;
+}}
+
+div[data-testid="stFileUploader"] button p {{
+    margin: 0 !important;
+    padding: 0 !important;
+    white-space: nowrap !important;
+    font-size: 14px !important;
+    line-height: 1.2 !important;
+}}
+
 
 def hero():
     st.markdown(f'''
