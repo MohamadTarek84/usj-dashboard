@@ -3183,10 +3183,7 @@ box-sizing:border-box;
 ''',
                 unsafe_allow_html=True
             )
-        
-        def trigger_admin_autosave():
-            st.session_state["admin_autosave_requested"] = True
-            
+      
         def render_admin_edit_box(label, value, key, height=95):
             return st.text_area(
                 label=label,
