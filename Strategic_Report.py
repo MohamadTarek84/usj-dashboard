@@ -290,9 +290,6 @@ button[kind="primary"] {{
     border-color: {USJ_RED} !important;
     color:white !important;
 }}
-</style>
-''', unsafe_allow_html=True)
-
 div[data-testid="stFileUploader"] button {{
     height: auto !important;
     min-height: 42px !important;
@@ -311,6 +308,8 @@ div[data-testid="stFileUploader"] button p {{
     font-size: 14px !important;
     line-height: 1.2 !important;
 }}
+</style>
+''', unsafe_allow_html=True)
 
 
 def hero():
