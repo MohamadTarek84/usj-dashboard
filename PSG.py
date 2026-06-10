@@ -3188,7 +3188,8 @@ box-sizing:border-box;
                 value=str(value) if value else "",
                 height=height,
                 key=key,
-                label_visibility="collapsed"
+                label_visibility="collapsed",
+                on_change=trigger_admin_autosave
             )
 
         def get_existing_admin_section(section_label, original_section):
@@ -3555,7 +3556,9 @@ margin-bottom:8px;
 
        
         # Auto-save admin modifications on every rerun
-        
+        if st.session_state.get("admin_autosave_requested", False):
+            save_admin_version_by_code(selected_draft_code, updated_all_admin_data)
+            st.session_state["admin_autosave_requested"] = False
 
         df = load_responses()
 
