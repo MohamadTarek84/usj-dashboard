@@ -3280,6 +3280,8 @@ box-sizing:border-box;
             
             number_of_rows = st.session_state[admin_rows_key]
 
+            
+
             col_left, col_right = st.columns(2)
 
             for field_index, field_name in enumerate(field_names):
@@ -3287,11 +3289,11 @@ box-sizing:border-box;
 
                 with admin_col:
                     render_admin_title_bar(field_name, USJ_RED)
-
+                
                     for i in range(1, number_of_rows + 1):
                         row = original_section[i - 1] if i <= len(original_section) else {}
                         original_value = get_value_from_row(row, field_name)
-
+                
                         saved_admin_row = {}
                         if (
                             isinstance(existing_admin_section, list)
@@ -3299,23 +3301,25 @@ box-sizing:border-box;
                             and isinstance(existing_admin_section[i - 1], dict)
                         ):
                             saved_admin_row = existing_admin_section[i - 1]
-
+                
                         admin_value = get_admin_value(saved_admin_row, field_name, original_value)
-
+                
                         while len(updated_admin_section) < i:
                             updated_admin_section.append({})
-
+                
                         updated_admin_section[i - 1][field_name] = render_admin_edit_box(
                             label=f"{section_label}_{field_name}_{i}",
                             value=admin_value,
                             key=f"admin_edit_{selected_draft_code}_{section_label}_{field_name}_{i}",
                             height=95
                         )
-
-            st.markdown("<br>", unsafe_allow_html=True)
-
-            return updated_admin_section
-
+                
+                    if st.button(
+                        "+",
+                        key=f"add_admin_row_{selected_draft_code}_{section_label}_{field_name}"
+                    ):
+                        st.session_state[admin_rows_key] += 1
+                        st.rerun()
 
 
 
