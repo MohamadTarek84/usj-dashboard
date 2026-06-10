@@ -115,6 +115,7 @@ DEMO_USERS = {
     # DIRECTORS
     # =========================
     "703095SRH2026": {
+        "ldap": "703095",
         "role": "director",
         "name": "Gladys GHRAICHY",
         "poste": "Directeur du service des ressources humaines",
@@ -125,6 +126,7 @@ DEMO_USERS = {
     },
 
     "703328CFP2026": {
+        "ldap": "703328",
         "role": "director",
         "name": "Fadi HAGE",
         "poste": "Directeur",
