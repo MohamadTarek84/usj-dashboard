@@ -290,6 +290,58 @@ button[kind="primary"] {{
     border-color: {USJ_RED} !important;
     color:white !important;
 }}
+
+/* Clean file uploader button: remove duplicated Streamlit upload text */
+div[data-testid="stFileUploader"] button {{
+    height: 42px !important;
+    min-height: 42px !important;
+    width: 150px !important;
+    min-width: 150px !important;
+    max-width: 150px !important;
+    padding: 8px 14px !important;
+    border-radius: 8px !important;
+    background-color: #FFFFFF !important;
+    border: 1px solid #D0D6E0 !important;
+    color: #001F5B !important;
+    font-size: 0 !important;
+    line-height: 1 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}}
+
+div[data-testid="stFileUploader"] button * {{
+    display: none !important;
+    visibility: hidden !important;
+}}
+
+div[data-testid="stFileUploader"] button::after {{
+    content: "Choisir le fichier";
+    display: inline-block !important;
+    visibility: visible !important;
+    color: #001F5B !important;
+    font-family: Candara, Calibri, Arial, sans-serif !important;
+    font-size: 14px !important;
+    font-weight: 800 !important;
+    line-height: 1.2 !important;
+    white-space: nowrap !important;
+}}
+
+div[data-testid="stFileUploader"] section {{
+    border-radius: 10px !important;
+}}
+
+div[data-testid="stFileUploader"] small {{
+    color: #1B2A41 !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+}}
+
+</style>
+''', unsafe_allow_html=True)
+
 div[data-testid="stFileUploader"] button {{
     height: auto !important;
     min-height: 42px !important;
@@ -308,8 +360,6 @@ div[data-testid="stFileUploader"] button p {{
     font-size: 14px !important;
     line-height: 1.2 !important;
 }}
-</style>
-''', unsafe_allow_html=True)
 
 
 def hero():
