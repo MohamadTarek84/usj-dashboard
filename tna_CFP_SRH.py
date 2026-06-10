@@ -1762,7 +1762,7 @@ def submit_login_code():
 def login_page():
     st.markdown("""
     <div class="main-hero">
-        <div class="hero-kicker">TNA 2026</div>
+        <div class="hero-kicker">TNA 2026-2027</div>
         <div class="hero-title">Plateforme d’analyse des besoins en formation</div>
         <div class="hero-subtitle">Accès sécurisé par code au questionnaire PSG, au questionnaire Doyens / Directeurs et au tableau de bord administrateur.</div>
     </div>
