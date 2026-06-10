@@ -84,6 +84,8 @@ def init_db():
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
 
+    
+
     cur.execute("""
         CREATE TABLE IF NOT EXISTS responses (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -181,6 +183,14 @@ def save_response(metadata, data):
 
     return draft_code
 
+def keep_session_alive():
+    html_block("""
+<script>
+setInterval(function() {
+    fetch(window.location.href, {cache: "no-store"}).catch(function(error) {});
+}, 240000);
+</script>
+""")
 
 def load_responses():
     conn = sqlite3.connect(DB_PATH)
@@ -2997,6 +3007,8 @@ def main():
     )
 
     apply_usj_style()
+    keep_session_alive()
+
 
     if not st.session_state.get("show_login_code", False):
         html_block("""
