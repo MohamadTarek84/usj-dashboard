@@ -3412,7 +3412,7 @@ box-sizing:border-box;
 
     return updated_admin_section
 
-    def render_conclusion_section(section_label, original_section):
+        def render_conclusion_section(section_label, original_section):
             existing_admin_section = get_existing_admin_section(section_label, original_section)
             updated_admin_section = {}
 
@@ -3454,7 +3454,6 @@ margin-bottom:8px;
                     admin_value = saved_admin_value if str(saved_admin_value or "").strip() else original_value
 
                     html_block('<div class="admin-answer-row-wrapper">')
-
 
                     updated_admin_section[key] = render_admin_edit_box(
                         label=f"{section_label}_{key}",
