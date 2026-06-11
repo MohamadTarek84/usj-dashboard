@@ -3320,35 +3320,78 @@ box-sizing:border-box;
 
             return updated_admin_section
 
-
-
-
-            
+         
         def render_dict_section(section_label, original_section):
             existing_admin_section = get_existing_admin_section(section_label, original_section)
             updated_admin_section = {}
-        
-            if not isinstance(original_section, dict) or not original_section:
+
+            if not isinstance(original_section, dict):
+                original_section = {}
+
+            if not isinstance(existing_admin_section, dict):
+                existing_admin_section = {}
+
+            if section_label == "III - Priorités":
+                admin_rows_key = f"admin_rows_{selected_draft_code}_{section_label}"
+
+                if admin_rows_key not in st.session_state:
+                    priority_numbers = []
+
+                    for source_section in [original_section, existing_admin_section]:
+                        for key in source_section.keys():
+                            m = re.match(r"^priorite_(\d+)$", str(key))
+                            if m:
+                                priority_numbers.append(int(m.group(1)))
+
+                    st.session_state[admin_rows_key] = max(
+                        5,
+                        max(priority_numbers) if priority_numbers else 0
+                    )
+
+                number_of_rows = st.session_state[admin_rows_key]
+
+                for i in range(1, number_of_rows + 1):
+                    key = f"priorite_{i}"
+                    original_value = original_section.get(key, "")
+                    saved_admin_value = existing_admin_section.get(key, original_value)
+                    admin_value = saved_admin_value if str(saved_admin_value or "").strip() else original_value
+
+                    updated_admin_section[key] = render_admin_edit_box(
+                        label=f"{section_label}_{key}",
+                        value=admin_value,
+                        key=f"admin_edit_{selected_draft_code}_{section_label}_{key}",
+                        height=95
+                    )
+
+                if st.button(
+                    "+",
+                    key=f"add_admin_row_{selected_draft_code}_{section_label}_priorites"
+                ):
+                    st.session_state[admin_rows_key] += 1
+                    st.rerun()
+
+                return updated_admin_section
+
+            if not original_section:
                 st.info("Aucune réponse saisie pour cette section.")
                 return original_section
-        
+
             for key, original_value in original_section.items():
                 if isinstance(existing_admin_section, dict):
                     saved_admin_value = existing_admin_section.get(key, original_value)
                     admin_value = saved_admin_value if str(saved_admin_value or "").strip() else original_value
                 else:
                     admin_value = original_value
-        
-                if section_label != "III - Priorités":
-                    render_admin_title_bar(clean_admin_display_label(key), USJ_RED)
-        
+
+                render_admin_title_bar(clean_admin_display_label(key), USJ_RED)
+
                 updated_admin_section[key] = render_admin_edit_box(
                     label=f"{section_label}_{key}",
                     value=admin_value,
                     key=f"admin_edit_{selected_draft_code}_{section_label}_{key}",
                     height=95
                 )
-        
+
             return updated_admin_section
 
         def render_conclusion_section(section_label, original_section):
