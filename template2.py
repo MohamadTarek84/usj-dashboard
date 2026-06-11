@@ -1130,7 +1130,7 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
         font-size: 22px !important;
         line-height: 1.05 !important;
         font-weight: 800 !important;
-        margin: -7mm 0 -8mm 0 !important;
+        margin: -18mm 0 -8mm 0 !important;
         padding: 0 !important;
     }}
 
@@ -3111,9 +3111,6 @@ def main():
         ) or selected_draft_code
         
 
-        print_group_name = " - ".join(
-            [part for part in [str(selected_row.get("respondent_name", "")).strip(), str(selected_row.get("respondent_unit", "")).strip()] if part]
-        ) or selected_draft_code
 
         print_logo_src = image_to_base64(LOGO_PATH)
         print_logo_html = f'<img src="{print_logo_src}" alt="USJ">' if print_logo_src else ""
