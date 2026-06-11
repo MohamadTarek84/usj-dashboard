@@ -1388,8 +1388,8 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
     }}
 
     .swot-print-card {{
-        min-height: 36mm !important;
-        max-height: 52mm !important;
+        min-height: 48mm !important;
+        max-height: 68mm !important;
         padding: 3mm !important;
         border: 1.5px solid var(--accent) !important;
         border-radius: 7px !important;
@@ -3025,6 +3025,35 @@ def main():
 
         selected_draft_code = selected_response.split(" | ")[0].strip()
 
+        st.markdown("### Ajouter / corriger les noms des participants")
+
+        corrected_names = st.text_input(
+            "Noms des participants",
+            value=str(selected_row.get("respondent_name", "")),
+            key=f"corrected_names_{selected_draft_code}"
+        )
+
+        if st.button("Enregistrer les noms corrigés", key=f"save_corrected_names_{selected_draft_code}"):
+            original_data["metadata"]["responsable"] = corrected_names
+
+            conn = sqlite3.connect(DB_PATH)
+            cur = conn.cursor()
+            cur.execute("""
+                UPDATE responses
+                SET respondent_name = ?,
+                    data_json = ?
+                WHERE draft_code = ?
+            """, (
+                corrected_names,
+                json.dumps(original_data, ensure_ascii=False),
+                selected_draft_code
+            ))
+            conn.commit()
+            conn.close()
+
+            st.success("Les noms des participants ont été mis à jour.")
+            st.rerun()
+        
         if st.button("Effacer les réponses du groupe sélectionné", key="delete_selected_group_button"):
             delete_response_by_code(selected_draft_code)
             st.success(f"Les réponses du groupe {selected_draft_code} ont été effacées.")
