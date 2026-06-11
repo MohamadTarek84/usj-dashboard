@@ -3283,24 +3283,24 @@ box-sizing:border-box;
 
             admin_rows_key = f"admin_rows_{selected_draft_code}_{section_label}"
 
-                if admin_rows_key not in st.session_state:
-                    admin_existing_len = (
-                        len(existing_admin_section)
-                        if isinstance(existing_admin_section, list)
-                        else 0
-                    )
+            if admin_rows_key not in st.session_state:
+                admin_existing_len = (
+                    len(existing_admin_section)
+                    if isinstance(existing_admin_section, list)
+                    else 0
+                )
                 
-                    original_len = (
-                        len(original_section)
-                        if isinstance(original_section, list)
-                        else 0
-                    )
+                original_len = (
+                    len(original_section)
+                    if isinstance(original_section, list)
+                    else 0
+                )
                 
-                    st.session_state[admin_rows_key] = max(
-                        5,
-                        admin_existing_len,
-                        original_len
-                    )
+                st.session_state[admin_rows_key] = max(
+                    5,
+                    admin_existing_len,
+                    original_len
+                )
 
             number_of_rows = st.session_state[admin_rows_key]
 
