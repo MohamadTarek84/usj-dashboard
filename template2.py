@@ -875,6 +875,10 @@ div[data-testid="stIFrame"] {{
     display: none;
 }}
 
+.conclusion-print-only {{
+    display: none;
+}}
+
 .admin-print-title,
 .swot-print-only {{
     display: none !important;
@@ -1135,14 +1139,7 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
     }}
 
     .admin-print-title {{
-        display: block !important;
-        visibility: visible !important;
-        text-align: center !important;
-        color: #001F5B !important;
-        font-size: 13px !important;
-        font-weight: 800 !important;
-        margin: 2mm 0 4mm 0 !important;
-        padding: 0 !important;
+        display: none !important;
     }}
 
     hr {{
@@ -1226,10 +1223,15 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
         page-break-inside: avoid !important;
     }}
 
-    div[class*="st-key-admin_edit_"][class*="Conclusion"] textarea {{
-        height: 16mm !important;
-        min-height: 16mm !important;
-        max-height: 16mm !important;
+    div[class*="st-key-admin_edit_"][class*="Conclusion"] {{
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+        min-height: 0 !important;
+        max-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
     }}
 
     
@@ -1248,17 +1250,11 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
         max-height: 28mm !important;
         white-space: pre-wrap !important;
     }}
-
     .admin-answer-row-wrapper {{
-        height: auto !important;
-        min-height: 0 !important;
-        max-height: none !important;
         margin-top: 0 !important;
-        margin-bottom: 3mm !important;
-        padding: 0 !important;
-        overflow: visible !important;
+        margin-bottom: 1.5mm !important;
     }}
-    
+
     .print-answer-text {{
         display: block !important;
         width: 100% !important;
@@ -3349,12 +3345,16 @@ box-sizing:border-box;
                     ):
                         st.session_state[admin_rows_key] += 1
                         st.session_state["admin_autosave_requested"] = True
+                        st.rerun()
 
             st.markdown("<br>", unsafe_allow_html=True)
 
             return updated_admin_section
 
-  
+
+
+
+            
         def render_dict_section(section_label, original_section):
             existing_admin_section = get_existing_admin_section(section_label, original_section)
             updated_admin_section = {}
@@ -3450,7 +3450,7 @@ box-sizing:border-box;
 
                 st.markdown(
                     f"""
-<div style="
+<div class="conclusion-phrase-label" style="
 font-size:18px;
 font-weight:700;
 color:{USJ_BLUE};
@@ -3476,6 +3476,16 @@ margin-bottom:3px;
                         value=admin_value,
                         key=f"admin_edit_{selected_draft_code}_{section_label}_{key}",
                         height=95
+                    )
+
+                    safe_print_value = html_lib.escape(str(admin_value or "")).replace("\n", "<br>")
+                    if not safe_print_value.strip():
+                        safe_print_value = "&nbsp;"
+
+                    html_block(
+                        f'<div class="conclusion-print-only">'
+                        f'<div class="conclusion-print-box">{safe_print_value}</div>'
+                        f'</div>'
                     )
 
                     html_block('</div>')
@@ -3525,9 +3535,6 @@ margin-bottom:3px;
 
         html_block('<div class="admin-action-row-fix">')
 
-
-
-        
         col_admin_print, col_admin_save, col_admin_spacer = st.columns(
             [1.35, 1.35, 2.30],
             gap="large",
