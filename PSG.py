@@ -3358,6 +3358,7 @@ box-sizing:border-box;
                         "+",
                         key=f"add_admin_row_{selected_draft_code}_{section_label}_{field_name}"
                     ):
+                        updated_all_admin_data[section_label] = updated_admin_section
                         save_admin_version_by_code(
                             selected_draft_code,
                             updated_all_admin_data
@@ -3460,6 +3461,7 @@ box-sizing:border-box;
                     "+",
                     key=f"add_admin_conclusion_row_{selected_draft_code}_{i}"
                 ):
+                    updated_all_admin_data[section_label] = updated_admin_section
                     save_admin_version_by_code(
                         selected_draft_code,
                         updated_all_admin_data
