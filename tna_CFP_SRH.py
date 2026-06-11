@@ -1783,7 +1783,7 @@ def login_page():
 
     with col2:
         code = st.text_input(
-            "Ajoutez votre code d’accès",
+            "Ajoutez votre code LDAP",
             type="default",
             placeholder="",
             key="access_code",
