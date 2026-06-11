@@ -3281,28 +3281,9 @@ box-sizing:border-box;
 
                 return original_value
 
-            admin_rows_key = f"admin_rows_{selected_draft_code}_{section_label}"
-
-            if admin_rows_key not in st.session_state:
-                admin_existing_len = (
-                    len(existing_admin_section)
-                    if isinstance(existing_admin_section, list)
-                    else 0
-                )
-                
-                original_len = (
-                    len(original_section)
-                    if isinstance(original_section, list)
-                    else 0
-                )
-                
-                st.session_state[admin_rows_key] = max(
-                    5,
-                    admin_existing_len,
-                    original_len
-                )
-
-            number_of_rows = st.session_state[admin_rows_key]
+            number_of_rows = 5
+            if original_section:
+                number_of_rows = max(5, len(original_section))
 
             col_left, col_right = st.columns(2)
 
@@ -3335,13 +3316,6 @@ box-sizing:border-box;
                             key=f"admin_edit_{selected_draft_code}_{section_label}_{field_name}_{i}",
                             height=95
                         )
-
-                        if st.button(
-                            "+",
-                            key=f"add_admin_row_{selected_draft_code}_{section_label}"
-                        ):
-                            st.session_state[admin_rows_key] += 1
-                            st.rerun()
 
             st.markdown("<br>", unsafe_allow_html=True)
 
@@ -4000,6 +3974,3 @@ margin-bottom:8px;
 
 if __name__ == "__main__":
     main()
-
-
-
