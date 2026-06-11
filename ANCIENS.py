@@ -31,7 +31,7 @@ else:
 
 DB_DIR.mkdir(parents=True, exist_ok=True)
 
-DB_PATH = DB_DIR / "focus_group_psg.db"
+DB_PATH = DB_DIR / "focus_group_anciens.db"
 
 LOGO_PATH = Path("LogoUAQ.png")
 INTRO_IMAGE_PATH = Path("Intro_schema.png")
