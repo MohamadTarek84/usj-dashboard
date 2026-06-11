@@ -1226,7 +1226,7 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
     }}
 
     
-    div[data-testid="stTextArea"] textarea {
+    div[data-testid="stTextArea"] textarea {{
         background-color: #E3DED9 !important;
         border: 1.5px solid #595959 !important;
         color: #000000 !important;
