@@ -1226,7 +1226,7 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
     }}
 
     
-    div[data-testid="stTextArea"] textarea {{
+    div[data-testid="stTextArea"] textarea {
         background-color: #E3DED9 !important;
         border: 1.5px solid #595959 !important;
         color: #000000 !important;
@@ -1235,13 +1235,12 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
         line-height: 1.25 !important;
         padding: 6px !important;
         resize: none !important;
-        overflow: visible !important;
-        height: 16mm !important;
-        min-height: 16mm !important;
-        max-height: 16mm !important;
+        overflow: hidden !important;
+        height: 28mm !important;
+        min-height: 28mm !important;
+        max-height: 28mm !important;
         white-space: pre-wrap !important;
-    }}
-
+    }
     .admin-answer-row-wrapper {{
         margin-top: 0 !important;
         margin-bottom: 1.5mm !important;
@@ -3290,9 +3289,14 @@ box-sizing:border-box;
 
                 return original_value
 
-            number_of_rows = 5
-            if original_section:
-                number_of_rows = max(5, len(original_section))
+            admin_rows_key = f"admin_rows_{selected_draft_code}_{section_label}"
+
+            if admin_rows_key not in st.session_state:
+                admin_existing_len = len(existing_admin_section) if isinstance(existing_admin_section, list) else 0
+                original_len = len(original_section) if isinstance(original_section, list) else 0
+                st.session_state[admin_rows_key] = max(5, admin_existing_len, original_len)
+
+            number_of_rows = st.session_state[admin_rows_key]
 
             col_left, col_right = st.columns(2)
 
@@ -3325,6 +3329,13 @@ box-sizing:border-box;
                             key=f"admin_edit_{selected_draft_code}_{section_label}_{field_name}_{i}",
                             height=95
                         )
+
+                                if st.button(
+                        "+",
+                        key=f"add_admin_row_{selected_draft_code}_{section_label}_{field_name}"
+                    ):
+                        st.session_state[admin_rows_key] += 1
+                        st.session_state["admin_autosave_requested"] = True
 
             st.markdown("<br>", unsafe_allow_html=True)
 
