@@ -1242,17 +1242,16 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
         white-space: pre-wrap !important;
     }}
 
-    .admin-answer-row-wrapper,
-    .admin-answer-row-wrapper > div {{
-        height: 16mm !important;
-        min-height: 16mm !important;
-        max-height: 16mm !important;
+    .admin-answer-row-wrapper {{
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
         margin-top: 0 !important;
-        margin-bottom: 2mm !important;
+        margin-bottom: 3mm !important;
         padding: 0 !important;
-        overflow: hidden !important;
+        overflow: visible !important;
     }}
-
+    
     .print-answer-text {{
         display: block !important;
         width: 100% !important;
@@ -3121,12 +3120,12 @@ def main():
         print_logo_src = image_to_base64(LOGO_PATH)
         print_logo_html = f'<img src="{print_logo_src}" alt="USJ">' if print_logo_src else ""
 
-        html_block(
-            f'<div class="admin-print-cover-header">'
-            f'{print_logo_html}'
-            f'<div class="admin-print-cover-title">{html_lib.escape(print_group_name)}</div>'
-            f'</div>'
-        )
+        # html_block(
+            #     f'<div class="admin-print-cover-header">'
+            #     f'{print_logo_html}'
+            #     f'<div class="admin-print-cover-title">{html_lib.escape(print_group_name)}</div>'
+            #     f'</div>'
+            # )
 
         html_block(f'<div class="admin-print-title">{html_lib.escape(print_group_name)}</div>')
 
@@ -3448,8 +3447,8 @@ box-sizing:border-box;
 font-size:18px;
 font-weight:700;
 color:{USJ_BLUE};
-margin-top:12px;
-margin-bottom:8px;
+margin-top:4px;
+margin-bottom:3px;
 ">
 &bull; {phrase}
 </div>
