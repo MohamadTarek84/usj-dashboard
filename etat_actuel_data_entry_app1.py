@@ -1797,6 +1797,15 @@ def delete_response_by_code(draft_code):
     conn.commit()
     conn.close()
 
+def keep_session_alive():
+    html_block("""
+<script>
+setInterval(function() {
+    fetch(window.location.href, {cache: "no-store"}).catch(function(error) {});
+}, 240000);
+</script>
+""")
+
 def main():
     st.set_page_config(
         page_title=APP_TITLE,
@@ -1806,7 +1815,9 @@ def main():
     )
 
     apply_usj_style()
+    keep_session_alive()
     init_db()
+    
 
     st.session_state.setdefault("n_autres_rows", 1)
     st.session_state.setdefault("access_granted", False)
