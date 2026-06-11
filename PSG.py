@@ -3250,82 +3250,18 @@ box-sizing:border-box;
             if not isinstance(original_section, list):
                 original_section = []
 
-            if section_label == "I - Forces et faiblesses":
-                field_names = ["Forces", "Faiblesses"]
-            elif section_label == "II - Opportunités et menaces":
-                field_names = ["Opportunités", "Menaces"]
-            else:
-                field_names = []
-                for row in original_section:
-                    if isinstance(row, dict):
-                        for key in row.keys():
-                            if key not in field_names:
-                                field_names.append(key)
-
-            def get_value_from_row(row, expected_field):
-                if not isinstance(row, dict):
-                    return ""
-
-                if expected_field in row:
-                    return row.get(expected_field, "")
-
-                expected_lower = expected_field.lower()
-
-                for key, value in row.items():
-                    key_lower = str(key).lower()
-                    if expected_lower in key_lower:
-                        return value
-
-                if expected_field == "Opportunités":
-                    for key, value in row.items():
-                        if "opportun" in str(key).lower():
-                            return value
-
-                if expected_field == "Menaces":
-                    for key, value in row.items():
-                        if "menace" in str(key).lower():
-                            return value
-
-                return ""
-
-            def get_admin_value(saved_admin_row, expected_field, original_value):
-                if not isinstance(saved_admin_row, dict):
-                    return original_value
-
-                def fallback_if_empty(value):
-                    return value if str(value or "").strip() else original_value
-
-                if expected_field in saved_admin_row:
-                    return fallback_if_empty(saved_admin_row.get(expected_field, ""))
-
-                expected_lower = expected_field.lower()
-
-                for key, value in saved_admin_row.items():
-                    key_lower = str(key).lower()
-                    if expected_lower in key_lower:
-                        return fallback_if_empty(value)
-
-                if expected_field == "Opportunités":
-                    for key, value in saved_admin_row.items():
-                        if "opportun" in str(key).lower():
-                            return fallback_if_empty(value)
-
-                if expected_field == "Menaces":
-                    for key, value in saved_admin_row.items():
-                        if "menace" in str(key).lower():
-                            return fallback_if_empty(value)
-
-                return original_value
+            field_names = ["Forces", "Faiblesses"] if section_label == "I - Forces et faiblesses" else ["Opportunités", "Menaces"]
 
             admin_rows_key = f"admin_rows_{selected_draft_code}_{section_label}"
 
             if admin_rows_key not in st.session_state:
-                admin_existing_len = len(existing_admin_section) if isinstance(existing_admin_section, list) else 0
-                original_len = len(original_section) if isinstance(original_section, list) else 0
-                st.session_state[admin_rows_key] = max(5, admin_existing_len, original_len)
+                st.session_state[admin_rows_key] = max(
+                    5,
+                    len(existing_admin_section) if isinstance(existing_admin_section, list) else 0,
+                    len(original_section)
+                )
 
             number_of_rows = st.session_state[admin_rows_key]
-
             col_left, col_right = st.columns(2)
 
             for field_index, field_name in enumerate(field_names):
@@ -3335,83 +3271,86 @@ box-sizing:border-box;
                     render_admin_title_bar(field_name, USJ_RED)
 
                     for i in range(1, number_of_rows + 1):
-                        row = original_section[i - 1] if i <= len(original_section) else {}
-                        original_value = get_value_from_row(row, field_name)
+                        original_row = original_section[i - 1] if i <= len(original_section) else {}
+                        saved_row = existing_admin_section[i - 1] if isinstance(existing_admin_section, list) and i <= len(existing_admin_section) else {}
 
-                        saved_admin_row = {}
-                        if (
-                            isinstance(existing_admin_section, list)
-                            and len(existing_admin_section) >= i
-                            and isinstance(existing_admin_section[i - 1], dict)
-                        ):
-                            saved_admin_row = existing_admin_section[i - 1]
-
-                        admin_value = get_admin_value(saved_admin_row, field_name, original_value)
+                        original_value = original_row.get(field_name, "") if isinstance(original_row, dict) else ""
+                        saved_value = saved_row.get(field_name, original_value) if isinstance(saved_row, dict) else original_value
 
                         while len(updated_admin_section) < i:
                             updated_admin_section.append({})
 
                         updated_admin_section[i - 1][field_name] = render_admin_edit_box(
                             label=f"{section_label}_{field_name}_{i}",
-                            value=admin_value,
+                            value=saved_value,
                             key=f"admin_edit_{selected_draft_code}_{section_label}_{field_name}_{i}",
                             height=95
                         )
 
-                    if st.button(
-                        "+",
-                        key=f"add_admin_row_{selected_draft_code}_{section_label}_{field_name}"
-                    ):
-                        updated_all_admin_data[section_label] = updated_admin_section
-                        save_admin_version_by_code(
-                            selected_draft_code,
-                            updated_all_admin_data
-                        )
+                    if st.button("+", key=f"add_admin_row_{selected_draft_code}_{section_label}_{field_name}"):
                         st.session_state[admin_rows_key] += 1
-                        st.rerun()
-
-            st.markdown("<br>", unsafe_allow_html=True)
+                        st.session_state["admin_autosave_requested"] = True
 
             return updated_admin_section
-        
-            if not original_section:
-                st.info("Aucune réponse saisie pour cette section.")
-                return original_section
-        
-            for key, original_value in original_section.items():
-                saved_admin_value = existing_admin_section.get(key, original_value)
-                admin_value = saved_admin_value if str(saved_admin_value or "").strip() else original_value
-        
-                render_admin_title_bar(clean_admin_display_label(key), USJ_RED)
-        
+
+
+        def render_dict_section(section_label, original_section):
+            existing_admin_section = get_existing_admin_section(section_label, original_section)
+            updated_admin_section = {}
+
+            if not isinstance(original_section, dict):
+                original_section = {}
+
+            if not isinstance(existing_admin_section, dict):
+                existing_admin_section = {}
+
+            priority_rows_key = f"admin_priority_rows_{selected_draft_code}"
+
+            if priority_rows_key not in st.session_state:
+                st.session_state[priority_rows_key] = max(
+                    5,
+                    len(original_section),
+                    len(existing_admin_section)
+                )
+
+            for i in range(1, st.session_state[priority_rows_key] + 1):
+                key = f"priorite_{i}"
+                original_value = original_section.get(key, "")
+                saved_value = existing_admin_section.get(key, original_value)
+
                 updated_admin_section[key] = render_admin_edit_box(
                     label=f"{section_label}_{key}",
-                    value=admin_value,
+                    value=saved_value,
                     key=f"admin_edit_{selected_draft_code}_{section_label}_{key}",
                     height=95
                 )
-        
+
+            if st.button("+", key=f"add_admin_priority_{selected_draft_code}"):
+                st.session_state[priority_rows_key] += 1
+                st.session_state["admin_autosave_requested"] = True
+
             return updated_admin_section
+
 
         def render_conclusion_section(section_label, original_section):
             existing_admin_section = get_existing_admin_section(section_label, original_section)
             updated_admin_section = {}
-        
+
             if not isinstance(original_section, dict):
                 original_section = {}
-        
+
             if not isinstance(existing_admin_section, dict):
                 existing_admin_section = {}
-        
+
             phrases = [
                 "Nous souhaitons que l’USJ soit reconnue pour …",
                 "Nous souhaitons que nos étudiants disent que l’USJ …",
                 "L’USJ serait un meilleur lieu de travail si …",
             ]
-        
+
             for i, phrase in enumerate(phrases, start=1):
                 rows_key = f"admin_conclusion_rows_{selected_draft_code}_{i}"
-        
+
                 if rows_key not in st.session_state:
                     existing_count = max(
                         [
@@ -3422,57 +3361,32 @@ box-sizing:border-box;
                         default=1
                     )
                     st.session_state[rows_key] = max(2, existing_count + 1)
-        
-                number_of_rows = st.session_state[rows_key]
-        
-                if i > 1:
-                    html_block('<div class="admin-conclusion-no-page-break"></div>')
-        
+
                 st.markdown(
                     f"""
-        <div style="
-        font-size:18px;
-        font-weight:700;
-        color:{USJ_BLUE};
-        margin-top:12px;
-        margin-bottom:8px;
-        ">
-        &bull; {phrase}
-        </div>
-        """,
+<div style="font-size:18px; font-weight:700; color:{USJ_BLUE}; margin-top:12px; margin-bottom:8px;">
+&bull; {phrase}
+</div>
+""",
                     unsafe_allow_html=True
                 )
-        
-                for j in range(number_of_rows):
+
+                for j in range(st.session_state[rows_key]):
                     key = f"pour_finir_{i}_{j}"
-        
                     original_value = original_section.get(key, "")
-                    saved_admin_value = existing_admin_section.get(key, original_value)
-                    admin_value = saved_admin_value if str(saved_admin_value or "").strip() else original_value
-        
-                    html_block('<div class="admin-answer-row-wrapper">')
-        
+                    saved_value = existing_admin_section.get(key, original_value)
+
                     updated_admin_section[key] = render_admin_edit_box(
                         label=f"{section_label}_{key}",
-                        value=admin_value,
+                        value=saved_value,
                         key=f"admin_edit_{selected_draft_code}_{section_label}_{key}",
                         height=95
                     )
-        
-                    html_block('</div>')
-        
-                if st.button(
-                    "+",
-                    key=f"add_admin_conclusion_row_{selected_draft_code}_{i}"
-                ):
-                    updated_all_admin_data[section_label] = updated_admin_section
-                    save_admin_version_by_code(
-                        selected_draft_code,
-                        updated_all_admin_data
-                    )
+
+                if st.button("+", key=f"add_admin_conclusion_row_{selected_draft_code}_{i}"):
                     st.session_state[rows_key] += 1
-                    st.rerun()
-        
+                    st.session_state["admin_autosave_requested"] = True
+
             return updated_admin_section
         
         for section_index, (section_label, (main_key, sub_key)) in enumerate(section_map.items()):
