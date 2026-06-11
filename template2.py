@@ -3054,6 +3054,8 @@ def main():
             else {}
         )
 
+        html_block('<div class="admin-screen-only">')
+
         st.markdown("### Ajouter / corriger les noms des participants")
 
         corrected_names = st.text_input(
@@ -3073,7 +3075,6 @@ def main():
 
             conn = sqlite3.connect(DB_PATH)
             cur = conn.cursor()
-
             cur.execute("""
                 UPDATE responses
                 SET respondent_name = ?,
@@ -3084,13 +3085,13 @@ def main():
                 json.dumps(original_data, ensure_ascii=False),
                 selected_draft_code
             ))
-
             conn.commit()
             conn.close()
 
             st.success("Les noms des participants ont été mis à jour.")
             st.rerun()
 
+        html_block('</div>')
 
         
         print_group_name = " - ".join(
