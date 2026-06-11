@@ -875,6 +875,10 @@ div[data-testid="stIFrame"] {{
     display: none;
 }}
 
+.conclusion-print-only {{
+    display: none;
+}}
+
 .admin-print-title,
 .swot-print-only {{
     display: none !important;
@@ -1100,44 +1104,30 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
         opacity: 1 !important;
     }}
 
-    .admin-print-cover-header {{
-        display: block !important;
-        visibility: visible !important;
-        height: auto !important;
-        min-height: 0 !important;
-        max-height: none !important;
-        margin: 22mm 0 8mm 0 !important;
-        padding: 0 !important;
-        overflow: visible !important;
-        break-before: auto !important;
-        page-break-before: auto !important;
-        break-after: avoid !important;
-        page-break-after: avoid !important;
-    }}
-
-    .admin-print-cover-header img {{
-        display: none !important;
-    }}
-
+    .admin-print-cover-header,
     .admin-print-cover-title {{
-        display: block !important;
-        visibility: visible !important;
-        position: static !important;
-        transform: none !important;
-        width: 100% !important;
-        text-align: center !important;
-        color: #001F5B !important;
-        font-size: 22px !important;
-        line-height: 1.15 !important;
-        font-weight: 800 !important;
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+        min-height: 0 !important;
+        max-height: 0 !important;
         margin: 0 !important;
-        padding: 0 10mm !important;
-        break-after: avoid !important;
-        page-break-after: avoid !important;
+        padding: 0 !important;
+        overflow: hidden !important;
     }}
 
     .admin-print-title {{
-        display: none !important;
+        display: block !important;
+        visibility: visible !important;
+        text-align: center !important;
+        color: #001F5B !important;
+        font-size: 18px !important;
+        line-height: 1.15 !important;
+        font-weight: 800 !important;
+        margin: 18mm 0 7mm 0 !important;
+        padding: 0 8mm !important;
+        break-after: avoid !important;
+        page-break-after: avoid !important;
     }}
 
     hr {{
@@ -1221,57 +1211,39 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
         page-break-inside: avoid !important;
     }}
 
-    div[class*="st-key-admin_edit_"][class*="Conclusion"] {{
-        display: none !important;
-        visibility: hidden !important;
-        height: 0 !important;
-        min-height: 0 !important;
-        max-height: 0 !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        overflow: hidden !important;
-    }}
-
-    .conclusion-print-only {{
+    div[class*="st-key-admin_edit_"][class*="IV - Conclusion"],
+    div[class*="st-key-admin_edit_"][class*="IV - Conclusion"] div[data-testid="stTextArea"],
+    div[class*="st-key-admin_edit_"][class*="IV - Conclusion"] div[data-testid="stTextArea"] > div,
+    div[class*="st-key-admin_edit_"][class*="IV - Conclusion"] textarea,
+    div[class*="st-key-admin_edit_"][class*="Conclusion"],
+    div[class*="st-key-admin_edit_"][class*="Conclusion"] div[data-testid="stTextArea"],
+    div[class*="st-key-admin_edit_"][class*="Conclusion"] div[data-testid="stTextArea"] > div,
+    div[class*="st-key-admin_edit_"][class*="Conclusion"] textarea {{
         display: block !important;
         visibility: visible !important;
-        width: 100% !important;
-        margin: 0 0 3mm 0 !important;
+        height: 12mm !important;
+        min-height: 12mm !important;
+        max-height: 12mm !important;
+        margin: 0 0 2mm 0 !important;
         padding: 0 !important;
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
+        overflow: hidden !important;
+        box-sizing: border-box !important;
     }}
 
-    .conclusion-print-box {{
-        display: block !important;
-        width: 100% !important;
-        box-sizing: border-box !important;
-        min-height: 12mm !important;
-        border: 1px solid #595959 !important;
+    div[class*="st-key-admin_edit_"][class*="IV - Conclusion"] textarea,
+    div[class*="st-key-admin_edit_"][class*="Conclusion"] textarea {{
         background-color: #E3DED9 !important;
+        border: 1.2px solid #595959 !important;
         color: #000000 !important;
+        -webkit-text-fill-color: #000000 !important;
         font-size: 10.5px !important;
         line-height: 1.2 !important;
-        padding: 6px !important;
-        margin: 0 !important;
+        padding: 5px !important;
+        resize: none !important;
         white-space: pre-wrap !important;
-        overflow: hidden !important;
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
     }}
 
-    .conclusion-phrase-label {{
-        display: block !important;
-        visibility: visible !important;
-        font-size: 11px !important;
-        line-height: 1.2 !important;
-        margin-top: 3mm !important;
-        margin-bottom: 2mm !important;
-        break-after: avoid !important;
-        page-break-after: avoid !important;
-    }}
-
-
+    
     div[data-testid="stTextArea"] textarea {{
         background-color: #E3DED9 !important;
         border: 1.5px solid #595959 !important;
@@ -1288,12 +1260,13 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
         white-space: pre-wrap !important;
     }}
     .admin-answer-row-wrapper {{
-        margin-top: 0 !important;
-        margin-bottom: 0 !important;
-        padding: 0 !important;
+        display: block !important;
         height: auto !important;
         min-height: 0 !important;
         max-height: none !important;
+        margin-top: 0 !important;
+        margin-bottom: 1mm !important;
+        padding: 0 !important;
         overflow: visible !important;
         break-inside: avoid !important;
         page-break-inside: avoid !important;
@@ -3167,13 +3140,9 @@ def main():
         print_logo_src = image_to_base64(LOGO_PATH)
         print_logo_html = f'<img src="{print_logo_src}" alt="USJ">' if print_logo_src else ""
 
-        html_block(
-            f'<div class="admin-print-cover-header">'
-            f'{print_logo_html}'
-            f'<div class="admin-print-cover-title">{html_lib.escape(print_group_name)}</div>'
-            f'</div>'
-        )
-
+        # Print title shown on the first page, under the main header.
+        # The old admin-print-cover-header block is intentionally not used because
+        # it creates a blank cover page in browser print preview.
         html_block(f'<div class="admin-print-title">{html_lib.escape(print_group_name)}</div>')
 
         original_data = json.loads(selected_row["data_json"]) if selected_row["data_json"] else {}
@@ -3389,6 +3358,7 @@ box-sizing:border-box;
                     ):
                         st.session_state[admin_rows_key] += 1
                         st.session_state["admin_autosave_requested"] = True
+                        st.rerun()
 
             st.markdown("<br>", unsafe_allow_html=True)
 
@@ -3401,27 +3371,74 @@ box-sizing:border-box;
         def render_dict_section(section_label, original_section):
             existing_admin_section = get_existing_admin_section(section_label, original_section)
             updated_admin_section = {}
-        
-            if not isinstance(original_section, dict) or not original_section:
-                st.info("Aucune réponse saisie pour cette section.")
-                return original_section
-        
-            for key, original_value in original_section.items():
-                if isinstance(existing_admin_section, dict):
+
+            if not isinstance(original_section, dict):
+                original_section = {}
+
+            if not isinstance(existing_admin_section, dict):
+                existing_admin_section = {}
+
+            if section_label == "III - Priorités":
+                admin_rows_key = f"admin_rows_{selected_draft_code}_{section_label}"
+
+                if admin_rows_key not in st.session_state:
+                    priority_numbers = []
+
+                    for source_section in [original_section, existing_admin_section]:
+                        for key in source_section.keys():
+                            m = re.match(r"^priorite_(\d+)$", str(key))
+                            if m:
+                                priority_numbers.append(int(m.group(1)))
+
+                    st.session_state[admin_rows_key] = max(
+                        5,
+                        max(priority_numbers) if priority_numbers else 0
+                    )
+
+                number_of_rows = st.session_state[admin_rows_key]
+
+                for i in range(1, number_of_rows + 1):
+                    key = f"priorite_{i}"
+                    original_value = original_section.get(key, "")
                     saved_admin_value = existing_admin_section.get(key, original_value)
                     admin_value = saved_admin_value if str(saved_admin_value or "").strip() else original_value
-                else:
-                    admin_value = original_value
-        
+
+                    render_admin_title_bar(f"Priorité {i}", USJ_RED)
+
+                    updated_admin_section[key] = render_admin_edit_box(
+                        label=f"{section_label}_{key}",
+                        value=admin_value,
+                        key=f"admin_edit_{selected_draft_code}_{section_label}_{key}",
+                        height=55
+                    )
+
+                if st.button(
+                    "+",
+                    key=f"add_admin_row_{selected_draft_code}_{section_label}_priorites"
+                ):
+                    st.session_state[admin_rows_key] += 1
+                    st.session_state["admin_autosave_requested"] = True
+                    st.rerun()
+
+                return updated_admin_section
+
+            if not original_section:
+                st.info("Aucune réponse saisie pour cette section.")
+                return original_section
+
+            for key, original_value in original_section.items():
+                saved_admin_value = existing_admin_section.get(key, original_value)
+                admin_value = saved_admin_value if str(saved_admin_value or "").strip() else original_value
+
                 render_admin_title_bar(clean_admin_display_label(key), USJ_RED)
-        
+
                 updated_admin_section[key] = render_admin_edit_box(
                     label=f"{section_label}_{key}",
                     value=admin_value,
                     key=f"admin_edit_{selected_draft_code}_{section_label}_{key}",
                     height=95
                 )
-        
+
             return updated_admin_section
 
         def render_conclusion_section(section_label, original_section):
@@ -3446,12 +3463,12 @@ box-sizing:border-box;
 
                 st.markdown(
                     f"""
-<div style="
+<div class="conclusion-phrase-label" style="
 font-size:18px;
 font-weight:700;
 color:{USJ_BLUE};
-margin-top:12px;
-margin-bottom:8px;
+margin-top:4px;
+margin-bottom:3px;
 ">
 &bull; {phrase}
 </div>
@@ -3467,12 +3484,21 @@ margin-bottom:8px;
 
                     html_block('<div class="admin-answer-row-wrapper">')
 
-
                     updated_admin_section[key] = render_admin_edit_box(
                         label=f"{section_label}_{key}",
                         value=admin_value,
                         key=f"admin_edit_{selected_draft_code}_{section_label}_{key}",
-                        height=95
+                        height=55
+                    )
+
+                    safe_print_value = html_lib.escape(str(admin_value or "")).replace("\n", "<br>")
+                    if not safe_print_value.strip():
+                        safe_print_value = "&nbsp;"
+
+                    html_block(
+                        f'<div class="conclusion-print-only">'
+                        f'<div class="conclusion-print-box">{safe_print_value}</div>'
+                        f'</div>'
                     )
 
                     html_block('</div>')
@@ -4002,6 +4028,3 @@ if __name__ == "__main__":
     main()
 
     
-
-
-
