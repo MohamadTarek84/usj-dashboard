@@ -875,10 +875,6 @@ div[data-testid="stIFrame"] {{
     display: none;
 }}
 
-.conclusion-print-only {{
-    display: none;
-}}
-
 .admin-print-title,
 .swot-print-only {{
     display: none !important;
@@ -1110,7 +1106,7 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
         height: auto !important;
         min-height: 0 !important;
         max-height: none !important;
-        margin: 0 !important;
+        margin: 22mm 0 8mm 0 !important;
         padding: 0 !important;
         overflow: visible !important;
         break-before: auto !important;
@@ -1132,10 +1128,12 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
         text-align: center !important;
         color: #001F5B !important;
         font-size: 22px !important;
-        line-height: 1.05 !important;
+        line-height: 1.15 !important;
         font-weight: 800 !important;
-        margin: -18mm 0 -8mm 0 !important;
-        padding: 0 !important;
+        margin: 0 !important;
+        padding: 0 10mm !important;
+        break-after: avoid !important;
+        page-break-after: avoid !important;
     }}
 
     .admin-print-title {{
@@ -1234,7 +1232,46 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
         overflow: hidden !important;
     }}
 
-    
+    .conclusion-print-only {{
+        display: block !important;
+        visibility: visible !important;
+        width: 100% !important;
+        margin: 0 0 3mm 0 !important;
+        padding: 0 !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+    }}
+
+    .conclusion-print-box {{
+        display: block !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        min-height: 12mm !important;
+        border: 1px solid #595959 !important;
+        background-color: #E3DED9 !important;
+        color: #000000 !important;
+        font-size: 10.5px !important;
+        line-height: 1.2 !important;
+        padding: 6px !important;
+        margin: 0 !important;
+        white-space: pre-wrap !important;
+        overflow: hidden !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+    }}
+
+    .conclusion-phrase-label {{
+        display: block !important;
+        visibility: visible !important;
+        font-size: 11px !important;
+        line-height: 1.2 !important;
+        margin-top: 3mm !important;
+        margin-bottom: 2mm !important;
+        break-after: avoid !important;
+        page-break-after: avoid !important;
+    }}
+
+
     div[data-testid="stTextArea"] textarea {{
         background-color: #E3DED9 !important;
         border: 1.5px solid #595959 !important;
@@ -1252,7 +1289,14 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
     }}
     .admin-answer-row-wrapper {{
         margin-top: 0 !important;
-        margin-bottom: 1.5mm !important;
+        margin-bottom: 0 !important;
+        padding: 0 !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        overflow: visible !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
     }}
 
     .print-answer-text {{
@@ -3345,7 +3389,6 @@ box-sizing:border-box;
                     ):
                         st.session_state[admin_rows_key] += 1
                         st.session_state["admin_autosave_requested"] = True
-                        st.rerun()
 
             st.markdown("<br>", unsafe_allow_html=True)
 
@@ -3358,74 +3401,27 @@ box-sizing:border-box;
         def render_dict_section(section_label, original_section):
             existing_admin_section = get_existing_admin_section(section_label, original_section)
             updated_admin_section = {}
-
-            if not isinstance(original_section, dict):
-                original_section = {}
-
-            if not isinstance(existing_admin_section, dict):
-                existing_admin_section = {}
-
-            if section_label == "III - Priorités":
-                admin_rows_key = f"admin_rows_{selected_draft_code}_{section_label}"
-
-                if admin_rows_key not in st.session_state:
-                    priority_numbers = []
-
-                    for source_section in [original_section, existing_admin_section]:
-                        for key in source_section.keys():
-                            m = re.match(r"^priorite_(\d+)$", str(key))
-                            if m:
-                                priority_numbers.append(int(m.group(1)))
-
-                    st.session_state[admin_rows_key] = max(
-                        5,
-                        max(priority_numbers) if priority_numbers else 0
-                    )
-
-                number_of_rows = st.session_state[admin_rows_key]
-
-                for i in range(1, number_of_rows + 1):
-                    key = f"priorite_{i}"
-                    original_value = original_section.get(key, "")
-                    saved_admin_value = existing_admin_section.get(key, original_value)
-                    admin_value = saved_admin_value if str(saved_admin_value or "").strip() else original_value
-
-                    render_admin_title_bar(f"Priorité {i}", USJ_RED)
-
-                    updated_admin_section[key] = render_admin_edit_box(
-                        label=f"{section_label}_{key}",
-                        value=admin_value,
-                        key=f"admin_edit_{selected_draft_code}_{section_label}_{key}",
-                        height=95
-                    )
-
-                if st.button(
-                    "+",
-                    key=f"add_admin_row_{selected_draft_code}_{section_label}_priorites"
-                ):
-                    st.session_state[admin_rows_key] += 1
-                    st.session_state["admin_autosave_requested"] = True
-                    st.rerun()
-
-                return updated_admin_section
-
-            if not original_section:
+        
+            if not isinstance(original_section, dict) or not original_section:
                 st.info("Aucune réponse saisie pour cette section.")
                 return original_section
-
+        
             for key, original_value in original_section.items():
-                saved_admin_value = existing_admin_section.get(key, original_value)
-                admin_value = saved_admin_value if str(saved_admin_value or "").strip() else original_value
-
+                if isinstance(existing_admin_section, dict):
+                    saved_admin_value = existing_admin_section.get(key, original_value)
+                    admin_value = saved_admin_value if str(saved_admin_value or "").strip() else original_value
+                else:
+                    admin_value = original_value
+        
                 render_admin_title_bar(clean_admin_display_label(key), USJ_RED)
-
+        
                 updated_admin_section[key] = render_admin_edit_box(
                     label=f"{section_label}_{key}",
                     value=admin_value,
                     key=f"admin_edit_{selected_draft_code}_{section_label}_{key}",
                     height=95
                 )
-
+        
             return updated_admin_section
 
         def render_conclusion_section(section_label, original_section):
@@ -3450,12 +3446,12 @@ box-sizing:border-box;
 
                 st.markdown(
                     f"""
-<div class="conclusion-phrase-label" style="
+<div style="
 font-size:18px;
 font-weight:700;
 color:{USJ_BLUE};
-margin-top:4px;
-margin-bottom:3px;
+margin-top:12px;
+margin-bottom:8px;
 ">
 &bull; {phrase}
 </div>
@@ -3471,21 +3467,12 @@ margin-bottom:3px;
 
                     html_block('<div class="admin-answer-row-wrapper">')
 
+
                     updated_admin_section[key] = render_admin_edit_box(
                         label=f"{section_label}_{key}",
                         value=admin_value,
                         key=f"admin_edit_{selected_draft_code}_{section_label}_{key}",
                         height=95
-                    )
-
-                    safe_print_value = html_lib.escape(str(admin_value or "")).replace("\n", "<br>")
-                    if not safe_print_value.strip():
-                        safe_print_value = "&nbsp;"
-
-                    html_block(
-                        f'<div class="conclusion-print-only">'
-                        f'<div class="conclusion-print-box">{safe_print_value}</div>'
-                        f'</div>'
                     )
 
                     html_block('</div>')
