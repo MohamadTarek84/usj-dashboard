@@ -984,6 +984,18 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
 
 @media print {{
 
+    .hide-corrected-names-print,
+    div[class*="st-key-corrected_names_"],
+    div[class*="st-key-save_corrected_names_"] {{
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+        min-height: 0 !important;
+        max-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+    }}
 
     @page {{
         size: A4 portrait;
@@ -3056,7 +3068,7 @@ def main():
 
         html_block('<div class="admin-screen-only">')
 
-        st.markdown("### Ajouter / corriger les noms des participants")
+        html_block('<div class="hide-corrected-names-print"><h3>Ajouter / corriger les noms des participants</h3></div>')
 
         corrected_names = st.text_input(
             "Noms des participants",
