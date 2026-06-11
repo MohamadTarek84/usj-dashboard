@@ -3330,7 +3330,7 @@ box-sizing:border-box;
                             height=95
                         )
 
-                                if st.button(
+            if st.button(
                         "+",
                         key=f"add_admin_row_{selected_draft_code}_{section_label}_{field_name}"
                     ):
