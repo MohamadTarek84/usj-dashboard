@@ -1508,9 +1508,7 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
         color: #222222 !important;
     }}
 
-    .admin-section-iii-page-break,
-    .swot-print-only + .admin-print-page-break,
-    .swot-print-only + div .admin-print-page-break {{
+    .admin-section-iii-page-break {{
         display: none !important;
         height: 0 !important;
         min-height: 0 !important;
@@ -3559,7 +3557,7 @@ margin-bottom:3px;
                     f'<div class="admin-print-title-inline">{html_lib.escape(print_group_name)}</div>'
                 )
 
-            if section_label == "III - Priorités":
+            if section_index > 0:
                 html_block('<div class="admin-print-page-break"></div>')
 
             st.markdown("---")
