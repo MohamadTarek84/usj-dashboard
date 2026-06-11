@@ -57,10 +57,11 @@ AUTHORIZED_TEST_CODES = {
     "USJ-TH-2032": {"responsable": "Tarek Halabi", "institution": ""},
 
     # Focus groups
-    "USJ-PSG-FG1-2032": {"responsable": "", "institution": "Sous groupe 1"},
-    "USJ-PSG-FG2-2032": {"responsable": "", "institution": "Sous groupe 2"},
-    "USJ-PSG-FG3-2032": {"responsable": "", "institution": "Sous groupe 3"},
-    "USJ-PSG-FG4-2032": {"responsable": "", "institution": "Sous groupe 4"},
+    "USJ-ANC-FG1-2032": {"responsable": "", "institution": "Sous groupe 1"},
+    "USJ-ANC-FG2-2032": {"responsable": "", "institution": "Sous groupe 2"},
+    "USJ-ANC-FG3-2032": {"responsable": "", "institution": "Sous groupe 3"},
+    "USJ-ANC-FG4-2032": {"responsable": "", "institution": "Sous groupe 4"},
+    "USJ-ANC-FG5-2032": {"responsable": "", "institution": "Sous groupe 5"},
 }
 
 def html_block(content):
@@ -148,7 +149,7 @@ def save_response(metadata, data):
                 data_json = ?
             WHERE id = ?
         """, (
-            "2026-06-12",
+            "2026-06-15",
             responsable,
             institution,
             email,
@@ -1556,7 +1557,7 @@ def render_first_page_header():
         </h1>
 
         <p style="font-size:18px; font-weight:700; color:{USJ_BLUE_2}; margin:0; line-height:1.4;">
-            <span style="font-size:26px; font-weight:700; color:{USJ_BLUE_2};">Focus groupe</span>
+            <span style="font-size:26px; font-weight:700; color:{USJ_BLUE_2};">Focus groupe - Associations des Anciens Et Comité exécutif de la Fédération des associations des anciens</span>
         </p>
     </div>
 
@@ -3796,10 +3797,10 @@ box-sizing:border-box;
             with col3:
                 st.text_input(
                     "Date",
-                    value="2026-06-12",
+                    value="2026-06-15",
                     disabled=True
                 )
-                response_date = "2026-06-12"
+                response_date = "2026-06-15"
 
             st.markdown("---")
 
