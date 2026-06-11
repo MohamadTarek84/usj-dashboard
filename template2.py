@@ -3412,7 +3412,7 @@ box-sizing:border-box;
 
     return updated_admin_section
 
-        def render_conclusion_section(section_label, original_section):
+    def render_conclusion_section(section_label, original_section):
             existing_admin_section = get_existing_admin_section(section_label, original_section)
             updated_admin_section = {}
 
