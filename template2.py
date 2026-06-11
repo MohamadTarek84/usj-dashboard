@@ -1241,9 +1241,16 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
         max-height: 28mm !important;
         white-space: pre-wrap !important;
     }}
-    .admin-answer-row-wrapper {{
+
+    .admin-answer-row-wrapper,
+    .admin-answer-row-wrapper > div {{
+        height: 16mm !important;
+        min-height: 16mm !important;
+        max-height: 16mm !important;
         margin-top: 0 !important;
-        margin-bottom: 1.5mm !important;
+        margin-bottom: 2mm !important;
+        padding: 0 !important;
+        overflow: hidden !important;
     }}
 
     .print-answer-text {{
