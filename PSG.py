@@ -3425,58 +3425,80 @@ box-sizing:border-box;
         def render_conclusion_section(section_label, original_section):
             existing_admin_section = get_existing_admin_section(section_label, original_section)
             updated_admin_section = {}
-
+        
             if not isinstance(original_section, dict):
                 original_section = {}
-
+        
             if not isinstance(existing_admin_section, dict):
                 existing_admin_section = {}
-
+        
             phrases = [
                 "Nous souhaitons que l’USJ soit reconnue pour …",
                 "Nous souhaitons que nos étudiants disent que l’USJ …",
                 "L’USJ serait un meilleur lieu de travail si …",
             ]
-
+        
             for i, phrase in enumerate(phrases, start=1):
+                rows_key = f"admin_conclusion_rows_{selected_draft_code}_{i}"
+        
+                if rows_key not in st.session_state:
+                    existing_count = max(
+                        [
+                            int(k.split("_")[-1])
+                            for k in existing_admin_section.keys()
+                            if k.startswith(f"pour_finir_{i}_") and k.split("_")[-1].isdigit()
+                        ],
+                        default=1
+                    )
+                    st.session_state[rows_key] = max(2, existing_count + 1)
+        
+                number_of_rows = st.session_state[rows_key]
+        
                 if i > 1:
                     html_block('<div class="admin-conclusion-no-page-break"></div>')
-
+        
                 st.markdown(
                     f"""
-<div style="
-font-size:18px;
-font-weight:700;
-color:{USJ_BLUE};
-margin-top:12px;
-margin-bottom:8px;
-">
-&bull; {phrase}
-</div>
-""",
+        <div style="
+        font-size:18px;
+        font-weight:700;
+        color:{USJ_BLUE};
+        margin-top:12px;
+        margin-bottom:8px;
+        ">
+        &bull; {phrase}
+        </div>
+        """,
                     unsafe_allow_html=True
                 )
-
-                for j in range(2):
+        
+                for j in range(number_of_rows):
                     key = f"pour_finir_{i}_{j}"
+        
                     original_value = original_section.get(key, "")
                     saved_admin_value = existing_admin_section.get(key, original_value)
                     admin_value = saved_admin_value if str(saved_admin_value or "").strip() else original_value
-
+        
                     html_block('<div class="admin-answer-row-wrapper">')
-
-
+        
                     updated_admin_section[key] = render_admin_edit_box(
                         label=f"{section_label}_{key}",
                         value=admin_value,
                         key=f"admin_edit_{selected_draft_code}_{section_label}_{key}",
                         height=95
                     )
-
+        
                     html_block('</div>')
-
+        
+                if st.button(
+                    "+",
+                    key=f"add_admin_conclusion_row_{selected_draft_code}_{i}"
+                ):
+                    st.session_state[rows_key] += 1
+                    st.rerun()
+        
             return updated_admin_section
-
+        
         for section_index, (section_label, (main_key, sub_key)) in enumerate(section_map.items()):
             if section_index > 0:
                 html_block('<div class="admin-print-page-break"></div>')
