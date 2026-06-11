@@ -1135,7 +1135,14 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
     }}
 
     .admin-print-title {{
-        display: none !important;
+        display: block !important;
+        visibility: visible !important;
+        text-align: center !important;
+        color: #001F5B !important;
+        font-size: 13px !important;
+        font-weight: 800 !important;
+        margin: 2mm 0 4mm 0 !important;
+        padding: 0 !important;
     }}
 
     hr {{
