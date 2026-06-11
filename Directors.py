@@ -1393,20 +1393,21 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
         display: grid !important;
         grid-template-columns: 1fr 1fr !important;
         gap: 3mm !important;
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
+        break-inside: auto !important;
+        page-break-inside: auto !important;
     }}
 
     .swot-print-card {{
-        min-height: 36mm !important;
-        max-height: 52mm !important;
+        min-height: auto !important;
+        height: auto !important;
+        max-height: none !important;
         padding: 3mm !important;
         border: 1.5px solid var(--accent) !important;
         border-radius: 7px !important;
         background: var(--bg) !important;
-        overflow: hidden !important;
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
+        overflow: visible !important;
+        break-inside: auto !important;
+        page-break-inside: auto !important;
     }}
 
     .swot-print-card h3 {{
@@ -2229,7 +2230,7 @@ def _deduplicate_keep_order(values):
             cleaned.append(value)
             seen.add(key)
 
-    return cleaned[:5]
+    return cleaned
 
 
 def extract_admin_swot_values(admin_data):
@@ -2408,7 +2409,7 @@ def _split_admin_items_for_display(items):
         if item:
             display_items.append(item)
 
-    return display_items[:5]
+    return display_items
 
 
 def _swot_items_html(items, accent_color):
@@ -2894,7 +2895,7 @@ def _swot_print_static_html(swot_values, group_name="groupe"):
         cleaned = _split_admin_items_for_display(items)
         if not cleaned:
             return "<li>Aucune réponse admin saisie.</li>"
-        return "".join(f"<li>{html_lib.escape(str(item))}</li>" for item in cleaned[:5])
+        return "".join(f"<li>{html_lib.escape(str(item))}</li>" for item in cleaned)
 
     safe_group = html_lib.escape(str(group_name or "groupe"))
 
