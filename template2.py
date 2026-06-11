@@ -3466,6 +3466,7 @@ margin-bottom:8px;
 
             return updated_admin_section
 
+
         for section_index, (section_label, (main_key, sub_key)) in enumerate(section_map.items()):
             if section_label == "III - Priorités":
                 html_block('<div class="admin-print-page-break"></div>')
@@ -3509,6 +3510,9 @@ margin-bottom:8px;
 
         html_block('<div class="admin-action-row-fix">')
 
+
+
+        
         col_admin_print, col_admin_save, col_admin_spacer = st.columns(
             [1.35, 1.35, 2.30],
             gap="large",
