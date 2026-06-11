@@ -1129,7 +1129,7 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
         font-size: 18px !important;
         line-height: 1.15 !important;
         font-weight: 800 !important;
-        margin: 18mm 0 7mm 0 !important;
+        margin: 6mm 0 3mm 0 !important;
         padding: 0 8mm !important;
         break-after: avoid !important;
         page-break-after: avoid !important;
@@ -1165,8 +1165,8 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
         break-inside: avoid !important;
         page-break-inside: avoid !important;
         margin-top: 1mm !important;
-        margin-bottom: 4mm !important;
-        padding: 7px 11px !important;
+        margin-bottom: 2mm !important;
+        padding: 5px 10px !important;
         box-shadow: none !important;
     }}
 
@@ -1194,10 +1194,14 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
     .print-answer-text,
     .print-answer-content,
     .admin-answer-row-wrapper,
-    .admin-answer-row,
-    div[data-testid="stHorizontalBlock"] {{
+    .admin-answer-row {{
         break-inside: avoid !important;
         page-break-inside: avoid !important;
+    }}
+
+    div[data-testid="stHorizontalBlock"] {{
+        break-inside: auto !important;
+        page-break-inside: auto !important;
     }}
 
     div[data-testid="stTextArea"],
@@ -1205,9 +1209,9 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
     div[data-testid="stTextArea"] textarea,
     .admin-original-answer-box {{
         display: block !important;
-        min-height: 28mm !important;
-        height: 28mm !important;
-        max-height: 28mm !important;
+        min-height: 23mm !important;
+        height: 23mm !important;
+        max-height: 23mm !important;
         margin-top: 0 !important;
         margin-bottom: 1.5mm !important;
         box-sizing: border-box !important;
@@ -1238,9 +1242,9 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
         padding: 6px !important;
         resize: none !important;
         overflow: hidden !important;
-        height: 28mm !important;
-        min-height: 28mm !important;
-        max-height: 28mm !important;
+        height: 23mm !important;
+        min-height: 23mm !important;
+        max-height: 23mm !important;
         white-space: pre-wrap !important;
     }}
     .admin-answer-row-wrapper {{
