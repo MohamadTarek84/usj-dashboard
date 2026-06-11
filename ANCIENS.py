@@ -1774,18 +1774,13 @@ def render_swot_intro():
 
     <ul style="font-size:19px; line-height:1.45; color:{USJ_BLUE}; margin-top:0; margin-bottom:18px;">
         <li>Soutenabilité financière</li>
-        <li>Gouvernance et Leadership (gestion, relation, représentation, etc.)</li>
+        <li>Gouvernance et Leadership (Gestion, relation, représentation, etc.)</li>
         <li>Stratégie académique et qualité d’enseignement</li>
         <li>Recherche et Innovation</li>
-        <li>Ressources documentaires et Environnement digital</li>
         <li>Succès des étudiants (recrutement, accompagnement, services de support, employabilité, etc.)</li>
         <li>Ressources humaines</li>
-        <li>Stratégie et mobilité internationales</li>
         <li>Mission sociétale</li>
         <li>Espace et infrastructures</li>
-        <li>Environnement de travail</li>
-        <li>Diversité et inclusion</li>
-        <li>Développement Durable (ODD)</li>
         <li>Autre</li>
     </ul>
 
@@ -2001,8 +1996,8 @@ def render_pour_finir():
 
     phrases = [
         "Nous souhaitons que l’USJ soit reconnue pour …",
-        "Nous souhaitons que nos étudiants disent que l’USJ …",
-        "L’USJ serait un meilleur lieu de travail si …",
+        "Nous souhaitons que les employeurs disent que les diplômés de l’USJ sont …",
+        "L’USJ serait un meilleur lieu d’enseignement si …",
     ]
 
     for i, phrase in enumerate(phrases, start=1):
@@ -3435,8 +3430,8 @@ box-sizing:border-box;
         
             phrases = [
                 "Nous souhaitons que l’USJ soit reconnue pour …",
-                "Nous souhaitons que nos étudiants disent que l’USJ …",
-                "L’USJ serait un meilleur lieu de travail si …",
+                "Nous souhaitons que les employeurs disent que les diplômés de l’USJ sont …",
+                "L’USJ serait un meilleur lieu d’enseignement si …",
             ]
         
             for i, phrase in enumerate(phrases, start=1):
