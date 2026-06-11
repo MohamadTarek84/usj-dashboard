@@ -3127,12 +3127,12 @@ def main():
         print_logo_src = image_to_base64(LOGO_PATH)
         print_logo_html = f'<img src="{print_logo_src}" alt="USJ">' if print_logo_src else ""
 
-        # html_block(
-            #     f'<div class="admin-print-cover-header">'
-            #     f'{print_logo_html}'
-            #     f'<div class="admin-print-cover-title">{html_lib.escape(print_group_name)}</div>'
-            #     f'</div>'
-            # )
+        html_block(
+            f'<div class="admin-print-cover-header">'
+            f'{print_logo_html}'
+            f'<div class="admin-print-cover-title">{html_lib.escape(print_group_name)}</div>'
+            f'</div>'
+        )
 
         html_block(f'<div class="admin-print-title">{html_lib.escape(print_group_name)}</div>')
 
