@@ -3064,8 +3064,44 @@ def main():
             st.success(f"Le groupe {selected_draft_code} peut maintenant modifier ses réponses.")
             st.rerun()
 
-        
+
         selected_row = admin_df[admin_df["draft_code"] == selected_draft_code].iloc[0]
+
+        original_data = json.loads(selected_row["data_json"]) if selected_row["data_json"] else {}
+
+        st.markdown("### Ajouter / corriger les noms des participants")
+
+        corrected_names = st.text_input(
+            "Noms des participants",
+            value=str(selected_row.get("respondent_name", "")),
+            key=f"corrected_names_{selected_draft_code}"
+        )
+
+        if st.button("Enregistrer les noms corrigés", key=f"save_corrected_names_{selected_draft_code}"):
+            original_data["metadata"]["responsable"] = corrected_names
+
+            conn = sqlite3.connect(DB_PATH)
+            cur = conn.cursor()
+            cur.execute("""
+                UPDATE responses
+                SET respondent_name = ?,
+                    data_json = ?
+                WHERE draft_code = ?
+            """, (
+                corrected_names,
+                json.dumps(original_data, ensure_ascii=False),
+                selected_draft_code
+            ))
+            conn.commit()
+            conn.close()
+
+            st.success("Les noms des participants ont été mis à jour.")
+            st.rerun()
+
+        print_group_name = " - ".join(
+            [part for part in [str(selected_row.get("respondent_name", "")).strip(), str(selected_row.get("respondent_unit", "")).strip()] if part]
+        ) or selected_draft_code
+        
 
         print_group_name = " - ".join(
             [part for part in [str(selected_row.get("respondent_name", "")).strip(), str(selected_row.get("respondent_unit", "")).strip()] if part]
