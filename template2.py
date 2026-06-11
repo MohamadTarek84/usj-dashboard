@@ -879,6 +879,10 @@ div[data-testid="stIFrame"] {{
     display: none;
 }}
 
+.admin-print-title-inline {{
+    display: none;
+}}
+
 .admin-print-title,
 .swot-print-only {{
     display: none !important;
@@ -1105,7 +1109,8 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
     }}
 
     .admin-print-cover-header,
-    .admin-print-cover-title {{
+    .admin-print-cover-title,
+    .admin-print-title {{
         display: none !important;
         visibility: hidden !important;
         height: 0 !important;
@@ -1116,7 +1121,7 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
         overflow: hidden !important;
     }}
 
-    .admin-print-title {{
+    .admin-print-title-inline {{
         display: block !important;
         visibility: visible !important;
         text-align: center !important;
@@ -1211,36 +1216,15 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
         page-break-inside: avoid !important;
     }}
 
-    div[class*="st-key-admin_edit_"][class*="IV - Conclusion"],
-    div[class*="st-key-admin_edit_"][class*="IV - Conclusion"] div[data-testid="stTextArea"],
-    div[class*="st-key-admin_edit_"][class*="IV - Conclusion"] div[data-testid="stTextArea"] > div,
-    div[class*="st-key-admin_edit_"][class*="IV - Conclusion"] textarea,
-    div[class*="st-key-admin_edit_"][class*="Conclusion"],
-    div[class*="st-key-admin_edit_"][class*="Conclusion"] div[data-testid="stTextArea"],
-    div[class*="st-key-admin_edit_"][class*="Conclusion"] div[data-testid="stTextArea"] > div,
-    div[class*="st-key-admin_edit_"][class*="Conclusion"] textarea {{
-        display: block !important;
-        visibility: visible !important;
-        height: 12mm !important;
-        min-height: 12mm !important;
-        max-height: 12mm !important;
-        margin: 0 0 2mm 0 !important;
+    div[class*="st-key-admin_edit_"][class*="Conclusion"] {{
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+        min-height: 0 !important;
+        max-height: 0 !important;
+        margin: 0 !important;
         padding: 0 !important;
         overflow: hidden !important;
-        box-sizing: border-box !important;
-    }}
-
-    div[class*="st-key-admin_edit_"][class*="IV - Conclusion"] textarea,
-    div[class*="st-key-admin_edit_"][class*="Conclusion"] textarea {{
-        background-color: #E3DED9 !important;
-        border: 1.2px solid #595959 !important;
-        color: #000000 !important;
-        -webkit-text-fill-color: #000000 !important;
-        font-size: 10.5px !important;
-        line-height: 1.2 !important;
-        padding: 5px !important;
-        resize: none !important;
-        white-space: pre-wrap !important;
     }}
 
     
@@ -1260,16 +1244,8 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
         white-space: pre-wrap !important;
     }}
     .admin-answer-row-wrapper {{
-        display: block !important;
-        height: auto !important;
-        min-height: 0 !important;
-        max-height: none !important;
         margin-top: 0 !important;
-        margin-bottom: 1mm !important;
-        padding: 0 !important;
-        overflow: visible !important;
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
+        margin-bottom: 1.5mm !important;
     }}
 
     .print-answer-text {{
@@ -1365,6 +1341,76 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
         white-space: pre-wrap !important;
         break-inside: avoid !important;
         page-break-inside: avoid !important;
+    }}
+
+
+    div[class*="st-key-admin_edit_"][class*="IV - Conclusion"],
+    div[class*="st-key-admin_edit_"][class*="IV - Conclusion"] div[data-testid="stTextArea"],
+    div[class*="st-key-admin_edit_"][class*="IV - Conclusion"] div[data-testid="stTextArea"] > div,
+    div[class*="st-key-admin_edit_"][class*="IV - Conclusion"] textarea,
+    div[class*="st-key-admin_edit_"][class*="Conclusion"],
+    div[class*="st-key-admin_edit_"][class*="Conclusion"] div[data-testid="stTextArea"],
+    div[class*="st-key-admin_edit_"][class*="Conclusion"] div[data-testid="stTextArea"] > div,
+    div[class*="st-key-admin_edit_"][class*="Conclusion"] textarea {{
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+        min-height: 0 !important;
+        max-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+    }}
+
+
+    .conclusion-print-only {{
+        display: block !important;
+        visibility: visible !important;
+        width: 100% !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        margin: 0 0 2mm 0 !important;
+        padding: 0 !important;
+        overflow: visible !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+    }}
+
+    .conclusion-print-box {{
+        display: block !important;
+        visibility: visible !important;
+        width: 100% !important;
+        min-height: 12mm !important;
+        height: 12mm !important;
+        max-height: 12mm !important;
+        box-sizing: border-box !important;
+        border: 1px solid #595959 !important;
+        background-color: #E3DED9 !important;
+        color: #000000 !important;
+        font-size: 10.5px !important;
+        line-height: 1.2 !important;
+        padding: 5px !important;
+        white-space: pre-wrap !important;
+        overflow: hidden !important;
+    }}
+
+    .conclusion-phrase-label {{
+        display: block !important;
+        visibility: visible !important;
+        margin-top: 2mm !important;
+        margin-bottom: 2mm !important;
+        break-after: avoid !important;
+        page-break-after: avoid !important;
+    }}
+
+    .admin-answer-row-wrapper {{
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        margin: 0 0 2mm 0 !important;
+        padding: 0 !important;
+        overflow: visible !important;
     }}
 
     .swot-print-only {{
@@ -3140,10 +3186,8 @@ def main():
         print_logo_src = image_to_base64(LOGO_PATH)
         print_logo_html = f'<img src="{print_logo_src}" alt="USJ">' if print_logo_src else ""
 
-        # Print title shown on the first page, under the main header.
-        # The old admin-print-cover-header block is intentionally not used because
-        # it creates a blank cover page in browser print preview.
-        html_block(f'<div class="admin-print-title">{html_lib.escape(print_group_name)}</div>')
+        # Old standalone print title/cover disabled.
+        # The group name is printed inline immediately before Section I to avoid blank pages.
 
         original_data = json.loads(selected_row["data_json"]) if selected_row["data_json"] else {}
 
@@ -3409,7 +3453,7 @@ box-sizing:border-box;
                         label=f"{section_label}_{key}",
                         value=admin_value,
                         key=f"admin_edit_{selected_draft_code}_{section_label}_{key}",
-                        height=55
+                        height=95
                     )
 
                 if st.button(
@@ -3488,7 +3532,7 @@ margin-bottom:3px;
                         label=f"{section_label}_{key}",
                         value=admin_value,
                         key=f"admin_edit_{selected_draft_code}_{section_label}_{key}",
-                        height=55
+                        height=95
                     )
 
                     safe_print_value = html_lib.escape(str(admin_value or "")).replace("\n", "<br>")
@@ -3506,6 +3550,11 @@ margin-bottom:3px;
             return updated_admin_section
 
         for section_index, (section_label, (main_key, sub_key)) in enumerate(section_map.items()):
+            if section_index == 0:
+                html_block(
+                    f'<div class="admin-print-title-inline">{html_lib.escape(print_group_name)}</div>'
+                )
+
             if section_label == "III - Priorités":
                 html_block('<div class="admin-print-page-break"></div>')
 
