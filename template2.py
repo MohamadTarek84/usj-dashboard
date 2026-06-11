@@ -1236,9 +1236,9 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
         padding: 6px !important;
         resize: none !important;
         overflow: visible !important;
-        height: 28mm !important;
-        min-height: 28mm !important;
-        max-height: 28mm !important;
+        height: 16mm !important;
+        min-height: 16mm !important;
+        max-height: 16mm !important;
         white-space: pre-wrap !important;
     }}
 
@@ -1344,8 +1344,8 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
 
     .swot-print-only {{
         display: block !important;
-        break-before: page !important;
-        page-break-before: always !important;
+        break-before: auto !important;
+        page-break-before: auto !important;
         break-after: auto !important;
         page-break-after: auto !important;
         break-inside: avoid !important;
@@ -3416,7 +3416,7 @@ margin-bottom:8px;
             return updated_admin_section
 
         for section_index, (section_label, (main_key, sub_key)) in enumerate(section_map.items()):
-            if section_index > 0:
+            if section_label == "III - Priorités":
                 html_block('<div class="admin-print-page-break"></div>')
 
             st.markdown("---")
