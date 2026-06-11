@@ -1043,6 +1043,34 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
         overflow: hidden !important;
     }}
 
+    /* Collapse the Streamlit wrapper containers of hidden admin controls.
+       Without this, the controls are invisible but their parent blocks still
+       reserve vertical space before the printable title on page 1. */
+    div[data-testid="stElementContainer"]:has(.admin-screen-only),
+    div[data-testid="stElementContainer"]:has(.hide-corrected-names-print),
+    div[data-testid="stElementContainer"]:has(div[data-testid="stSelectbox"]),
+    div[data-testid="stElementContainer"]:has(div[data-testid="stButton"]),
+    div[data-testid="stElementContainer"]:has(div[data-testid="stDownloadButton"]),
+    div[data-testid="stElementContainer"]:has(div[data-testid="stAlert"]),
+    div[data-testid="stElementContainer"]:has(iframe),
+    div[data-testid="element-container"]:has(.admin-screen-only),
+    div[data-testid="element-container"]:has(.hide-corrected-names-print),
+    div[data-testid="element-container"]:has(div[data-testid="stSelectbox"]),
+    div[data-testid="element-container"]:has(div[data-testid="stButton"]),
+    div[data-testid="element-container"]:has(div[data-testid="stDownloadButton"]),
+    div[data-testid="element-container"]:has(div[data-testid="stAlert"]),
+    div[data-testid="element-container"]:has(iframe) {{
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+        min-height: 0 !important;
+        max-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+    }}
+
+
     .usj-main-header {{
         display: flex !important;
         align-items: flex-start !important;
@@ -1119,7 +1147,7 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
         font-size: 18px !important;
         line-height: 1.15 !important;
         font-weight: 800 !important;
-        margin: 6mm 0 3mm 0 !important;
+        margin: 1mm 0 2mm 0 !important;
         padding: 0 8mm !important;
         break-after: avoid !important;
         page-break-after: avoid !important;
