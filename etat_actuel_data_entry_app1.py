@@ -49,6 +49,7 @@ AUTHORIZED_TEST_CODES = {
     "USJ-UEH-2032": {"responsable": "Ursula El Hage", "institution": "FGM"},
     "USJ-LKG-2032": {"responsable": "Lina Koleilat Ghalayini", "institution": "FSE"},
     "USJ-TH-2032": {"responsable": "Tarek Halabi", "institution": ""},
+    "USJ-MF-2032": {"responsable": "Mireille Francis", "institution": "UAQ"},
 
     # Final respondent codes
     "USJ-ESMOD-7KQ4-2032": {"responsable": "Nicole MASSOUD", "institution": "ESMOD"},
