@@ -3224,14 +3224,18 @@ box-sizing:border-box;
             )
       
         def render_admin_edit_box(label, value, key, height=95):
-            return st.text_area(
+            if key not in st.session_state:
+                st.session_state[key] = str(value) if value else ""
+
+            st.text_area(
                 label=label,
-                value=str(value) if value else "",
-                height=height,
                 key=key,
+                height=height,
                 label_visibility="collapsed",
                 on_change=trigger_admin_autosave
             )
+
+            return st.session_state.get(key, "")
 
         def get_existing_admin_section(section_label, original_section):
             existing = updated_all_admin_data.get(section_label)
