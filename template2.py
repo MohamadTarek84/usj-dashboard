@@ -1240,7 +1240,7 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
         min-height: 28mm !important;
         max-height: 28mm !important;
         white-space: pre-wrap !important;
-    }
+    }}
     .admin-answer-row-wrapper {{
         margin-top: 0 !important;
         margin-bottom: 1.5mm !important;
