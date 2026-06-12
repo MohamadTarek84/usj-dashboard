@@ -3277,6 +3277,9 @@ box-sizing:border-box;
                         original_value = original_row.get(field_name, "") if isinstance(original_row, dict) else ""
                         saved_value = saved_row.get(field_name, original_value) if isinstance(saved_row, dict) else original_value
 
+                        if not str(saved_value or "").strip():
+                            saved_value = original_value
+
                         while len(updated_admin_section) < i:
                             updated_admin_section.append({})
 
