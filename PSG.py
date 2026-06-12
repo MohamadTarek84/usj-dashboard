@@ -3188,7 +3188,6 @@ box-shadow:0 2px 6px rgba(0,0,0,0.05);
                 unsafe_allow_html=True
             )
 
-
         def clean_admin_display_label(label):
             label = str(label or "")
             m = re.match(r"^priorite_(\d+)$", label)
@@ -3226,24 +3225,24 @@ box-sizing:border-box;
 ''',
                 unsafe_allow_html=True
             )
-      
-    def render_admin_edit_box(label, value, key, height=95):
-        incoming_value = str(value) if value else ""
-    
-        if key not in st.session_state:
-            st.session_state[key] = incoming_value
-        elif not str(st.session_state.get(key, "")).strip() and incoming_value.strip():
-            st.session_state[key] = incoming_value
-    
-        st.text_area(
-            label=label,
-            key=key,
-            height=height,
-            label_visibility="collapsed",
-            on_change=trigger_admin_autosave
-        )
 
-        return st.session_state.get(key, "")
+        def render_admin_edit_box(label, value, key, height=95):
+            incoming_value = str(value) if value else ""
+
+            if key not in st.session_state:
+                st.session_state[key] = incoming_value
+            elif not str(st.session_state.get(key, "")).strip() and incoming_value.strip():
+                st.session_state[key] = incoming_value
+
+            st.text_area(
+                label=label,
+                key=key,
+                height=height,
+                label_visibility="collapsed",
+                on_change=trigger_admin_autosave
+            )
+
+            return st.session_state.get(key, "")
 
         def get_existing_admin_section(section_label, original_section):
             existing = updated_all_admin_data.get(section_label)
@@ -3303,7 +3302,6 @@ box-sizing:border-box;
                         st.session_state["admin_autosave_requested"] = True
 
             return updated_admin_section
-
 
         def render_dict_section(section_label, original_section):
             existing_admin_section = get_existing_admin_section(section_label, original_section)
