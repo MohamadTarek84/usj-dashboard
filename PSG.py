@@ -3327,6 +3327,9 @@ box-sizing:border-box;
                 original_value = original_section.get(key, "")
                 saved_value = existing_admin_section.get(key, original_value)
 
+                if not str(saved_value or "").strip():
+                    saved_value = original_value
+
                 updated_admin_section[key] = render_admin_edit_box(
                     label=f"{section_label}_{key}",
                     value=saved_value,
@@ -3339,7 +3342,6 @@ box-sizing:border-box;
                 st.session_state["admin_autosave_requested"] = True
 
             return updated_admin_section
-
 
         def render_conclusion_section(section_label, original_section):
             existing_admin_section = get_existing_admin_section(section_label, original_section)
@@ -3384,6 +3386,9 @@ box-sizing:border-box;
                     key = f"pour_finir_{i}_{j}"
                     original_value = original_section.get(key, "")
                     saved_value = existing_admin_section.get(key, original_value)
+
+                    if not str(saved_value or "").strip():
+                        saved_value = original_value
 
                     updated_admin_section[key] = render_admin_edit_box(
                         label=f"{section_label}_{key}",
