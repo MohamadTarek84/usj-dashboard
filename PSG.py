@@ -3053,9 +3053,13 @@ def main():
     ADMIN_CODE = "USJ-ADMIN-2032"
     # TEMP_ADMIN_CODE_MIREILLE = "MIREILLE-ADMIN-TEST"
 
-    if st.session_state.get("current_draft_code", "").strip().upper() in [ADMIN_CODE]:
+    current_code = st.session_state.get("current_draft_code", "").strip().upper()
+    login_code_state = st.session_state.get("login_draft_code", "").strip().upper()
+
+    if current_code == ADMIN_CODE or login_code_state == ADMIN_CODE:
         st.session_state["access_granted"] = True
         st.session_state["admin_mode"] = True
+        st.session_state["current_draft_code"] = ADMIN_CODE
 
     if st.session_state.get("admin_mode", False):
         html_block('<div class="admin-screen-only"><h2 style="color:#001F5B; margin-top:0;">Gestion des réponses</h2></div>')
