@@ -3229,9 +3229,10 @@ box-sizing:border-box;
         def render_admin_edit_box(label, value, key, height=95):
             incoming_value = str(value) if value else ""
 
-            if key not in st.session_state:
-                st.session_state[key] = incoming_value
-            elif not str(st.session_state.get(key, "")).strip() and incoming_value.strip():
+            if (
+                key not in st.session_state
+                or not str(st.session_state.get(key, "")).strip()
+            ):
                 st.session_state[key] = incoming_value
 
             st.text_area(
