@@ -2223,7 +2223,32 @@ def main():
 
         selected_draft_code = selected_response.split(" | ")[0].strip()
 
-        col_unlock, col_delete = st.columns(2)
+        col_view, col_unlock, col_delete = st.columns(3)
+
+        with col_view:
+            if st.button("Voir les réponses dans le formulaire", key="admin_view_selected_form"):
+                selected_row = admin_df[admin_df["draft_code"].fillna("") == selected_draft_code]
+
+                if selected_row.empty:
+                    st.error("Réponse introuvable dans la base.")
+                    st.stop()
+
+                selected_data = json.loads(selected_row.iloc[0]["data_json"])
+                selected_data["draft_code"] = selected_draft_code
+                selected_data["loaded_statut"] = selected_row.iloc[0].get("statut", "Soumis")
+
+                preload_draft_into_session(selected_data)
+
+                st.session_state["current_draft_code"] = selected_draft_code
+                st.session_state["access_granted"] = True
+                st.session_state["admin_mode"] = False
+                st.session_state["read_only_submitted"] = True
+                st.session_state["viewing_imported_form"] = True
+                st.session_state["import_success_message"] = (
+                    "Les réponses sélectionnées sont affichées ci-dessous dans la vue formulaire."
+                )
+                st.rerun()
+
 
         with col_unlock:
             if st.button("Redonner accès à cette personne"):
