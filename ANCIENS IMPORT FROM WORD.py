@@ -1475,12 +1475,13 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
 
     .swot-print-card {{
         min-height: 36mm !important;
-        max-height: 52mm !important;
+        max-height: none !important;
+        height: auto !important;
         padding: 3mm !important;
         border: 1.5px solid var(--accent) !important;
         border-radius: 7px !important;
         background: var(--bg) !important;
-        overflow: hidden !important;
+        overflow: visible !important;
         break-inside: avoid !important;
         page-break-inside: avoid !important;
     }}
