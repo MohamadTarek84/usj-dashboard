@@ -5,6 +5,8 @@ import sqlite3
 import json
 import base64
 import html as html_lib
+import re
+import unicodedata
 from datetime import datetime
 from pathlib import Path
 from io import BytesIO
@@ -42,7 +44,60 @@ USJ_GOLD = "#C9A227"
 USJ_LIGHT_BLUE = "#EAF2F8"
 USJ_TEXT = "#1B2A41"
 
-AUTHORIZED_TEST_CODES = {}
+AUTHORIZED_TEST_CODES = {
+    # Old test codes
+    "USJ-HS-2032": {"responsable": "Hadi Sawaya", "institution": "ESIB"},
+    "USJ-IM-2032": {"responsable": "Irma Majdalani", "institution": "FSE"},
+    "USJ-NRH-2032": {"responsable": "Nadine Riachi Haddad", "institution": "FDLT"},
+    "USJ-UEH-2032": {"responsable": "Ursula El Hage", "institution": "FGM"},
+    "USJ-LKG-2032": {"responsable": "Lina Koleilat Ghalayini", "institution": "FSE"},
+    "USJ-TH-2032": {"responsable": "Tarek Halabi", "institution": ""},
+    "USJ-MF-2032": {"responsable": "Mireille Francis", "institution": "UAQ"},
+
+    # Final respondent codes
+    "USJ-ESMOD-7KQ4-2032": {"responsable": "Nicole MASSOUD", "institution": "ESMOD"},
+    "USJ-ESTS-M9X2-2032": {"responsable": "Rima MAWAD", "institution": "ESTS"},
+    "USJ-ETIB-P4L8-2032": {"responsable": "Mary YAZBECK", "institution": "ETIB"},
+    "USJ-FDLT-R6N3-2032": {"responsable": "Gina ABOU FADEL SAAD", "institution": "FDLT"},
+    "USJ-FLSH-T8B5-2032": {"responsable": "Myrna GANNAGÉ", "institution": "FLSH"},
+    "USJ-FSEDU-C2V7-2032": {"responsable": "Patricia FATA RACHED", "institution": "FSEDU"},
+    "USJ-FSR-H5D9-2032": {"responsable": "Salah ABOU JAOUDE s.j.", "institution": "FSR"},
+    "USJ-IEIC-J3W6-2032": {"responsable": "Roula TALHOUK", "institution": "IEIC"},
+    "USJ-IESAV-F8K1-2032": {"responsable": "Toufic EL-KHOURY", "institution": "IESAV"},
+    "USJ-ILE-Q2M4-2032": {"responsable": "Rock EL-ACHY", "institution": "ILE"},
+    "USJ-ILO-Y7P5-2032": {"responsable": "Tony El-KHAWAJI", "institution": "ILO"},
+    "USJ-ISSR-L9T2-2032": {"responsable": "Yara MATTA", "institution": "ISSR"},
+    "USJ-FDSP-X4A8-2032": {"responsable": "Marie-Claude NAJEM KOBEH", "institution": "FDSP"},
+    "USJ-ISP-N6E3-2032": {"responsable": "Sami NADER", "institution": "ISP"},
+    "USJ-FGM-U1R7-2032": {"responsable": "Fouad ZMOKHOL", "institution": "FGM"},
+    "USJ-FSE-B8C5-2032": {"responsable": "Jean-François VERNE", "institution": "FSE"},
+    "USJ-IGE-Z3H9-2032": {"responsable": "Céline BOUTROS SAAB", "institution": "IGE"},
+    "USJ-ISSA-K7V2-2032": {"responsable": "Irma Majdalani", "institution": "ISSA"},
+    "USJ-ESAR-M4Q6-2032": {"responsable": "Richard MITRI", "institution": "ESAR"},
+    "USJ-ESIA-P9L1-2032": {"responsable": "Wadih SKAFF", "institution": "ESIA"},
+    "USJ-ESIAM-T5X8-2032": {"responsable": "Wadih SKAFF", "institution": "ESIAM"},
+    "USJ-ESIB-W2N4-2032": {"responsable": "Wassim RAPHAËL", "institution": "ESIB"},
+    "USJ-FS-D7K3-2032": {"responsable": "Maher ABBOUD", "institution": "FS"},
+    "USJ-INCI-R8M6-2032": {"responsable": "Marc IBRAHIM", "institution": "INCI"},
+    "USJ-ESF-H1P9-2032": {"responsable": "Salimé SALAMEH SAAD", "institution": "ESF"},
+    "USJ-ETLAM-C6Y2-2032": {"responsable": "Marianne ABI FADEL", "institution": "ETLAM"},
+    "USJ-FM-V4T7-2032": {"responsable": "Elie NEMER", "institution": "FM"},
+    "USJ-FMD-L8Q5-2032": {"responsable": "Nada FARHAT MCHAYLEH", "institution": "FMD"},
+    "USJ-FP-J2R4-2032": {"responsable": "Hayat AZOURY TANNOUS", "institution": "FP"},
+    "USJ-FSI-X7B1-2032": {"responsable": "Rima SASSINE KAZAN", "institution": "FSI"},
+    "USJ-IET-N5K8-2032": {"responsable": "Carla MATTA-ABI ZEID", "institution": "IET"},
+    "USJ-IPHY-P3D6-2032": {"responsable": "Pascal BREIDY", "institution": "IPHY"},
+    "USJ-IPM-T9W2-2032": {"responsable": "Céleste YOUNES HARB", "institution": "IPM"},
+    "USJ-ISO-F6M7-2032": {"responsable": "Guillemette HENRY", "institution": "ISO"},
+    "USJ-ISSP-Q1H4-2032": {"responsable": "Michèle KOSREMELLI-ASMAR", "institution": "ISSP"},
+    "USJ-CDB-R5X9-2032": {"responsable": "Nathalie SABBAGH", "institution": "CDB"},
+    "USJ-CLN-B2V6-2032": {"responsable": "Fadia ALAM GEMAYEL", "institution": "CLN"},
+    "USJ-CLS-Y8P3-2032": {"responsable": "Dina SIDANI", "institution": "CLS"},
+    "USJ-CZB-K4N1-2032": {"responsable": "Alain AJAMI EL", "institution": "CZB"},
+    "USJ-CFP-M7T5-2032": {"responsable": "Fadi EL-HAGE", "institution": "CFP"},
+    "USJ-CPM-L3Q8-2032": {"responsable": "Johanna HAWARI-BOURJEILY", "institution": "CPM"},
+    "USJ-UPT-H9C2-2032": {"responsable": "Roland TOMB", "institution": "UPT"},
+}
 
 def html_block(content):
     if hasattr(st, "html"):
@@ -526,16 +581,6 @@ h1, h2, h3, h4, h5, h6 {{
 p, div, span, label, button, input, textarea, select {{
     font-family: Candara, Calibri, Arial, sans-serif !important;
 }}
-
-/* FIX Streamlit file uploader icon showing as text "upload" */
-div[data-testid="stFileUploader"] [data-testid="stIconMaterial"] {{
-    font-family: "Material Symbols Rounded" !important;
-    font-size: 20px !important;
-    line-height: 1 !important;
-    display: inline-flex !important;
-    align-items: center !important;
-}}
-
 
 .stTextArea textarea {{
     resize: vertical !important;
@@ -1883,6 +1928,47 @@ def parse_word_template(uploaded_docx):
     return metadata_from_word, data
 
 
+
+def slugify_for_code(value):
+    value = unicodedata.normalize("NFKD", str(value or ""))
+    value = "".join(ch for ch in value if not unicodedata.combining(ch))
+    value = re.sub(r"[^A-Za-z0-9]+", "_", value).strip("_").upper()
+    return value or "IMPORT_WORD"
+
+
+def parse_import_filename(filename):
+    stem = Path(filename or "").stem.strip()
+    stem = re.sub(r"\s+", " ", stem).strip()
+
+    # Recommended filename format:
+    # Institution - Responsable.docx
+    # Example: FSE - Jean-Francois Verne.docx
+    separators = [" - ", " – ", " — ", "__", "_"]
+
+    institution = ""
+    responsable = ""
+
+    for sep in separators:
+        if sep in stem:
+            parts = [p.strip() for p in stem.split(sep) if p.strip()]
+            if len(parts) >= 2:
+                institution = parts[0]
+                responsable = " ".join(parts[1:])
+                break
+
+    if not institution:
+        institution = stem
+
+    draft_code = "WORD_" + slugify_for_code(stem)
+
+    return {
+        "institution": institution,
+        "responsable": responsable,
+        "draft_code": draft_code,
+        "filename_stem": stem,
+    }
+
+
 def render_admin_word_importer():
     st.markdown("### Importer les réponses depuis Word")
 
@@ -1892,25 +1978,42 @@ def render_admin_word_importer():
         key="admin_word_import_docx"
     )
 
-    col_code, col_inst, col_resp = st.columns(3)
+    detected = {
+        "institution": "",
+        "responsable": "",
+        "draft_code": "",
+        "filename_stem": "",
+    }
 
-    with col_code:
-        import_draft_code = st.text_input(
-            "Code à associer à l'import",
-            placeholder="Exemple : USJ-FSE-B8C5-2032",
-            key="admin_word_import_code"
-        )
+    if uploaded_docx is not None:
+        detected = parse_import_filename(uploaded_docx.name)
 
-    with col_inst:
-        import_institution = st.text_input(
-            "Institution",
-            key="admin_word_import_institution"
-        )
+        col_inst, col_resp, col_file = st.columns(3)
+        with col_inst:
+            st.text_input(
+                "Institution détectée depuis le nom du fichier",
+                value=detected["institution"],
+                disabled=True,
+                key="admin_word_detected_institution"
+            )
+        with col_resp:
+            st.text_input(
+                "Responsable détecté depuis le nom du fichier",
+                value=detected["responsable"],
+                disabled=True,
+                key="admin_word_detected_responsable"
+            )
+        with col_file:
+            st.text_input(
+                "Nom du fichier",
+                value=uploaded_docx.name,
+                disabled=True,
+                key="admin_word_detected_filename"
+            )
 
-    with col_resp:
-        import_responsable = st.text_input(
-            "Responsable",
-            key="admin_word_import_responsable"
+        st.caption(
+            "Format conseillé du nom du fichier : Institution - Responsable.docx "
+            "Exemple : FSE - Jean-Francois Verne.docx"
         )
 
     import_as_submitted = st.checkbox(
@@ -1924,16 +2027,13 @@ def render_admin_word_importer():
             st.error("Veuillez d'abord sélectionner un fichier Word.")
             st.stop()
 
-        if not import_draft_code.strip():
-            st.error("Veuillez saisir un code pour associer l'import à une institution.")
-            st.stop()
-
         try:
             metadata_from_word, imported_data = parse_word_template(uploaded_docx)
+            detected = parse_import_filename(uploaded_docx.name)
 
-            cleaned_code = import_draft_code.strip().upper()
-            institution = import_institution.strip() or metadata_from_word.get("institution", "")
-            responsable = import_responsable.strip() or metadata_from_word.get("responsable", "")
+            cleaned_code = detected["draft_code"]
+            institution = detected["institution"] or metadata_from_word.get("institution", "")
+            responsable = detected["responsable"] or metadata_from_word.get("responsable", "")
             response_date = metadata_from_word.get("response_date", "") or datetime.now().strftime("%Y-%m-%d")
             statut = "Soumis" if import_as_submitted else "Brouillon"
 
@@ -1945,6 +2045,7 @@ def render_admin_word_importer():
                 "statut": statut,
                 "draft_code": cleaned_code,
                 "import_source": "Word",
+                "imported_filename": uploaded_docx.name,
                 "imported_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             }
 
@@ -1952,7 +2053,7 @@ def render_admin_word_importer():
             save_response(metadata, imported_data)
 
             st.success(
-                f"Le fichier Word a été importé avec succès pour le code {cleaned_code}. "
+                f"Le fichier Word a été importé avec succès pour {institution} - {responsable}. "
                 "Les réponses sont maintenant enregistrées dans la base."
             )
             st.rerun()
@@ -2065,7 +2166,7 @@ def main():
         st.session_state["admin_mode"] = True
 
     if st.session_state.get("admin_mode", False):
-        st.markdown("## Administration")
+        st.markdown("## Admin download")
 
         st.write("DB path:", DB_PATH.resolve())
         st.write("DB exists:", DB_PATH.exists())
@@ -2138,7 +2239,7 @@ def main():
         st.download_button(
             label="Download raw CSV",
             data=raw_csv,
-            file_name="psword_responses_raw.csv",
+            file_name="psword_raw.csv",
             mime="text/csv",
         )
 
@@ -2146,7 +2247,7 @@ def main():
         st.download_button(
             label="Download flattened CSV",
             data=flat_csv,
-            file_name="psword_responses_flattened.csv",
+            file_name="psword_flattened.csv",
             mime="text/csv",
         )
 
@@ -2158,7 +2259,7 @@ def main():
         st.download_button(
             label="Download Excel",
             data=excel_buffer.getvalue(),
-            file_name="psword_responses.xlsx",
+            file_name="psword.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         )
 
@@ -2181,7 +2282,7 @@ def main():
 
         with col_code:
             login_code = st.text_input(
-                "Mot de passe admin",
+                "Mot de passe reçu par email",
                 placeholder="",
                 key="login_draft_code",
                 on_change=submit_login_code
@@ -2197,9 +2298,9 @@ def main():
 
         if enter_form:
             cleaned_code = login_code.strip().upper()
-
+            
             if not cleaned_code:
-                st.warning("Veuillez saisir le mot de passe admin.")
+                st.warning("Veuillez saisir un code personnel de reprise avant d’accéder au formulaire.")
                 return
 
             if cleaned_code == ADMIN_CODE:
@@ -2208,7 +2309,7 @@ def main():
                 st.session_state["current_draft_code"] = cleaned_code
                 st.rerun()
 
-            st.error("Mot de passe admin incorrect.")
+            st.error("Accès réservé à l'administrateur.")
             return
 
         st.stop()
