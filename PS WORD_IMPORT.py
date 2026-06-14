@@ -2022,10 +2022,22 @@ def render_admin_word_importer():
             imported_data["metadata"] = metadata
             save_response(metadata, imported_data)
 
-            st.success(
+            # After importing, open the filled form immediately.
+            # This lets the admin see the complete form populated with the Word answers.
+            imported_data["draft_code"] = cleaned_code
+            imported_data["loaded_statut"] = statut
+            preload_draft_into_session(imported_data)
+
+            st.session_state["current_draft_code"] = cleaned_code
+            st.session_state["access_granted"] = True
+            st.session_state["admin_mode"] = False
+            st.session_state["read_only_submitted"] = (statut == "Soumis")
+            st.session_state["viewing_imported_form"] = True
+            st.session_state["import_success_message"] = (
                 f"Le fichier Word a été importé avec succès pour {institution} - {responsable}. "
-                "Les réponses sont maintenant enregistrées dans la base."
+                "Le formulaire rempli est affiché ci-dessous."
             )
+
             st.rerun()
 
         except Exception as e:
@@ -2287,6 +2299,19 @@ def main():
 
     if mode == "Saisir une réponse":
         with st.container():
+
+            if st.session_state.get("viewing_imported_form", False):
+                msg = st.session_state.pop("import_success_message", "")
+                if msg:
+                    st.success(msg)
+
+                if st.button("Retour à l'administration", key="return_to_admin_after_import"):
+                    st.session_state["admin_mode"] = True
+                    st.session_state["current_draft_code"] = ADMIN_CODE
+                    st.session_state["access_granted"] = True
+                    st.session_state["viewing_imported_form"] = False
+                    st.session_state["read_only_submitted"] = False
+                    st.rerun()
 
             st.markdown("## Informations générales")
 
