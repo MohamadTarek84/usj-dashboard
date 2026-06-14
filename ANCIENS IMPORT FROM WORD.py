@@ -1253,8 +1253,8 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
         page-break-after: avoid !important;
         break-inside: avoid !important;
         page-break-inside: avoid !important;
-        margin-top: 1mm !important;
-        margin-bottom: 4mm !important;
+        margin-top: -6mm !important;
+        margin-bottom: 2mm !important;
         padding: 7px 11px !important;
         box-shadow: none !important;
     }}
