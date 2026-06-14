@@ -33,7 +33,7 @@ else:
 
 DB_DIR.mkdir(parents=True, exist_ok=True)
 
-DB_PATH = DB_DIR / "focus_group_anciens.db"
+DB_PATH = DB_DIR / "focus_group_psg.db"
 
 LOGO_PATH = Path("LogoUAQ.png")
 INTRO_IMAGE_PATH = Path("Intro_schema.png")
@@ -1610,7 +1610,7 @@ def render_first_page_header():
         </h1>
 
         <p style="font-size:18px; font-weight:700; color:{USJ_BLUE_2}; margin:0; line-height:1.4;">
-            <span style="font-size:26px; font-weight:700; color:{USJ_BLUE_2};">Focus groupe - Associations des Anciens Et Comité exécutif de la Fédération des associations des anciens</span>
+            <span style="font-size:26px; font-weight:700; color:{USJ_BLUE_2};">Focus groupe</span>
         </p>
     </div>
 
@@ -3622,6 +3622,8 @@ box-sizing:border-box;
                     ):
                         st.session_state[admin_rows_key] += 1
                         st.rerun()
+
+            return updated_admin_section
             
         def render_dict_section(section_label, original_section):
             existing_admin_section = get_existing_admin_section(section_label, original_section)
