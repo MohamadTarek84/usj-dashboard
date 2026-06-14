@@ -4061,23 +4061,27 @@ box-sizing:border-box;
                 ]
 
 
-                institution_default = st.session_state.get("institution", "Sous groupe 1") or "Sous groupe 1"
+                institution_default = st.session_state.get("institution", "") or ""
 
+                st.session_state["institution_locked"] = institution_default
+                
                 institution = st.text_input(
                     "Focus groupe",
                     value=institution_default,
                     key="institution_locked",
                     disabled=True
                 )
-
-            with col2:
-                responsable = st.text_input(
-                    "Nom des participants",
-                    value=st.session_state.get("responsable", ""),
-                    key="responsable",
-                    placeholder="Nom 1, Nom 2, Nom 3...",
-                    on_change=lambda: st.session_state.update({"autosave_requested": True})
-                )
+                
+                with col2:
+                    responsable_default = st.session_state.get("responsable", "") or ""
+                
+                    responsable = st.text_input(
+                        "Nom des participants",
+                        value=responsable_default,
+                        key="responsable",
+                        placeholder="Nom 1, Nom 2, Nom 3...",
+                        on_change=lambda: st.session_state.update({"autosave_requested": True})
+                    )
 
             with col3:
                 st.text_input(
