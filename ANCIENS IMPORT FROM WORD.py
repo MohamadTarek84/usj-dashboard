@@ -1113,10 +1113,21 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
         .admin-word-import-block *,
         div[data-testid="stFileUploader"],
         div[data-testid="stFileUploader"] *,
+        div[data-testid="stCheckbox"],
+        div[data-testid="stCheckbox"] *,
         .st-key-admin_word_import_submitted,
         .st-key-admin_word_import_submitted *,
         .st-key-admin_word_import_button,
-        .st-key-admin_word_import_button * {{
+        .st-key-admin_word_import_button * {
+            display: none !important;
+            visibility: hidden !important;
+            height: 0 !important;
+            min-height: 0 !important;
+            max-height: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: hidden !important;
+        }
 
     .usj-main-header {{
         display: flex !important;
@@ -3316,7 +3327,10 @@ def main():
             st.error("Database not found in this app environment.")
             st.stop()
 
+        html_block('<div class="admin-word-import-block">')
         render_admin_word_importer()
+        html_block('</div>')
+        
         st.markdown("---")
 
         df = load_responses()
