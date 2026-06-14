@@ -1294,9 +1294,9 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
     div[data-testid="stTextArea"] textarea,
     .admin-original-answer-box {{
         display: block !important;
-        min-height: 20mm !important;
-        height: 20mm !important;
-        max-height: 20mm !important;
+        min-height: 23mm !important;
+        height: 23mm !important;
+        max-height: 23mm !important;
         margin-top: 0 !important;
         margin-bottom: 0.3mm !important;
         box-sizing: border-box !important;
