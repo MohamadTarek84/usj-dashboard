@@ -1111,6 +1111,8 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
     .swot-screen-only,
     .admin-word-import-block,
     .admin-word-import-block *,
+    .st-key-admin_word_import_block,
+    .st-key-admin_word_import_block *,
     div[data-testid="stFileUploader"],
     div[data-testid="stFileUploader"] *,
     div[data-testid="stCheckbox"],
@@ -3327,9 +3329,8 @@ def main():
             st.error("Database not found in this app environment.")
             st.stop()
 
-        html_block('<div class="admin-word-import-block">')
-        render_admin_word_importer()
-        html_block('</div>')
+        with st.container(key="admin_word_import_block"):
+            render_admin_word_importer()
         
         st.markdown("---")
 
