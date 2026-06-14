@@ -1109,25 +1109,25 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
     .admin-print-button,
     .admin-save-button-wrapper,
     .swot-screen-only,
-        .admin-word-import-block,
-        .admin-word-import-block *,
-        div[data-testid="stFileUploader"],
-        div[data-testid="stFileUploader"] *,
-        div[data-testid="stCheckbox"],
-        div[data-testid="stCheckbox"] *,
-        .st-key-admin_word_import_submitted,
-        .st-key-admin_word_import_submitted *,
-        .st-key-admin_word_import_button,
-        .st-key-admin_word_import_button * {
-            display: none !important;
-            visibility: hidden !important;
-            height: 0 !important;
-            min-height: 0 !important;
-            max-height: 0 !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            overflow: hidden !important;
-        }
+    .admin-word-import-block,
+    .admin-word-import-block *,
+    div[data-testid="stFileUploader"],
+    div[data-testid="stFileUploader"] *,
+    div[data-testid="stCheckbox"],
+    div[data-testid="stCheckbox"] *,
+    .st-key-admin_word_import_submitted,
+    .st-key-admin_word_import_submitted *,
+    .st-key-admin_word_import_button,
+    .st-key-admin_word_import_button * {{
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+        min-height: 0 !important;
+        max-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+    }}
 
     .usj-main-header {{
         display: flex !important;
@@ -4314,6 +4314,3 @@ box-sizing:border-box;
 
 if __name__ == "__main__":
     main()
-
-
-
