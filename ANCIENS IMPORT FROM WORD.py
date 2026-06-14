@@ -1108,15 +1108,15 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
     .admin-action-row-fix *,
     .admin-print-button,
     .admin-save-button-wrapper,
-    .swot-screen-only {{
-        display: none !important;
-        height: 0 !important;
-        min-height: 0 !important;
-        max-height: 0 !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        overflow: hidden !important;
-    }}
+    .swot-screen-only,
+        .admin-word-import-block,
+        .admin-word-import-block *,
+        div[data-testid="stFileUploader"],
+        div[data-testid="stFileUploader"] *,
+        .st-key-admin_word_import_submitted,
+        .st-key-admin_word_import_submitted *,
+        .st-key-admin_word_import_button,
+        .st-key-admin_word_import_button * {{
 
     .usj-main-header {{
         display: flex !important;
