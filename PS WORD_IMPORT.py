@@ -407,6 +407,22 @@ html, body, [class*="css"], [class*="st-"], .stApp {{
     color: {USJ_TEXT};
 }}
 
+/* Fix file uploader button text overlap */
+div[data-testid="stFileUploader"] button {{
+    width: auto !important;
+    min-width: 130px !important;
+    max-width: none !important;
+    height: 48px !important;
+    padding: 8px 18px !important;
+    white-space: nowrap !important;
+}}
+
+div[data-testid="stFileUploader"] button p {{
+    white-space: nowrap !important;
+    font-size: 16px !important;
+    line-height: 1.2 !important;
+}}
+
 /* =====================================================
    AZURE / STREAMLIT FIX
    Hide Streamlit multipage/sidebar elements and the
