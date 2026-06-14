@@ -3407,7 +3407,7 @@ def main():
         selected_row = admin_df[admin_df["draft_code"] == selected_draft_code].iloc[0]
 
         print_group_name = " - ".join(
-            [part for part in [str(selected_row.get("respondent_name", "")).strip(), str(selected_row.get("respondent_unit", "")).strip()] if part]
+            [part for part in [str(selected_row.get("respondent_unit", "")).strip(), str(selected_row.get("respondent_name", "")).strip()] if part]
         ) or selected_draft_code
 
         print_logo_src = image_to_base64(LOGO_PATH)
