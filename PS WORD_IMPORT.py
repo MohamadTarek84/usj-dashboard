@@ -256,9 +256,12 @@ def preload_draft_into_session(data):
 
     for i, row in enumerate(data.get("priorities_initiatives", []), start=1):
         st.session_state[f"priority_{i}"] = row.get("priorite_strategique", "")
-        st.session_state[f"initiative_{i}_1"] = row.get("initiative_1", "")
-        st.session_state[f"initiative_{i}_2"] = row.get("initiative_2", "")
-        st.session_state[f"initiative_{i}_3"] = row.get("initiative_3", "")
+        initiative_keys = sorted(
+            [k for k in row.keys() if k.startswith("initiative_")],
+            key=lambda k: int(k.split("_")[1]) if k.split("_")[1].isdigit() else 999
+        )
+        for j, initiative_key in enumerate(initiative_keys, start=1):
+            st.session_state[f"initiative_{i}_{j}"] = row.get(initiative_key, "")
 
     phrases = [
         "Nous souhaitons que l’USJ soit reconnue pour …",
@@ -272,13 +275,14 @@ def preload_draft_into_session(data):
         saved_phrase = pour_finir.get(phrase, {})
 
         if isinstance(saved_phrase, dict):
-            st.session_state[f"pour_finir_{i}_1"] = saved_phrase.get("reponse_1", "")
-            st.session_state[f"pour_finir_{i}_2"] = saved_phrase.get("reponse_2", "")
-            st.session_state[f"pour_finir_{i}_3"] = saved_phrase.get("reponse_3", "")
+            response_keys = sorted(
+                [k for k in saved_phrase.keys() if k.startswith("reponse_")],
+                key=lambda k: int(k.split("_")[1]) if k.split("_")[1].isdigit() else 999
+            )
+            for j, response_key in enumerate(response_keys, start=1):
+                st.session_state[f"pour_finir_{i}_{j}"] = saved_phrase.get(response_key, "")
         else:
             st.session_state[f"pour_finir_{i}_1"] = saved_phrase
-            st.session_state[f"pour_finir_{i}_2"] = ""
-            st.session_state[f"pour_finir_{i}_3"] = ""
 
 
 def flatten_response(row):
@@ -1283,26 +1287,18 @@ def count_words(text):
 def trigger_autosave():
     st.session_state["autosave_requested"] = True
     
-def word_limited_text_area(label, key, height=300, max_words=500):
+def word_limited_text_area(label, key, height=300, max_words=None):
     read_only = st.session_state.get("read_only_submitted", False)
 
-    # ADDED
-    # max_chars = 3500 if max_words == 500 else 250
-    
     value = st.text_area(
         label=label,
         key=key,
         height=height,
-        placeholder=f"Merci de saisir votre réponse ici (au maximum {max_words} mots)",
+        placeholder="Merci de saisir votre réponse ici",
         label_visibility="collapsed",
         disabled=read_only,
         on_change=trigger_autosave,
-    
-        # ADDED
-        # max_chars=max_chars
     )
-
-    word_count = count_words(value)
 
     printable_value = html_lib.escape(value or "")
     printable_value = printable_value.replace("\n", "<br>")
@@ -1315,20 +1311,6 @@ def word_limited_text_area(label, key, height=300, max_words=500):
     html_block(f"""
 <div class="print-answer-text">
     <div class="print-answer-content {print_answer_class}">{printable_value}</div>
-</div>
-""")
-
-    if not read_only:
-        if word_count > max_words:
-            html_block(f"""
-<div class="word-counter-status" style="min-height:24px; color:#8B1538; font-weight:700; font-size:14px; margin-top:-6px; margin-bottom:8px;">
-    ⚠ Vous avez saisi {word_count} mots. Maximum autorisé : {max_words} mots.
-</div>
-""")
-        else:
-            html_block(f"""
-<div class="word-counter-status" style="min-height:24px; color:#595959; font-size:13px; margin-top:-6px; margin-bottom:8px;">
-    {word_count}/{max_words} mots
 </div>
 """)
 
@@ -1485,7 +1467,22 @@ def render_swot_table(section_key, left_title, right_title):
 </div>
 """)
 
-    for i in range(1, 6):
+    number_of_rows = 5
+    for key in st.session_state.keys():
+        left_prefix = f"{section_key}_{left_title}_"
+        right_prefix = f"{section_key}_{right_title}_"
+        if str(key).startswith(left_prefix):
+            try:
+                number_of_rows = max(number_of_rows, int(str(key).replace(left_prefix, "")))
+            except Exception:
+                pass
+        if str(key).startswith(right_prefix):
+            try:
+                number_of_rows = max(number_of_rows, int(str(key).replace(right_prefix, "")))
+            except Exception:
+                pass
+
+    for i in range(1, number_of_rows + 1):
         col1, col2 = st.columns(2)
 
         with col1:
@@ -1493,7 +1490,7 @@ def render_swot_table(section_key, left_title, right_title):
                 label=f"{left_title} {i}",
                 key=f"{section_key}_{left_title}_{i}",
                 height=95,
-                max_words=30
+                max_words=None
             )
 
         with col2:
@@ -1501,7 +1498,7 @@ def render_swot_table(section_key, left_title, right_title):
                 label=f"{right_title} {i}",
                 key=f"{section_key}_{right_title}_{i}",
                 height=95,
-                max_words=30
+                max_words=None
             )
 
         rows.append({
@@ -1533,7 +1530,7 @@ def render_swot_analysis():
     <strong>1. Facteurs internes :</strong> Identification des <strong>forces</strong> et des <strong>faiblesses</strong> propres à l'Université (Exemples de Forces et Faiblesses en {annexe_b_hover_html}).
     </p>
     <p style="text-align:left; font-size:17px; line-height:1.55; color:#0070C0; font-weight:700; font-style:italic; margin-bottom:0;">
-    Nous vous remercions de bien vouloir compléter le tableau ci-dessous en indiquant au maximum <span style="text-decoration:underline; font-weight:700; font-style:italic;">cinq forces et cinq faiblesses</span>. Vos réponses seront déduites de l’analyse de l’état actuel interne (<a href="#section-iii" style="text-decoration:underline; color:#0000FF; font-weight:700; font-style:italic;">section III</a> principalement).
+    Nous vous remercions de bien vouloir compléter le tableau ci-dessous Vos réponses seront déduites de l’analyse de l’état actuel interne (<a href="#section-iii" style="text-decoration:underline; color:#0000FF; font-weight:700; font-style:italic;">section III</a> principalement).
     </p>
 </div>
 """, unsafe_allow_html=True)
@@ -1552,7 +1549,7 @@ def render_swot_analysis():
     <strong>2. Facteurs externes :</strong> Identification des <strong>opportunités</strong> de développement et des <strong>menaces</strong> émanant de l'environnement extérieur (Exemples d’Opportunités et de Menaces en {annexe_c_hover_html}).
     </p>
     <p style="text-align:left; font-size:17px; line-height:1.55; color:#0070C0; font-weight:700; font-style:italic; margin-bottom:0;">
-    Nous vous remercions de bien vouloir compléter le tableau ci-dessous en indiquant au maximum <span style="text-decoration:underline; font-weight:700; font-style:italic;">cinq opportunités et cinq menaces</span>. Vos réponses seront déduites de l’analyse de l’état actuel externe (<a href="#section-iv" style="text-decoration:underline; color:#0000FF; font-weight:700; font-style:italic;">section IV</a> principalement).
+    Nous vous remercions de bien vouloir compléter le tableau ci-dessous Vos réponses seront déduites de l’analyse de l’état actuel externe (<a href="#section-iv" style="text-decoration:underline; color:#0000FF; font-weight:700; font-style:italic;">section IV</a> principalement).
     </p>
 </div>
 """)
@@ -1580,7 +1577,7 @@ def render_priorities_intro():
     </p>
 
     <p style="text-align:left; font-size:17px; line-height:1.55; color:#0070C0; font-weight:700; font-style:italic; margin-bottom:0;">
-    Nous vous remercions de bien vouloir compléter le tableau ci-dessous en indiquant au maximum <span style="text-decoration:underline; font-weight:700; font-style:italic;">trois priorités stratégiques et 1 à 3 initiatives par priorité</span>. Les initiatives peuvent être au niveau de l’Université et/ou au niveau de l’institution. Vos réponses seront déduites de l’analyse SWOT. Vous pouvez hiérarchiser les priorités en les numérotant de 1 à 3.
+    Nous vous remercions de bien vouloir compléter le tableau ci-dessous Les initiatives peuvent être au niveau de l’Université et/ou au niveau de l’institution. Vos réponses seront déduites de l’analyse SWOT. Vous pouvez hiérarchiser les priorités en les numérotant de 1 à 3.
     </p>
 </div>
 """)
@@ -1605,45 +1602,50 @@ def render_priorities_table():
 </div>
 """)
 
-    for i in range(1, 4):
+    number_of_priorities = 3
+    for key in st.session_state.keys():
+        if str(key).startswith("priority_"):
+            try:
+                number_of_priorities = max(number_of_priorities, int(str(key).split("_")[1]))
+            except Exception:
+                pass
+
+    for i in range(1, number_of_priorities + 1):
+        initiative_count = 3
+        prefix = f"initiative_{i}_"
+        for key in st.session_state.keys():
+            if str(key).startswith(prefix):
+                try:
+                    initiative_count = max(initiative_count, int(str(key).replace(prefix, "")))
+                except Exception:
+                    pass
+
         col1, col2 = st.columns([1.2, 1.8], gap="small")
 
         with col1:
             priority_value = word_limited_text_area(
                 label=f"Priorité stratégique {i}",
                 key=f"priority_{i}",
-                height=350,
-                max_words=30
+                height=max(110, 70 * initiative_count),
+                max_words=None
             )
 
+        initiative_values = []
         with col2:
-            initiative_1 = word_limited_text_area(
-                label=f"Initiative {i}.1",
-                key=f"initiative_{i}_1",
-                height=70,
-                max_words=30
-            )
+            for j in range(1, initiative_count + 1):
+                initiative_values.append(
+                    word_limited_text_area(
+                        label=f"Initiative {i}.{j}",
+                        key=f"initiative_{i}_{j}",
+                        height=70,
+                        max_words=None
+                    )
+                )
 
-            initiative_2 = word_limited_text_area(
-                label=f"Initiative {i}.2",
-                key=f"initiative_{i}_2",
-                height=70,
-                max_words=30
-            )
-
-            initiative_3 = word_limited_text_area(
-                label=f"Initiative {i}.3",
-                key=f"initiative_{i}_3",
-                height=70,
-                max_words=30
-            )
-
-        priorities_rows.append({
-            "priorite_strategique": priority_value,
-            "initiative_1": initiative_1,
-            "initiative_2": initiative_2,
-            "initiative_3": initiative_3,
-        })
+        row = {"priorite_strategique": priority_value}
+        for j, initiative_value in enumerate(initiative_values, start=1):
+            row[f"initiative_{j}"] = initiative_value
+        priorities_rows.append(row)
 
     return priorities_rows
 
@@ -1666,6 +1668,15 @@ def render_pour_finir():
     ]
 
     for i, phrase in enumerate(phrases, start=1):
+        response_count = 3
+        prefix = f"pour_finir_{i}_"
+        for key in st.session_state.keys():
+            if str(key).startswith(prefix):
+                try:
+                    response_count = max(response_count, int(str(key).replace(prefix, "")))
+                except Exception:
+                    pass
+
         col_label, col_boxes, col_empty = st.columns([260, 520, 1], gap="small")
 
         with col_label:
@@ -1675,46 +1686,31 @@ def render_pour_finir():
 </div>
 """)
 
+        responses = []
         with col_boxes:
-            r1 = st.text_input(
-                f"{phrase} 1",
-                key=f"pour_finir_{i}_1",
-                label_visibility="collapsed",
-                disabled=read_only,
-                on_change=trigger_autosave
-            )
-            r2 = st.text_input(
-                f"{phrase} 2",
-                key=f"pour_finir_{i}_2",
-                label_visibility="collapsed",
-                disabled=read_only,
-                on_change=trigger_autosave
-            )
-            r3 = st.text_input(
-                f"{phrase} 3",
-                key=f"pour_finir_{i}_3",
-                label_visibility="collapsed",
-                disabled=read_only,
-                on_change=trigger_autosave
-            )
+            for j in range(1, response_count + 1):
+                responses.append(st.text_input(
+                    f"{phrase} {j}",
+                    key=f"pour_finir_{i}_{j}",
+                    label_visibility="collapsed",
+                    disabled=read_only,
+                    on_change=trigger_autosave
+                ))
 
-        printable_r1 = html_lib.escape(r1 or "") or "&nbsp;"
-        printable_r2 = html_lib.escape(r2 or "") or "&nbsp;"
-        printable_r3 = html_lib.escape(r3 or "") or "&nbsp;"
+        print_boxes = "".join(
+            f'<div class="pour-finir-print-box">{html_lib.escape(value or "") or "&nbsp;"}</div>'
+            for value in responses
+        )
 
         html_block(f"""
 <div class="pour-finir-print-row">
     <div class="pour-finir-print-label">&bull; {phrase}</div>
-    <div class="pour-finir-print-box">{printable_r1}</div>
-    <div class="pour-finir-print-box">{printable_r2}</div>
-    <div class="pour-finir-print-box">{printable_r3}</div>
+    {print_boxes}
 </div>
 """)
 
         pour_finir[phrase] = {
-            "reponse_1": r1,
-            "reponse_2": r2,
-            "reponse_3": r3,
+            f"reponse_{j}": value for j, value in enumerate(responses, start=1)
         }
 
     return pour_finir
@@ -1851,16 +1847,41 @@ def parse_word_template(uploaded_docx):
 
     priorities_initiatives = []
     priorities_table = tables[25]
-    data_rows = priorities_table.rows[1:]
-    for group_start in range(0, 9, 3):
-        group = data_rows[group_start:group_start + 3]
-        priority_value = first_non_empty([r.cells[0].text for r in group if len(r.cells) > 0])
-        initiatives = [clean_word_cell(r.cells[1]) if len(r.cells) > 1 else "" for r in group]
+    current_priority = None
+    current_initiatives = []
+
+    def flush_priority():
+        if current_priority is None and not current_initiatives:
+            return
+        row_data = {"priorite_strategique": current_priority or ""}
+        for idx, initiative in enumerate(current_initiatives, start=1):
+            row_data[f"initiative_{idx}"] = initiative
+        priorities_initiatives.append(row_data)
+
+    for row in priorities_table.rows[1:]:
+        priority_text = clean_word_cell(row.cells[0]) if len(row.cells) > 0 else ""
+        initiative_text = clean_word_cell(row.cells[1]) if len(row.cells) > 1 else ""
+
+        if priority_text and current_priority is None:
+            current_priority = priority_text
+        elif priority_text and priority_text != current_priority:
+            flush_priority()
+            current_priority = priority_text
+            current_initiatives = []
+
+        if initiative_text:
+            current_initiatives.append(initiative_text)
+        elif priority_text and not current_initiatives:
+            current_initiatives.append("")
+
+    flush_priority()
+
+    while len(priorities_initiatives) < 3:
         priorities_initiatives.append({
-            "priorite_strategique": priority_value,
-            "initiative_1": initiatives[0] if len(initiatives) > 0 else "",
-            "initiative_2": initiatives[1] if len(initiatives) > 1 else "",
-            "initiative_3": initiatives[2] if len(initiatives) > 2 else "",
+            "priorite_strategique": "",
+            "initiative_1": "",
+            "initiative_2": "",
+            "initiative_3": "",
         })
 
     platform_pour_finir_phrases = [
@@ -1871,14 +1892,30 @@ def parse_word_template(uploaded_docx):
 
     pour_finir = {}
     pour_finir_table = tables[26]
+    current_phrase_index = -1
+    collected = [[] for _ in platform_pour_finir_phrases]
+
+    for row in pour_finir_table.rows:
+        label_text = clean_word_cell(row.cells[0]) if len(row.cells) > 0 else ""
+        answer_text = clean_word_cell(row.cells[1]) if len(row.cells) > 1 else ""
+
+        normalized_label = label_text.lower()
+        if "reconnue" in normalized_label:
+            current_phrase_index = 0
+        elif "étudiants" in normalized_label or "etudiants" in normalized_label:
+            current_phrase_index = 1
+        elif "lieu de travail" in normalized_label:
+            current_phrase_index = 2
+
+        if current_phrase_index >= 0:
+            collected[current_phrase_index].append(answer_text)
+
     for phrase_index, platform_phrase in enumerate(platform_pour_finir_phrases):
-        start = phrase_index * 3
-        rows = pour_finir_table.rows[start:start + 3]
-        values = [clean_word_cell(r.cells[1]) if len(r.cells) > 1 else "" for r in rows]
+        values = collected[phrase_index]
+        while len(values) < 3:
+            values.append("")
         pour_finir[platform_phrase] = {
-            "reponse_1": values[0] if len(values) > 0 else "",
-            "reponse_2": values[1] if len(values) > 1 else "",
-            "reponse_3": values[2] if len(values) > 2 else "",
+            f"reponse_{idx}": value for idx, value in enumerate(values, start=1)
         }
 
     data = {
@@ -2500,53 +2537,6 @@ def main():
         autosave_requested = st.session_state.get("autosave_requested", False)
 
         if save_draft or submit_final or quick_save_clicked or autosave_requested:
-
-        
-            word_limit_errors = []
-
-            word_limit_errors.extend(
-                find_word_limit_errors(
-                    internal_analysis,
-                    "Section III - Analyse interne",
-                    max_words=500
-                )
-            )
-
-            word_limit_errors.extend(
-                find_word_limit_errors(
-                    external_analysis,
-                    "Section IV - Analyse externe",
-                    max_words=500
-                )
-            )
-
-            word_limit_errors.extend(
-                find_word_limit_errors(
-                    swot_analysis,
-                    "Section V - Analyse SWOT",
-                    max_words=30
-                )
-            )
-
-            word_limit_errors.extend(
-                find_word_limit_errors(
-                    priorities_initiatives,
-                    "Section VI - Priorités stratégiques et initiatives",
-                    max_words=30
-                )
-            )
-
-            if word_limit_errors:
-                st.error(
-                    "Certaines réponses dépassent la limite autorisée. "
-                    "Merci de les réduire avant l’enregistrement."
-                )
-
-                for error in word_limit_errors:
-                    st.warning(error)
-
-                st.stop()
-
             statut = "Soumis" if submit_final else "Brouillon"
 
             metadata = {
