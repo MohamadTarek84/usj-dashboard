@@ -150,7 +150,7 @@ def save_response(metadata, data):
                 data_json = ?
             WHERE id = ?
         """, (
-            "2026-06-12",
+            "2026-06-15",
             responsable,
             institution,
             email,
@@ -4082,10 +4082,10 @@ box-sizing:border-box;
             with col3:
                 st.text_input(
                     "Date",
-                    value="2026-06-12",
+                    value="2026-06-15",
                     disabled=True
                 )
-                response_date = "2026-06-12"
+                response_date = "2026-06-15"
 
             st.markdown("---")
 
