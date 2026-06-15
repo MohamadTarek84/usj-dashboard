@@ -3357,7 +3357,9 @@ box-sizing:border-box;
                         "+",
                         key=f"add_admin_row_{selected_draft_code}_{section_label}_{field_name}"
                     ):
+                        save_admin_version_by_code(selected_draft_code, updated_all_admin_data)
                         st.session_state[admin_rows_key] += 1
+                        st.session_state["admin_autosave_requested"] = False
                         st.rerun()
             
         def render_dict_section(section_label, original_section):
@@ -3395,7 +3397,9 @@ box-sizing:border-box;
                     "+",
                     key=f"add_admin_priority_{selected_draft_code}"
                 ):
+                    save_admin_version_by_code(selected_draft_code, updated_all_admin_data)
                     st.session_state[priority_rows_key] += 1
+                    st.session_state["admin_autosave_requested"] = False
                     st.rerun()
         
                 return updated_admin_section
@@ -3491,7 +3495,9 @@ box-sizing:border-box;
                     "+",
                     key=f"add_admin_conclusion_row_{selected_draft_code}_{i}"
                 ):
+                    save_admin_version_by_code(selected_draft_code, updated_all_admin_data)
                     st.session_state[rows_key] += 1
+                    st.session_state["admin_autosave_requested"] = False
                     st.rerun()
         
             return updated_admin_section
