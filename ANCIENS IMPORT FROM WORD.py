@@ -1216,7 +1216,7 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
         font-size: 22px !important;
         line-height: 1.05 !important;
         font-weight: 800 !important;
-        margin: -18mm 0 -14mm 0 !important;
+        margin: -36mm 0 -48mm 0 !important;
         padding: 0 !important;
     }}
 
