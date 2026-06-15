@@ -1030,16 +1030,6 @@ div[data-testid="stIFrame"] {{
     overflow: hidden !important;
 }}
 
-.admin-print-cover-header {{
-    display: none !important;
-    visibility: hidden !important;
-    height: 0 !important;
-    min-height: 0 !important;
-    max-height: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    overflow: hidden !important;
-}}
 
 div.st-key-download_export_csv button,
 div.st-key-download_export_excel button,
@@ -1199,6 +1189,12 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
         page-break-before: auto !important;
         break-after: avoid !important;
         page-break-after: avoid !important;
+    }}
+
+    .admin-print-cover-header + .admin-print-title + hr + div[style*="border-left:7px"] {{
+        break-before: avoid !important;
+        page-break-before: avoid !important;
+        margin-top: -10mm !important;
     }}
 
     .admin-print-cover-header img {{
