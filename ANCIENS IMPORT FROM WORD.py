@@ -1030,6 +1030,16 @@ div[data-testid="stIFrame"] {{
     overflow: hidden !important;
 }}
 
+.admin-print-cover-header {{
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    max-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+}}
 
 div.st-key-download_export_csv button,
 div.st-key-download_export_excel button,
@@ -1191,12 +1201,6 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
         page-break-after: avoid !important;
     }}
 
-    .admin-print-cover-header + .admin-print-title + hr + div[style*="border-left:7px"] {{
-        break-before: avoid !important;
-        page-break-before: avoid !important;
-        margin-top: -10mm !important;
-    }}
-
     .admin-print-cover-header img {{
         display: none !important;
     }}
@@ -1212,7 +1216,7 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
         font-size: 22px !important;
         line-height: 1.05 !important;
         font-weight: 800 !important;
-        margin: 4mm 0 4mm 0 !important;
+        margin: 8mm 0 6mm 0 !important;
         padding: 0 !important;
     }}
 
@@ -1245,11 +1249,13 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
     }}
 
     div[style*="border-left:7px"] {{
+        break-before: avoid !important;
+        page-break-before: avoid !important;
         break-after: avoid !important;
         page-break-after: avoid !important;
         break-inside: avoid !important;
         page-break-inside: avoid !important;
-        margin-top: -6mm !important;
+        margin-top: 0 !important;
         margin-bottom: 2mm !important;
         padding: 7px 11px !important;
         box-shadow: none !important;
@@ -1414,8 +1420,8 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
 
     .swot-print-only {{
         display: block !important;
-        break-before: auto !important;
-        page-break-before: auto !important;
+        break-before: page !important;
+        page-break-before: always !important;
         break-after: auto !important;
         page-break-after: auto !important;
         break-inside: avoid !important;
@@ -1820,14 +1826,19 @@ def render_swot_intro():
 
     <ul style="font-size:19px; line-height:1.45; color:{USJ_BLUE}; margin-top:0; margin-bottom:18px;">
         <li>Soutenabilité financière</li>
-        <li>Gouvernance et Leadership (Gestion, relation, représentation, etc.)</li>
+        <li>Gouvernance et Leadership (gestion, relation, représentation, etc.)</li>
         <li>Stratégie académique et qualité d’enseignement</li>
         <li>Recherche et Innovation</li>
+        <li>Ressources documentaires et Environnement digital</li>
         <li>Succès des étudiants (recrutement, accompagnement, services de support, employabilité, etc.)</li>
         <li>Ressources humaines</li>
+        <li>Stratégie et mobilité internationales</li>
         <li>Mission sociétale</li>
         <li>Espace et infrastructures</li>
-        <li>Autre</li> 
+        <li>Environnement de travail</li>
+        <li>Diversité et inclusion</li>
+        <li>Développement Durable (ODD)</li>
+        <li>Autre</li>
     </ul>
 
     <p style="font-size:19px; line-height:1.5; color:{USJ_BLUE}; font-weight:700; margin-bottom:12px;">
@@ -2074,8 +2085,7 @@ def render_pour_finir():
 
         with col_label:
             html_block(f"""
-<div class="pour-finir-screen-label" style="font-size:17px; line-height:1.35; color:{USJ_BLUE}; font-weight:700; margin-top:8px; white-space:normal; overflow-wrap:break-word; word-break:normal;">
-
+<div class="pour-finir-screen-label" style="font-size:17px; line-height:1.35; color:{USJ_BLUE}; font-weight:700; margin-top:8px; white-space:nowrap;">
     &bull; {phrase}
 </div>
 """)
@@ -2233,6 +2243,7 @@ def parse_focus_group_word_template(uploaded_docx):
 
 
 def render_admin_word_importer():
+    st.markdown("### Importer les réponses depuis Word")
 
     uploaded_docx = st.file_uploader(
         "Importer le fichier Word complété",
@@ -4033,7 +4044,10 @@ box-sizing:border-box;
                     st.session_state["admin_mode"] = True
                     st.session_state["access_granted"] = True
                     st.rerun()
-               
+                st.info(
+                    "Affichage en lecture seule de la version originale importée depuis Word. "
+                    "Les modifications des modérateurs se font dans la vue Admin et sont enregistrées séparément."
+                )
 
             st.markdown("## Informations générales")
 
