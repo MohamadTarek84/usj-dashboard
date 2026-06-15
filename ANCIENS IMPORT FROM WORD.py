@@ -1824,19 +1824,14 @@ def render_swot_intro():
 
     <ul style="font-size:19px; line-height:1.45; color:{USJ_BLUE}; margin-top:0; margin-bottom:18px;">
         <li>Soutenabilité financière</li>
-        <li>Gouvernance et Leadership (gestion, relation, représentation, etc.)</li>
+        <li>Gouvernance et Leadership (Gestion, relation, représentation, etc.)</li>
         <li>Stratégie académique et qualité d’enseignement</li>
         <li>Recherche et Innovation</li>
-        <li>Ressources documentaires et Environnement digital</li>
         <li>Succès des étudiants (recrutement, accompagnement, services de support, employabilité, etc.)</li>
         <li>Ressources humaines</li>
-        <li>Stratégie et mobilité internationales</li>
         <li>Mission sociétale</li>
         <li>Espace et infrastructures</li>
-        <li>Environnement de travail</li>
-        <li>Diversité et inclusion</li>
-        <li>Développement Durable (ODD)</li>
-        <li>Autre</li>
+        <li>Autre</li> 
     </ul>
 
     <p style="font-size:19px; line-height:1.5; color:{USJ_BLUE}; font-weight:700; margin-bottom:12px;">
