@@ -1826,18 +1826,13 @@ def render_swot_intro():
 
     <ul style="font-size:19px; line-height:1.45; color:{USJ_BLUE}; margin-top:0; margin-bottom:18px;">
         <li>Soutenabilité financière</li>
-        <li>Gouvernance et Leadership (gestion, relation, représentation, etc.)</li>
+        <li>Gouvernance et Leadership (Gestion, relation, représentation, etc.)</li>
         <li>Stratégie académique et qualité d’enseignement</li>
         <li>Recherche et Innovation</li>
-        <li>Ressources documentaires et Environnement digital</li>
         <li>Succès des étudiants (recrutement, accompagnement, services de support, employabilité, etc.)</li>
         <li>Ressources humaines</li>
-        <li>Stratégie et mobilité internationales</li>
         <li>Mission sociétale</li>
         <li>Espace et infrastructures</li>
-        <li>Environnement de travail</li>
-        <li>Diversité et inclusion</li>
-        <li>Développement Durable (ODD)</li>
         <li>Autre</li>
     </ul>
 
@@ -2085,7 +2080,7 @@ def render_pour_finir():
 
         with col_label:
             html_block(f"""
-<div class="pour-finir-screen-label" style="font-size:17px; line-height:1.35; color:{USJ_BLUE}; font-weight:700; margin-top:8px; white-space:nowrap;">
+<div class="pour-finir-screen-label" style="font-size:17px; line-height:1.35; color:{USJ_BLUE}; font-weight:700; margin-top:8px; white-space:normal; overflow-wrap:break-word; word-break:normal;">
     &bull; {phrase}
 </div>
 """)
@@ -2243,8 +2238,6 @@ def parse_focus_group_word_template(uploaded_docx):
 
 
 def render_admin_word_importer():
-    st.markdown("### Importer les réponses depuis Word")
-
     uploaded_docx = st.file_uploader(
         "Importer le fichier Word complété",
         type=["docx"],
@@ -4044,10 +4037,6 @@ box-sizing:border-box;
                     st.session_state["admin_mode"] = True
                     st.session_state["access_granted"] = True
                     st.rerun()
-                st.info(
-                    "Affichage en lecture seule de la version originale importée depuis Word. "
-                    "Les modifications des modérateurs se font dans la vue Admin et sont enregistrées séparément."
-                )
 
             st.markdown("## Informations générales")
 
