@@ -2078,7 +2078,8 @@ def render_pour_finir():
 
         with col_label:
             html_block(f"""
-<div class="pour-finir-screen-label" style="font-size:17px; line-height:1.35; color:{USJ_BLUE}; font-weight:700; margin-top:8px; white-space:nowrap;">
+<div class="pour-finir-screen-label" style="font-size:17px; line-height:1.35; color:{USJ_BLUE}; font-weight:700; margin-top:8px; white-space:normal; overflow-wrap:break-word; word-break:normal;">
+
     &bull; {phrase}
 </div>
 """)
