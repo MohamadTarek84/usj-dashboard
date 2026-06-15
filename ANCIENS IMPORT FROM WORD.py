@@ -2241,7 +2241,6 @@ def parse_focus_group_word_template(uploaded_docx):
 
 
 def render_admin_word_importer():
-    st.markdown("### Importer les réponses depuis Word")
 
     uploaded_docx = st.file_uploader(
         "Importer le fichier Word complété",
