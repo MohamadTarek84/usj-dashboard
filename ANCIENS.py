@@ -2010,7 +2010,8 @@ def render_pour_finir():
                 display_phrase = "Nous souhaitons que les employeurs disent que les diplômés de l’USJ sont …"
         
             html_block(f"""
-        <div class="pour-finir-screen-label" style="font-size:17px; line-height:1.35; color:{USJ_BLUE}; font-weight:700; margin-top:8px; white-space:nowrap;">
+        <div class="pour-finir-screen-label" style="font-size:17px; line-height:1.35; color:{USJ_BLUE}; font-weight:700; margin-top:8px; white-space:normal; overflow-wrap:anywhere; word-break:break-word; max-width:100%;">
+        
             &bull; {display_phrase}
         </div>
         """)
