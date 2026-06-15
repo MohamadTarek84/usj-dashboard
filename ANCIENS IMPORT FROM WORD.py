@@ -1212,7 +1212,7 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
         font-size: 22px !important;
         line-height: 1.05 !important;
         font-weight: 800 !important;
-        margin: -36mm 0 -48mm 0 !important;
+        margin: 4mm 0 4mm 0 !important;
         padding: 0 !important;
     }}
 
@@ -1414,8 +1414,8 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
 
     .swot-print-only {{
         display: block !important;
-        break-before: page !important;
-        page-break-before: always !important;
+        break-before: auto !important;
+        page-break-before: auto !important;
         break-after: auto !important;
         page-break-after: auto !important;
         break-inside: avoid !important;
