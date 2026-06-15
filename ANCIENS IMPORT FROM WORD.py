@@ -4037,10 +4037,7 @@ box-sizing:border-box;
                     st.session_state["admin_mode"] = True
                     st.session_state["access_granted"] = True
                     st.rerun()
-                st.info(
-                    "Affichage en lecture seule de la version originale importée depuis Word. "
-                    "Les modifications des modérateurs se font dans la vue Admin et sont enregistrées séparément."
-                )
+               
 
             st.markdown("## Informations générales")
 
