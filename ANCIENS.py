@@ -3931,50 +3931,7 @@ box-sizing:border-box;
 
         if save_draft or submit_final or quick_save_clicked or autosave_requested:
         
-            word_limit_errors = []
-
-            word_limit_errors.extend(
-                find_word_limit_errors(
-                    internal_analysis,
-                    "Section III - Analyse interne",
-                    max_words=500
-                )
-            )
-
-            word_limit_errors.extend(
-                find_word_limit_errors(
-                    external_analysis,
-                    "Section IV - Analyse externe",
-                    max_words=500
-                )
-            )
-
-            word_limit_errors.extend(
-                find_word_limit_errors(
-                    swot_analysis,
-                    "Section V - Analyse SWOT",
-                    max_words=30
-                )
-            )
-
-            word_limit_errors.extend(
-                find_word_limit_errors(
-                    priorities_initiatives,
-                    "Section VI - Priorités stratégiques et initiatives",
-                    max_words=30
-                )
-            )
-
-            if word_limit_errors:
-                st.error(
-                    "Certaines réponses dépassent la limite autorisée. "
-                    "Merci de les réduire avant l’enregistrement."
-                )
-
-                for error in word_limit_errors:
-                    st.warning(error)
-
-                st.stop()
+            
 
             statut = "Soumis" if submit_final else "Brouillon"
 
