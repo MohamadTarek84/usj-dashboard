@@ -1094,6 +1094,8 @@ def should_exclude_question_from_presentation(question_col):
         "19_o-",
         "19_autre-",
         "20_autre-",
+        "22a_autre-",
+        "23_autre-",
     ]
     return any(q_norm.startswith(normalize_question_key(prefix)) for prefix in hidden_prefixes)
 
