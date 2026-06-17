@@ -1514,7 +1514,6 @@ page = st.radio(
     "Navigation analytique",
     [
         "Vue générale des indicateurs",
-        "Partie démographique",
         "Résultats descriptifs de toutes les questions",
         "Comparaison historique",
         "Facteurs clés d’amélioration",
@@ -3318,7 +3317,6 @@ def demographic_bar_chart(freq, title, orientation="h", height=430):
 
 def page_demographics():
     section_header(
-        "Partie démographique",
         "Profil des répondants selon le genre, l’âge, le campus, la faculté ou institut, le niveau et l’intitulé du diplôme."
     )
 
@@ -5052,8 +5050,6 @@ def page_methodology():
 if page == "Vue générale des indicateurs":
     page_indicators()
 
-elif page == "Partie démographique":
-    page_demographics()
 
 elif page == "Résultats descriptifs de toutes les questions":
     page_all_questions_results()
