@@ -382,6 +382,13 @@ def filter_options(data, column):
     return ["Tous"] + values
 
 
+def year_filter_options(data, column="Year"):
+    """Year filter without Tous to avoid combined-year results in the dashboard."""
+    if column not in data.columns:
+        return []
+    return sorted(data[column].dropna().astype(str).unique())
+
+
 def summary_box(text, color=USJ_BLUE, background="#F7F9FC"):
     st.html(
         f"""
@@ -1376,7 +1383,8 @@ filter_action_cols = st.columns([1.15, 1.35, 6.5])
 
 with filter_action_cols[0]:
     if st.button("↺ Réinitialiser les filtres", use_container_width=True):
-        st.session_state["filter_year"] = "Tous"
+        available_years_reset = year_filter_options(df_coded, "Year")
+        st.session_state["filter_year"] = available_years_reset[-1] if available_years_reset else ""
         st.session_state["filter_genre"] = "Tous"
         st.session_state["filter_faculte"] = "Tous"
         st.session_state["filter_cursus"] = "Tous"
@@ -1407,12 +1415,20 @@ st.markdown(
 filter_cols = st.columns(5)
 df_filter_base = df_coded.copy()
 
-with filter_cols[0]:
-    year = st.selectbox("Année", filter_options(df_filter_base, "Year"), key="filter_year")
+available_years = year_filter_options(df_filter_base, "Year")
+if not available_years:
+    st.error("Aucune année valide n’est disponible dans le fichier Excel.")
+    st.stop()
 
-df_after_year = df_filter_base.copy()
-if year != "Tous":
-    df_after_year = df_after_year[df_after_year["Year"].astype(str) == year]
+# The global year filter intentionally excludes "Tous".
+# This prevents the overview and descriptive pages from combining several survey years.
+if st.session_state.get("filter_year") not in available_years:
+    st.session_state["filter_year"] = available_years[-1]
+
+with filter_cols[0]:
+    year = st.selectbox("Année", available_years, key="filter_year")
+
+df_after_year = df_filter_base[df_filter_base["Year"].astype(str) == year].copy()
 
 with filter_cols[1]:
     genre = st.selectbox("Genre", filter_options(df_after_year, "Genre"), key="filter_genre")
