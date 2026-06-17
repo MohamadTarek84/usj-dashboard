@@ -968,6 +968,16 @@ OTHER_QUESTION_LABELS = {
     "38-Suivez-vous les pages et comptes de la Fédération des Associations des Anciens USJ sur les réseaux sociaux": "38-Suivez-vous les pages et comptes de la Fédération des Associations des Anciens USJ sur les réseaux sociaux ?",
     "39-À quelle fréquence visitez-vous les pages et comptes de la Fédération des Associations des Anciens USJ sur les réseaux sociaux": "39-À quelle fréquence visitez-vous les pages et comptes de la Fédération des Associations des Anciens USJ sur les réseaux sociaux ?",
 
+    "22a_a- Raisons de départ: Poursuivre des études": "22a_a-Pour quelles raisons prévoyez-vous de quitter le Liban ? Poursuivre des études",
+    "22a_b- Raisons de départ: Travailler": "22a_b-Pour quelles raisons prévoyez-vous de quitter le Liban ? Travailler",
+    "22a_c- Raisons de départ: Emigrer": "22a_c-Pour quelles raisons prévoyez-vous de quitter le Liban ? Émigrer",
+    "22a_d- Raisons de départ: Rejoindre ou accompagner un membre de la famille": "22a_d-Pour quelles raisons prévoyez-vous de quitter le Liban ? Rejoindre ou accompagner un membre de la famille",
+    "22a_e- Raisons de départ: Crise économique de 2019": "22a_e-Pour quelles raisons prévoyez-vous de quitter le Liban ? Crise économique de 2019",
+    "22a_f- Raisons de départ: Absence de sécurité": "22a_f-Pour quelles raisons prévoyez-vous de quitter le Liban ? Absence de sécurité",
+    "22a_autre- Raisons de départ: Autre": "22a_autre-Pour quelles raisons prévoyez-vous de quitter le Liban ? Autre",
+    "23- Vers quel pays prévoyez-vous partir ?": "23-Vers quel pays prévoyez-vous partir ?",
+    "23_autre- Autre pays": "23_autre-Vers quel pays prévoyez-vous partir ? Autre pays",
+
     "44_a- Financé vos études à l’USJ : Parents": "44-Comment avez-vous financé vos études à l’USJ ? (2024-2025)",
   
 }
@@ -1081,7 +1091,9 @@ def should_exclude_question_from_presentation(question_col):
     hidden_prefixes = [
         "10a_e-",
         "18_autre-",
+        "19_o-",
         "19_autre-",
+        "20_autre-",
     ]
     return any(q_norm.startswith(normalize_question_key(prefix)) for prefix in hidden_prefixes)
 
@@ -1167,6 +1179,20 @@ def get_question_dependency(question_col, original_data=None):
                 "17- exercez-vous une activité rémunérée",
                 "17- avez-vous exerce une activite remuneree",
                 "17- avez-vous exercé une activité rémunérée"
+            ],
+        },
+        {
+            # Departure follow-up questions are applicable only to respondents
+            # who answered Oui to Q22: Prévoyez-vous de quitter le Liban ?
+            "child_prefixes": [
+                "22a_a-", "22a_b-", "22a_c-", "22a_d-", "22a_e-", "22a_f-", "22a_autre-",
+                "23-", "23_autre-"
+            ],
+            "parent_prefixes": [
+                "22- prevoyez-vous de quitter le liban",
+                "22- prévoyez-vous de quitter le liban",
+                "22-prevoyez-vous de quitter le liban",
+                "22-prévoyez-vous de quitter le liban",
             ],
         },
         {
