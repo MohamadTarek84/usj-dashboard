@@ -3818,10 +3818,14 @@ def render_all_questions_single_result(question_label, question_col, original_fi
 
     condition_html = ""
     if parent_col:
-        condition_html = f"""
-            <div style='font-size:13px;color:#667085;margin-top:4px;'>Question conditionnelle liée à : {html_escape(dependency_label)}</div>
-            <div style='font-size:13px;color:#667085;margin-top:4px;'>Non applicables exclus du dénominateur : {int(non_applicable_n)}</div>
-        """
+        condition_html = (
+            f"<div style='font-size:13px;color:#667085;margin-top:8px;'>"
+            f"Question conditionnelle liée à : <b>{html_escape(dependency_label)}</b>"
+            f"</div>"
+            f"<div style='font-size:13px;color:#667085;margin-top:4px;'>"
+            f"Non applicables exclus du dénominateur : <b>{int(non_applicable_n):,}</b>"
+            f"</div>"
+        ).replace(',', ' ')
 
     st.markdown(
         f"""
