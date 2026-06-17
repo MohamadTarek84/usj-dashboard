@@ -975,6 +975,9 @@ OTHER_QUESTION_LABELS = {
     "33a- De quels types de service ?  ": "33a-De quels types de service avez-vous eu besoin au sein de votre établissement ?",
     "33b- À qui vous adressez-vous pour obtenir ces services ?": "33b-À qui vous adressez-vous pour obtenir ces services ?",
     "33c- Ont-ils été mis à votre disposition ?": "33c-Ces services ont-ils été mis à votre disposition ?",
+    "34- Êtes-vous globalement satisfait de vos conditions d’études et d’accueil ?": "34-Êtes-vous globalement satisfait de vos conditions d’études et d’accueil ?",
+    "34- Êtes-vous globalement satisfait de vos conditions d'etudes et d'accueil ?": "34-Êtes-vous globalement satisfait de vos conditions d’études et d’accueil ?",
+    "34-Êtes-vous globalement satisfait de vos conditions d’études et d’accueil ?": "34-Êtes-vous globalement satisfait de vos conditions d’études et d’accueil ?",
 
     "35-Consultez-vous le site de l'USJ ?": "35-Consultez-vous le site web de l’USJ ?",
     "36-Suivez-vous les pages et comptes USJ sur les réseaux sociaux (Facebook, Linkedln, Twitter, YouTube, Instagram, …) ?": "36-Suivez-vous les pages et comptes de l’USJ sur les réseaux sociaux ?",
@@ -1219,7 +1222,7 @@ def get_question_dependency(question_col, original_data=None):
             # 32_autre is hidden from presentation, but the rule is kept for completeness.
             "child_prefixes": [
                 "32_a-", "32_b-", "32_c-", "32_d-", "32_e-", "32_f-", "32_g-", "32_autre-",
-                "33-"
+                "33-", "33a-", "33b-", "34-"
             ],
             "parent_prefixes": [
                 "31-etes-vous etudiant en situation de handicap",
@@ -1229,9 +1232,10 @@ def get_question_dependency(question_col, original_data=None):
             ],
         },
         {
-            # Service follow-up questions are applicable only to respondents
+            # Availability follow-up question is applicable only to respondents
             # who answered Oui to Q33: Besoin d’un service au sein de l’établissement.
-            "child_prefixes": ["33a-", "33b-", "33c-"],
+            # 33a, 33b and Q34 are treated as linked to Q31 according to the requested dashboard logic.
+            "child_prefixes": ["33c-"],
             "parent_prefixes": [
                 "33- avez-vous eu besoin d’un service au sein de votre établissement",
                 "33- avez-vous eu besoin d'un service au sein de votre etablissement",
