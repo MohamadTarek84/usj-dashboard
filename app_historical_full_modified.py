@@ -3121,7 +3121,14 @@ def make_frequency_table(data, col, top_n=None, include_other=True):
     return out.reset_index(drop=True)
 
 
-def render_professional_frequency_table(df, title, note=None, max_rows=None):
+def render_professional_frequency_table(
+    df,
+    title,
+    note=None,
+    max_rows=None,
+    show_rank=True,
+    sort_by_frequency=True
+):
     if df is None or df.empty:
         st.warning(f"Aucune donnée disponible pour {title}.")
         return
@@ -3132,10 +3139,14 @@ def render_professional_frequency_table(df, title, note=None, max_rows=None):
 
     if "Pourcentage" in table.columns:
         table["Pourcentage"] = pd.to_numeric(table["Pourcentage"], errors="coerce")
+
+    if sort_by_frequency and "Pourcentage" in table.columns:
         table = table.sort_values(["Pourcentage", "N"], ascending=[False, False]) if "N" in table.columns else table.sort_values("Pourcentage", ascending=False)
 
     table = table.reset_index(drop=True)
-    table.insert(0, "Rang", range(1, len(table) + 1))
+
+    if show_rank:
+        table.insert(0, "Rang", range(1, len(table) + 1))
 
     display = table.copy()
     if "Pourcentage" in display.columns:
@@ -3143,8 +3154,10 @@ def render_professional_frequency_table(df, title, note=None, max_rows=None):
     if "N" in display.columns:
         display["N"] = display["N"].map(lambda x: "" if pd.isna(x) else f"{int(x):,}".replace(",", " "))
 
+    numeric_cols = ["Rang", "N", "Pourcentage"]
+
     header_html = "".join(
-        f"<th style='text-align:{'right' if col in ['Rang', 'N', 'Pourcentage'] else 'left'};'>{html_escape(col)}</th>"
+        f"<th style='text-align:{'right' if col in numeric_cols else 'left'};'>{html_escape(col)}</th>"
         for col in display.columns
     )
 
@@ -3152,7 +3165,7 @@ def render_professional_frequency_table(df, title, note=None, max_rows=None):
     for _, row in display.iterrows():
         cells = []
         for col in display.columns:
-            align = "right" if col in ["Rang", "N", "Pourcentage"] else "left"
+            align = "right" if col in numeric_cols else "left"
             weight = "800" if col in ["N", "Pourcentage"] else "500"
             cells.append(f"<td style='text-align:{align}; font-weight:{weight};'>{html_escape(row[col])}</td>")
         body_html += "<tr>" + "".join(cells) + "</tr>"
@@ -3388,7 +3401,7 @@ def page_demographics():
     summary_box(
         """
         Les tableaux ci-dessous remplacent le graphique des intitulés de diplôme afin de permettre une lecture plus précise.
-        Les résultats sont triés automatiquement du pourcentage le plus élevé au plus faible. Pour les diplômes, la faculté ou l’institut associé est affiché à côté de chaque intitulé.
+        Les tableaux de fréquences sont triés automatiquement du pourcentage le plus élevé au plus faible, sauf l’âge qui est présenté selon l’ordre naturel des tranches. Pour les diplômes, la faculté ou l’institut associé est affiché à côté de chaque intitulé.
         """,
         color=USJ_BLUE,
         background="#F7F9FC"
@@ -3405,7 +3418,9 @@ def page_demographics():
         render_professional_frequency_table(
             age_group_freq,
             "Âge des répondants par tranche",
-            "Les pourcentages sont calculés sur les âges valides."
+            "Les pourcentages sont calculés sur les âges valides. Le tableau est trié selon l’ordre naturel des tranches d’âge.",
+            show_rank=False,
+            sort_by_frequency=False
         )
 
     t3, t4 = st.columns([1.2, 1])
