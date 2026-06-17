@@ -3097,7 +3097,7 @@ def resolve_first_existing_column(data, candidates):
     return None
 
 
-def make_frequency_table(data, col, top_n=None):
+def make_frequency_table(data, col, top_n=None, include_other=True):
     if col is None or col not in data.columns:
         return pd.DataFrame()
     s = data[col].map(clean_response_value).dropna()
@@ -3106,15 +3106,133 @@ def make_frequency_table(data, col, top_n=None):
     out = s.value_counts().reset_index()
     out.columns = ["Modalité", "N"]
     out["Pourcentage"] = out["N"] / out["N"].sum() * 100
+    out = out.sort_values(["N", "Modalité"], ascending=[False, True]).reset_index(drop=True)
     if top_n is not None and len(out) > top_n:
-        top = out.head(top_n).copy()
-        other = pd.DataFrame({
-            "Modalité": ["Autres"],
-            "N": [int(out.iloc[top_n:]["N"].sum())],
-            "Pourcentage": [float(out.iloc[top_n:]["Pourcentage"].sum())]
+        if include_other:
+            top = out.head(top_n).copy()
+            other = pd.DataFrame({
+                "Modalité": ["Autres"],
+                "N": [int(out.iloc[top_n:]["N"].sum())],
+                "Pourcentage": [float(out.iloc[top_n:]["Pourcentage"].sum())]
+            })
+            out = pd.concat([top, other], ignore_index=True)
+        else:
+            out = out.head(top_n).copy()
+    return out.reset_index(drop=True)
+
+
+def render_professional_frequency_table(df, title, note=None, max_rows=None):
+    if df is None or df.empty:
+        st.warning(f"Aucune donnée disponible pour {title}.")
+        return
+
+    table = df.copy()
+    if max_rows is not None:
+        table = table.head(max_rows).copy()
+
+    if "Pourcentage" in table.columns:
+        table["Pourcentage"] = pd.to_numeric(table["Pourcentage"], errors="coerce")
+        table = table.sort_values(["Pourcentage", "N"], ascending=[False, False]) if "N" in table.columns else table.sort_values("Pourcentage", ascending=False)
+
+    table = table.reset_index(drop=True)
+    table.insert(0, "Rang", range(1, len(table) + 1))
+
+    display = table.copy()
+    if "Pourcentage" in display.columns:
+        display["Pourcentage"] = display["Pourcentage"].map(lambda x: "" if pd.isna(x) else f"{x:.2f}%")
+    if "N" in display.columns:
+        display["N"] = display["N"].map(lambda x: "" if pd.isna(x) else f"{int(x):,}".replace(",", " "))
+
+    header_html = "".join(
+        f"<th style='text-align:{'right' if col in ['Rang', 'N', 'Pourcentage'] else 'left'};'>{html_escape(col)}</th>"
+        for col in display.columns
+    )
+
+    body_html = ""
+    for _, row in display.iterrows():
+        cells = []
+        for col in display.columns:
+            align = "right" if col in ["Rang", "N", "Pourcentage"] else "left"
+            weight = "800" if col in ["N", "Pourcentage"] else "500"
+            cells.append(f"<td style='text-align:{align}; font-weight:{weight};'>{html_escape(row[col])}</td>")
+        body_html += "<tr>" + "".join(cells) + "</tr>"
+
+    note_html = f"<div style='font-size:13px;color:#667085;margin-top:6px;'>{note}</div>" if note else ""
+
+    st.markdown(
+        f"""
+        <div style='background:#FFFFFF;border:1px solid #DDE5F0;border-radius:18px;padding:18px 20px;margin:18px 0;box-shadow:0 6px 18px rgba(0,0,0,0.05);'>
+            <div style='display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:10px;'>
+                <div>
+                    <div style='font-size:20px;font-weight:900;color:{USJ_BLUE};font-family:Candara, Arial, sans-serif;'>{html_escape(title)}</div>
+                    {note_html}
+                </div>
+                <div style='background:{USJ_LIGHT_BLUE};color:{USJ_BLUE};border-radius:999px;padding:7px 12px;font-size:13px;font-weight:800;'>
+                    {len(table)} modalités
+                </div>
+            </div>
+            <table style='width:100%;border-collapse:collapse;font-family:Candara, Arial, sans-serif;font-size:14px;'>
+                <thead>
+                    <tr style='background:{USJ_BLUE};color:white;'>{header_html}</tr>
+                </thead>
+                <tbody>{body_html}</tbody>
+            </table>
+        </div>
+        <style>
+            table td, table th {{ padding:10px 12px; border-bottom:1px solid #E6ECF3; vertical-align:top; }}
+            table tbody tr:nth-child(even) td {{ background:#FBFCFE; }}
+            table tbody tr:hover td {{ background:#F2F6FF; }}
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+def make_age_group_table(age_series):
+    age_numeric = pd.to_numeric(age_series, errors="coerce").dropna()
+    if age_numeric.empty:
+        return pd.DataFrame()
+
+    bins = [0, 20, 22, 24, 26, 29, 34, 39, 49, 150]
+    labels = ["Moins de 20 ans", "20-21 ans", "22-23 ans", "24-25 ans", "26-29 ans", "30-34 ans", "35-39 ans", "40-49 ans", "50 ans et plus"]
+    grouped = pd.cut(age_numeric, bins=bins, labels=labels, right=False)
+    out = grouped.value_counts().reindex(labels).dropna().reset_index()
+    out.columns = ["Modalité", "N"]
+    out = out[out["N"] > 0].copy()
+    out["Pourcentage"] = out["N"] / out["N"].sum() * 100
+    return out.reset_index(drop=True)
+
+
+def make_diploma_faculty_table(data, diplome_col, fac_col, top_n=None):
+    if diplome_col is None or diplome_col not in data.columns:
+        return pd.DataFrame()
+    temp = data[[diplome_col] + ([fac_col] if fac_col and fac_col in data.columns else [])].copy()
+    temp[diplome_col] = temp[diplome_col].map(clean_response_value)
+    if fac_col and fac_col in temp.columns:
+        temp[fac_col] = temp[fac_col].map(clean_response_value)
+    else:
+        temp["Faculté / Institut"] = "Non disponible"
+        fac_col = "Faculté / Institut"
+    temp = temp.dropna(subset=[diplome_col])
+    if temp.empty:
+        return pd.DataFrame()
+
+    rows = []
+    total = len(temp)
+    grouped = temp.groupby([diplome_col, fac_col], dropna=False).size().reset_index(name="N")
+    grouped["Pourcentage"] = grouped["N"] / total * 100
+    grouped = grouped.sort_values(["N", diplome_col], ascending=[False, True])
+    for _, row in grouped.iterrows():
+        rows.append({
+            "Intitulé diplôme": row[diplome_col],
+            "Faculté / Institut": row[fac_col] if pd.notna(row[fac_col]) else "Non renseigné",
+            "N": int(row["N"]),
+            "Pourcentage": float(row["Pourcentage"]),
         })
-        out = pd.concat([top, other], ignore_index=True)
-    return out
+    out = pd.DataFrame(rows)
+    if top_n is not None:
+        out = out.head(top_n).copy()
+    return out.reset_index(drop=True)
 
 
 def demographic_bar_chart(freq, title, orientation="h", height=430):
@@ -3149,7 +3267,7 @@ def demographic_bar_chart(freq, title, orientation="h", height=430):
         )
         fig.update_layout(xaxis_title="", yaxis_title="Pourcentage")
     fig.update_traces(texttemplate="%{text:.1f}%", textposition="outside", marker_line_color="white", marker_line_width=1)
-    fig.update_layout(coloraxis_showscale=False, margin=dict(l=30, r=40, t=70, b=50))
+    fig.update_layout(coloraxis_showscale=False, margin=dict(l=30, r=70, t=70, b=50))
     theme_layout(fig, height=height, showlegend=False)
     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
@@ -3188,9 +3306,10 @@ def page_demographics():
 
     genre_freq = make_frequency_table(data_demo, genre_col)
     age_numeric = pd.to_numeric(data_demo[age_col], errors="coerce") if age_col else pd.Series(dtype=float)
-    fac_freq = make_frequency_table(data_demo, fac_col, top_n=18)
+    age_group_freq = make_age_group_table(age_numeric) if age_col else pd.DataFrame()
+    fac_freq = make_frequency_table(data_demo, fac_col, top_n=18, include_other=False)
     niveau_freq = make_frequency_table(data_demo, niveau_col)
-    diplome_freq = make_frequency_table(data_demo, diplome_col, top_n=15)
+    diplome_fac_table = make_diploma_faculty_table(data_demo, diplome_col, fac_col)
 
     c_left, c_right = st.columns([1, 1])
 
@@ -3204,22 +3323,43 @@ def page_demographics():
                 color_discrete_sequence=PLOTLY_SEQ,
                 title="Répartition des répondants par genre"
             )
-            fig_genre.update_traces(textposition="inside", textinfo="percent+label", hovertemplate="%{label}<br>N=%{value}<br>%{percent}<extra></extra>")
+            fig_genre.update_traces(
+                textposition="inside",
+                textinfo="percent+label",
+                hovertemplate="%{label}<br>N=%{value}<br>%{percent}<extra></extra>"
+            )
             theme_layout(fig_genre, height=430, showlegend=True)
             st.plotly_chart(fig_genre, use_container_width=True, config={"displayModeBar": False})
         else:
             st.warning("Aucune donnée disponible pour le genre.")
 
     with c_right:
-        if not age_numeric.dropna().empty:
-            fig_age = px.histogram(
-                pd.DataFrame({"Age": age_numeric.dropna()}),
-                x="Age",
-                nbins=18,
-                title="Distribution de l’âge des répondants",
-                color_discrete_sequence=[USJ_BLUE]
+        if not age_group_freq.empty:
+            plot_age = age_group_freq.copy()
+            fig_age = px.bar(
+                plot_age,
+                x="Modalité",
+                y="Pourcentage",
+                text="Pourcentage",
+                color="Pourcentage",
+                color_continuous_scale=[[0, "#EAF2FF"], [0.5, "#7FA6D9"], [1, USJ_BLUE]],
+                hover_data={"N": True, "Pourcentage": ":.2f"},
+                title="Distribution de l’âge des répondants"
             )
-            fig_age.update_layout(xaxis_title="Âge", yaxis_title="Nombre de répondants")
+            fig_age.update_traces(
+                texttemplate="%{text:.1f}%",
+                textposition="outside",
+                marker_line_color="white",
+                marker_line_width=1.2,
+                cliponaxis=False
+            )
+            fig_age.update_layout(
+                xaxis_title="Tranche d’âge",
+                yaxis_title="Pourcentage des répondants",
+                coloraxis_showscale=False,
+                margin=dict(l=40, r=60, t=75, b=95)
+            )
+            fig_age.update_xaxes(tickangle=-25)
             theme_layout(fig_age, height=430, showlegend=False)
             st.plotly_chart(fig_age, use_container_width=True, config={"displayModeBar": False})
             st.markdown(
@@ -3237,41 +3377,56 @@ def page_demographics():
 
     c_fac, c_niveau = st.columns([1.35, 1])
     with c_fac:
-        demographic_bar_chart(fac_freq, "Répartition par faculté / institut", orientation="h", height=max(470, 28 * len(fac_freq)))
+        demographic_bar_chart(fac_freq, "Répartition par faculté / institut", orientation="h", height=max(470, 30 * len(fac_freq)))
 
     with c_niveau:
         demographic_bar_chart(niveau_freq, "Répartition par niveau", orientation="v", height=470)
 
     st.divider()
 
-    demographic_bar_chart(diplome_freq, "Principaux intitulés de diplôme", orientation="h", height=max(500, 30 * len(diplome_freq)))
+    st.markdown(f"<h3 style='color:{USJ_BLUE};'>Tableaux démographiques détaillés</h3>", unsafe_allow_html=True)
+    summary_box(
+        """
+        Les tableaux ci-dessous remplacent le graphique des intitulés de diplôme afin de permettre une lecture plus précise.
+        Les résultats sont triés automatiquement du pourcentage le plus élevé au plus faible. Pour les diplômes, la faculté ou l’institut associé est affiché à côté de chaque intitulé.
+        """,
+        color=USJ_BLUE,
+        background="#F7F9FC"
+    )
 
-    st.markdown(f"<h3 style='color:{USJ_BLUE};'>Tableaux de fréquences</h3>", unsafe_allow_html=True)
-    tab_genre, tab_age, tab_fac, tab_niveau, tab_diplome = st.tabs(["Genre", "Âge", "Faculté / Institut", "Niveau", "Intitulé diplôme"])
+    t1, t2 = st.columns([1, 1])
+    with t1:
+        render_professional_frequency_table(
+            genre_freq,
+            "Genre des répondants",
+            "Effectifs et pourcentages calculés sur les réponses valides."
+        )
+    with t2:
+        render_professional_frequency_table(
+            age_group_freq,
+            "Âge des répondants par tranche",
+            "Les pourcentages sont calculés sur les âges valides."
+        )
 
-    with tab_genre:
-        if not genre_freq.empty:
-            temp = genre_freq.copy(); temp["Pourcentage"] = temp["Pourcentage"].map(lambda x: f"{x:.2f}%")
-            st.dataframe(temp, use_container_width=True, hide_index=True)
-    with tab_age:
-        if not age_numeric.dropna().empty:
-            age_desc = pd.DataFrame({
-                "Indicateur": ["N valide", "Moyenne", "Médiane", "Minimum", "Maximum"],
-                "Valeur": [int(age_numeric.notna().sum()), safe_num(age_numeric.mean(), 1), safe_num(age_numeric.median(), 1), safe_num(age_numeric.min(), 0), safe_num(age_numeric.max(), 0)]
-            })
-            st.dataframe(age_desc, use_container_width=True, hide_index=True)
-    with tab_fac:
-        if not fac_freq.empty:
-            temp = fac_freq.copy(); temp["Pourcentage"] = temp["Pourcentage"].map(lambda x: f"{x:.2f}%")
-            st.dataframe(temp, use_container_width=True, hide_index=True)
-    with tab_niveau:
-        if not niveau_freq.empty:
-            temp = niveau_freq.copy(); temp["Pourcentage"] = temp["Pourcentage"].map(lambda x: f"{x:.2f}%")
-            st.dataframe(temp, use_container_width=True, hide_index=True)
-    with tab_diplome:
-        if not diplome_freq.empty:
-            temp = diplome_freq.copy(); temp["Pourcentage"] = temp["Pourcentage"].map(lambda x: f"{x:.2f}%")
-            st.dataframe(temp, use_container_width=True, hide_index=True)
+    t3, t4 = st.columns([1.2, 1])
+    with t3:
+        render_professional_frequency_table(
+            fac_freq,
+            "Faculté / Institut",
+            "Tableau trié du poids le plus élevé au plus faible."
+        )
+    with t4:
+        render_professional_frequency_table(
+            niveau_freq,
+            "Niveau d’études",
+            "Répartition par niveau dans l’année sélectionnée."
+        )
+
+    render_professional_frequency_table(
+        diplome_fac_table,
+        "Intitulés de diplôme avec faculté / institut associé",
+        "Chaque ligne correspond à un couple diplôme + faculté/institut, trié du plus fréquent au moins fréquent."
+    )
 
 
 # =====================================================
