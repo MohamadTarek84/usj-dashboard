@@ -3609,6 +3609,98 @@ def build_simple_year_distribution(original_data, coded_data, col):
     return dist
 
 
+def render_all_questions_single_result(question_label, question_col, original_filtered, total_n):
+    """Render one complete descriptive result block for a question within the selected section."""
+    if question_col not in original_filtered.columns:
+        return
+
+    dist = build_simple_distribution(original_filtered, question_col)
+    valid_n = int(original_filtered[question_col].map(clean_response_value).dropna().shape[0])
+    missing_n = int(total_n - valid_n)
+    missing_pct = missing_n / total_n * 100 if total_n > 0 else np.nan
+    modalities_n = int(original_filtered[question_col].map(clean_response_value).dropna().nunique())
+
+    st.markdown(
+        f"""
+        <div style='background:#FFFFFF;border:1px solid #DDE5F0;border-left:7px solid {USJ_BLUE};border-radius:18px;padding:18px 20px;margin:24px 0 12px 0;box-shadow:0 5px 16px rgba(0,0,0,0.05);'>
+            <div style='font-size:13px;font-weight:800;color:#667085;margin-bottom:6px;'>Question / variable</div>
+            <div style='font-size:20px;font-weight:900;color:{USJ_BLUE};line-height:1.35;'>{html_escape(question_label)}</div>
+            <div style='font-size:13px;color:#667085;margin-top:8px;'>Variable Excel : {html_escape(question_col)}</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    m1, m2, m3, m4 = st.columns(4)
+    with m1:
+        insight_card("Base filtrée", total_n, "Répondants sélectionnés", USJ_BLUE_2)
+    with m2:
+        insight_card("N valide", valid_n, "Réponses non manquantes", USJ_GREEN if valid_n > 0 else USJ_RED)
+    with m3:
+        insight_card("Données manquantes", safe_pct(missing_pct), "Dans la base filtrée", USJ_ORANGE if pd.notna(missing_pct) and missing_pct > 10 else USJ_GREEN)
+    with m4:
+        insight_card("Modalités", modalities_n, "Réponses distinctes", USJ_GOLD)
+
+    if dist.empty:
+        st.warning("Aucune réponse valide disponible pour cette question avec les filtres sélectionnés.")
+        return
+
+    if modalities_n > 30:
+        display_dist = dist.sort_values("N", ascending=False).head(30).copy()
+        display_dist["Pourcentage"] = display_dist["Pourcentage"].map(lambda x: f"{x:.2f}%")
+        st.markdown(f"<h4 style='color:{USJ_BLUE};'>Réponses les plus fréquentes</h4>", unsafe_allow_html=True)
+        st.dataframe(display_dist, use_container_width=True, hide_index=True)
+        return
+
+    dist_chart = dist.sort_values("Pourcentage", ascending=True).copy()
+    fig = px.bar(
+        dist_chart,
+        x="Pourcentage",
+        y="Réponse",
+        orientation="h",
+        text="Pourcentage",
+        color="Pourcentage",
+        color_continuous_scale=[[0, "#EAF2FF"], [0.5, "#7FA6D9"], [1, USJ_BLUE]],
+        hover_data={"N": True, "Pourcentage": ":.2f"},
+        title="Distribution des réponses"
+    )
+    fig.update_traces(
+        texttemplate="%{text:.2f}%",
+        textposition="outside",
+        marker_line_color="white",
+        marker_line_width=1,
+        cliponaxis=False
+    )
+    fig.update_layout(
+        xaxis_title="Pourcentage des réponses valides",
+        yaxis_title="",
+        coloraxis_showscale=False,
+        margin=dict(l=40, r=80, t=75, b=45)
+    )
+    theme_layout(fig, height=max(390, 38 * len(dist_chart)), showlegend=False)
+
+    chart_col, table_col = st.columns([1.55, 1])
+    with chart_col:
+        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+
+    with table_col:
+        display_dist = dist.sort_values("Pourcentage", ascending=False).copy()
+        display_dist["Pourcentage"] = display_dist["Pourcentage"].map(lambda x: f"{x:.2f}%")
+        st.markdown(f"<h4 style='color:{USJ_BLUE}; margin-top:0;'>Tableau des fréquences</h4>", unsafe_allow_html=True)
+        st.dataframe(display_dist, use_container_width=True, hide_index=True)
+
+    top_dist = dist.sort_values("Pourcentage", ascending=False).iloc[0]
+    st.markdown(
+        f"""
+        <div style='background:#F7F9FC;border-left:6px solid {USJ_BLUE};border-radius:14px;padding:12px 16px;margin-top:4px;margin-bottom:8px;'>
+            <b>Lecture descriptive :</b> la modalité la plus fréquente est <b>{html_escape(top_dist['Réponse'])}</b>,
+            avec <b>{top_dist['Pourcentage']:.2f}%</b> des réponses valides.
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
 def page_all_questions_results():
     section_header(
         "Résultats descriptifs de toutes les questions",
@@ -3645,135 +3737,40 @@ def page_all_questions_results():
         st.warning("Aucune colonne trouvée dans le fichier Excel pour cette section.")
         return
 
-    selected_question_label = st.selectbox(
-        "Choisir une question / variable",
-        list(question_map.keys()),
-        key="all_questions_question_selector"
-    )
-
-    selected_col = question_map[selected_question_label]
     original_filtered = original_questions.copy()
-
-    dist = build_simple_distribution(original_filtered, selected_col)
-
-    valid_n = int(original_filtered[selected_col].map(clean_response_value).dropna().shape[0])
     total_n = int(len(original_filtered))
-    missing_n = total_n - valid_n
-    missing_pct = missing_n / total_n * 100 if total_n > 0 else np.nan
-    modalities_n = int(original_filtered[selected_col].map(clean_response_value).dropna().nunique())
+    question_count = len(question_map)
+
+    valid_counts = []
+    for _, col in question_map.items():
+        if col in original_filtered.columns:
+            valid_counts.append(int(original_filtered[col].map(clean_response_value).dropna().shape[0]))
+    average_valid_n = np.mean(valid_counts) if valid_counts else np.nan
 
     c1, c2, c3, c4 = st.columns(4)
-
     with c1:
         insight_card("Section", selected_section_all, "Titre du questionnaire", USJ_BLUE)
-
     with c2:
-        insight_card("Base filtrée", total_n, "Répondants sélectionnés", USJ_BLUE_2)
-
+        insight_card("Année", selected_year, "Année affichée", USJ_BLUE_2)
     with c3:
-        insight_card("N valide", valid_n, "Réponses non manquantes", USJ_GREEN if valid_n > 0 else USJ_RED)
-
+        insight_card("Questions", question_count, "Variables affichées", USJ_GOLD)
     with c4:
-        insight_card("Modalités", modalities_n, "Réponses distinctes", USJ_GOLD)
+        insight_card("Base filtrée", total_n, "Répondants sélectionnés", USJ_GREEN if total_n > 0 else USJ_RED)
 
-    st.markdown(
-        f"""
-        <div style='background:#FFFFFF;border:1px solid #DDE5F0;border-left:7px solid {USJ_BLUE};border-radius:18px;padding:18px 20px;margin:18px 0;box-shadow:0 5px 16px rgba(0,0,0,0.05);'>
-            <div style='font-size:14px;font-weight:800;color:#667085;margin-bottom:6px;'>Question analysée</div>
-            <div style='font-size:20px;font-weight:900;color:{USJ_BLUE};line-height:1.35;'>{html_escape(selected_question_label)}</div>
-            <div style='font-size:13px;color:#667085;margin-top:8px;'>Variable Excel : {html_escape(selected_col)}</div>
-            <div style='font-size:13px;color:#667085;margin-top:4px;'>Données manquantes : {safe_pct(missing_pct)}</div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    if dist.empty:
-        st.warning("Aucune réponse valide disponible pour cette question avec les filtres sélectionnés.")
-        return
-
-    if modalities_n > 30:
-        st.markdown(f"<h3 style='color:{USJ_BLUE};'>Réponses les plus fréquentes</h3>", unsafe_allow_html=True)
-        display_dist = dist.head(30).copy()
-        display_dist["Pourcentage"] = display_dist["Pourcentage"].map(lambda x: f"{x:.2f}%")
-        st.dataframe(display_dist, use_container_width=True, hide_index=True)
-        return
-
-    dist_plot = dist.sort_values("Pourcentage", ascending=True)
-
-    fig_overall = px.bar(
-        dist_plot,
-        x="Pourcentage",
-        y="Réponse",
-        orientation="h",
-        text="Pourcentage",
-        color="Pourcentage",
-        color_continuous_scale=[[0, "#EAF2FF"], [0.5, "#7FA6D9"], [1, USJ_BLUE]],
-        hover_data={"N": True, "Pourcentage": ":.2f"},
-        title="Distribution globale des réponses"
-    )
-
-    fig_overall.update_traces(
-        texttemplate="%{text:.2f}%",
-        textposition="outside",
-        marker_line_color="white",
-        marker_line_width=1,
-        cliponaxis=False
-    )
-
-    fig_overall.update_layout(
-        xaxis_title="Pourcentage des réponses valides",
-        yaxis_title="",
-        coloraxis_showscale=False,
-        margin=dict(l=40, r=80, t=90, b=50)
-    )
-
-    theme_layout(fig_overall, height=max(460, 42 * len(dist_plot)), showlegend=False)
-    st.plotly_chart(fig_overall, use_container_width=True, config={"displayModeBar": False})
-
-    year_dist = build_simple_year_distribution(df_original, df_filtered, selected_col)
-
-    if False and not year_dist.empty and year_dist["Année"].nunique() > 1:
-        fig_year = px.bar(
-            year_dist,
-            x="Année",
-            y="Pourcentage",
-            color="Réponse",
-            text="Pourcentage",
-            barmode="stack",
-            color_discrete_sequence=PLOTLY_SEQ,
-            hover_data={"N": True, "Pourcentage": ":.2f"},
-            title="Évolution de la distribution par année"
-        )
-
-        fig_year.update_traces(texttemplate="%{text:.1f}%", textposition="inside")
-        fig_year.update_layout(
-            yaxis_title="Pourcentage des réponses valides",
-            xaxis_title="Année",
-            legend_title="Réponse",
-            legend=dict(orientation="h", yanchor="bottom", y=1.14, xanchor="left", x=0, font=dict(size=10)),
-            margin=dict(l=40, r=30, t=140, b=50),
-        )
-
-        theme_layout(fig_year, height=560)
-        st.plotly_chart(fig_year, use_container_width=True, config={"displayModeBar": False})
-
-    top_dist = dist.sort_values("Pourcentage", ascending=False).iloc[0]
     summary_box(
         f"""
-        <span style='font-size:20px; font-weight:800; color:{USJ_BLUE};'>Lecture descriptive</span><br>
-        La modalité la plus fréquente est <b>{html_escape(top_dist['Réponse'])}</b>, avec <b>{top_dist['Pourcentage']:.2f}%</b>
-        des réponses valides. Cette lecture est descriptive et précède volontairement tout calcul de score ou de KPI.
+        La section <b>{html_escape(selected_section_all)}</b> contient <b>{question_count}</b> question(s) ou variable(s) affichées directement sur cette page.
+        Il n’y a plus de sélection question par question. Chaque bloc présente la distribution, le tableau des fréquences, le nombre de réponses valides et les données manquantes.
         """,
         color=USJ_BLUE,
         background="#F7F9FC"
     )
 
-    display_dist = dist.sort_values("Pourcentage", ascending=False).copy()
-    display_dist["Pourcentage"] = display_dist["Pourcentage"].map(lambda x: f"{x:.2f}%")
+    if question_count > 12:
+        st.info("Cette section contient plusieurs questions. Les blocs ci-dessous peuvent être longs à afficher, mais toutes les questions de la section sont présentées sans menu de sélection supplémentaire.")
 
-    st.markdown(f"<h3 style='color:{USJ_BLUE};'>Tableau des fréquences</h3>", unsafe_allow_html=True)
-    st.dataframe(display_dist, use_container_width=True, hide_index=True)
+    for question_label, question_col in question_map.items():
+        render_all_questions_single_result(question_label, question_col, original_filtered, total_n)
 
 
 Q44_FINANCING_ITEMS = {
