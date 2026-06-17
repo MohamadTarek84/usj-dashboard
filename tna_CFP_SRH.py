@@ -1266,6 +1266,14 @@ def init_db():
         )
     """)
 
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS director_validations (
+            director_code TEXT PRIMARY KEY,
+            validated_by TEXT,
+            validated_at TEXT
+        )
+    """)
+
     
     
     conn.commit()
@@ -1873,6 +1881,33 @@ def validate_employee_response(employee_code):
     conn.commit()
     conn.close()
 
+
+def is_director_validated(director_code):
+    conn = sqlite3.connect(DB_NAME)
+    row = conn.execute(
+        "SELECT director_code FROM director_validations WHERE director_code = ?",
+        (str(director_code).strip().upper(),)
+    ).fetchone()
+    conn.close()
+    return row is not None
+
+
+def validate_director_response(director_code):
+    conn = sqlite3.connect(DB_NAME)
+    conn.execute("""
+        INSERT OR REPLACE INTO director_validations (
+            director_code, validated_by, validated_at
+        )
+        VALUES (?, ?, ?)
+    """, (
+        str(director_code).strip().upper(),
+        st.session_state.get("code", ""),
+        datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    ))
+    conn.commit()
+    conn.close()
+
+
 def render_psg_form(user):
     render_form_hero(
         "Personnel de soutien et de gestion",
@@ -1885,7 +1920,7 @@ def render_psg_form(user):
     saved_data = load_latest_response_for_code(st.session_state["code"])
     saved_ranked = saved_data.get("ranked_themes", [])
     saved_other = saved_data.get("other_themes", "")
-    read_only = is_employee_validated(st.session_state["code"])
+    read_only = bool(saved_data) or is_employee_validated(st.session_state["code"])
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -1914,7 +1949,10 @@ def render_psg_form(user):
     st.markdown("<br>", unsafe_allow_html=True)
 
     if read_only:
-        st.info("Vos réponses ont été validées par votre directeur. Vous pouvez les consulter en lecture seule.")
+        if is_employee_validated(st.session_state["code"]):
+            st.info("Vos réponses ont été validées par votre directeur. Vous pouvez les consulter en lecture seule.")
+        else:
+            st.info("Vos réponses ont déjà été soumises. Vous pouvez les consulter en lecture seule.")
     else:
         if st.button("Soumettre mes réponses", use_container_width=True):
             if len(ranked_themes) != 3:
@@ -1942,6 +1980,7 @@ def render_director_form(user):
     render_identity_cards(user)
 
     saved_data = load_latest_response_for_code(st.session_state["code"])
+    director_read_only = is_director_validated(st.session_state["code"])
     saved_leader_ranked = saved_data.get("leader_ranked_themes", [])
     saved_leader_other = saved_data.get("leader_other_themes", "")
     saved_employees_map = {
@@ -1961,14 +2000,16 @@ def render_director_form(user):
         "Vos 3 thématiques prioritaires :",
         DD_LEADER_THEMES,
         "leader_ranked",
-        saved_leader_ranked
+        saved_leader_ranked,
+        disabled=director_read_only
     )
 
     leader_other = st.text_area(
         "Autre(s) thème(s) proposés pour vous-même",
         value=saved_leader_other,
         key="leader_other",
-        placeholder="Indiquez ici un thème de leadership non présent dans la liste, si nécessaire."
+        placeholder="Indiquez ici un thème de leadership non présent dans la liste, si nécessaire.",
+        disabled=director_read_only
     )
 
     st.markdown("<br>", unsafe_allow_html=True)
@@ -2035,17 +2076,20 @@ def render_director_form(user):
             saved_emp_ranked = saved_emp_item.get("ranked_themes_by_director", [])
             saved_emp_other = saved_emp_item.get("other_themes", "")
             
-            emp_ranked = unique_ranked_select(
+            emp_ranked = ranked_select_with_defaults(
                 f"Classement des 3 thèmes prioritaires pour {emp['name']} :",
                 PSG_THEMES,
-                f"director_emp_{emp['code']}"
+                f"director_emp_{emp['code']}",
+                saved_emp_ranked,
+                disabled=director_read_only
             )
 
             emp_other = st.text_area(
                 f"Autre(s) besoin(s) spécifique(s) pour {emp['name']}",
                 value=saved_emp_other,
                 key=f"other_{emp['code']}",
-                placeholder="Indiquez ici un besoin particulier, si nécessaire."
+                placeholder="Indiquez ici un besoin particulier, si nécessaire.",
+                disabled=director_read_only
             )
 
             validate_col, status_col = st.columns([1.4, 4])
@@ -2062,7 +2106,8 @@ def render_director_form(user):
                     if st.button(
                         "Valider",
                         key=f"validate_employee_{emp['code']}",
-                        use_container_width=False
+                        use_container_width=False,
+                        disabled=director_read_only
                     ):
                         validate_employee_response(emp["code"])
                         st.success(f"Les réponses de {emp['name']} ont été validées.")
@@ -2127,21 +2172,31 @@ def render_director_form(user):
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    if st.button("Soumettre mes réponses", use_container_width=True):
-        if len(leader_ranked) < 1:
-            st.warning("Veuillez sélectionner au moins 1 thème pour vous-même.")
-            return
+    if director_read_only:
+        st.info("Vos réponses ont été validées. Vous pouvez les consulter en lecture seule.")
+    else:
+        if st.button("Soumettre mes réponses", use_container_width=True):
+            if len(leader_ranked) < 1:
+                st.warning("Veuillez sélectionner au moins 1 thème pour vous-même.")
+                return
 
 
-        data = {
-            "leader_ranked_themes": leader_ranked,
-            "leader_selected_themes": leader_ranked,
-            "leader_other_themes": leader_other,
-            "employees_training_needs": employee_training_needs
-        }
+            data = {
+                "leader_ranked_themes": leader_ranked,
+                "leader_selected_themes": leader_ranked,
+                "leader_other_themes": leader_other,
+                "employees_training_needs": employee_training_needs
+            }
 
-        save_response(user, data)
-        st.success("Vos réponses ont été enregistrées avec succès.")
+            save_response(user, data)
+            st.success("Vos réponses ont été enregistrées avec succès.")
+            st.rerun()
+
+        if saved_data:
+            if st.button("Valider définitivement mes réponses", use_container_width=True):
+                validate_director_response(st.session_state["code"])
+                st.success("Vos réponses ont été validées définitivement.")
+                st.rerun()
 
 
 def render_employee_visual_cards(employee_name, employee_code, employee_department, employee_ranked, director_ranked, final_themes, matched):
@@ -3242,6 +3297,7 @@ def render_admin_dashboard():
         c.execute("DELETE FROM responses")
         c.execute("DELETE FROM admin_theme_overrides")
         c.execute("DELETE FROM employee_validations")
+        c.execute("DELETE FROM director_validations")
         conn.commit()
         conn.close()
         st.success("Les réponses ont été réinitialisées.")
