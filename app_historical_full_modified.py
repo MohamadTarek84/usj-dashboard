@@ -1023,6 +1023,10 @@ def get_question_dependency(question_col, original_data=None):
 
     dependency_rules = [
         {
+            "child_prefixes": ["4a_a-", "4a_b-", "4a_c-", "4a_d-", "4a_e-", "4a_f-", "4a_g-", "4a_h-", "4b_a-", "4b_b-", "4b_c-", "4b_d-", "4b_e-", "4b_f-"],
+            "parent_prefixes": ["4- sollicite un soutien", "4- sollicité un soutien", "4- avez-vous sollicite un soutien", "4- avez-vous sollicité un soutien"],
+        },
+        {
             "child_prefixes": ["9a-", "9b_a-", "9b_b-", "9b_c-", "9b_d-", "9b_e-", "9b_f-", "9b_g-", "9b_h-", "9c-", "9d_a-", "9d_b-", "9d_c-", "9d_d-", "9d_e-"],
             "parent_prefixes": ["9- avez-vous realise un stage", "9- avez-vous réalisé un stage"],
         },
@@ -3765,16 +3769,59 @@ def render_positive_scale_kpi(positive_summary):
         unsafe_allow_html=True
     )
 
-def render_all_questions_single_result(question_label, question_col, original_filtered, total_n):
-    """Render one complete descriptive result block for a question within the selected section."""
-    if question_col not in original_filtered.columns:
+def render_all_questions_single_result(question_label, question_col, original_filtered, total_n, coded_filter_data=None):
+    """Render one complete descriptive result block for a question within the selected section.
+
+    Conditional questions use the applicable denominator only. Example: 4a and 4b
+    questions are calculated only among respondents who answered Oui to Q4.
+    """
+    if question_col not in df_original.columns and question_col not in original_filtered.columns:
         return
 
-    dist = build_simple_distribution(original_filtered, question_col)
-    valid_n = int(original_filtered[question_col].map(clean_response_value).dropna().shape[0])
-    missing_n = int(total_n - valid_n)
-    missing_pct = missing_n / total_n * 100 if total_n > 0 else np.nan
-    modalities_n = int(original_filtered[question_col].map(clean_response_value).dropna().nunique())
+    if coded_filter_data is not None:
+        selected_series, eligible_index, non_applicable_n, parent_col = get_applicable_response_series(
+            df_original,
+            coded_filter_data,
+            question_col
+        )
+        valid_series = selected_series.dropna()
+        eligible_n = int(len(eligible_index))
+        valid_n = int(valid_series.shape[0])
+        missing_n = int(selected_series.isna().sum()) if eligible_n > 0 else 0
+        missing_pct = missing_n / eligible_n * 100 if eligible_n > 0 else np.nan
+        modalities_n = int(valid_series.nunique()) if valid_n > 0 else 0
+        base_label = "Base applicable" if parent_col else "Base filtrée"
+        base_subtitle = "Répondants concernés" if parent_col else "Répondants sélectionnés"
+        base_n = eligible_n
+        dependency_label = clean_other_question_label(parent_col) if parent_col else None
+
+        if valid_series.empty:
+            dist = pd.DataFrame()
+        else:
+            dist = valid_series.value_counts().reset_index()
+            dist.columns = ["Réponse", "N"]
+            dist["Pourcentage"] = dist["N"] / dist["N"].sum() * 100
+    else:
+        if question_col not in original_filtered.columns:
+            return
+        dist = build_simple_distribution(original_filtered, question_col)
+        valid_n = int(original_filtered[question_col].map(clean_response_value).dropna().shape[0])
+        missing_n = int(total_n - valid_n)
+        missing_pct = missing_n / total_n * 100 if total_n > 0 else np.nan
+        modalities_n = int(original_filtered[question_col].map(clean_response_value).dropna().nunique())
+        base_label = "Base filtrée"
+        base_subtitle = "Répondants sélectionnés"
+        base_n = int(total_n)
+        parent_col = None
+        non_applicable_n = 0
+        dependency_label = None
+
+    condition_html = ""
+    if parent_col:
+        condition_html = f"""
+            <div style='font-size:13px;color:#667085;margin-top:4px;'>Question conditionnelle liée à : {html_escape(dependency_label)}</div>
+            <div style='font-size:13px;color:#667085;margin-top:4px;'>Non applicables exclus du dénominateur : {int(non_applicable_n)}</div>
+        """
 
     st.markdown(
         f"""
@@ -3782,6 +3829,7 @@ def render_all_questions_single_result(question_label, question_col, original_fi
             <div style='font-size:13px;font-weight:800;color:#667085;margin-bottom:6px;'>Question / variable</div>
             <div style='font-size:20px;font-weight:900;color:{USJ_BLUE};line-height:1.35;'>{html_escape(question_label)}</div>
             <div style='font-size:13px;color:#667085;margin-top:8px;'>Variable Excel : {html_escape(question_col)}</div>
+            {condition_html}
         </div>
         """,
         unsafe_allow_html=True
@@ -3789,11 +3837,11 @@ def render_all_questions_single_result(question_label, question_col, original_fi
 
     m1, m2, m3, m4 = st.columns(4)
     with m1:
-        insight_card("Base filtrée", total_n, "Répondants sélectionnés", USJ_BLUE_2)
+        insight_card(base_label, base_n, base_subtitle, USJ_BLUE_2)
     with m2:
         insight_card("N valide", valid_n, "Réponses non manquantes", USJ_GREEN if valid_n > 0 else USJ_RED)
     with m3:
-        insight_card("Données manquantes", safe_pct(missing_pct), "Dans la base filtrée", USJ_ORANGE if pd.notna(missing_pct) and missing_pct > 10 else USJ_GREEN)
+        insight_card("Données manquantes", safe_pct(missing_pct), "Dans la base applicable" if parent_col else "Dans la base filtrée", USJ_ORANGE if pd.notna(missing_pct) and missing_pct > 10 else USJ_GREEN)
     with m4:
         insight_card("Modalités", modalities_n, "Réponses distinctes", USJ_GOLD)
 
@@ -3850,16 +3898,16 @@ def render_all_questions_single_result(question_label, question_col, original_fi
         st.dataframe(display_dist, use_container_width=True, hide_index=True)
 
     top_dist = dist.sort_values("Pourcentage", ascending=False).iloc[0]
+    conditional_note = " Cette lecture est calculée uniquement sur la base applicable à la question conditionnelle." if parent_col else ""
     st.markdown(
         f"""
         <div style='background:#F7F9FC;border-left:6px solid {USJ_BLUE};border-radius:14px;padding:12px 16px;margin-top:4px;margin-bottom:8px;'>
             <b>Lecture descriptive :</b> la modalité la plus fréquente est <b>{html_escape(top_dist['Réponse'])}</b>,
-            avec <b>{top_dist['Pourcentage']:.2f}%</b> des réponses valides.
+            avec <b>{top_dist['Pourcentage']:.2f}%</b> des réponses valides.{conditional_note}
         </div>
         """,
         unsafe_allow_html=True
     )
-
 
 def page_all_questions_results():
     section_header(
@@ -3871,7 +3919,7 @@ def page_all_questions_results():
         """
         Cette page présente les résultats bruts de chaque question du questionnaire avant toute agrégation en scores ou KPI.
         Les résultats sont affichés pour une seule année à la fois. Les comparaisons historiques seront traitées séparément dans la page dédiée.
-        Les questions conditionnelles ne sont pas retraitées ici à ce stade : elles seront vérifiées séparément.
+        Les bases applicables des questions conditionnelles sont corrigées automatiquement lorsque la question filtre est identifiée.
         """,
         color=USJ_BLUE,
         background="#F7F9FC"
@@ -3930,7 +3978,7 @@ def page_all_questions_results():
         st.info("Cette section contient plusieurs questions. Les blocs ci-dessous peuvent être longs à afficher, mais toutes les questions de la section sont présentées sans menu de sélection supplémentaire.")
 
     for question_label, question_col in question_map.items():
-        render_all_questions_single_result(question_label, question_col, original_filtered, total_n)
+        render_all_questions_single_result(question_label, question_col, original_filtered, total_n, data_questions)
 
 
 Q44_FINANCING_ITEMS = {
