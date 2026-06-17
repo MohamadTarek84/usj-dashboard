@@ -4039,6 +4039,13 @@ def get_main_question_group_header(question_col):
             "subtitle": "Les résultats ci-dessous détaillent l’évaluation de chaque infrastructure et ressource mise à disposition par l’USJ."
         }
 
+    if q_norm.startswith("41_") or q_norm.startswith("41-"):
+        return {
+            "code": "41",
+            "title": "41- En général, comment évaluez-vous :",
+            "subtitle": "Les résultats ci-dessous détaillent l’évaluation générale de l’expérience à l’USJ."
+        }
+
     return None
 
 
