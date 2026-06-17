@@ -1150,8 +1150,23 @@ def get_question_dependency(question_col, original_data=None):
             "parent_prefixes": ["9- avez-vous realise un stage", "9- avez-vous réalisé un stage"],
         },
         {
-            "child_prefixes": ["21_a-", "21_b-", "21_c-"],
-            "parent_prefixes": ["17- exercer une activite remuneree", "17- exercer une activité rémunérée"],
+            # Employment follow-up questions are applicable only to respondents
+            # who reported a paid activity in Q17. Respondents who answered Non
+            # are excluded from the denominator.
+            "child_prefixes": [
+                "18-", "18_autre-",
+                "19_a-", "19_b-", "19_c-", "19_d-", "19_e-", "19_f-", "19_g-", "19_h-", "19_i-", "19_j-", "19_k-", "19_l-", "19_m-", "19_n-", "19_o-", "19_autre-",
+                "20_a-", "20_b-", "20_c-", "20_d-", "20_e-", "20_f-", "20_g-", "20_h-", "20_i-", "20_j-", "20_autre-",
+                "21_a-", "21_b-", "21_c-"
+            ],
+            "parent_prefixes": [
+                "17- exercer une activite remuneree",
+                "17- exercer une activité rémunérée",
+                "17- exercez-vous une activite remuneree",
+                "17- exercez-vous une activité rémunérée",
+                "17- avez-vous exerce une activite remuneree",
+                "17- avez-vous exercé une activité rémunérée"
+            ],
         },
         {
             "child_prefixes": ["24a-"],
