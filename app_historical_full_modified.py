@@ -3607,6 +3607,164 @@ def build_simple_year_distribution(original_data, coded_data, col):
     return dist
 
 
+
+
+def normalize_response_label_for_kpi(value):
+    """Normalize response labels to detect positive answers across satisfaction and agreement scales."""
+    if pd.isna(value):
+        return ""
+    import unicodedata
+    text = str(value).strip().replace("\u00a0", " ")
+    text = unicodedata.normalize("NFKD", text)
+    text = "".join(ch for ch in text if not unicodedata.combining(ch))
+    text = text.lower()
+    text = text.replace("’", "'")
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
+
+
+POSITIVE_SCALE_RESPONSES = {
+    # Satisfaction scale, feminine and masculine
+    "satisfaisante",
+    "tres satisfaisante",
+    "satisfaisant",
+    "tres satisfaisant",
+    "satisfait",
+    "tres satisfait",
+    "satisfaite",
+    "tres satisfaite",
+
+    # Agreement scale
+    "d'accord",
+    "tout a fait d'accord",
+
+    # Utility / usefulness scale used in some questions
+    "plutot oui",
+    "tout a fait",
+    "oui, suffisamment",
+    "oui et j'ai beaucoup appris",
+    "oui et j'ai bien appris",
+}
+
+NEGATIVE_SCALE_RESPONSES = {
+    # Satisfaction scale
+    "insatisfaisante",
+    "tres insatisfaisante",
+    "insatisfaisant",
+    "tres insatisfaisant",
+    "insatisfait",
+    "tres insatisfait",
+    "insatisfaite",
+    "tres insatisfaite",
+
+    # Agreement scale
+    "pas d'accord",
+    "pas du tout d'accord",
+
+    # Utility / usefulness scale used in some questions
+    "plutot non",
+    "pas du tout",
+    "oui, mais pas suffisamment",
+    "non",
+    "oui mais j'ai peu appris",
+}
+
+
+SCALE_SIGNATURE_GROUPS = [
+    {
+        "positive": {"satisfaisante", "tres satisfaisante", "satisfaisant", "tres satisfaisant", "satisfait", "tres satisfait", "satisfaite", "tres satisfaite"},
+        "negative": {"insatisfaisante", "tres insatisfaisante", "insatisfaisant", "tres insatisfaisant", "insatisfait", "tres insatisfait", "insatisfaite", "tres insatisfaite"},
+        "label": "Satisfaction positive",
+        "subtitle": "Satisfait(e) + très satisfait(e)"
+    },
+    {
+        "positive": {"d'accord", "tout a fait d'accord"},
+        "negative": {"pas d'accord", "pas du tout d'accord"},
+        "label": "Accord positif",
+        "subtitle": "D’accord + tout à fait d’accord"
+    },
+    {
+        "positive": {"plutot oui", "tout a fait"},
+        "negative": {"plutot non", "pas du tout"},
+        "label": "Réponses positives",
+        "subtitle": "Plutôt oui + tout à fait"
+    },
+    {
+        "positive": {"oui, suffisamment"},
+        "negative": {"oui, mais pas suffisamment", "non"},
+        "label": "Formation suffisante",
+        "subtitle": "Oui, suffisamment"
+    },
+]
+
+
+def get_positive_scale_summary(dist):
+    """Return positive percentage/frequency only for recognized scale questions.
+
+    The original response distribution remains unchanged. This helper only adds an
+    additional KPI when the response modalities clearly correspond to a satisfaction,
+    agreement, usefulness, or sufficiency scale.
+    """
+    if dist is None or dist.empty or "Réponse" not in dist.columns or "N" not in dist.columns:
+        return None
+
+    temp = dist.copy()
+    temp["_norm"] = temp["Réponse"].map(normalize_response_label_for_kpi)
+    present = set(temp["_norm"].dropna().tolist())
+
+    for signature in SCALE_SIGNATURE_GROUPS:
+        has_positive = len(present.intersection(signature["positive"])) > 0
+        has_negative = len(present.intersection(signature["negative"])) > 0
+        if has_positive and has_negative:
+            pos_n = int(temp.loc[temp["_norm"].isin(signature["positive"]), "N"].sum())
+            total_n = int(temp["N"].sum())
+            pos_pct = pos_n / total_n * 100 if total_n > 0 else np.nan
+            return {
+                "label": signature["label"],
+                "subtitle": signature["subtitle"],
+                "N positif": pos_n,
+                "N total": total_n,
+                "Pourcentage positif": pos_pct,
+            }
+
+    return None
+
+
+def render_positive_scale_kpi(positive_summary):
+    """Render an attractive KPI card for total positive answers."""
+    if not positive_summary:
+        return
+
+    pct = positive_summary.get("Pourcentage positif", np.nan)
+    pos_n = positive_summary.get("N positif", 0)
+    total_n = positive_summary.get("N total", 0)
+    label = positive_summary.get("label", "Réponses positives")
+    subtitle = positive_summary.get("subtitle", "Total des réponses positives")
+    color = kpi_color_percentage(pct)
+
+    st.markdown(
+        f"""
+        <div style='
+            background:linear-gradient(135deg, #FFFFFF 0%, #F7F9FC 100%);
+            border:1px solid #DDE5F0;
+            border-left:8px solid {color};
+            border-radius:20px;
+            padding:18px 20px;
+            margin:0 0 14px 0;
+            box-shadow:0 6px 18px rgba(0,0,0,0.06);
+            font-family:Candara, Arial, sans-serif;
+        '>
+            <div style='font-size:14px;font-weight:900;color:{USJ_TEXT};margin-bottom:6px;'>{html_escape(label)}</div>
+            <div style='display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;'>
+                <div style='font-size:38px;font-weight:900;color:{color};line-height:1;'>{safe_pct(pct)}</div>
+                <div style='font-size:18px;font-weight:900;color:{USJ_BLUE};line-height:1.25;'>{int(pos_n):,} / {int(total_n):,}</div>
+            </div>
+            <div style='font-size:13px;color:#667085;margin-top:8px;'>{html_escape(subtitle)}</div>
+        </div>
+        """.replace(",", " "),
+        unsafe_allow_html=True
+    )
+
 def render_all_questions_single_result(question_label, question_col, original_filtered, total_n):
     """Render one complete descriptive result block for a question within the selected section."""
     if question_col not in original_filtered.columns:
@@ -3677,11 +3835,15 @@ def render_all_questions_single_result(question_label, question_col, original_fi
     )
     theme_layout(fig, height=max(390, 38 * len(dist_chart)), showlegend=False)
 
+    positive_summary = get_positive_scale_summary(dist)
+
     chart_col, table_col = st.columns([1.55, 1])
     with chart_col:
         st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
     with table_col:
+        if positive_summary:
+            render_positive_scale_kpi(positive_summary)
         display_dist = dist.sort_values("Pourcentage", ascending=False).copy()
         display_dist["Pourcentage"] = display_dist["Pourcentage"].map(lambda x: f"{x:.2f}%")
         st.markdown(f"<h4 style='color:{USJ_BLUE}; margin-top:0;'>Tableau des fréquences</h4>", unsafe_allow_html=True)
