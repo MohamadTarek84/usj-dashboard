@@ -1478,6 +1478,7 @@ page = st.radio(
     "Navigation analytique",
     [
         "Vue générale des indicateurs",
+        "Partie démographique",
         "Résultats descriptifs de toutes les questions",
         "Comparaison historique",
         "Facteurs clés d’amélioration",
@@ -1495,6 +1496,25 @@ year_summary_all = build_year_summary(df_coded, q43)
 year_summary_filtered = build_year_summary(df_filtered, q43)
 component_long_filtered = build_component_long(df_filtered)
 
+
+def get_single_year_context(page_key, label="Année à afficher"):
+    """For selected pages, force one year instead of combining all years when global year is Tous."""
+    years_available = sorted(df_coded["Year"].dropna().astype(str).unique().tolist()) if "Year" in df_coded.columns else []
+    if not years_available:
+        return year, df_filtered.copy(), df_original.loc[df_filtered.index].copy()
+
+    if year != "Tous":
+        page_year = str(year)
+    else:
+        default_index = len(years_available) - 1
+        st.info("Cette page n’agrège pas les années. Sélectionnez une année spécifique pour afficher les résultats.")
+        page_year = st.selectbox(label, years_available, index=default_index, key=f"single_year_{page_key}")
+
+    data_page = df_filtered[df_filtered["Year"].astype(str) == page_year].copy()
+    original_page = df_original.loc[data_page.index].copy()
+    return page_year, data_page, original_page
+
+
 # =====================================================
 # Page 1 - Overview
 # =====================================================
@@ -1502,23 +1522,29 @@ component_long_filtered = build_component_long(df_filtered)
 def page_indicators():
     section_header(
         "Vue générale des indicateurs",
-        "Synthèse dynamique des principaux indicateurs de satisfaction et de recommandation."
+        "Synthèse dynamique des principaux indicateurs de satisfaction et de recommandation pour une année sélectionnée."
     )
 
-    selected_year = year
+    selected_year, data_ind, original_ind = get_single_year_context("indicators")
 
-    satisfaction_pct = pct_from_mean(df_filtered["Score satisfaction globale"].mean())
-    recommandation_pct = calculate_recommendation_rate(df_filtered, q43)
+    if data_ind.empty:
+        st.warning("Aucune donnée disponible pour l’année et les filtres sélectionnés.")
+        return
 
-    delta_sat = compute_previous_delta(year_summary_filtered, selected_year, "Satisfaction globale")
-    delta_rec = compute_previous_delta(year_summary_filtered, selected_year, "Taux de recommandation")
+    local_year_summary = build_year_summary(data_ind, q43)
+
+    satisfaction_pct = pct_from_mean(data_ind["Score satisfaction globale"].mean())
+    recommandation_pct = calculate_recommendation_rate(data_ind, q43)
+
+    delta_sat = compute_previous_delta(local_year_summary, selected_year, "Satisfaction globale")
+    delta_rec = compute_previous_delta(local_year_summary, selected_year, "Taux de recommandation")
 
     c1, c2, c3 = st.columns(3)
 
     with c1:
         kpi_card(
             "Satisfaction globale à l’Université",
-            df_filtered["Score satisfaction globale"].mean(),
+            data_ind["Score satisfaction globale"].mean(),
             "Pourcentage de satisfaction",
             delta=delta_sat
         )
@@ -1534,43 +1560,43 @@ def page_indicators():
     with c3:
         kpi_card(
             "Expérience globale USJ",
-            df_filtered["Score expérience globale USJ"].mean(),
+            data_ind["Score expérience globale USJ"].mean(),
             "Expérience académique et personnelle"
         )
 
     c4, c5, c6 = st.columns(3)
 
     with c4:
-        kpi_card("Enseignement et apprentissage", df_filtered["Score enseignement et apprentissage"].mean())
+        kpi_card("Enseignement et apprentissage", data_ind["Score enseignement et apprentissage"].mean())
 
     with c5:
-        kpi_card("Accompagnement et encadrement", df_filtered["Score accompagnement et encadrement"].mean())
+        kpi_card("Accompagnement et encadrement", data_ind["Score accompagnement et encadrement"].mean())
 
     with c6:
-        kpi_card("Développement des compétences", df_filtered["Score développement des compétences"].mean())
+        kpi_card("Développement des compétences", data_ind["Score développement des compétences"].mean())
 
     c7, c8, c9 = st.columns(3)
 
     with c7:
-        kpi_card("Services de l’USJ", df_filtered["Score services USJ"].mean())
+        kpi_card("Services de l’USJ", data_ind["Score services USJ"].mean())
 
     with c8:
         kpi_card(
             "Vie étudiante et activités",
-            df_filtered["Score vie étudiante et activités"].mean(),
+            data_ind["Score vie étudiante et activités"].mean(),
             "Pas au courant exclu"
         )
 
     with c9:
-        kpi_card("Infrastructures et équipements", df_filtered["Score infrastructures et équipements"].mean())
+        kpi_card("Infrastructures et équipements", data_ind["Score infrastructures et équipements"].mean())
 
     c10, c11 = st.columns(2)
 
     with c10:
-        kpi_card("Frais de scolarité / qualité de l’enseignement", df_filtered["Score frais / qualité enseignement"].mean())
+        kpi_card("Frais de scolarité / qualité de l’enseignement", data_ind["Score frais / qualité enseignement"].mean())
 
     with c11:
-        kpi_card("Frais de scolarité / autres universités", df_filtered["Score frais / autres universités"].mean())
+        kpi_card("Frais de scolarité / autres universités", data_ind["Score frais / autres universités"].mean())
 
     component_summary = pd.DataFrame({
         "Dimension": [
@@ -1585,15 +1611,15 @@ def page_indicators():
             "Frais / autres universités"
         ],
         "Pourcentage": [
-            pct_from_mean(df_filtered["Score enseignement et apprentissage"].mean()),
-            pct_from_mean(df_filtered["Score accompagnement et encadrement"].mean()),
-            pct_from_mean(df_filtered["Score développement des compétences"].mean()),
-            pct_from_mean(df_filtered["Score expérience globale USJ"].mean()),
-            pct_from_mean(df_filtered["Score services USJ"].mean()),
-            pct_from_mean(df_filtered["Score vie étudiante et activités"].mean()),
-            pct_from_mean(df_filtered["Score infrastructures et équipements"].mean()),
-            pct_from_mean(df_filtered["Score frais / qualité enseignement"].mean()),
-            pct_from_mean(df_filtered["Score frais / autres universités"].mean())
+            pct_from_mean(data_ind["Score enseignement et apprentissage"].mean()),
+            pct_from_mean(data_ind["Score accompagnement et encadrement"].mean()),
+            pct_from_mean(data_ind["Score développement des compétences"].mean()),
+            pct_from_mean(data_ind["Score expérience globale USJ"].mean()),
+            pct_from_mean(data_ind["Score services USJ"].mean()),
+            pct_from_mean(data_ind["Score vie étudiante et activités"].mean()),
+            pct_from_mean(data_ind["Score infrastructures et équipements"].mean()),
+            pct_from_mean(data_ind["Score frais / qualité enseignement"].mean()),
+            pct_from_mean(data_ind["Score frais / autres universités"].mean())
         ]
     }).dropna()
 
@@ -1616,10 +1642,10 @@ def page_indicators():
             background="#F7F9FC"
         )
 
-    if year == "Tous" and len(year_summary_filtered) > 1:
+    if False and year == "Tous" and len(local_year_summary) > 1:
         section_header("Évolution synthétique", "Tendance globale des indicateurs principaux sur les années disponibles.")
 
-        trend = year_summary_filtered[["Année", "Satisfaction globale", "Taux de recommandation"]].melt(
+        trend = local_year_summary[["Année", "Satisfaction globale", "Taux de recommandation"]].melt(
             id_vars="Année",
             var_name="Indicateur",
             value_name="Pourcentage"
@@ -3045,6 +3071,194 @@ def summarize_other_questions_for_report(original_data, coded_filter_data, max_q
 
 
 # =====================================================
+# Page - Demographic profile
+# =====================================================
+
+def resolve_first_existing_column(data, candidates):
+    for col in candidates:
+        if col in data.columns:
+            return col
+    return None
+
+
+def make_frequency_table(data, col, top_n=None):
+    if col is None or col not in data.columns:
+        return pd.DataFrame()
+    s = data[col].map(clean_response_value).dropna()
+    if s.empty:
+        return pd.DataFrame()
+    out = s.value_counts().reset_index()
+    out.columns = ["Modalité", "N"]
+    out["Pourcentage"] = out["N"] / out["N"].sum() * 100
+    if top_n is not None and len(out) > top_n:
+        top = out.head(top_n).copy()
+        other = pd.DataFrame({
+            "Modalité": ["Autres"],
+            "N": [int(out.iloc[top_n:]["N"].sum())],
+            "Pourcentage": [float(out.iloc[top_n:]["Pourcentage"].sum())]
+        })
+        out = pd.concat([top, other], ignore_index=True)
+    return out
+
+
+def demographic_bar_chart(freq, title, orientation="h", height=430):
+    if freq.empty:
+        st.warning(f"Aucune donnée disponible pour {title}.")
+        return
+    plot_df = freq.copy()
+    if orientation == "h":
+        plot_df = plot_df.sort_values("Pourcentage", ascending=True)
+        fig = px.bar(
+            plot_df,
+            x="Pourcentage",
+            y="Modalité",
+            orientation="h",
+            text="Pourcentage",
+            color="Pourcentage",
+            color_continuous_scale=[[0, "#EAF2FF"], [0.5, "#7FA6D9"], [1, USJ_BLUE]],
+            hover_data={"N": True, "Pourcentage": ":.2f"},
+            title=title
+        )
+        fig.update_layout(xaxis_title="Pourcentage", yaxis_title="")
+    else:
+        fig = px.bar(
+            plot_df,
+            x="Modalité",
+            y="Pourcentage",
+            text="Pourcentage",
+            color="Pourcentage",
+            color_continuous_scale=[[0, "#EAF2FF"], [0.5, "#7FA6D9"], [1, USJ_BLUE]],
+            hover_data={"N": True, "Pourcentage": ":.2f"},
+            title=title
+        )
+        fig.update_layout(xaxis_title="", yaxis_title="Pourcentage")
+    fig.update_traces(texttemplate="%{text:.1f}%", textposition="outside", marker_line_color="white", marker_line_width=1)
+    fig.update_layout(coloraxis_showscale=False, margin=dict(l=30, r=40, t=70, b=50))
+    theme_layout(fig, height=height, showlegend=False)
+    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+
+
+def page_demographics():
+    section_header(
+        "Partie démographique",
+        "Profil des répondants selon le genre, l’âge, la faculté ou institut, le niveau et l’intitulé du diplôme."
+    )
+
+    selected_year, data_demo, original_demo = get_single_year_context("demographics")
+
+    if data_demo.empty:
+        st.warning("Aucune donnée disponible pour l’année et les filtres sélectionnés.")
+        return
+
+    genre_col = resolve_first_existing_column(data_demo, ["Genre"])
+    age_col = resolve_first_existing_column(data_demo, ["Age", "Âge"])
+    fac_col = resolve_first_existing_column(data_demo, ["Faculté_Institut", "Faculté_Institut_g", "Faculté", "Institut"])
+    niveau_col = resolve_first_existing_column(data_demo, ["Niveau", "Niveau_Lib"])
+    diplome_col = resolve_first_existing_column(data_demo, ["Intitulé Diplôme", "Intitulé_Diplôme", "Intitulé Diplome", "Diplôme", "Intitule Diplome"])
+
+    k1, k2, k3, k4 = st.columns(4)
+    with k1:
+        insight_card("Année affichée", selected_year, "Analyse non agrégée", USJ_BLUE)
+    with k2:
+        insight_card("Répondants", len(data_demo), "Base filtrée", USJ_GREEN)
+    with k3:
+        fac_n = data_demo[fac_col].map(clean_response_value).dropna().nunique() if fac_col else 0
+        insight_card("Facultés / Instituts", fac_n, "Modalités observées", USJ_BLUE_2)
+    with k4:
+        diplome_n = data_demo[diplome_col].map(clean_response_value).dropna().nunique() if diplome_col else 0
+        insight_card("Diplômes", diplome_n, "Intitulés distincts", USJ_GOLD)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    genre_freq = make_frequency_table(data_demo, genre_col)
+    age_numeric = pd.to_numeric(data_demo[age_col], errors="coerce") if age_col else pd.Series(dtype=float)
+    fac_freq = make_frequency_table(data_demo, fac_col, top_n=18)
+    niveau_freq = make_frequency_table(data_demo, niveau_col)
+    diplome_freq = make_frequency_table(data_demo, diplome_col, top_n=15)
+
+    c_left, c_right = st.columns([1, 1])
+
+    with c_left:
+        if not genre_freq.empty:
+            fig_genre = px.pie(
+                genre_freq,
+                names="Modalité",
+                values="N",
+                hole=0.55,
+                color_discrete_sequence=PLOTLY_SEQ,
+                title="Répartition des répondants par genre"
+            )
+            fig_genre.update_traces(textposition="inside", textinfo="percent+label", hovertemplate="%{label}<br>N=%{value}<br>%{percent}<extra></extra>")
+            theme_layout(fig_genre, height=430, showlegend=True)
+            st.plotly_chart(fig_genre, use_container_width=True, config={"displayModeBar": False})
+        else:
+            st.warning("Aucune donnée disponible pour le genre.")
+
+    with c_right:
+        if not age_numeric.dropna().empty:
+            fig_age = px.histogram(
+                pd.DataFrame({"Age": age_numeric.dropna()}),
+                x="Age",
+                nbins=18,
+                title="Distribution de l’âge des répondants",
+                color_discrete_sequence=[USJ_BLUE]
+            )
+            fig_age.update_layout(xaxis_title="Âge", yaxis_title="Nombre de répondants")
+            theme_layout(fig_age, height=430, showlegend=False)
+            st.plotly_chart(fig_age, use_container_width=True, config={"displayModeBar": False})
+            st.markdown(
+                f"""
+                <div style='background:#F7F9FC;border-left:6px solid {USJ_BLUE};border-radius:14px;padding:12px 16px;margin-top:-6px;'>
+                    <b>Âge moyen :</b> {safe_num(age_numeric.mean(), 1)} ans &nbsp; | &nbsp; <b>Âge médian :</b> {safe_num(age_numeric.median(), 1)} ans
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+        else:
+            st.warning("Aucune donnée numérique disponible pour l’âge.")
+
+    st.divider()
+
+    c_fac, c_niveau = st.columns([1.35, 1])
+    with c_fac:
+        demographic_bar_chart(fac_freq, "Répartition par faculté / institut", orientation="h", height=max(470, 28 * len(fac_freq)))
+
+    with c_niveau:
+        demographic_bar_chart(niveau_freq, "Répartition par niveau", orientation="v", height=470)
+
+    st.divider()
+
+    demographic_bar_chart(diplome_freq, "Principaux intitulés de diplôme", orientation="h", height=max(500, 30 * len(diplome_freq)))
+
+    st.markdown(f"<h3 style='color:{USJ_BLUE};'>Tableaux de fréquences</h3>", unsafe_allow_html=True)
+    tab_genre, tab_age, tab_fac, tab_niveau, tab_diplome = st.tabs(["Genre", "Âge", "Faculté / Institut", "Niveau", "Intitulé diplôme"])
+
+    with tab_genre:
+        if not genre_freq.empty:
+            temp = genre_freq.copy(); temp["Pourcentage"] = temp["Pourcentage"].map(lambda x: f"{x:.2f}%")
+            st.dataframe(temp, use_container_width=True, hide_index=True)
+    with tab_age:
+        if not age_numeric.dropna().empty:
+            age_desc = pd.DataFrame({
+                "Indicateur": ["N valide", "Moyenne", "Médiane", "Minimum", "Maximum"],
+                "Valeur": [int(age_numeric.notna().sum()), safe_num(age_numeric.mean(), 1), safe_num(age_numeric.median(), 1), safe_num(age_numeric.min(), 0), safe_num(age_numeric.max(), 0)]
+            })
+            st.dataframe(age_desc, use_container_width=True, hide_index=True)
+    with tab_fac:
+        if not fac_freq.empty:
+            temp = fac_freq.copy(); temp["Pourcentage"] = temp["Pourcentage"].map(lambda x: f"{x:.2f}%")
+            st.dataframe(temp, use_container_width=True, hide_index=True)
+    with tab_niveau:
+        if not niveau_freq.empty:
+            temp = niveau_freq.copy(); temp["Pourcentage"] = temp["Pourcentage"].map(lambda x: f"{x:.2f}%")
+            st.dataframe(temp, use_container_width=True, hide_index=True)
+    with tab_diplome:
+        if not diplome_freq.empty:
+            temp = diplome_freq.copy(); temp["Pourcentage"] = temp["Pourcentage"].map(lambda x: f"{x:.2f}%")
+            st.dataframe(temp, use_container_width=True, hide_index=True)
+
+
+# =====================================================
 # Page 5 - Results of all questions before KPI calculation
 # =====================================================
 
@@ -3170,11 +3384,18 @@ def page_all_questions_results():
     summary_box(
         """
         Cette page présente les résultats bruts de chaque question du questionnaire avant toute agrégation en scores ou KPI.
+        Les résultats sont affichés pour une seule année à la fois. Les comparaisons historiques seront traitées séparément dans la page dédiée.
         Les questions conditionnelles ne sont pas retraitées ici à ce stade : elles seront vérifiées séparément.
         """,
         color=USJ_BLUE,
         background="#F7F9FC"
     )
+
+    selected_year, data_questions, original_questions = get_single_year_context("all_questions")
+
+    if data_questions.empty:
+        st.warning("Aucune donnée disponible pour l’année et les filtres sélectionnés.")
+        return
 
     available_sections = list(ALL_SURVEY_SECTION_NUMBERS.keys())
 
@@ -3197,7 +3418,7 @@ def page_all_questions_results():
     )
 
     selected_col = question_map[selected_question_label]
-    original_filtered = df_original.loc[df_filtered.index].copy()
+    original_filtered = original_questions.copy()
 
     dist = build_simple_distribution(original_filtered, selected_col)
 
@@ -3278,7 +3499,7 @@ def page_all_questions_results():
 
     year_dist = build_simple_year_distribution(df_original, df_filtered, selected_col)
 
-    if not year_dist.empty and year_dist["Année"].nunique() > 1:
+    if False and not year_dist.empty and year_dist["Année"].nunique() > 1:
         fig_year = px.bar(
             year_dist,
             x="Année",
@@ -4599,6 +4820,9 @@ def page_methodology():
 
 if page == "Vue générale des indicateurs":
     page_indicators()
+
+elif page == "Partie démographique":
+    page_demographics()
 
 elif page == "Résultats descriptifs de toutes les questions":
     page_all_questions_results()
