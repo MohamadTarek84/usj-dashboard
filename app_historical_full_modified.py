@@ -971,6 +971,10 @@ OTHER_QUESTION_LABELS = {
     "32_g- De type ; Trouble de comportement": "32_g-De quel type de handicap s’agit-il ? Trouble de comportement",
     "33-Avez-vous eu besoin d’un service au sein de votre établissement ?": "33-Avez-vous eu besoin d’un service au sein de votre établissement ?",
     "33-Avez-vous eu besoin d’un service au sein de votre établissement ?": "33-Avez-vous eu besoin d’un service au sein de votre établissement ?",
+    "33a- De quels types de service ?": "33a-De quels types de service avez-vous eu besoin au sein de votre établissement ?",
+    "33a- De quels types de service ?  ": "33a-De quels types de service avez-vous eu besoin au sein de votre établissement ?",
+    "33b- À qui vous adressez-vous pour obtenir ces services ?": "33b-À qui vous adressez-vous pour obtenir ces services ?",
+    "33c- Ont-ils été mis à votre disposition ?": "33c-Ces services ont-ils été mis à votre disposition ?",
 
     "35-Consultez-vous le site de l'USJ ?": "35-Consultez-vous le site web de l’USJ ?",
     "36-Suivez-vous les pages et comptes USJ sur les réseaux sociaux (Facebook, Linkedln, Twitter, YouTube, Instagram, …) ?": "36-Suivez-vous les pages et comptes de l’USJ sur les réseaux sociaux ?",
@@ -1222,6 +1226,18 @@ def get_question_dependency(question_col, original_data=None):
                 "31-êtes-vous étudiant en situation de handicap",
                 "31- etes-vous etudiant en situation de handicap",
                 "31- êtes-vous étudiant en situation de handicap",
+            ],
+        },
+        {
+            # Service follow-up questions are applicable only to respondents
+            # who answered Oui to Q33: Besoin d’un service au sein de l’établissement.
+            "child_prefixes": ["33a-", "33b-", "33c-"],
+            "parent_prefixes": [
+                "33- avez-vous eu besoin d’un service au sein de votre établissement",
+                "33- avez-vous eu besoin d'un service au sein de votre etablissement",
+                "33- avez-vous eu besoin d’un service au sein de votre etablissement",
+                "33-avez-vous eu besoin d’un service au sein de votre établissement",
+                "33-avez-vous eu besoin d'un service au sein de votre etablissement",
             ],
         },
         {
