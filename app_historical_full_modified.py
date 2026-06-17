@@ -3938,6 +3938,54 @@ def render_positive_scale_kpi(positive_summary):
         unsafe_allow_html=True
     )
 
+
+def get_main_question_group_header(question_col):
+    """Return the main questionnaire wording that should appear before grouped sub-items."""
+    q_norm = normalize_question_key(question_col)
+
+    if q_norm.startswith("28_") or q_norm.startswith("28-"):
+        return {
+            "code": "28",
+            "title": "28- Comment évaluez-vous la qualité des services suivants offerts par l’USJ ?",
+            "subtitle": "Les résultats ci-dessous détaillent l’évaluation de chaque service proposé par l’USJ."
+        }
+
+    if q_norm.startswith("29_") or q_norm.startswith("29-"):
+        return {
+            "code": "29",
+            "title": "29- Évaluez chacun des aspects suivants de votre expérience de vie étudiante à l’USJ :",
+            "subtitle": "Les résultats ci-dessous détaillent les différents aspects de l’expérience de vie étudiante."
+        }
+
+    return None
+
+
+def render_main_question_group_header(group_info):
+    """Display the main question before its detailed sub-questions."""
+    if not group_info:
+        return
+
+    st.markdown(
+        f"""
+        <div style='
+            background:linear-gradient(135deg, #F7F9FC 0%, #EEF4FF 100%);
+            border:1px solid #DDE5F0;
+            border-left:8px solid {USJ_BLUE};
+            border-radius:20px;
+            padding:20px 22px;
+            margin:28px 0 14px 0;
+            box-shadow:0 6px 18px rgba(0,27,117,0.07);
+            font-family:Candara, Arial, sans-serif;
+        '>
+            <div style='font-size:13px;font-weight:900;color:#667085;margin-bottom:6px;'>Question principale</div>
+            <div style='font-size:23px;font-weight:900;color:{USJ_BLUE};line-height:1.35;'>{html_escape(group_info['title'])}</div>
+            <div style='font-size:14px;color:#5F6B7A;margin-top:8px;'>{html_escape(group_info['subtitle'])}</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
 def render_all_questions_single_result(question_label, question_col, original_filtered, total_n, coded_filter_data=None):
     """Render one complete descriptive result block for a question within the selected section.
 
@@ -4155,7 +4203,16 @@ def page_all_questions_results():
     if question_count > 12:
         st.info("Cette section contient plusieurs questions. Les blocs ci-dessous peuvent être longs à afficher, mais toutes les questions de la section sont présentées sans menu de sélection supplémentaire.")
 
+    current_main_group = None
     for question_label, question_col in question_map.items():
+        group_info = get_main_question_group_header(question_col)
+        group_code = group_info["code"] if group_info else None
+        if group_code and group_code != current_main_group:
+            render_main_question_group_header(group_info)
+            current_main_group = group_code
+        elif not group_code:
+            current_main_group = None
+
         render_all_questions_single_result(question_label, question_col, original_filtered, total_n, data_questions)
 
 
