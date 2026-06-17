@@ -923,6 +923,18 @@ OTHER_QUESTION_LABELS = {
 
     "15-De manière générale, êtes-vous satisfait des formations que vous avez suivies au Service de l’insertion professionnelle de l’USJ ?": "15-De manière générale, êtes-vous satisfait des formations suivies au Service de l’insertion professionnelle de l’USJ ?",
 
+    "10_autre- Autres test d'anglais": "10_autre-Précisez l’autre test d’anglais normalisé passé",
+    "10a_a- Raison: Pour s'inscrire à un programme de master/Doctorat": "10a_a-Pour quelle raison avez-vous passé un test d’anglais ? S’inscrire à un programme de master/doctorat",
+    "10a_b- Raison: Pour postuler à un emploi": "10a_b-Pour quelle raison avez-vous passé un test d’anglais ? Postuler à un emploi",
+    "10a_c- Raison: Pour faire une demande de visa": "10a_c-Pour quelle raison avez-vous passé un test d’anglais ? Faire une demande de visa",
+    "10a_d- Raison: Requis par la faculté/institution": "10a_d-Pour quelle raison avez-vous passé un test d’anglais ? Requis par la faculté/institution",
+    "10b- Obtenu le score requis dès la première fois que vous avez passé le test ?": "10b-Avez-vous obtenu le score requis dès la première tentative au test d’anglais ?",
+    "10c_a-Avez-vous utilisé: Cours d'entraînement pour le test": "10c_a-Avez-vous utilisé des cours d’entraînement pour le test ?",
+    "10c_b-Avez-vous utilisé: Cours pour améliorer les compétences en anglais (en dehors de l'USJ)": "10c_b-Avez-vous utilisé des cours pour améliorer vos compétences en anglais hors USJ ?",
+    "10c_c-Avez-vous utilisé:Tuteur particulier": "10c_c-Avez-vous utilisé un tuteur particulier pour préparer le test ?",
+    "10c_d-Avez-vous utilisé:Etudes individuelles": "10c_d-Avez-vous utilisé des études individuelles pour préparer le test ?",
+    "10c_e-Avez-vous utilisé:Cours USJ": "10c_e-Avez-vous utilisé des cours USJ pour préparer le test ?",
+
     "16_a-À l’USJ, dans la même discipline": "16_a-Envisagez-vous de poursuivre vos études à l’USJ dans la même discipline ?",
     "16_b-À l’USJ, dans une autre discipline": "16_b-Envisagez-vous de poursuivre vos études à l’USJ dans une autre discipline ?",
     "16_c-Dans une autre université au Liban": "16_c-Envisagez-vous de poursuivre vos études dans une autre université au Liban ?",
@@ -1005,6 +1017,60 @@ def is_yes_response(value):
     return text in {"oui", "yes", "y"} or text.startswith("oui") or text.startswith("yes")
 
 
+def is_english_test_response(value):
+    """Eligibility for Q10 follow-up questions.
+
+    Q10 follow-up questions are applicable to respondents who passed a standardized
+    English test. Only the explicit negative answer is excluded from the denominator.
+    This keeps TOEFL, IELTS, TOEIC and other affirmative test responses in the base.
+    """
+    if pd.isna(value):
+        return False
+    text = normalize_question_key(value)
+    if text in {"", "nan", "none", "nat", "<na>"}:
+        return False
+    if text in {"non", "no", "0", "0- non", "0 - non"}:
+        return False
+    if text.startswith("non") or text.startswith("no"):
+        return False
+    return True
+
+
+def is_english_other_test_response(value):
+    """Eligibility for 10_autre: only respondents who selected the 'Oui, autre' test option."""
+    if pd.isna(value):
+        return False
+    text = normalize_question_key(value)
+    if text in {"", "nan", "none", "nat", "<na>"}:
+        return False
+    if text.startswith("non") or text.startswith("no") or text in {"0", "0- non", "0 - non"}:
+        return False
+    return "autre" in text or "other" in text
+
+
+def get_parent_eligibility_mask(question_col, parent_values):
+    """Apply the correct parent-question eligibility rule for conditional questions."""
+    q_norm = normalize_question_key(question_col)
+
+    if q_norm.startswith(normalize_question_key("10_autre-")):
+        return parent_values.map(is_english_other_test_response).fillna(False)
+
+    if any(q_norm.startswith(normalize_question_key(prefix)) for prefix in [
+        "10a_a-", "10a_b-", "10a_c-", "10a_d-",
+        "10b-",
+        "10c_a-", "10c_b-", "10c_c-", "10c_d-", "10c_e-"
+    ]):
+        return parent_values.map(is_english_test_response).fillna(False)
+
+    return parent_values.map(is_yes_response).fillna(False)
+
+
+def should_exclude_question_from_presentation(question_col):
+    """Questions intentionally hidden from the descriptive presentation."""
+    q_norm = normalize_question_key(question_col)
+    return q_norm.startswith(normalize_question_key("10a_e-"))
+
+
 def find_column_by_prefix(columns, prefixes):
     """Find a column using normalized prefixes."""
     normalized = {col: normalize_question_key(col) for col in columns}
@@ -1036,6 +1102,24 @@ def get_question_dependency(question_col, original_data=None):
                 "6- avez-vous effectué une période d'études à l'étranger",
                 "6- etudié à l'étranger",
                 "6- etudie a l’étranger",
+            ],
+        },
+        {
+            "child_prefixes": ["10_autre-"],
+            "parent_prefixes": [
+                "10- avez-vous passe un test d'anglais normalise",
+                "10- avez-vous passé un test d’anglais normalisé",
+                "10- avez-vous passé un test d'anglais normalisé",
+                "10- passe un test d'anglais",
+            ],
+        },
+        {
+            "child_prefixes": ["10a_a-", "10a_b-", "10a_c-", "10a_d-", "10b-", "10c_a-", "10c_b-", "10c_c-", "10c_d-", "10c_e-"],
+            "parent_prefixes": [
+                "10- avez-vous passe un test d'anglais normalise",
+                "10- avez-vous passé un test d’anglais normalisé",
+                "10- avez-vous passé un test d'anglais normalisé",
+                "10- passe un test d'anglais",
             ],
         },
         {
@@ -1129,7 +1213,7 @@ def get_applicable_response_series(original_data, coded_filter_data, question_co
 
     if parent_col and parent_col in original_data.columns:
         parent_values = original_data.loc[available_index, parent_col].map(clean_response_value)
-        eligible_mask = parent_values.map(is_yes_response).fillna(False)
+        eligible_mask = get_parent_eligibility_mask(question_col, parent_values)
         eligible_index = eligible_mask[eligible_mask].index
     else:
         eligible_index = available_index
@@ -2902,6 +2986,9 @@ def get_other_question_columns(original_data):
         col_str = str(col).strip()
         col_norm = normalize_question_key(col_str)
 
+        if should_exclude_question_from_presentation(col_str):
+            continue
+
         if col_str in excluded:
             continue
 
@@ -3572,6 +3659,9 @@ def get_columns_for_all_questions_section(original_data, section_name):
 
     for col in original_data.columns:
         col_str = str(col).strip()
+
+        if should_exclude_question_from_presentation(col_str):
+            continue
 
         if col_str in get_excluded_non_question_columns():
             continue
