@@ -1478,6 +1478,7 @@ page = st.radio(
     "Navigation analytique",
     [
         "Vue générale des indicateurs",
+        "Résultats descriptifs de toutes les questions",
         "Comparaison historique",
         "Facteurs clés d’amélioration",
         "Résultats descriptifs par section",
@@ -3041,6 +3042,285 @@ def summarize_other_questions_for_report(original_data, coded_filter_data, max_q
     out = out.sort_values(["Priorité", "N valide", "Pourcentage"], ascending=[False, False, False]).head(max_questions)
     return out.drop(columns=["Priorité"], errors="ignore")
 
+
+
+# =====================================================
+# Page 5 - Results of all questions before KPI calculation
+# =====================================================
+
+DEMOGRAPHIC_FIELDS = {
+    "Genre": ["Genre"],
+    "Age": ["Age", "Âge"],
+    "Faculté / Institut": ["Faculté_Institut", "Faculté_Institut_g", "Faculté", "Institut"],
+    "Niveau": ["Niveau", "Niveau_Lib"],
+    "Intitulé Diplôme": ["Intitulé Diplôme", "Intitulé_Diplôme", "Intitulé Diplome", "Intitule Diplome", "Diplôme", "Diplome"],
+}
+
+ALL_SURVEY_SECTION_NUMBERS = {
+    "Profil des répondants": "DEMOGRAPHICS",
+    "Satisfaction dans l’expérience académique": [1, 2],
+    "Politique d’accompagnement": [3, 4],
+    "Développement des compétences et mobilité internationale": [5, 6, 7],
+    "Plateforme Alumni et expérience de stage": [8, 9],
+    "Apprentissage de l’anglais": [10, 11],
+    "Service de l’insertion professionnelle de l’USJ": [12, 13, 14, 15],
+    "Perspectives d’avenir": [16, 17, 18, 19, 20, 21, 22, 23],
+    "Évaluation des services, des infrastructures et de la satisfaction globale à l’USJ": list(range(24, 44)),
+    "Financement des études à l’USJ": [44, 45, 46],
+    "Propositions et commentaires": [47],
+}
+
+
+def extract_question_number(col_name):
+    text = str(col_name).strip()
+    match = re.match(r"^\s*(\d+)", text)
+    if match:
+        return int(match.group(1))
+    return None
+
+
+def find_existing_demographic_columns(data):
+    found = {}
+    normalized_cols = {normalize_question_key(col): col for col in data.columns}
+
+    for display_name, possible_cols in DEMOGRAPHIC_FIELDS.items():
+        selected_col = None
+        for col in possible_cols:
+            if col in data.columns:
+                selected_col = col
+                break
+            norm_col = normalize_question_key(col)
+            if norm_col in normalized_cols:
+                selected_col = normalized_cols[norm_col]
+                break
+        if selected_col is not None:
+            found[display_name] = selected_col
+
+    return found
+
+
+def get_columns_for_all_questions_section(original_data, section_name):
+    section_spec = ALL_SURVEY_SECTION_NUMBERS.get(section_name)
+
+    if section_spec == "DEMOGRAPHICS":
+        return find_existing_demographic_columns(original_data)
+
+    selected_numbers = set(section_spec)
+    cols = []
+
+    for col in original_data.columns:
+        col_str = str(col).strip()
+
+        if col_str in get_excluded_non_question_columns():
+            continue
+
+        if col_str.startswith("Score "):
+            continue
+
+        q_number = extract_question_number(col_str)
+        if q_number in selected_numbers:
+            cols.append(col_str)
+
+    def sort_key(col):
+        qn = extract_question_number(col)
+        return (qn if qn is not None else 9999, str(col))
+
+    cols = sorted(cols, key=sort_key)
+    return {clean_other_question_label(col): col for col in cols}
+
+
+def build_simple_distribution(data, col):
+    if col not in data.columns:
+        return pd.DataFrame()
+
+    s = data[col].map(clean_response_value).dropna()
+
+    if s.empty:
+        return pd.DataFrame()
+
+    dist = s.value_counts().reset_index()
+    dist.columns = ["Réponse", "N"]
+    dist["Pourcentage"] = dist["N"] / dist["N"].sum() * 100
+    return dist
+
+
+def build_simple_year_distribution(original_data, coded_data, col):
+    if col not in original_data.columns or "Year" not in coded_data.columns:
+        return pd.DataFrame()
+
+    temp = pd.DataFrame({
+        "Année": coded_data["Year"].astype(str),
+        "Réponse": original_data.loc[coded_data.index, col].map(clean_response_value)
+    }).dropna(subset=["Réponse"])
+
+    if temp.empty:
+        return pd.DataFrame()
+
+    dist = temp.groupby(["Année", "Réponse"]).size().reset_index(name="N")
+    dist["Pourcentage"] = dist.groupby("Année")["N"].transform(lambda x: x / x.sum() * 100)
+    return dist
+
+
+def page_all_questions_results():
+    section_header(
+        "Résultats descriptifs de toutes les questions",
+        "Présentation descriptive question par question, avant le calcul des scores et des indicateurs."
+    )
+
+    summary_box(
+        """
+        Cette page présente les résultats bruts de chaque question du questionnaire avant toute agrégation en scores ou KPI.
+        Les questions conditionnelles ne sont pas retraitées ici à ce stade : elles seront vérifiées séparément.
+        """,
+        color=USJ_BLUE,
+        background="#F7F9FC"
+    )
+
+    available_sections = list(ALL_SURVEY_SECTION_NUMBERS.keys())
+
+    selected_section_all = st.selectbox(
+        "Choisir une section du questionnaire",
+        available_sections,
+        key="all_questions_section_selector"
+    )
+
+    question_map = get_columns_for_all_questions_section(df_original, selected_section_all)
+
+    if not question_map:
+        st.warning("Aucune colonne trouvée dans le fichier Excel pour cette section.")
+        return
+
+    selected_question_label = st.selectbox(
+        "Choisir une question / variable",
+        list(question_map.keys()),
+        key="all_questions_question_selector"
+    )
+
+    selected_col = question_map[selected_question_label]
+    original_filtered = df_original.loc[df_filtered.index].copy()
+
+    dist = build_simple_distribution(original_filtered, selected_col)
+
+    valid_n = int(original_filtered[selected_col].map(clean_response_value).dropna().shape[0])
+    total_n = int(len(original_filtered))
+    missing_n = total_n - valid_n
+    missing_pct = missing_n / total_n * 100 if total_n > 0 else np.nan
+    modalities_n = int(original_filtered[selected_col].map(clean_response_value).dropna().nunique())
+
+    c1, c2, c3, c4 = st.columns(4)
+
+    with c1:
+        insight_card("Section", selected_section_all, "Titre du questionnaire", USJ_BLUE)
+
+    with c2:
+        insight_card("Base filtrée", total_n, "Répondants sélectionnés", USJ_BLUE_2)
+
+    with c3:
+        insight_card("N valide", valid_n, "Réponses non manquantes", USJ_GREEN if valid_n > 0 else USJ_RED)
+
+    with c4:
+        insight_card("Modalités", modalities_n, "Réponses distinctes", USJ_GOLD)
+
+    st.markdown(
+        f"""
+        <div style='background:#FFFFFF;border:1px solid #DDE5F0;border-left:7px solid {USJ_BLUE};border-radius:18px;padding:18px 20px;margin:18px 0;box-shadow:0 5px 16px rgba(0,0,0,0.05);'>
+            <div style='font-size:14px;font-weight:800;color:#667085;margin-bottom:6px;'>Question analysée</div>
+            <div style='font-size:20px;font-weight:900;color:{USJ_BLUE};line-height:1.35;'>{html_escape(selected_question_label)}</div>
+            <div style='font-size:13px;color:#667085;margin-top:8px;'>Variable Excel : {html_escape(selected_col)}</div>
+            <div style='font-size:13px;color:#667085;margin-top:4px;'>Données manquantes : {safe_pct(missing_pct)}</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    if dist.empty:
+        st.warning("Aucune réponse valide disponible pour cette question avec les filtres sélectionnés.")
+        return
+
+    if modalities_n > 30:
+        st.markdown(f"<h3 style='color:{USJ_BLUE};'>Réponses les plus fréquentes</h3>", unsafe_allow_html=True)
+        display_dist = dist.head(30).copy()
+        display_dist["Pourcentage"] = display_dist["Pourcentage"].map(lambda x: f"{x:.2f}%")
+        st.dataframe(display_dist, use_container_width=True, hide_index=True)
+        return
+
+    dist_plot = dist.sort_values("Pourcentage", ascending=True)
+
+    fig_overall = px.bar(
+        dist_plot,
+        x="Pourcentage",
+        y="Réponse",
+        orientation="h",
+        text="Pourcentage",
+        color="Pourcentage",
+        color_continuous_scale=[[0, "#EAF2FF"], [0.5, "#7FA6D9"], [1, USJ_BLUE]],
+        hover_data={"N": True, "Pourcentage": ":.2f"},
+        title="Distribution globale des réponses"
+    )
+
+    fig_overall.update_traces(
+        texttemplate="%{text:.2f}%",
+        textposition="outside",
+        marker_line_color="white",
+        marker_line_width=1,
+        cliponaxis=False
+    )
+
+    fig_overall.update_layout(
+        xaxis_title="Pourcentage des réponses valides",
+        yaxis_title="",
+        coloraxis_showscale=False,
+        margin=dict(l=40, r=80, t=90, b=50)
+    )
+
+    theme_layout(fig_overall, height=max(460, 42 * len(dist_plot)), showlegend=False)
+    st.plotly_chart(fig_overall, use_container_width=True, config={"displayModeBar": False})
+
+    year_dist = build_simple_year_distribution(df_original, df_filtered, selected_col)
+
+    if not year_dist.empty and year_dist["Année"].nunique() > 1:
+        fig_year = px.bar(
+            year_dist,
+            x="Année",
+            y="Pourcentage",
+            color="Réponse",
+            text="Pourcentage",
+            barmode="stack",
+            color_discrete_sequence=PLOTLY_SEQ,
+            hover_data={"N": True, "Pourcentage": ":.2f"},
+            title="Évolution de la distribution par année"
+        )
+
+        fig_year.update_traces(texttemplate="%{text:.1f}%", textposition="inside")
+        fig_year.update_layout(
+            yaxis_title="Pourcentage des réponses valides",
+            xaxis_title="Année",
+            legend_title="Réponse",
+            legend=dict(orientation="h", yanchor="bottom", y=1.14, xanchor="left", x=0, font=dict(size=10)),
+            margin=dict(l=40, r=30, t=140, b=50),
+        )
+
+        theme_layout(fig_year, height=560)
+        st.plotly_chart(fig_year, use_container_width=True, config={"displayModeBar": False})
+
+    top_dist = dist.sort_values("Pourcentage", ascending=False).iloc[0]
+    summary_box(
+        f"""
+        <span style='font-size:20px; font-weight:800; color:{USJ_BLUE};'>Lecture descriptive</span><br>
+        La modalité la plus fréquente est <b>{html_escape(top_dist['Réponse'])}</b>, avec <b>{top_dist['Pourcentage']:.2f}%</b>
+        des réponses valides. Cette lecture est descriptive et précède volontairement tout calcul de score ou de KPI.
+        """,
+        color=USJ_BLUE,
+        background="#F7F9FC"
+    )
+
+    display_dist = dist.sort_values("Pourcentage", ascending=False).copy()
+    display_dist["Pourcentage"] = display_dist["Pourcentage"].map(lambda x: f"{x:.2f}%")
+
+    st.markdown(f"<h3 style='color:{USJ_BLUE};'>Tableau des fréquences</h3>", unsafe_allow_html=True)
+    st.dataframe(display_dist, use_container_width=True, hide_index=True)
+
+
 Q44_FINANCING_ITEMS = {
     "44_a- Financé vos études à l’USJ : Parents": "Parents",
     "44_b- Financé vos études à l’USJ : Moi-même (emploi)": "Moi-même par un emploi",
@@ -4319,6 +4599,9 @@ def page_methodology():
 
 if page == "Vue générale des indicateurs":
     page_indicators()
+
+elif page == "Résultats descriptifs de toutes les questions":
+    page_all_questions_results()
 
 elif page == "Comparaison historique":
     page_historical_comparison()
