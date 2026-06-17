@@ -909,6 +909,10 @@ OTHER_QUESTION_LABELS = {
 
     "11-Avez-vous pris des cours d’anglais à l’USJ et comment évaluez-vous votre apprentissage ?": "11-Avez-vous pris des cours d’anglais à l’USJ et comment évaluez-vous votre apprentissage ?",
     "12- Avez-vous contacté le Service de l’insertion professionnelle de l’USJ ?": "12-Avez-vous contacté le Service de l’insertion professionnelle de l’USJ ?",
+    "12_a- Vous a-t-il proposé un stage?": "12_a-Le Service de l’insertion professionnelle vous a-t-il proposé un stage ?",
+    "12_a- Vous a-t-il proposé un stage ?": "12_a-Le Service de l’insertion professionnelle vous a-t-il proposé un stage ?",
+    "12_b- Vous a-t-il proposé un emploi ?": "12_b-Le Service de l’insertion professionnelle vous a-t-il proposé un emploi ?",
+    "12_b- Vous a-t-il proposé un emploi?": "12_b-Le Service de l’insertion professionnelle vous a-t-il proposé un emploi ?",
     "13-Avez-vous participé au Job Fair organisé par le Service ?": "13-Avez-vous participé au Job Fair organisé par le Service de l’insertion professionnelle ?",
 
     "14_a- Recherche d’emploi": "14_a-Avez-vous suivi une formation du Service de l’insertion professionnelle sur : Recherche d’emploi",
@@ -983,6 +987,12 @@ def clean_other_question_label(question):
 
     if q_norm.startswith("11"):
         return "11-Avez-vous pris des cours d’anglais à l’USJ et comment évaluez-vous votre apprentissage ?"
+
+    if q_norm.startswith(normalize_question_key("12_a-")):
+        return "12_a-Le Service de l’insertion professionnelle vous a-t-il proposé un stage ?"
+
+    if q_norm.startswith(normalize_question_key("12_b-")):
+        return "12_b-Le Service de l’insertion professionnelle vous a-t-il proposé un emploi ?"
 
     if q_norm.startswith("12"):
         return "12-Avez-vous contacté le Service de l’insertion professionnelle de l’USJ ?"
@@ -1120,6 +1130,15 @@ def get_question_dependency(question_col, original_data=None):
                 "10- avez-vous passé un test d’anglais normalisé",
                 "10- avez-vous passé un test d'anglais normalisé",
                 "10- passe un test d'anglais",
+            ],
+        },
+        {
+            "child_prefixes": ["12_a-", "12_b-"],
+            "parent_prefixes": [
+                "12- avez-vous contacte le service de l’insertion professionnelle",
+                "12- avez-vous contacté le Service de l’insertion professionnelle",
+                "12- avez-vous contacté le service de l'insertion professionnelle",
+                "12- avez-vous contacte le service de l'insertion professionnelle",
             ],
         },
         {
