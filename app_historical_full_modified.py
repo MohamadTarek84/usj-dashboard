@@ -1085,9 +1085,22 @@ def is_english_other_test_response(value):
     return "autre" in text or "other" in text
 
 
+def is_q34_dissatisfied_response(value):
+    """Eligibility for Q34non follow-up questions: Insatisfait or Très insatisfait only."""
+    if pd.isna(value):
+        return False
+    text = normalize_response_label_for_kpi(value)
+    return text in {"insatisfait", "tres insatisfait", "insatisfaite", "tres insatisfaite"}
+
+
 def get_parent_eligibility_mask(question_col, parent_values):
     """Apply the correct parent-question eligibility rule for conditional questions."""
     q_norm = normalize_question_key(question_col)
+
+    if any(q_norm.startswith(normalize_question_key(prefix)) for prefix in [
+        "34non_a-", "34non_b-", "34non_c-", "34non_d-", "34non_e-", "34non_f-", "34non_autre-"
+    ]):
+        return parent_values.map(is_q34_dissatisfied_response).fillna(False)
 
     if q_norm.startswith(normalize_question_key("10_autre-")):
         return parent_values.map(is_english_other_test_response).fillna(False)
@@ -1114,6 +1127,9 @@ def should_exclude_question_from_presentation(question_col):
         "22a_autre-",
         "23_autre-",
         "32_autre-",
+        "33a-",
+        "33b-",
+        "34non_autre-",
     ]
     return any(q_norm.startswith(normalize_question_key(prefix)) for prefix in hidden_prefixes)
 
@@ -1242,6 +1258,18 @@ def get_question_dependency(question_col, original_data=None):
                 "33- avez-vous eu besoin d’un service au sein de votre etablissement",
                 "33-avez-vous eu besoin d’un service au sein de votre établissement",
                 "33-avez-vous eu besoin d'un service au sein de votre etablissement",
+            ],
+        },
+        {
+            # Q34 dissatisfaction follow-up questions are applicable only to respondents
+            # who answered Insatisfait or Très insatisfait to Q34.
+            # 34non_autre is intentionally hidden from presentation.
+            "child_prefixes": ["34non_a-", "34non_b-", "34non_c-", "34non_d-", "34non_e-", "34non_f-", "34non_autre-"],
+            "parent_prefixes": [
+                "34- etes-vous globalement satisfait de vos conditions d'etudes et d'accueil",
+                "34- êtes-vous globalement satisfait de vos conditions d’études et d’accueil",
+                "34-etes-vous globalement satisfait de vos conditions d'etudes et d'accueil",
+                "34-êtes-vous globalement satisfait de vos conditions d’études et d’accueil",
             ],
         },
         {
