@@ -57,7 +57,6 @@ PSG_THEMES = [
     "Bureautique-Excel",
     "Bureautique-PowerPoint",
     "Gestion financière",
-    "Esprit critique et résolution de problèmes",
     "Gestion du changement en milieu universitaire",
     "Gestion de projets",
     "Équilibre vie professionnelle vie personnelle",
@@ -74,7 +73,22 @@ DD_LEADER_THEMES = [
     "Digital marketing",
     "Change management in academic institutions",
     "Crisis management and institutional resilience",
-    "Data-driven decision making"
+    "Data-driven decision making",
+    "Résolution de conflits",
+    "Public speaking and Body language",
+    "Bien-être au travail",
+    "Gestion du stress",
+    "Team building",
+    "Inclusion",
+    "Harcèlement",
+    "Branding",
+    "Création de contenu-Réseaux sociaux",
+    "Gestion financière",
+    "Gestion du changement en milieu universitaire",
+    "Gestion de projets (bases pour non-chefs de projet)",
+    "Équilibre vie professionnelle vie personnelle",
+    "Customer service (dealing with students/staff)"
+
 ]
 
 
