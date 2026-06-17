@@ -382,6 +382,13 @@ def filter_options(data, column):
     return ["Tous"] + values
 
 
+def year_filter_options(data, column="Year"):
+    """Year filter without Tous to avoid combined-year results in the dashboard."""
+    if column not in data.columns:
+        return []
+    return sorted(data[column].dropna().astype(str).unique())
+
+
 def summary_box(text, color=USJ_BLUE, background="#F7F9FC"):
     st.html(
         f"""
@@ -902,6 +909,10 @@ OTHER_QUESTION_LABELS = {
 
     "11-Avez-vous pris des cours d’anglais à l’USJ et comment évaluez-vous votre apprentissage ?": "11-Avez-vous pris des cours d’anglais à l’USJ et comment évaluez-vous votre apprentissage ?",
     "12- Avez-vous contacté le Service de l’insertion professionnelle de l’USJ ?": "12-Avez-vous contacté le Service de l’insertion professionnelle de l’USJ ?",
+    "12_a- Vous a-t-il proposé un stage?": "12_a-Le Service de l’insertion professionnelle vous a-t-il proposé un stage ?",
+    "12_a- Vous a-t-il proposé un stage ?": "12_a-Le Service de l’insertion professionnelle vous a-t-il proposé un stage ?",
+    "12_b- Vous a-t-il proposé un emploi ?": "12_b-Le Service de l’insertion professionnelle vous a-t-il proposé un emploi ?",
+    "12_b- Vous a-t-il proposé un emploi?": "12_b-Le Service de l’insertion professionnelle vous a-t-il proposé un emploi ?",
     "13-Avez-vous participé au Job Fair organisé par le Service ?": "13-Avez-vous participé au Job Fair organisé par le Service de l’insertion professionnelle ?",
 
     "14_a- Recherche d’emploi": "14_a-Avez-vous suivi une formation du Service de l’insertion professionnelle sur : Recherche d’emploi",
@@ -915,6 +926,18 @@ OTHER_QUESTION_LABELS = {
     "14_i- Créez votre propre blog": "14_i-Avez-vous suivi une formation du Service de l’insertion professionnelle sur : Créer votre propre blog",
 
     "15-De manière générale, êtes-vous satisfait des formations que vous avez suivies au Service de l’insertion professionnelle de l’USJ ?": "15-De manière générale, êtes-vous satisfait des formations suivies au Service de l’insertion professionnelle de l’USJ ?",
+
+    "10_autre- Autres test d'anglais": "10_autre-Précisez l’autre test d’anglais normalisé passé",
+    "10a_a- Raison: Pour s'inscrire à un programme de master/Doctorat": "10a_a-Pour quelle raison avez-vous passé un test d’anglais ? S’inscrire à un programme de master/doctorat",
+    "10a_b- Raison: Pour postuler à un emploi": "10a_b-Pour quelle raison avez-vous passé un test d’anglais ? Postuler à un emploi",
+    "10a_c- Raison: Pour faire une demande de visa": "10a_c-Pour quelle raison avez-vous passé un test d’anglais ? Faire une demande de visa",
+    "10a_d- Raison: Requis par la faculté/institution": "10a_d-Pour quelle raison avez-vous passé un test d’anglais ? Requis par la faculté/institution",
+    "10b- Obtenu le score requis dès la première fois que vous avez passé le test ?": "10b-Avez-vous obtenu le score requis dès la première tentative au test d’anglais ?",
+    "10c_a-Avez-vous utilisé: Cours d'entraînement pour le test": "10c_a-Avez-vous utilisé des cours d’entraînement pour le test ?",
+    "10c_b-Avez-vous utilisé: Cours pour améliorer les compétences en anglais (en dehors de l'USJ)": "10c_b-Avez-vous utilisé des cours pour améliorer vos compétences en anglais hors USJ ?",
+    "10c_c-Avez-vous utilisé:Tuteur particulier": "10c_c-Avez-vous utilisé un tuteur particulier pour préparer le test ?",
+    "10c_d-Avez-vous utilisé:Etudes individuelles": "10c_d-Avez-vous utilisé des études individuelles pour préparer le test ?",
+    "10c_e-Avez-vous utilisé:Cours USJ": "10c_e-Avez-vous utilisé des cours USJ pour préparer le test ?",
 
     "16_a-À l’USJ, dans la même discipline": "16_a-Envisagez-vous de poursuivre vos études à l’USJ dans la même discipline ?",
     "16_b-À l’USJ, dans une autre discipline": "16_b-Envisagez-vous de poursuivre vos études à l’USJ dans une autre discipline ?",
@@ -939,11 +962,38 @@ OTHER_QUESTION_LABELS = {
 
     "31-Êtes-vous étudiant en situation de handicap ?": "31-Êtes-vous étudiant en situation de handicap ?",
 
+    "32_a- De type ; Déficience intellectuelle": "32_a-De quel type de handicap s’agit-il ? Déficience intellectuelle",
+    "32_b- De type ; Déficience motrice": "32_b-De quel type de handicap s’agit-il ? Déficience motrice",
+    "32_c- De type ; Déficience auditive": "32_c-De quel type de handicap s’agit-il ? Déficience auditive",
+    "32_d- De type ; Déficience visuelle": "32_d-De quel type de handicap s’agit-il ? Déficience visuelle",
+    "32_e- De type ; Trouble d'apprentissage": "32_e-De quel type de handicap s’agit-il ? Trouble d’apprentissage",
+    "32_f- De type ; Trouble de communication": "32_f-De quel type de handicap s’agit-il ? Trouble de communication",
+    "32_g- De type ; Trouble de comportement": "32_g-De quel type de handicap s’agit-il ? Trouble de comportement",
+    "33-Avez-vous eu besoin d’un service au sein de votre établissement ?": "33-Avez-vous eu besoin d’un service au sein de votre établissement ?",
+    "33-Avez-vous eu besoin d’un service au sein de votre établissement ?": "33-Avez-vous eu besoin d’un service au sein de votre établissement ?",
+    "33a- De quels types de service ?": "33a-De quels types de service avez-vous eu besoin au sein de votre établissement ?",
+    "33a- De quels types de service ?  ": "33a-De quels types de service avez-vous eu besoin au sein de votre établissement ?",
+    "33b- À qui vous adressez-vous pour obtenir ces services ?": "33b-À qui vous adressez-vous pour obtenir ces services ?",
+    "33c- Ont-ils été mis à votre disposition ?": "33c-Ces services ont-ils été mis à votre disposition ?",
+    "34- Êtes-vous globalement satisfait de vos conditions d’études et d’accueil ?": "34-Êtes-vous globalement satisfait de vos conditions d’études et d’accueil ?",
+    "34- Êtes-vous globalement satisfait de vos conditions d'etudes et d'accueil ?": "34-Êtes-vous globalement satisfait de vos conditions d’études et d’accueil ?",
+    "34-Êtes-vous globalement satisfait de vos conditions d’études et d’accueil ?": "34-Êtes-vous globalement satisfait de vos conditions d’études et d’accueil ?",
+
     "35-Consultez-vous le site de l'USJ ?": "35-Consultez-vous le site web de l’USJ ?",
     "36-Suivez-vous les pages et comptes USJ sur les réseaux sociaux (Facebook, Linkedln, Twitter, YouTube, Instagram, …) ?": "36-Suivez-vous les pages et comptes de l’USJ sur les réseaux sociaux ?",
     "37-À quelle fréquence visitez-vous les pages et comptes USJ sur les réseaux sociaux": "37-À quelle fréquence visitez-vous les pages et comptes de l’USJ sur les réseaux sociaux ?",
     "38-Suivez-vous les pages et comptes de la Fédération des Associations des Anciens USJ sur les réseaux sociaux": "38-Suivez-vous les pages et comptes de la Fédération des Associations des Anciens USJ sur les réseaux sociaux ?",
     "39-À quelle fréquence visitez-vous les pages et comptes de la Fédération des Associations des Anciens USJ sur les réseaux sociaux": "39-À quelle fréquence visitez-vous les pages et comptes de la Fédération des Associations des Anciens USJ sur les réseaux sociaux ?",
+
+    "22a_a- Raisons de départ: Poursuivre des études": "22a_a-Pour quelles raisons prévoyez-vous de quitter le Liban ? Poursuivre des études",
+    "22a_b- Raisons de départ: Travailler": "22a_b-Pour quelles raisons prévoyez-vous de quitter le Liban ? Travailler",
+    "22a_c- Raisons de départ: Emigrer": "22a_c-Pour quelles raisons prévoyez-vous de quitter le Liban ? Émigrer",
+    "22a_d- Raisons de départ: Rejoindre ou accompagner un membre de la famille": "22a_d-Pour quelles raisons prévoyez-vous de quitter le Liban ? Rejoindre ou accompagner un membre de la famille",
+    "22a_e- Raisons de départ: Crise économique de 2019": "22a_e-Pour quelles raisons prévoyez-vous de quitter le Liban ? Crise économique de 2019",
+    "22a_f- Raisons de départ: Absence de sécurité": "22a_f-Pour quelles raisons prévoyez-vous de quitter le Liban ? Absence de sécurité",
+    "22a_autre- Raisons de départ: Autre": "22a_autre-Pour quelles raisons prévoyez-vous de quitter le Liban ? Autre",
+    "23- Vers quel pays prévoyez-vous partir ?": "23-Vers quel pays prévoyez-vous partir ?",
+    "23_autre- Autre pays": "23_autre-Vers quel pays prévoyez-vous partir ? Autre pays",
 
     "44_a- Financé vos études à l’USJ : Parents": "44-Comment avez-vous financé vos études à l’USJ ? (2024-2025)",
   
@@ -964,6 +1014,12 @@ def clean_other_question_label(question):
 
     if q_norm.startswith("11"):
         return "11-Avez-vous pris des cours d’anglais à l’USJ et comment évaluez-vous votre apprentissage ?"
+
+    if q_norm.startswith(normalize_question_key("12_a-")):
+        return "12_a-Le Service de l’insertion professionnelle vous a-t-il proposé un stage ?"
+
+    if q_norm.startswith(normalize_question_key("12_b-")):
+        return "12_b-Le Service de l’insertion professionnelle vous a-t-il proposé un emploi ?"
 
     if q_norm.startswith("12"):
         return "12-Avez-vous contacté le Service de l’insertion professionnelle de l’USJ ?"
@@ -998,6 +1054,70 @@ def is_yes_response(value):
     return text in {"oui", "yes", "y"} or text.startswith("oui") or text.startswith("yes")
 
 
+def is_english_test_response(value):
+    """Eligibility for Q10 follow-up questions.
+
+    Q10 follow-up questions are applicable to respondents who passed a standardized
+    English test. Only the explicit negative answer is excluded from the denominator.
+    This keeps TOEFL, IELTS, TOEIC and other affirmative test responses in the base.
+    """
+    if pd.isna(value):
+        return False
+    text = normalize_question_key(value)
+    if text in {"", "nan", "none", "nat", "<na>"}:
+        return False
+    if text in {"non", "no", "0", "0- non", "0 - non"}:
+        return False
+    if text.startswith("non") or text.startswith("no"):
+        return False
+    return True
+
+
+def is_english_other_test_response(value):
+    """Eligibility for 10_autre: only respondents who selected the 'Oui, autre' test option."""
+    if pd.isna(value):
+        return False
+    text = normalize_question_key(value)
+    if text in {"", "nan", "none", "nat", "<na>"}:
+        return False
+    if text.startswith("non") or text.startswith("no") or text in {"0", "0- non", "0 - non"}:
+        return False
+    return "autre" in text or "other" in text
+
+
+def get_parent_eligibility_mask(question_col, parent_values):
+    """Apply the correct parent-question eligibility rule for conditional questions."""
+    q_norm = normalize_question_key(question_col)
+
+    if q_norm.startswith(normalize_question_key("10_autre-")):
+        return parent_values.map(is_english_other_test_response).fillna(False)
+
+    if any(q_norm.startswith(normalize_question_key(prefix)) for prefix in [
+        "10a_a-", "10a_b-", "10a_c-", "10a_d-",
+        "10b-",
+        "10c_a-", "10c_b-", "10c_c-", "10c_d-", "10c_e-"
+    ]):
+        return parent_values.map(is_english_test_response).fillna(False)
+
+    return parent_values.map(is_yes_response).fillna(False)
+
+
+def should_exclude_question_from_presentation(question_col):
+    """Questions intentionally hidden from the descriptive presentation."""
+    q_norm = normalize_question_key(question_col)
+    hidden_prefixes = [
+        "10a_e-",
+        "18_autre-",
+        "19_o-",
+        "19_autre-",
+        "20_autre-",
+        "22a_autre-",
+        "23_autre-",
+        "32_autre-",
+    ]
+    return any(q_norm.startswith(normalize_question_key(prefix)) for prefix in hidden_prefixes)
+
+
 def find_column_by_prefix(columns, prefixes):
     """Find a column using normalized prefixes."""
     normalized = {col: normalize_question_key(col) for col in columns}
@@ -1016,25 +1136,112 @@ def get_question_dependency(question_col, original_data=None):
 
     dependency_rules = [
         {
+            "child_prefixes": ["4a_a-", "4a_b-", "4a_c-", "4a_d-", "4a_e-", "4a_f-", "4a_g-", "4a_h-", "4b_a-", "4b_b-", "4b_c-", "4b_d-", "4b_e-", "4b_f-"],
+            "parent_prefixes": ["4- sollicite un soutien", "4- sollicité un soutien", "4- avez-vous sollicite un soutien", "4- avez-vous sollicité un soutien"],
+        },
+        {
+            "child_prefixes": ["6a_a-", "6a_b-", "6a_c-"],
+            "parent_prefixes": [
+                "6- etudie a l'etranger",
+                "6- étudié à l'étranger",
+                "6- avez-vous effectue une periode d'etudes a l'etranger",
+                "6- avez-vous effectué une période d’études à l'étranger",
+                "6- avez-vous effectué une période d'études à l'étranger",
+                "6- etudié à l'étranger",
+                "6- etudie a l’étranger",
+            ],
+        },
+        {
+            "child_prefixes": ["10_autre-"],
+            "parent_prefixes": [
+                "10- avez-vous passe un test d'anglais normalise",
+                "10- avez-vous passé un test d’anglais normalisé",
+                "10- avez-vous passé un test d'anglais normalisé",
+                "10- passe un test d'anglais",
+            ],
+        },
+        {
+            "child_prefixes": ["10a_a-", "10a_b-", "10a_c-", "10a_d-", "10b-", "10c_a-", "10c_b-", "10c_c-", "10c_d-", "10c_e-"],
+            "parent_prefixes": [
+                "10- avez-vous passe un test d'anglais normalise",
+                "10- avez-vous passé un test d’anglais normalisé",
+                "10- avez-vous passé un test d'anglais normalisé",
+                "10- passe un test d'anglais",
+            ],
+        },
+        {
+            "child_prefixes": ["12_a-", "12_b-"],
+            "parent_prefixes": [
+                "12- avez-vous contacte le service de l’insertion professionnelle",
+                "12- avez-vous contacté le Service de l’insertion professionnelle",
+                "12- avez-vous contacté le service de l'insertion professionnelle",
+                "12- avez-vous contacte le service de l'insertion professionnelle",
+            ],
+        },
+        {
             "child_prefixes": ["9a-", "9b_a-", "9b_b-", "9b_c-", "9b_d-", "9b_e-", "9b_f-", "9b_g-", "9b_h-", "9c-", "9d_a-", "9d_b-", "9d_c-", "9d_d-", "9d_e-"],
             "parent_prefixes": ["9- avez-vous realise un stage", "9- avez-vous réalisé un stage"],
         },
         {
-            "child_prefixes": ["21_a-", "21_b-", "21_c-"],
-            "parent_prefixes": ["17- exercer une activite remuneree", "17- exercer une activité rémunérée"],
-        },
-        {
-            # Dissatisfaction details are applicable only to respondents who answered
-            # Insatisfait or Très insatisfait to Q34.
-            # 34non_autre is hidden from presentation, but the rule is kept for completeness.
+            # Employment follow-up questions are applicable only to respondents
+            # who reported a paid activity in Q17. Respondents who answered Non
+            # are excluded from the denominator.
             "child_prefixes": [
-                "34non_a-", "34non_b-", "34non_c-", "34non_d-", "34non_e-", "34non_f-", "34non_autre-"
+                "18-", "18_autre-",
+                "19_a-", "19_b-", "19_c-", "19_d-", "19_e-", "19_f-", "19_g-", "19_h-", "19_i-", "19_j-", "19_k-", "19_l-", "19_m-", "19_n-", "19_o-", "19_autre-",
+                "20_a-", "20_b-", "20_c-", "20_d-", "20_e-", "20_f-", "20_g-", "20_h-", "20_i-", "20_j-", "20_autre-",
+                "21_a-", "21_b-", "21_c-"
             ],
             "parent_prefixes": [
-                "34- etes-vous globalement satisfait de vos conditions d'etudes et d'accueil",
-                "34- êtes-vous globalement satisfait de vos conditions d’études et d’accueil",
-                "34-êtes-vous globalement satisfait de vos conditions d’études et d’accueil",
-                "34- etes-vous globalement satisfait de vos conditions d’etudes et d’accueil",
+                "17- exercer une activite remuneree",
+                "17- exercer une activité rémunérée",
+                "17- exercez-vous une activite remuneree",
+                "17- exercez-vous une activité rémunérée",
+                "17- avez-vous exerce une activite remuneree",
+                "17- avez-vous exercé une activité rémunérée"
+            ],
+        },
+        {
+            # Departure follow-up questions are applicable only to respondents
+            # who answered Oui to Q22: Prévoyez-vous de quitter le Liban ?
+            "child_prefixes": [
+                "22a_a-", "22a_b-", "22a_c-", "22a_d-", "22a_e-", "22a_f-", "22a_autre-",
+                "23-", "23_autre-"
+            ],
+            "parent_prefixes": [
+                "22- prevoyez-vous de quitter le liban",
+                "22- prévoyez-vous de quitter le liban",
+                "22-prevoyez-vous de quitter le liban",
+                "22-prévoyez-vous de quitter le liban",
+            ],
+        },
+
+        {
+            # Disability follow-up questions are applicable only to respondents
+            # who answered Oui to Q31: Étudiant en situation de handicap.
+            # 32_autre is hidden from presentation, but the rule is kept for completeness.
+            "child_prefixes": [
+                "32_a-", "32_b-", "32_c-", "32_d-", "32_e-", "32_f-", "32_g-", "32_autre-",
+                "33-", "33a-", "33b-", "34-"
+            ],
+            "parent_prefixes": [
+                "31-etes-vous etudiant en situation de handicap",
+                "31-êtes-vous étudiant en situation de handicap",
+                "31- etes-vous etudiant en situation de handicap",
+                "31- êtes-vous étudiant en situation de handicap",
+            ],
+        },
+        {
+            # Availability follow-up question is applicable only to respondents
+            # who answered Oui to Q33: Besoin d’un service au sein de l’établissement.
+            # 33a, 33b and Q34 are treated as linked to Q31 according to the requested dashboard logic.
+            "child_prefixes": ["33c-"],
+            "parent_prefixes": [
+                "33- avez-vous eu besoin d’un service au sein de votre établissement",
+                "33- avez-vous eu besoin d'un service au sein de votre etablissement",
+                "33- avez-vous eu besoin d’un service au sein de votre etablissement",
+                "33-avez-vous eu besoin d’un service au sein de votre établissement",
+                "33-avez-vous eu besoin d'un service au sein de votre etablissement",
             ],
         },
         {
@@ -1120,7 +1327,7 @@ def get_applicable_response_series(original_data, coded_filter_data, question_co
 
     if parent_col and parent_col in original_data.columns:
         parent_values = original_data.loc[available_index, parent_col].map(clean_response_value)
-        eligible_mask = parent_values.map(is_yes_response).fillna(False)
+        eligible_mask = get_parent_eligibility_mask(question_col, parent_values)
         eligible_index = eligible_mask[eligible_mask].index
     else:
         eligible_index = available_index
@@ -1390,9 +1597,11 @@ filter_action_cols = st.columns([1.15, 1.35, 6.5])
 
 with filter_action_cols[0]:
     if st.button("↺ Réinitialiser les filtres", use_container_width=True):
-        st.session_state["filter_year"] = "Tous"
+        available_years_reset = year_filter_options(df_coded, "Year")
+        st.session_state["filter_year"] = available_years_reset[-1] if available_years_reset else ""
         st.session_state["filter_genre"] = "Tous"
         st.session_state["filter_faculte"] = "Tous"
+        st.session_state["filter_campus"] = "Tous"
         st.session_state["filter_cursus"] = "Tous"
         st.session_state["filter_niveau"] = "Tous"
         st.rerun()
@@ -1418,15 +1627,29 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-filter_cols = st.columns(5)
+filter_cols = st.columns(6)
 df_filter_base = df_coded.copy()
 
-with filter_cols[0]:
-    year = st.selectbox("Année", filter_options(df_filter_base, "Year"), key="filter_year")
+# Campus can have slightly different names depending on the Excel file.
+CAMPUS_COLUMN = next(
+    (col for col in ["Campus", "campus", "Campus_g", "Campus principal", "Campus_principal", "Site", "site"] if col in df_filter_base.columns),
+    None
+)
 
-df_after_year = df_filter_base.copy()
-if year != "Tous":
-    df_after_year = df_after_year[df_after_year["Year"].astype(str) == year]
+available_years = year_filter_options(df_filter_base, "Year")
+if not available_years:
+    st.error("Aucune année valide n’est disponible dans le fichier Excel.")
+    st.stop()
+
+# The global year filter intentionally excludes "Tous".
+# This prevents the overview and descriptive pages from combining several survey years.
+if st.session_state.get("filter_year") not in available_years:
+    st.session_state["filter_year"] = available_years[-1]
+
+with filter_cols[0]:
+    year = st.selectbox("Année", available_years, key="filter_year")
+
+df_after_year = df_filter_base[df_filter_base["Year"].astype(str) == year].copy()
 
 with filter_cols[1]:
     genre = st.selectbox("Genre", filter_options(df_after_year, "Genre"), key="filter_genre")
@@ -1443,13 +1666,24 @@ if faculte != "Tous":
     df_after_faculte = df_after_faculte[df_after_faculte["Faculté_Institut_g"].astype(str) == faculte]
 
 with filter_cols[3]:
-    cursus = st.selectbox("Cursus", filter_options(df_after_faculte, "Cursus"), key="filter_cursus")
+    if CAMPUS_COLUMN:
+        campus = st.selectbox("Campus", filter_options(df_after_faculte, CAMPUS_COLUMN), key="filter_campus")
+    else:
+        campus = "Tous"
+        st.selectbox("Campus", ["Tous"], key="filter_campus", disabled=True)
 
-df_after_cursus = df_after_faculte.copy()
+df_after_campus = df_after_faculte.copy()
+if CAMPUS_COLUMN and campus != "Tous":
+    df_after_campus = df_after_campus[df_after_campus[CAMPUS_COLUMN].astype(str) == campus]
+
+with filter_cols[4]:
+    cursus = st.selectbox("Cursus", filter_options(df_after_campus, "Cursus"), key="filter_cursus")
+
+df_after_cursus = df_after_campus.copy()
 if cursus != "Tous":
     df_after_cursus = df_after_cursus[df_after_cursus["Cursus"].astype(str) == cursus]
 
-with filter_cols[4]:
+with filter_cols[5]:
     niveau = st.selectbox("Niveau", filter_options(df_after_cursus, "Niveau"), key="filter_niveau")
 
 df_filtered = df_after_cursus.copy()
@@ -1463,6 +1697,8 @@ if genre != "Tous":
     active_filter_labels.append(f"Genre : {genre}")
 if faculte != "Tous":
     active_filter_labels.append(f"Faculté : {faculte}")
+if CAMPUS_COLUMN and campus != "Tous":
+    active_filter_labels.append(f"Campus : {campus}")
 if cursus != "Tous":
     active_filter_labels.append(f"Cursus : {cursus}")
 if niveau != "Tous":
@@ -1492,6 +1728,7 @@ page = st.radio(
     "Navigation analytique",
     [
         "Vue générale des indicateurs",
+        "Résultats descriptifs de toutes les questions",
         "Comparaison historique",
         "Facteurs clés d’amélioration",
         "Résultats descriptifs par section",
@@ -1508,6 +1745,25 @@ year_summary_all = build_year_summary(df_coded, q43)
 year_summary_filtered = build_year_summary(df_filtered, q43)
 component_long_filtered = build_component_long(df_filtered)
 
+
+def get_single_year_context(page_key, label="Année à afficher"):
+    """For selected pages, force one year instead of combining all years when global year is Tous."""
+    years_available = sorted(df_coded["Year"].dropna().astype(str).unique().tolist()) if "Year" in df_coded.columns else []
+    if not years_available:
+        return year, df_filtered.copy(), df_original.loc[df_filtered.index].copy()
+
+    if year != "Tous":
+        page_year = str(year)
+    else:
+        default_index = len(years_available) - 1
+        st.info("Cette page n’agrège pas les années. Sélectionnez une année spécifique pour afficher les résultats.")
+        page_year = st.selectbox(label, years_available, index=default_index, key=f"single_year_{page_key}")
+
+    data_page = df_filtered[df_filtered["Year"].astype(str) == page_year].copy()
+    original_page = df_original.loc[data_page.index].copy()
+    return page_year, data_page, original_page
+
+
 # =====================================================
 # Page 1 - Overview
 # =====================================================
@@ -1515,23 +1771,29 @@ component_long_filtered = build_component_long(df_filtered)
 def page_indicators():
     section_header(
         "Vue générale des indicateurs",
-        "Synthèse dynamique des principaux indicateurs de satisfaction et de recommandation."
+        "Synthèse dynamique des principaux indicateurs de satisfaction et de recommandation pour une année sélectionnée."
     )
 
-    selected_year = year
+    selected_year, data_ind, original_ind = get_single_year_context("indicators")
 
-    satisfaction_pct = pct_from_mean(df_filtered["Score satisfaction globale"].mean())
-    recommandation_pct = calculate_recommendation_rate(df_filtered, q43)
+    if data_ind.empty:
+        st.warning("Aucune donnée disponible pour l’année et les filtres sélectionnés.")
+        return
 
-    delta_sat = compute_previous_delta(year_summary_filtered, selected_year, "Satisfaction globale")
-    delta_rec = compute_previous_delta(year_summary_filtered, selected_year, "Taux de recommandation")
+    local_year_summary = build_year_summary(data_ind, q43)
+
+    satisfaction_pct = pct_from_mean(data_ind["Score satisfaction globale"].mean())
+    recommandation_pct = calculate_recommendation_rate(data_ind, q43)
+
+    delta_sat = compute_previous_delta(local_year_summary, selected_year, "Satisfaction globale")
+    delta_rec = compute_previous_delta(local_year_summary, selected_year, "Taux de recommandation")
 
     c1, c2, c3 = st.columns(3)
 
     with c1:
         kpi_card(
             "Satisfaction globale à l’Université",
-            df_filtered["Score satisfaction globale"].mean(),
+            data_ind["Score satisfaction globale"].mean(),
             "Pourcentage de satisfaction",
             delta=delta_sat
         )
@@ -1547,43 +1809,43 @@ def page_indicators():
     with c3:
         kpi_card(
             "Expérience globale USJ",
-            df_filtered["Score expérience globale USJ"].mean(),
+            data_ind["Score expérience globale USJ"].mean(),
             "Expérience académique et personnelle"
         )
 
     c4, c5, c6 = st.columns(3)
 
     with c4:
-        kpi_card("Enseignement et apprentissage", df_filtered["Score enseignement et apprentissage"].mean())
+        kpi_card("Enseignement et apprentissage", data_ind["Score enseignement et apprentissage"].mean())
 
     with c5:
-        kpi_card("Accompagnement et encadrement", df_filtered["Score accompagnement et encadrement"].mean())
+        kpi_card("Accompagnement et encadrement", data_ind["Score accompagnement et encadrement"].mean())
 
     with c6:
-        kpi_card("Développement des compétences", df_filtered["Score développement des compétences"].mean())
+        kpi_card("Développement des compétences", data_ind["Score développement des compétences"].mean())
 
     c7, c8, c9 = st.columns(3)
 
     with c7:
-        kpi_card("Services de l’USJ", df_filtered["Score services USJ"].mean())
+        kpi_card("Services de l’USJ", data_ind["Score services USJ"].mean())
 
     with c8:
         kpi_card(
             "Vie étudiante et activités",
-            df_filtered["Score vie étudiante et activités"].mean(),
+            data_ind["Score vie étudiante et activités"].mean(),
             "Pas au courant exclu"
         )
 
     with c9:
-        kpi_card("Infrastructures et équipements", df_filtered["Score infrastructures et équipements"].mean())
+        kpi_card("Infrastructures et équipements", data_ind["Score infrastructures et équipements"].mean())
 
     c10, c11 = st.columns(2)
 
     with c10:
-        kpi_card("Frais de scolarité / qualité de l’enseignement", df_filtered["Score frais / qualité enseignement"].mean())
+        kpi_card("Frais de scolarité / qualité de l’enseignement", data_ind["Score frais / qualité enseignement"].mean())
 
     with c11:
-        kpi_card("Frais de scolarité / autres universités", df_filtered["Score frais / autres universités"].mean())
+        kpi_card("Frais de scolarité / autres universités", data_ind["Score frais / autres universités"].mean())
 
     component_summary = pd.DataFrame({
         "Dimension": [
@@ -1598,15 +1860,15 @@ def page_indicators():
             "Frais / autres universités"
         ],
         "Pourcentage": [
-            pct_from_mean(df_filtered["Score enseignement et apprentissage"].mean()),
-            pct_from_mean(df_filtered["Score accompagnement et encadrement"].mean()),
-            pct_from_mean(df_filtered["Score développement des compétences"].mean()),
-            pct_from_mean(df_filtered["Score expérience globale USJ"].mean()),
-            pct_from_mean(df_filtered["Score services USJ"].mean()),
-            pct_from_mean(df_filtered["Score vie étudiante et activités"].mean()),
-            pct_from_mean(df_filtered["Score infrastructures et équipements"].mean()),
-            pct_from_mean(df_filtered["Score frais / qualité enseignement"].mean()),
-            pct_from_mean(df_filtered["Score frais / autres universités"].mean())
+            pct_from_mean(data_ind["Score enseignement et apprentissage"].mean()),
+            pct_from_mean(data_ind["Score accompagnement et encadrement"].mean()),
+            pct_from_mean(data_ind["Score développement des compétences"].mean()),
+            pct_from_mean(data_ind["Score expérience globale USJ"].mean()),
+            pct_from_mean(data_ind["Score services USJ"].mean()),
+            pct_from_mean(data_ind["Score vie étudiante et activités"].mean()),
+            pct_from_mean(data_ind["Score infrastructures et équipements"].mean()),
+            pct_from_mean(data_ind["Score frais / qualité enseignement"].mean()),
+            pct_from_mean(data_ind["Score frais / autres universités"].mean())
         ]
     }).dropna()
 
@@ -1629,10 +1891,10 @@ def page_indicators():
             background="#F7F9FC"
         )
 
-    if year == "Tous" and len(year_summary_filtered) > 1:
+    if False and year == "Tous" and len(local_year_summary) > 1:
         section_header("Évolution synthétique", "Tendance globale des indicateurs principaux sur les années disponibles.")
 
-        trend = year_summary_filtered[["Année", "Satisfaction globale", "Taux de recommandation"]].melt(
+        trend = local_year_summary[["Année", "Satisfaction globale", "Taux de recommandation"]].melt(
             id_vars="Année",
             var_name="Indicateur",
             value_name="Pourcentage"
@@ -2482,6 +2744,13 @@ def page_inferential_statistics():
     demographic_candidates = {
         "Genre": "Genre",
         "Faculté_Institut_g": "Faculté / Institut",
+        "Campus": "Campus",
+        "campus": "Campus",
+        "Campus_g": "Campus",
+        "Campus principal": "Campus",
+        "Campus_principal": "Campus",
+        "Site": "Campus",
+        "site": "Campus",
         "Niveau_Lib": "Niveau",
         "startlanguage": "Langue de démarrage",
         "StartLanguage": "Langue de démarrage",
@@ -2493,8 +2762,10 @@ def page_inferential_statistics():
     available_demo = {}
     for col, label in demographic_candidates.items():
         if col in df_filtered.columns:
-            # Avoid displaying duplicated language entries if several aliases exist.
+            # Avoid displaying duplicated language/campus entries if several aliases exist.
             if label == "Langue de démarrage" and "Langue de démarrage" in available_demo.values():
+                continue
+            if label == "Campus" and "Campus" in available_demo.values():
                 continue
             available_demo[col] = label
 
@@ -2706,6 +2977,8 @@ def apply_current_filters_without_faculty(data):
         base = base[base["Year"].astype(str) == str(year)]
     if genre != "Tous" and "Genre" in base.columns:
         base = base[base["Genre"].astype(str) == str(genre)]
+    if CAMPUS_COLUMN and campus != "Tous" and CAMPUS_COLUMN in base.columns:
+        base = base[base[CAMPUS_COLUMN].astype(str) == str(campus)]
     if cursus != "Tous" and "Cursus" in base.columns:
         base = base[base["Cursus"].astype(str) == str(cursus)]
     if niveau != "Tous" and "Niveau" in base.columns:
@@ -2746,7 +3019,7 @@ def get_excluded_non_question_columns():
     """Columns that should not be treated as questionnaire items."""
     base_cols = {
         "Year", "Année", "Genre", "Faculté_Institut_g", "Faculté", "Faculté_Institut", "Faculty", "Institut",
-        "Cursus", "Niveau", "Niveau_Lib", "startlanguage", "StartLanguage", "Language", "Langue", "Age",
+        "Cursus", "Campus", "campus", "Campus_g", "Campus principal", "Campus_principal", "Site", "site", "Niveau", "Niveau_Lib", "startlanguage", "StartLanguage", "Language", "Langue", "Age",
         "Date", "Horodateur", "Timestamp", "Institution", "Responsable", "Email", "Adresse e-mail", "ID", "Id", "id",
         "Code", "Nom", "Prénom", "StartDate", "EndDate", "Status", "IPAddress", "Progress", "Duration",
         "Finished", "RecordedDate", "ResponseId", "RecipientLastName", "RecipientFirstName", "RecipientEmail",
@@ -2826,6 +3099,9 @@ def get_other_question_columns(original_data):
     for col in original_data.columns:
         col_str = str(col).strip()
         col_norm = normalize_question_key(col_str)
+
+        if should_exclude_question_from_presentation(col_str):
+            continue
 
         if col_str in excluded:
             continue
@@ -3054,6 +3330,938 @@ def summarize_other_questions_for_report(original_data, coded_filter_data, max_q
     out = pd.DataFrame(rows)
     out = out.sort_values(["Priorité", "N valide", "Pourcentage"], ascending=[False, False, False]).head(max_questions)
     return out.drop(columns=["Priorité"], errors="ignore")
+
+
+
+# =====================================================
+# Page - Demographic profile
+# =====================================================
+
+def resolve_first_existing_column(data, candidates):
+    for col in candidates:
+        if col in data.columns:
+            return col
+    return None
+
+
+def make_frequency_table(data, col, top_n=None, include_other=True):
+    if col is None or col not in data.columns:
+        return pd.DataFrame()
+    s = data[col].map(clean_response_value).dropna()
+    if s.empty:
+        return pd.DataFrame()
+    out = s.value_counts().reset_index()
+    out.columns = ["Modalité", "N"]
+    out["Pourcentage"] = out["N"] / out["N"].sum() * 100
+    out = out.sort_values(["N", "Modalité"], ascending=[False, True]).reset_index(drop=True)
+    if top_n is not None and len(out) > top_n:
+        if include_other:
+            top = out.head(top_n).copy()
+            other = pd.DataFrame({
+                "Modalité": ["Autres"],
+                "N": [int(out.iloc[top_n:]["N"].sum())],
+                "Pourcentage": [float(out.iloc[top_n:]["Pourcentage"].sum())]
+            })
+            out = pd.concat([top, other], ignore_index=True)
+        else:
+            out = out.head(top_n).copy()
+    return out.reset_index(drop=True)
+
+
+def render_professional_frequency_table(
+    df,
+    title,
+    note=None,
+    max_rows=None,
+    show_rank=False,
+    sort_by_frequency=True
+):
+    if df is None or df.empty:
+        st.warning(f"Aucune donnée disponible pour {title}.")
+        return
+
+    table = df.copy()
+    if max_rows is not None:
+        table = table.head(max_rows).copy()
+
+    if "Pourcentage" in table.columns:
+        table["Pourcentage"] = pd.to_numeric(table["Pourcentage"], errors="coerce")
+
+    if sort_by_frequency and "Pourcentage" in table.columns:
+        table = table.sort_values(["Pourcentage", "N"], ascending=[False, False]) if "N" in table.columns else table.sort_values("Pourcentage", ascending=False)
+
+    table = table.reset_index(drop=True)
+
+    if show_rank:
+        table.insert(0, "Rang", range(1, len(table) + 1))
+
+    display = table.copy()
+    if "Pourcentage" in display.columns:
+        display["Pourcentage"] = display["Pourcentage"].map(lambda x: "" if pd.isna(x) else f"{x:.2f}%")
+    if "N" in display.columns:
+        display["N"] = display["N"].map(lambda x: "" if pd.isna(x) else f"{int(x):,}".replace(",", " "))
+
+    numeric_cols = ["N", "Pourcentage"]
+
+    header_html = "".join(
+        f"<th style='text-align:{'right' if col in numeric_cols else 'left'};'>{html_escape(col)}</th>"
+        for col in display.columns
+    )
+
+    body_html = ""
+    for _, row in display.iterrows():
+        cells = []
+        for col in display.columns:
+            align = "right" if col in numeric_cols else "left"
+            weight = "800" if col in ["N", "Pourcentage"] else "500"
+            cells.append(f"<td style='text-align:{align}; font-weight:{weight};'>{html_escape(row[col])}</td>")
+        body_html += "<tr>" + "".join(cells) + "</tr>"
+
+    note_html = f"<div style='font-size:13px;color:#667085;margin-top:6px;'>{note}</div>" if note else ""
+
+    st.markdown(
+        f"""
+        <div style='background:#FFFFFF;border:1px solid #DDE5F0;border-radius:18px;padding:18px 20px;margin:18px 0;box-shadow:0 6px 18px rgba(0,0,0,0.05);'>
+            <div style='display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:10px;'>
+                <div>
+                    <div style='font-size:20px;font-weight:900;color:{USJ_BLUE};font-family:Candara, Arial, sans-serif;'>{html_escape(title)}</div>
+                    {note_html}
+                </div>
+                <div style='background:{USJ_LIGHT_BLUE};color:{USJ_BLUE};border-radius:999px;padding:7px 12px;font-size:13px;font-weight:800;'>
+                    {len(table)} modalités
+                </div>
+            </div>
+            <table style='width:100%;border-collapse:collapse;font-family:Candara, Arial, sans-serif;font-size:14px;'>
+                <thead>
+                    <tr style='background:{USJ_BLUE};color:white;'>{header_html}</tr>
+                </thead>
+                <tbody>{body_html}</tbody>
+            </table>
+        </div>
+        <style>
+            table td, table th {{ padding:10px 12px; border-bottom:1px solid #E6ECF3; vertical-align:top; }}
+            table tbody tr:nth-child(even) td {{ background:#FBFCFE; }}
+            table tbody tr:hover td {{ background:#F2F6FF; }}
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+def make_age_group_table(age_series):
+    age_numeric = pd.to_numeric(age_series, errors="coerce").dropna()
+    if age_numeric.empty:
+        return pd.DataFrame()
+
+    bins = [0, 20, 22, 24, 26, 29, 34, 39, 49, 150]
+    labels = ["Moins de 20 ans", "20-21 ans", "22-23 ans", "24-25 ans", "26-29 ans", "30-34 ans", "35-39 ans", "40-49 ans", "50 ans et plus"]
+    grouped = pd.cut(age_numeric, bins=bins, labels=labels, right=False)
+    out = grouped.value_counts().reindex(labels).dropna().reset_index()
+    out.columns = ["Modalité", "N"]
+    out = out[out["N"] > 0].copy()
+    out["Pourcentage"] = out["N"] / out["N"].sum() * 100
+    return out.reset_index(drop=True)
+
+
+def make_diploma_faculty_table(data, diplome_col, fac_col, top_n=None):
+    if diplome_col is None or diplome_col not in data.columns:
+        return pd.DataFrame()
+    temp = data[[diplome_col] + ([fac_col] if fac_col and fac_col in data.columns else [])].copy()
+    temp[diplome_col] = temp[diplome_col].map(clean_response_value)
+    if fac_col and fac_col in temp.columns:
+        temp[fac_col] = temp[fac_col].map(clean_response_value)
+    else:
+        temp["Faculté / Institut"] = "Non disponible"
+        fac_col = "Faculté / Institut"
+    temp = temp.dropna(subset=[diplome_col])
+    if temp.empty:
+        return pd.DataFrame()
+
+    rows = []
+    total = len(temp)
+    grouped = temp.groupby([diplome_col, fac_col], dropna=False).size().reset_index(name="N")
+    grouped["Pourcentage"] = grouped["N"] / total * 100
+    grouped = grouped.sort_values(["N", diplome_col], ascending=[False, True])
+    for _, row in grouped.iterrows():
+        rows.append({
+            "Intitulé diplôme": row[diplome_col],
+            "Faculté / Institut": row[fac_col] if pd.notna(row[fac_col]) else "Non renseigné",
+            "N": int(row["N"]),
+            "Pourcentage": float(row["Pourcentage"]),
+        })
+    out = pd.DataFrame(rows)
+    if top_n is not None:
+        out = out.head(top_n).copy()
+    return out.reset_index(drop=True)
+
+
+def demographic_bar_chart(freq, title, orientation="h", height=430):
+    if freq.empty:
+        st.warning(f"Aucune donnée disponible pour {title}.")
+        return
+    plot_df = freq.copy()
+    if orientation == "h":
+        plot_df = plot_df.sort_values("Pourcentage", ascending=True)
+        fig = px.bar(
+            plot_df,
+            x="Pourcentage",
+            y="Modalité",
+            orientation="h",
+            text="Pourcentage",
+            color="Pourcentage",
+            color_continuous_scale=[[0, "#EAF2FF"], [0.5, "#7FA6D9"], [1, USJ_BLUE]],
+            hover_data={"N": True, "Pourcentage": ":.2f"},
+            title=title
+        )
+        fig.update_layout(xaxis_title="Pourcentage", yaxis_title="")
+    else:
+        fig = px.bar(
+            plot_df,
+            x="Modalité",
+            y="Pourcentage",
+            text="Pourcentage",
+            color="Pourcentage",
+            color_continuous_scale=[[0, "#EAF2FF"], [0.5, "#7FA6D9"], [1, USJ_BLUE]],
+            hover_data={"N": True, "Pourcentage": ":.2f"},
+            title=title
+        )
+        fig.update_layout(xaxis_title="", yaxis_title="Pourcentage")
+    fig.update_traces(texttemplate="%{text:.1f}%", textposition="outside", marker_line_color="white", marker_line_width=1)
+    fig.update_layout(coloraxis_showscale=False, margin=dict(l=30, r=70, t=70, b=50))
+    theme_layout(fig, height=height, showlegend=False)
+    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+
+
+def page_demographics():
+    section_header(
+        "Profil des répondants selon le genre, l’âge, le campus, la faculté ou institut, le niveau et l’intitulé du diplôme."
+    )
+
+    selected_year, data_demo, original_demo = get_single_year_context("demographics")
+
+    if data_demo.empty:
+        st.warning("Aucune donnée disponible pour l’année et les filtres sélectionnés.")
+        return
+
+    genre_col = resolve_first_existing_column(data_demo, ["Genre"])
+    age_col = resolve_first_existing_column(data_demo, ["Age", "Âge"])
+    fac_col = resolve_first_existing_column(data_demo, ["Faculté_Institut", "Faculté_Institut_g", "Faculté", "Institut"])
+    campus_col = resolve_first_existing_column(data_demo, ["Campus", "campus", "Campus_g", "Campus principal", "Campus_principal", "Site", "site"])
+    niveau_col = resolve_first_existing_column(data_demo, ["Niveau", "Niveau_Lib"])
+    diplome_col = resolve_first_existing_column(data_demo, ["Intitulé Diplôme", "Intitulé_Diplôme", "Intitulé Diplome", "Diplôme", "Intitule Diplome"])
+
+    k1, k2, k3, k4, k5 = st.columns(5)
+    with k1:
+        insight_card("Année affichée", selected_year, "Analyse non agrégée", USJ_BLUE)
+    with k2:
+        insight_card("Répondants", len(data_demo), "Base filtrée", USJ_GREEN)
+    with k3:
+        fac_n = data_demo[fac_col].map(clean_response_value).dropna().nunique() if fac_col else 0
+        insight_card("Facultés / Instituts", fac_n, "Modalités observées", USJ_BLUE_2)
+    with k4:
+        campus_n = data_demo[campus_col].map(clean_response_value).dropna().nunique() if campus_col else 0
+        insight_card("Campus", campus_n, "Modalités observées", USJ_ORANGE)
+    with k5:
+        diplome_n = data_demo[diplome_col].map(clean_response_value).dropna().nunique() if diplome_col else 0
+        insight_card("Diplômes", diplome_n, "Intitulés distincts", USJ_GOLD)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    genre_freq = make_frequency_table(data_demo, genre_col)
+    age_numeric = pd.to_numeric(data_demo[age_col], errors="coerce") if age_col else pd.Series(dtype=float)
+    age_group_freq = make_age_group_table(age_numeric) if age_col else pd.DataFrame()
+    fac_freq = make_frequency_table(data_demo, fac_col, top_n=18, include_other=False)
+    campus_freq = make_frequency_table(data_demo, campus_col)
+    niveau_freq = make_frequency_table(data_demo, niveau_col)
+    diplome_fac_table = make_diploma_faculty_table(data_demo, diplome_col, fac_col)
+
+    c_left, c_right = st.columns([1, 1])
+
+    with c_left:
+        if not genre_freq.empty:
+            fig_genre = px.pie(
+                genre_freq,
+                names="Modalité",
+                values="N",
+                hole=0.55,
+                color_discrete_sequence=PLOTLY_SEQ,
+                title="Répartition des répondants par genre"
+            )
+            fig_genre.update_traces(
+                textposition="inside",
+                textinfo="percent+label",
+                hovertemplate="%{label}<br>N=%{value}<br>%{percent}<extra></extra>"
+            )
+            theme_layout(fig_genre, height=430, showlegend=True)
+            st.plotly_chart(fig_genre, use_container_width=True, config={"displayModeBar": False})
+        else:
+            st.warning("Aucune donnée disponible pour le genre.")
+
+    with c_right:
+        if not age_group_freq.empty:
+            plot_age = age_group_freq.copy()
+            fig_age = px.bar(
+                plot_age,
+                x="Modalité",
+                y="Pourcentage",
+                text="Pourcentage",
+                color="Pourcentage",
+                color_continuous_scale=[[0, "#EAF2FF"], [0.5, "#7FA6D9"], [1, USJ_BLUE]],
+                hover_data={"N": True, "Pourcentage": ":.2f"},
+                title="Distribution de l’âge des répondants"
+            )
+            fig_age.update_traces(
+                texttemplate="%{text:.1f}%",
+                textposition="outside",
+                marker_line_color="white",
+                marker_line_width=1.2,
+                cliponaxis=False
+            )
+            fig_age.update_layout(
+                xaxis_title="Tranche d’âge",
+                yaxis_title="Pourcentage des répondants",
+                coloraxis_showscale=False,
+                margin=dict(l=40, r=60, t=75, b=95)
+            )
+            fig_age.update_xaxes(tickangle=-25)
+            theme_layout(fig_age, height=430, showlegend=False)
+            st.plotly_chart(fig_age, use_container_width=True, config={"displayModeBar": False})
+            st.markdown(
+                f"""
+                <div style='background:#F7F9FC;border-left:6px solid {USJ_BLUE};border-radius:14px;padding:12px 16px;margin-top:-6px;'>
+                    <b>Âge moyen :</b> {safe_num(age_numeric.mean(), 1)} ans &nbsp; | &nbsp; <b>Âge médian :</b> {safe_num(age_numeric.median(), 1)} ans
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+        else:
+            st.warning("Aucune donnée numérique disponible pour l’âge.")
+
+    st.divider()
+
+    if campus_col:
+        demographic_bar_chart(campus_freq, "Répartition par campus", orientation="h", height=max(360, 38 * len(campus_freq)))
+        st.divider()
+
+    c_fac, c_niveau = st.columns([1.35, 1])
+    with c_fac:
+        demographic_bar_chart(fac_freq, "Répartition par faculté / institut", orientation="h", height=max(470, 30 * len(fac_freq)))
+
+    with c_niveau:
+        demographic_bar_chart(niveau_freq, "Répartition par niveau", orientation="v", height=470)
+
+    st.divider()
+
+    st.markdown(f"<h3 style='color:{USJ_BLUE};'>Tableaux démographiques détaillés</h3>", unsafe_allow_html=True)
+    summary_box(
+        """
+        Les tableaux ci-dessous remplacent le graphique des intitulés de diplôme afin de permettre une lecture plus précise.
+        Les tableaux de fréquences sont triés automatiquement du pourcentage le plus élevé au plus faible, sauf l’âge qui est présenté selon l’ordre naturel des tranches. Pour les diplômes, la faculté ou l’institut associé est affiché à côté de chaque intitulé.
+        """,
+        color=USJ_BLUE,
+        background="#F7F9FC"
+    )
+
+    t1, t2 = st.columns([1, 1])
+    with t1:
+        render_professional_frequency_table(
+            genre_freq,
+            "Genre des répondants",
+            "Effectifs et pourcentages calculés sur les réponses valides."
+        )
+    with t2:
+        render_professional_frequency_table(
+            age_group_freq,
+            "Âge des répondants par tranche",
+            "Les pourcentages sont calculés sur les âges valides. Le tableau est trié selon l’ordre naturel des tranches d’âge.",
+            show_rank=False,
+            sort_by_frequency=False
+        )
+
+    if campus_col:
+        render_professional_frequency_table(
+            campus_freq,
+            "Campus",
+            "Répartition par campus dans l’année sélectionnée."
+        )
+
+    t3, t4 = st.columns([1.2, 1])
+    with t3:
+        render_professional_frequency_table(
+            fac_freq,
+            "Faculté / Institut",
+            "Tableau trié du poids le plus élevé au plus faible."
+        )
+    with t4:
+        render_professional_frequency_table(
+            niveau_freq,
+            "Niveau d’études",
+            "Répartition par niveau dans l’année sélectionnée."
+        )
+
+    render_professional_frequency_table(
+        diplome_fac_table,
+        "Intitulés de diplôme avec faculté / institut associé",
+        "Chaque ligne correspond à un couple diplôme + faculté/institut, trié du plus fréquent au moins fréquent."
+    )
+
+
+# =====================================================
+# Page 5 - Results of all questions before KPI calculation
+# =====================================================
+
+DEMOGRAPHIC_FIELDS = {
+    "Genre": ["Genre"],
+    "Age": ["Age", "Âge"],
+    "Faculté / Institut": ["Faculté_Institut", "Faculté_Institut_g", "Faculté", "Institut"],
+    "Campus": ["Campus", "campus", "Campus_g", "Campus principal", "Campus_principal", "Site", "site"],
+    "Niveau": ["Niveau", "Niveau_Lib"],
+    "Intitulé Diplôme": ["Intitulé Diplôme", "Intitulé_Diplôme", "Intitulé Diplome", "Intitule Diplome", "Diplôme", "Diplome"],
+}
+
+ALL_SURVEY_SECTION_NUMBERS = {
+    "Profil des répondants": "DEMOGRAPHICS",
+    "Satisfaction dans l’expérience académique": [1, 2],
+    "Politique d’accompagnement": [3, 4],
+    "Développement des compétences et mobilité internationale": [5, 6, 7],
+    "Plateforme Alumni et expérience de stage": [8, 9],
+    "Apprentissage de l’anglais": [10, 11],
+    "Service de l’insertion professionnelle de l’USJ": [12, 13, 14, 15],
+    "Perspectives d’avenir": [16, 17, 18, 19, 20, 21, 22, 23],
+    "Évaluation des services, des infrastructures et de la satisfaction globale à l’USJ": list(range(24, 44)),
+    "Financement des études à l’USJ": [44, 45, 46],
+    "Propositions et commentaires": [47],
+}
+
+
+def extract_question_number(col_name):
+    text = str(col_name).strip()
+    match = re.match(r"^\s*(\d+)", text)
+    if match:
+        return int(match.group(1))
+    return None
+
+
+def find_existing_demographic_columns(data):
+    found = {}
+    normalized_cols = {normalize_question_key(col): col for col in data.columns}
+
+    for display_name, possible_cols in DEMOGRAPHIC_FIELDS.items():
+        selected_col = None
+        for col in possible_cols:
+            if col in data.columns:
+                selected_col = col
+                break
+            norm_col = normalize_question_key(col)
+            if norm_col in normalized_cols:
+                selected_col = normalized_cols[norm_col]
+                break
+        if selected_col is not None:
+            found[display_name] = selected_col
+
+    return found
+
+
+def get_columns_for_all_questions_section(original_data, section_name):
+    section_spec = ALL_SURVEY_SECTION_NUMBERS.get(section_name)
+
+    if section_spec == "DEMOGRAPHICS":
+        return find_existing_demographic_columns(original_data)
+
+    selected_numbers = set(section_spec)
+    cols = []
+
+    for col in original_data.columns:
+        col_str = str(col).strip()
+
+        if should_exclude_question_from_presentation(col_str):
+            continue
+
+        if col_str in get_excluded_non_question_columns():
+            continue
+
+        if col_str.startswith("Score "):
+            continue
+
+        q_number = extract_question_number(col_str)
+        if q_number in selected_numbers:
+            cols.append(col_str)
+
+    def sort_key(col):
+        qn = extract_question_number(col)
+        return (qn if qn is not None else 9999, str(col))
+
+    cols = sorted(cols, key=sort_key)
+    return {clean_other_question_label(col): col for col in cols}
+
+
+def build_simple_distribution(data, col):
+    if col not in data.columns:
+        return pd.DataFrame()
+
+    s = data[col].map(clean_response_value).dropna()
+
+    if s.empty:
+        return pd.DataFrame()
+
+    dist = s.value_counts().reset_index()
+    dist.columns = ["Réponse", "N"]
+    dist["Pourcentage"] = dist["N"] / dist["N"].sum() * 100
+    return dist
+
+
+def build_simple_year_distribution(original_data, coded_data, col):
+    if col not in original_data.columns or "Year" not in coded_data.columns:
+        return pd.DataFrame()
+
+    temp = pd.DataFrame({
+        "Année": coded_data["Year"].astype(str),
+        "Réponse": original_data.loc[coded_data.index, col].map(clean_response_value)
+    }).dropna(subset=["Réponse"])
+
+    if temp.empty:
+        return pd.DataFrame()
+
+    dist = temp.groupby(["Année", "Réponse"]).size().reset_index(name="N")
+    dist["Pourcentage"] = dist.groupby("Année")["N"].transform(lambda x: x / x.sum() * 100)
+    return dist
+
+
+
+
+def normalize_response_label_for_kpi(value):
+    """Normalize response labels to detect positive answers across satisfaction and agreement scales."""
+    if pd.isna(value):
+        return ""
+    import unicodedata
+    text = str(value).strip().replace("\u00a0", " ")
+    text = unicodedata.normalize("NFKD", text)
+    text = "".join(ch for ch in text if not unicodedata.combining(ch))
+    text = text.lower()
+    text = text.replace("’", "'")
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
+
+
+POSITIVE_SCALE_RESPONSES = {
+    # Satisfaction scale, feminine and masculine
+    "satisfaisante",
+    "tres satisfaisante",
+    "satisfaisant",
+    "tres satisfaisant",
+    "satisfait",
+    "tres satisfait",
+    "satisfaite",
+    "tres satisfaite",
+
+    # Agreement scale
+    "d'accord",
+    "tout a fait d'accord",
+
+    # Utility / usefulness scale used in some questions
+    "plutot oui",
+    "tout a fait",
+    "oui, suffisamment",
+    "oui et j'ai beaucoup appris",
+    "oui et j'ai bien appris",
+}
+
+NEGATIVE_SCALE_RESPONSES = {
+    # Satisfaction scale
+    "insatisfaisante",
+    "tres insatisfaisante",
+    "insatisfaisant",
+    "tres insatisfaisant",
+    "insatisfait",
+    "tres insatisfait",
+    "insatisfaite",
+    "tres insatisfaite",
+
+    # Agreement scale
+    "pas d'accord",
+    "pas du tout d'accord",
+
+    # Utility / usefulness scale used in some questions
+    "plutot non",
+    "pas du tout",
+    "oui, mais pas suffisamment",
+    "non",
+    "oui mais j'ai peu appris",
+}
+
+
+SCALE_SIGNATURE_GROUPS = [
+    {
+        "positive": {"satisfaisante", "tres satisfaisante", "satisfaisant", "tres satisfaisant", "satisfait", "tres satisfait", "satisfaite", "tres satisfaite"},
+        "negative": {"insatisfaisante", "tres insatisfaisante", "insatisfaisant", "tres insatisfaisant", "insatisfait", "tres insatisfait", "insatisfaite", "tres insatisfaite"},
+        "label": "Satisfaction positive",
+        "subtitle": "Satisfait(e) + très satisfait(e)"
+    },
+    {
+        "positive": {"d'accord", "tout a fait d'accord"},
+        "negative": {"pas d'accord", "pas du tout d'accord"},
+        "label": "Accord positif",
+        "subtitle": "D’accord + tout à fait d’accord"
+    },
+    {
+        "positive": {"plutot oui", "tout a fait"},
+        "negative": {"plutot non", "pas du tout"},
+        "label": "Réponses positives",
+        "subtitle": "Plutôt oui + tout à fait"
+    },
+    {
+        "positive": {"oui, suffisamment"},
+        "negative": {"oui, mais pas suffisamment", "non"},
+        "label": "Formation suffisante",
+        "subtitle": "Oui, suffisamment"
+    },
+]
+
+
+def get_positive_scale_summary(dist):
+    """Return positive percentage/frequency only for recognized scale questions.
+
+    The original response distribution remains unchanged. This helper only adds an
+    additional KPI when the response modalities clearly correspond to a satisfaction,
+    agreement, usefulness, or sufficiency scale.
+    """
+    if dist is None or dist.empty or "Réponse" not in dist.columns or "N" not in dist.columns:
+        return None
+
+    temp = dist.copy()
+    temp["_norm"] = temp["Réponse"].map(normalize_response_label_for_kpi)
+    present = set(temp["_norm"].dropna().tolist())
+
+    for signature in SCALE_SIGNATURE_GROUPS:
+        has_positive = len(present.intersection(signature["positive"])) > 0
+        has_negative = len(present.intersection(signature["negative"])) > 0
+        if has_positive and has_negative:
+            pos_n = int(temp.loc[temp["_norm"].isin(signature["positive"]), "N"].sum())
+            total_n = int(temp["N"].sum())
+            pos_pct = pos_n / total_n * 100 if total_n > 0 else np.nan
+            return {
+                "label": signature["label"],
+                "subtitle": signature["subtitle"],
+                "N positif": pos_n,
+                "N total": total_n,
+                "Pourcentage positif": pos_pct,
+            }
+
+    return None
+
+
+def render_positive_scale_kpi(positive_summary):
+    """Render an attractive KPI card for total positive answers."""
+    if not positive_summary:
+        return
+
+    pct = positive_summary.get("Pourcentage positif", np.nan)
+    pos_n = positive_summary.get("N positif", 0)
+    total_n = positive_summary.get("N total", 0)
+    label = positive_summary.get("label", "Réponses positives")
+    subtitle = positive_summary.get("subtitle", "Total des réponses positives")
+    color = kpi_color_percentage(pct)
+
+    st.markdown(
+        f"""
+        <div style='
+            background:linear-gradient(135deg, #FFFFFF 0%, #F7F9FC 100%);
+            border:1px solid #DDE5F0;
+            border-left:8px solid {color};
+            border-radius:20px;
+            padding:18px 20px;
+            margin:0 0 14px 0;
+            box-shadow:0 6px 18px rgba(0,0,0,0.06);
+            font-family:Candara, Arial, sans-serif;
+        '>
+            <div style='font-size:14px;font-weight:900;color:{USJ_TEXT};margin-bottom:6px;'>{html_escape(label)}</div>
+            <div style='display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;'>
+                <div style='font-size:38px;font-weight:900;color:{color};line-height:1;'>{safe_pct(pct)}</div>
+                <div style='font-size:18px;font-weight:900;color:{USJ_BLUE};line-height:1.25;'>{int(pos_n):,} / {int(total_n):,}</div>
+            </div>
+            <div style='font-size:13px;color:#667085;margin-top:8px;'>{html_escape(subtitle)}</div>
+        </div>
+        """.replace(",", " "),
+        unsafe_allow_html=True
+    )
+
+
+def get_main_question_group_header(question_col):
+    """Return the main questionnaire wording that should appear before grouped sub-items."""
+    q_norm = normalize_question_key(question_col)
+
+    if q_norm.startswith("28_") or q_norm.startswith("28-"):
+        return {
+            "code": "28",
+            "title": "28- Comment évaluez-vous la qualité des services suivants offerts par l’USJ ?",
+            "subtitle": "Les résultats ci-dessous détaillent l’évaluation de chaque service proposé par l’USJ."
+        }
+
+    if q_norm.startswith("29_") or q_norm.startswith("29-"):
+        return {
+            "code": "29",
+            "title": "29- Évaluez chacun des aspects suivants de votre expérience de vie étudiante à l’USJ :",
+            "subtitle": "Les résultats ci-dessous détaillent les différents aspects de l’expérience de vie étudiante."
+        }
+
+    return None
+
+
+def render_main_question_group_header(group_info):
+    """Display the main question before its detailed sub-questions."""
+    if not group_info:
+        return
+
+    st.markdown(
+        f"""
+        <div style='
+            background:linear-gradient(135deg, #F7F9FC 0%, #EEF4FF 100%);
+            border:1px solid #DDE5F0;
+            border-left:8px solid {USJ_BLUE};
+            border-radius:20px;
+            padding:20px 22px;
+            margin:28px 0 14px 0;
+            box-shadow:0 6px 18px rgba(0,27,117,0.07);
+            font-family:Candara, Arial, sans-serif;
+        '>
+            <div style='font-size:13px;font-weight:900;color:#667085;margin-bottom:6px;'>Question principale</div>
+            <div style='font-size:23px;font-weight:900;color:{USJ_BLUE};line-height:1.35;'>{html_escape(group_info['title'])}</div>
+            <div style='font-size:14px;color:#5F6B7A;margin-top:8px;'>{html_escape(group_info['subtitle'])}</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+def render_all_questions_single_result(question_label, question_col, original_filtered, total_n, coded_filter_data=None):
+    """Render one complete descriptive result block for a question within the selected section.
+
+    Conditional questions use the applicable denominator only. Example: 4a and 4b
+    questions are calculated only among respondents who answered Oui to Q4.
+    """
+    if question_col not in df_original.columns and question_col not in original_filtered.columns:
+        return
+
+    if coded_filter_data is not None:
+        selected_series, eligible_index, non_applicable_n, parent_col = get_applicable_response_series(
+            df_original,
+            coded_filter_data,
+            question_col
+        )
+        valid_series = selected_series.dropna()
+        eligible_n = int(len(eligible_index))
+        valid_n = int(valid_series.shape[0])
+        missing_n = int(selected_series.isna().sum()) if eligible_n > 0 else 0
+        missing_pct = missing_n / eligible_n * 100 if eligible_n > 0 else np.nan
+        modalities_n = int(valid_series.nunique()) if valid_n > 0 else 0
+        base_label = "Base applicable" if parent_col else "Base filtrée"
+        base_subtitle = "Répondants concernés" if parent_col else "Répondants sélectionnés"
+        base_n = eligible_n
+        dependency_label = clean_other_question_label(parent_col) if parent_col else None
+
+        if valid_series.empty:
+            dist = pd.DataFrame()
+        else:
+            dist = valid_series.value_counts().reset_index()
+            dist.columns = ["Réponse", "N"]
+            dist["Pourcentage"] = dist["N"] / dist["N"].sum() * 100
+    else:
+        if question_col not in original_filtered.columns:
+            return
+        dist = build_simple_distribution(original_filtered, question_col)
+        valid_n = int(original_filtered[question_col].map(clean_response_value).dropna().shape[0])
+        missing_n = int(total_n - valid_n)
+        missing_pct = missing_n / total_n * 100 if total_n > 0 else np.nan
+        modalities_n = int(original_filtered[question_col].map(clean_response_value).dropna().nunique())
+        base_label = "Base filtrée"
+        base_subtitle = "Répondants sélectionnés"
+        base_n = int(total_n)
+        parent_col = None
+        non_applicable_n = 0
+        dependency_label = None
+
+    condition_html = ""
+    if parent_col:
+        condition_html = (
+            f"<div style='font-size:13px;color:#667085;margin-top:8px;'>"
+            f"Question conditionnelle liée à : <b>{html_escape(dependency_label)}</b>"
+            f"</div>"
+            f"<div style='font-size:13px;color:#667085;margin-top:4px;'>"
+            f"Non applicables exclus du dénominateur : <b>{int(non_applicable_n):,}</b>"
+            f"</div>"
+        ).replace(',', ' ')
+
+    st.markdown(
+        f"""
+        <div style='background:#FFFFFF;border:1px solid #DDE5F0;border-left:7px solid {USJ_BLUE};border-radius:18px;padding:18px 20px;margin:24px 0 12px 0;box-shadow:0 5px 16px rgba(0,0,0,0.05);'>
+            <div style='font-size:13px;font-weight:800;color:#667085;margin-bottom:6px;'>Question / variable</div>
+            <div style='font-size:20px;font-weight:900;color:{USJ_BLUE};line-height:1.35;'>{html_escape(question_label)}</div>
+            <div style='font-size:13px;color:#667085;margin-top:8px;'>Variable Excel : {html_escape(question_col)}</div>
+            {condition_html}
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    m1, m2, m3, m4 = st.columns(4)
+    with m1:
+        insight_card(base_label, base_n, base_subtitle, USJ_BLUE_2)
+    with m2:
+        insight_card("N valide", valid_n, "Réponses non manquantes", USJ_GREEN if valid_n > 0 else USJ_RED)
+    with m3:
+        insight_card("Données manquantes", safe_pct(missing_pct), "Dans la base applicable" if parent_col else "Dans la base filtrée", USJ_ORANGE if pd.notna(missing_pct) and missing_pct > 10 else USJ_GREEN)
+    with m4:
+        insight_card("Modalités", modalities_n, "Réponses distinctes", USJ_GOLD)
+
+    if dist.empty:
+        st.warning("Aucune réponse valide disponible pour cette question avec les filtres sélectionnés.")
+        return
+
+    if modalities_n > 30:
+        display_dist = dist.sort_values("N", ascending=False).head(30).copy()
+        display_dist["Pourcentage"] = display_dist["Pourcentage"].map(lambda x: f"{x:.2f}%")
+        st.markdown(f"<h4 style='color:{USJ_BLUE};'>Réponses les plus fréquentes</h4>", unsafe_allow_html=True)
+        st.dataframe(display_dist, use_container_width=True, hide_index=True)
+        return
+
+    dist_chart = dist.sort_values("Pourcentage", ascending=True).copy()
+    fig = px.bar(
+        dist_chart,
+        x="Pourcentage",
+        y="Réponse",
+        orientation="h",
+        text="Pourcentage",
+        color="Pourcentage",
+        color_continuous_scale=[[0, "#EAF2FF"], [0.5, "#7FA6D9"], [1, USJ_BLUE]],
+        hover_data={"N": True, "Pourcentage": ":.2f"},
+        title="Distribution des réponses"
+    )
+    fig.update_traces(
+        texttemplate="%{text:.2f}%",
+        textposition="outside",
+        marker_line_color="white",
+        marker_line_width=1,
+        cliponaxis=False
+    )
+    fig.update_layout(
+        xaxis_title="Pourcentage des réponses valides",
+        yaxis_title="",
+        coloraxis_showscale=False,
+        margin=dict(l=40, r=80, t=75, b=45)
+    )
+    theme_layout(fig, height=max(390, 38 * len(dist_chart)), showlegend=False)
+
+    positive_summary = get_positive_scale_summary(dist)
+
+    chart_col, table_col = st.columns([1.55, 1])
+    with chart_col:
+        st.plotly_chart(
+            fig,
+            use_container_width=True,
+            config={"displayModeBar": False},
+            key=f"all_questions_chart_{re.sub(r'[^A-Za-z0-9_]+', '_', str(question_col))}"
+        )
+
+    with table_col:
+        if positive_summary:
+            render_positive_scale_kpi(positive_summary)
+        display_dist = dist.sort_values("Pourcentage", ascending=False).copy()
+        display_dist["Pourcentage"] = display_dist["Pourcentage"].map(lambda x: f"{x:.2f}%")
+        st.markdown(f"<h4 style='color:{USJ_BLUE}; margin-top:0;'>Tableau des fréquences</h4>", unsafe_allow_html=True)
+        st.dataframe(display_dist, use_container_width=True, hide_index=True)
+
+    top_dist = dist.sort_values("Pourcentage", ascending=False).iloc[0]
+    conditional_note = " Cette lecture est calculée uniquement sur la base applicable à la question conditionnelle." if parent_col else ""
+    st.markdown(
+        f"""
+        <div style='background:#F7F9FC;border-left:6px solid {USJ_BLUE};border-radius:14px;padding:12px 16px;margin-top:4px;margin-bottom:8px;'>
+            <b>Lecture descriptive :</b> la modalité la plus fréquente est <b>{html_escape(top_dist['Réponse'])}</b>,
+            avec <b>{top_dist['Pourcentage']:.2f}%</b> des réponses valides.{conditional_note}
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+def page_all_questions_results():
+    section_header(
+        "Résultats descriptifs de toutes les questions",
+        "Présentation descriptive question par question, avant le calcul des scores et des indicateurs."
+    )
+
+    summary_box(
+        """
+        Cette page présente les résultats bruts de chaque question du questionnaire avant toute agrégation en scores ou KPI.
+        Les résultats sont affichés pour une seule année à la fois. Les comparaisons historiques seront traitées séparément dans la page dédiée.
+        Les bases applicables des questions conditionnelles sont corrigées automatiquement lorsque la question filtre est identifiée.
+        """,
+        color=USJ_BLUE,
+        background="#F7F9FC"
+    )
+
+    selected_year, data_questions, original_questions = get_single_year_context("all_questions")
+
+    if data_questions.empty:
+        st.warning("Aucune donnée disponible pour l’année et les filtres sélectionnés.")
+        return
+
+    available_sections = list(ALL_SURVEY_SECTION_NUMBERS.keys())
+
+    selected_section_all = st.selectbox(
+        "Choisir une section du questionnaire",
+        available_sections,
+        key="all_questions_section_selector"
+    )
+
+    question_map = get_columns_for_all_questions_section(df_original, selected_section_all)
+
+    if not question_map:
+        st.warning("Aucune colonne trouvée dans le fichier Excel pour cette section.")
+        return
+
+    original_filtered = original_questions.copy()
+    total_n = int(len(original_filtered))
+    question_count = len(question_map)
+
+    valid_counts = []
+    for _, col in question_map.items():
+        if col in original_filtered.columns:
+            valid_counts.append(int(original_filtered[col].map(clean_response_value).dropna().shape[0]))
+    average_valid_n = np.mean(valid_counts) if valid_counts else np.nan
+
+    c1, c2, c3, c4 = st.columns(4)
+    with c1:
+        insight_card("Section", selected_section_all, "Titre du questionnaire", USJ_BLUE)
+    with c2:
+        insight_card("Année", selected_year, "Année affichée", USJ_BLUE_2)
+    with c3:
+        insight_card("Questions", question_count, "Variables affichées", USJ_GOLD)
+    with c4:
+        insight_card("Base filtrée", total_n, "Répondants sélectionnés", USJ_GREEN if total_n > 0 else USJ_RED)
+
+    summary_box(
+        f"""
+        La section <b>{html_escape(selected_section_all)}</b> contient <b>{question_count}</b> question(s) ou variable(s) affichées directement sur cette page.
+        Il n’y a plus de sélection question par question. Chaque bloc présente la distribution, le tableau des fréquences, le nombre de réponses valides et les données manquantes.
+        """,
+        color=USJ_BLUE,
+        background="#F7F9FC"
+    )
+
+    if question_count > 12:
+        st.info("Cette section contient plusieurs questions. Les blocs ci-dessous peuvent être longs à afficher, mais toutes les questions de la section sont présentées sans menu de sélection supplémentaire.")
+
+    current_main_group = None
+    for question_label, question_col in question_map.items():
+        group_info = get_main_question_group_header(question_col)
+        group_code = group_info["code"] if group_info else None
+        if group_code and group_code != current_main_group:
+            render_main_question_group_header(group_info)
+            current_main_group = group_code
+        elif not group_code:
+            current_main_group = None
+
+        render_all_questions_single_result(question_label, question_col, original_filtered, total_n, data_questions)
+
 
 Q44_FINANCING_ITEMS = {
     "44_a- Financé vos études à l’USJ : Parents": "Parents",
@@ -3528,7 +4736,7 @@ def build_printable_report_html():
         best = {"Dimension": "Non disponible", "Résultat": np.nan}
         weak = {"Dimension": "Non disponible", "Résultat": np.nan}
 
-    generated_filters = f"Année : {year} | Genre : {genre} | Faculté : {faculte} | Niveau : {niveau}"
+    generated_filters = f"Année : {year} | Genre : {genre} | Faculté : {faculte} | Campus : {campus if CAMPUS_COLUMN else 'Non disponible'} | Niveau : {niveau}"
 
     # -------------------------------------------------
     # Dimensional ranking table
@@ -4333,6 +5541,10 @@ def page_methodology():
 
 if page == "Vue générale des indicateurs":
     page_indicators()
+
+
+elif page == "Résultats descriptifs de toutes les questions":
+    page_all_questions_results()
 
 elif page == "Comparaison historique":
     page_historical_comparison()
