@@ -3126,7 +3126,7 @@ def render_professional_frequency_table(
     title,
     note=None,
     max_rows=None,
-    show_rank=True,
+    show_rank=False,
     sort_by_frequency=True
 ):
     if df is None or df.empty:
@@ -3154,7 +3154,7 @@ def render_professional_frequency_table(
     if "N" in display.columns:
         display["N"] = display["N"].map(lambda x: "" if pd.isna(x) else f"{int(x):,}".replace(",", " "))
 
-    numeric_cols = ["Rang", "N", "Pourcentage"]
+    numeric_cols = ["N", "Pourcentage"]
 
     header_html = "".join(
         f"<th style='text-align:{'right' if col in numeric_cols else 'left'};'>{html_escape(col)}</th>"
