@@ -1081,6 +1081,7 @@ def should_exclude_question_from_presentation(question_col):
     hidden_prefixes = [
         "10a_e-",
         "18_autre-",
+        "19_autre-",
     ]
     return any(q_norm.startswith(normalize_question_key(prefix)) for prefix in hidden_prefixes)
 
@@ -4031,7 +4032,12 @@ def render_all_questions_single_result(question_label, question_col, original_fi
 
     chart_col, table_col = st.columns([1.55, 1])
     with chart_col:
-        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+        st.plotly_chart(
+            fig,
+            use_container_width=True,
+            config={"displayModeBar": False},
+            key=f"all_questions_chart_{re.sub(r'[^A-Za-z0-9_]+', '_', str(question_col))}"
+        )
 
     with table_col:
         if positive_summary:
