@@ -4032,6 +4032,13 @@ def get_main_question_group_header(question_col):
             "subtitle": "Les résultats ci-dessous détaillent les différents aspects de l’expérience de vie étudiante."
         }
 
+    if q_norm.startswith("40_") or q_norm.startswith("40-"):
+        return {
+            "code": "40",
+            "title": "40- Comment évaluez-vous la qualité de chacune des infrastructures et ressources suivantes mises à votre disposition à l’USJ ?",
+            "subtitle": "Les résultats ci-dessous détaillent l’évaluation de chaque infrastructure et ressource mise à disposition par l’USJ."
+        }
+
     return None
 
 
