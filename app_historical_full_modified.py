@@ -1027,6 +1027,18 @@ def get_question_dependency(question_col, original_data=None):
             "parent_prefixes": ["4- sollicite un soutien", "4- sollicité un soutien", "4- avez-vous sollicite un soutien", "4- avez-vous sollicité un soutien"],
         },
         {
+            "child_prefixes": ["6a_a-", "6a_b-", "6a_c-"],
+            "parent_prefixes": [
+                "6- etudie a l'etranger",
+                "6- étudié à l'étranger",
+                "6- avez-vous effectue une periode d'etudes a l'etranger",
+                "6- avez-vous effectué une période d’études à l'étranger",
+                "6- avez-vous effectué une période d'études à l'étranger",
+                "6- etudié à l'étranger",
+                "6- etudie a l’étranger",
+            ],
+        },
+        {
             "child_prefixes": ["9a-", "9b_a-", "9b_b-", "9b_c-", "9b_d-", "9b_e-", "9b_f-", "9b_g-", "9b_h-", "9c-", "9d_a-", "9d_b-", "9d_c-", "9d_d-", "9d_e-"],
             "parent_prefixes": ["9- avez-vous realise un stage", "9- avez-vous réalisé un stage"],
         },
