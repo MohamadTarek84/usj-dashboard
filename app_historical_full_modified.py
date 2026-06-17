@@ -962,6 +962,16 @@ OTHER_QUESTION_LABELS = {
 
     "31-Êtes-vous étudiant en situation de handicap ?": "31-Êtes-vous étudiant en situation de handicap ?",
 
+    "32_a- De type ; Déficience intellectuelle": "32_a-De quel type de handicap s’agit-il ? Déficience intellectuelle",
+    "32_b- De type ; Déficience motrice": "32_b-De quel type de handicap s’agit-il ? Déficience motrice",
+    "32_c- De type ; Déficience auditive": "32_c-De quel type de handicap s’agit-il ? Déficience auditive",
+    "32_d- De type ; Déficience visuelle": "32_d-De quel type de handicap s’agit-il ? Déficience visuelle",
+    "32_e- De type ; Trouble d'apprentissage": "32_e-De quel type de handicap s’agit-il ? Trouble d’apprentissage",
+    "32_f- De type ; Trouble de communication": "32_f-De quel type de handicap s’agit-il ? Trouble de communication",
+    "32_g- De type ; Trouble de comportement": "32_g-De quel type de handicap s’agit-il ? Trouble de comportement",
+    "33-Avez-vous eu besoin d’un service au sein de votre établissement ?": "33-Avez-vous eu besoin d’un service au sein de votre établissement ?",
+    "33-Avez-vous eu besoin d’un service au sein de votre établissement ?": "33-Avez-vous eu besoin d’un service au sein de votre établissement ?",
+
     "35-Consultez-vous le site de l'USJ ?": "35-Consultez-vous le site web de l’USJ ?",
     "36-Suivez-vous les pages et comptes USJ sur les réseaux sociaux (Facebook, Linkedln, Twitter, YouTube, Instagram, …) ?": "36-Suivez-vous les pages et comptes de l’USJ sur les réseaux sociaux ?",
     "37-À quelle fréquence visitez-vous les pages et comptes USJ sur les réseaux sociaux": "37-À quelle fréquence visitez-vous les pages et comptes de l’USJ sur les réseaux sociaux ?",
@@ -1096,6 +1106,7 @@ def should_exclude_question_from_presentation(question_col):
         "20_autre-",
         "22a_autre-",
         "23_autre-",
+        "32_autre-",
     ]
     return any(q_norm.startswith(normalize_question_key(prefix)) for prefix in hidden_prefixes)
 
@@ -1195,6 +1206,22 @@ def get_question_dependency(question_col, original_data=None):
                 "22- prévoyez-vous de quitter le liban",
                 "22-prevoyez-vous de quitter le liban",
                 "22-prévoyez-vous de quitter le liban",
+            ],
+        },
+
+        {
+            # Disability follow-up questions are applicable only to respondents
+            # who answered Oui to Q31: Étudiant en situation de handicap.
+            # 32_autre is hidden from presentation, but the rule is kept for completeness.
+            "child_prefixes": [
+                "32_a-", "32_b-", "32_c-", "32_d-", "32_e-", "32_f-", "32_g-", "32_autre-",
+                "33-"
+            ],
+            "parent_prefixes": [
+                "31-etes-vous etudiant en situation de handicap",
+                "31-êtes-vous étudiant en situation de handicap",
+                "31- etes-vous etudiant en situation de handicap",
+                "31- êtes-vous étudiant en situation de handicap",
             ],
         },
         {
