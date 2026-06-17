@@ -1130,6 +1130,7 @@ def should_exclude_question_from_presentation(question_col):
         "33a-",
         "33b-",
         "34non_autre-",
+        "44_g-",
     ]
     return any(q_norm.startswith(normalize_question_key(prefix)) for prefix in hidden_prefixes)
 
@@ -3758,7 +3759,6 @@ ALL_SURVEY_SECTION_NUMBERS = {
     "Perspectives d’avenir": [16, 17, 18, 19, 20, 21, 22, 23],
     "Évaluation des services, des infrastructures et de la satisfaction globale à l’USJ": list(range(24, 44)),
     "Financement des études à l’USJ": [44, 45, 46],
-    "Propositions et commentaires": [47],
 }
 
 
@@ -4312,7 +4312,6 @@ Q44_FINANCING_ITEMS = {
     "44_d- Financé vos études à l’USJ : Bourse accordée par l'USJ sur bases de critères non sociaux": "Bourse USJ sur critères non sociaux",
     "44_e- Financé vos études à l’USJ : Autre bourse": "Autre bourse",
     "44_f- Financé vos études à l’USJ : Prêt USJ": "Prêt USJ",
-    "44_g- Financé vos études à l’USJ : Autre prêt": "Autre prêt",
 }
 
 
