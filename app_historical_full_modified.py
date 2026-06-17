@@ -1078,7 +1078,11 @@ def get_parent_eligibility_mask(question_col, parent_values):
 def should_exclude_question_from_presentation(question_col):
     """Questions intentionally hidden from the descriptive presentation."""
     q_norm = normalize_question_key(question_col)
-    return q_norm.startswith(normalize_question_key("10a_e-"))
+    hidden_prefixes = [
+        "10a_e-",
+        "18_autre-",
+    ]
+    return any(q_norm.startswith(normalize_question_key(prefix)) for prefix in hidden_prefixes)
 
 
 def find_column_by_prefix(columns, prefixes):
