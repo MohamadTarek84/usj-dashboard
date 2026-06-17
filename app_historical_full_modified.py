@@ -1387,6 +1387,7 @@ with filter_action_cols[0]:
         st.session_state["filter_year"] = available_years_reset[-1] if available_years_reset else ""
         st.session_state["filter_genre"] = "Tous"
         st.session_state["filter_faculte"] = "Tous"
+        st.session_state["filter_campus"] = "Tous"
         st.session_state["filter_cursus"] = "Tous"
         st.session_state["filter_niveau"] = "Tous"
         st.rerun()
@@ -1412,8 +1413,14 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-filter_cols = st.columns(5)
+filter_cols = st.columns(6)
 df_filter_base = df_coded.copy()
+
+# Campus can have slightly different names depending on the Excel file.
+CAMPUS_COLUMN = next(
+    (col for col in ["Campus", "campus", "Campus_g", "Campus principal", "Campus_principal", "Site", "site"] if col in df_filter_base.columns),
+    None
+)
 
 available_years = year_filter_options(df_filter_base, "Year")
 if not available_years:
@@ -1445,13 +1452,24 @@ if faculte != "Tous":
     df_after_faculte = df_after_faculte[df_after_faculte["Faculté_Institut_g"].astype(str) == faculte]
 
 with filter_cols[3]:
-    cursus = st.selectbox("Cursus", filter_options(df_after_faculte, "Cursus"), key="filter_cursus")
+    if CAMPUS_COLUMN:
+        campus = st.selectbox("Campus", filter_options(df_after_faculte, CAMPUS_COLUMN), key="filter_campus")
+    else:
+        campus = "Tous"
+        st.selectbox("Campus", ["Tous"], key="filter_campus", disabled=True)
 
-df_after_cursus = df_after_faculte.copy()
+df_after_campus = df_after_faculte.copy()
+if CAMPUS_COLUMN and campus != "Tous":
+    df_after_campus = df_after_campus[df_after_campus[CAMPUS_COLUMN].astype(str) == campus]
+
+with filter_cols[4]:
+    cursus = st.selectbox("Cursus", filter_options(df_after_campus, "Cursus"), key="filter_cursus")
+
+df_after_cursus = df_after_campus.copy()
 if cursus != "Tous":
     df_after_cursus = df_after_cursus[df_after_cursus["Cursus"].astype(str) == cursus]
 
-with filter_cols[4]:
+with filter_cols[5]:
     niveau = st.selectbox("Niveau", filter_options(df_after_cursus, "Niveau"), key="filter_niveau")
 
 df_filtered = df_after_cursus.copy()
@@ -1465,6 +1483,8 @@ if genre != "Tous":
     active_filter_labels.append(f"Genre : {genre}")
 if faculte != "Tous":
     active_filter_labels.append(f"Faculté : {faculte}")
+if CAMPUS_COLUMN and campus != "Tous":
+    active_filter_labels.append(f"Campus : {campus}")
 if cursus != "Tous":
     active_filter_labels.append(f"Cursus : {cursus}")
 if niveau != "Tous":
@@ -2511,6 +2531,13 @@ def page_inferential_statistics():
     demographic_candidates = {
         "Genre": "Genre",
         "Faculté_Institut_g": "Faculté / Institut",
+        "Campus": "Campus",
+        "campus": "Campus",
+        "Campus_g": "Campus",
+        "Campus principal": "Campus",
+        "Campus_principal": "Campus",
+        "Site": "Campus",
+        "site": "Campus",
         "Niveau_Lib": "Niveau",
         "startlanguage": "Langue de démarrage",
         "StartLanguage": "Langue de démarrage",
@@ -2522,8 +2549,10 @@ def page_inferential_statistics():
     available_demo = {}
     for col, label in demographic_candidates.items():
         if col in df_filtered.columns:
-            # Avoid displaying duplicated language entries if several aliases exist.
+            # Avoid displaying duplicated language/campus entries if several aliases exist.
             if label == "Langue de démarrage" and "Langue de démarrage" in available_demo.values():
+                continue
+            if label == "Campus" and "Campus" in available_demo.values():
                 continue
             available_demo[col] = label
 
@@ -2735,6 +2764,8 @@ def apply_current_filters_without_faculty(data):
         base = base[base["Year"].astype(str) == str(year)]
     if genre != "Tous" and "Genre" in base.columns:
         base = base[base["Genre"].astype(str) == str(genre)]
+    if CAMPUS_COLUMN and campus != "Tous" and CAMPUS_COLUMN in base.columns:
+        base = base[base[CAMPUS_COLUMN].astype(str) == str(campus)]
     if cursus != "Tous" and "Cursus" in base.columns:
         base = base[base["Cursus"].astype(str) == str(cursus)]
     if niveau != "Tous" and "Niveau" in base.columns:
@@ -2775,7 +2806,7 @@ def get_excluded_non_question_columns():
     """Columns that should not be treated as questionnaire items."""
     base_cols = {
         "Year", "Année", "Genre", "Faculté_Institut_g", "Faculté", "Faculté_Institut", "Faculty", "Institut",
-        "Cursus", "Niveau", "Niveau_Lib", "startlanguage", "StartLanguage", "Language", "Langue", "Age",
+        "Cursus", "Campus", "campus", "Campus_g", "Campus principal", "Campus_principal", "Site", "site", "Niveau", "Niveau_Lib", "startlanguage", "StartLanguage", "Language", "Langue", "Age",
         "Date", "Horodateur", "Timestamp", "Institution", "Responsable", "Email", "Adresse e-mail", "ID", "Id", "id",
         "Code", "Nom", "Prénom", "StartDate", "EndDate", "Status", "IPAddress", "Progress", "Duration",
         "Finished", "RecordedDate", "ResponseId", "RecipientLastName", "RecipientFirstName", "RecipientEmail",
@@ -3288,7 +3319,7 @@ def demographic_bar_chart(freq, title, orientation="h", height=430):
 def page_demographics():
     section_header(
         "Partie démographique",
-        "Profil des répondants selon le genre, l’âge, la faculté ou institut, le niveau et l’intitulé du diplôme."
+        "Profil des répondants selon le genre, l’âge, le campus, la faculté ou institut, le niveau et l’intitulé du diplôme."
     )
 
     selected_year, data_demo, original_demo = get_single_year_context("demographics")
@@ -3300,10 +3331,11 @@ def page_demographics():
     genre_col = resolve_first_existing_column(data_demo, ["Genre"])
     age_col = resolve_first_existing_column(data_demo, ["Age", "Âge"])
     fac_col = resolve_first_existing_column(data_demo, ["Faculté_Institut", "Faculté_Institut_g", "Faculté", "Institut"])
+    campus_col = resolve_first_existing_column(data_demo, ["Campus", "campus", "Campus_g", "Campus principal", "Campus_principal", "Site", "site"])
     niveau_col = resolve_first_existing_column(data_demo, ["Niveau", "Niveau_Lib"])
     diplome_col = resolve_first_existing_column(data_demo, ["Intitulé Diplôme", "Intitulé_Diplôme", "Intitulé Diplome", "Diplôme", "Intitule Diplome"])
 
-    k1, k2, k3, k4 = st.columns(4)
+    k1, k2, k3, k4, k5 = st.columns(5)
     with k1:
         insight_card("Année affichée", selected_year, "Analyse non agrégée", USJ_BLUE)
     with k2:
@@ -3312,6 +3344,9 @@ def page_demographics():
         fac_n = data_demo[fac_col].map(clean_response_value).dropna().nunique() if fac_col else 0
         insight_card("Facultés / Instituts", fac_n, "Modalités observées", USJ_BLUE_2)
     with k4:
+        campus_n = data_demo[campus_col].map(clean_response_value).dropna().nunique() if campus_col else 0
+        insight_card("Campus", campus_n, "Modalités observées", USJ_ORANGE)
+    with k5:
         diplome_n = data_demo[diplome_col].map(clean_response_value).dropna().nunique() if diplome_col else 0
         insight_card("Diplômes", diplome_n, "Intitulés distincts", USJ_GOLD)
 
@@ -3321,6 +3356,7 @@ def page_demographics():
     age_numeric = pd.to_numeric(data_demo[age_col], errors="coerce") if age_col else pd.Series(dtype=float)
     age_group_freq = make_age_group_table(age_numeric) if age_col else pd.DataFrame()
     fac_freq = make_frequency_table(data_demo, fac_col, top_n=18, include_other=False)
+    campus_freq = make_frequency_table(data_demo, campus_col)
     niveau_freq = make_frequency_table(data_demo, niveau_col)
     diplome_fac_table = make_diploma_faculty_table(data_demo, diplome_col, fac_col)
 
@@ -3388,6 +3424,10 @@ def page_demographics():
 
     st.divider()
 
+    if campus_col:
+        demographic_bar_chart(campus_freq, "Répartition par campus", orientation="h", height=max(360, 38 * len(campus_freq)))
+        st.divider()
+
     c_fac, c_niveau = st.columns([1.35, 1])
     with c_fac:
         demographic_bar_chart(fac_freq, "Répartition par faculté / institut", orientation="h", height=max(470, 30 * len(fac_freq)))
@@ -3423,6 +3463,13 @@ def page_demographics():
             sort_by_frequency=False
         )
 
+    if campus_col:
+        render_professional_frequency_table(
+            campus_freq,
+            "Campus",
+            "Répartition par campus dans l’année sélectionnée."
+        )
+
     t3, t4 = st.columns([1.2, 1])
     with t3:
         render_professional_frequency_table(
@@ -3452,6 +3499,7 @@ DEMOGRAPHIC_FIELDS = {
     "Genre": ["Genre"],
     "Age": ["Age", "Âge"],
     "Faculté / Institut": ["Faculté_Institut", "Faculté_Institut_g", "Faculté", "Institut"],
+    "Campus": ["Campus", "campus", "Campus_g", "Campus principal", "Campus_principal", "Site", "site"],
     "Niveau": ["Niveau", "Niveau_Lib"],
     "Intitulé Diplôme": ["Intitulé Diplôme", "Intitulé_Diplôme", "Intitulé Diplome", "Intitule Diplome", "Diplôme", "Diplome"],
 }
@@ -4201,7 +4249,7 @@ def build_printable_report_html():
         best = {"Dimension": "Non disponible", "Résultat": np.nan}
         weak = {"Dimension": "Non disponible", "Résultat": np.nan}
 
-    generated_filters = f"Année : {year} | Genre : {genre} | Faculté : {faculte} | Niveau : {niveau}"
+    generated_filters = f"Année : {year} | Genre : {genre} | Faculté : {faculte} | Campus : {campus if CAMPUS_COLUMN else 'Non disponible'} | Niveau : {niveau}"
 
     # -------------------------------------------------
     # Dimensional ranking table
