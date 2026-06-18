@@ -2137,19 +2137,42 @@ def parse_import_filename(filename):
     stem = re.sub(r"\s+", " ", stem).strip()
 
     separators = [" - ", " – ", " — ", "__"]
-    institution = ""
-    responsable = ""
+    parts = []
 
     for sep in separators:
         if sep in stem:
             parts = [p.strip() for p in stem.split(sep) if p.strip()]
-            if len(parts) >= 2:
-                institution = parts[0]
-                responsable = " ".join(parts[1:])
-                break
+            break
 
-    if not institution:
-        institution = stem
+    if not parts:
+        parts = [stem]
+
+    def looks_like_group(value):
+        value_norm = slugify_for_code(value).lower()
+        return (
+            "groupe" in value_norm
+            or "group" in value_norm
+            or re.search(r"(^|_)(fg|sg|sous_groupe)_?\d+($|_)", value_norm) is not None
+        )
+
+    institution = ""
+    responsable = ""
+
+    if len(parts) >= 2:
+        group_candidates = [p for p in parts if looks_like_group(p)]
+
+        if group_candidates:
+            # Some files are named: Participants - Groupe1.docx.
+            # In that case the group must go to Focus groupe and the names to Nom des participants.
+            institution = group_candidates[-1]
+            responsable_parts = [p for p in parts if p != institution]
+            responsable = " - ".join(responsable_parts).strip()
+        else:
+            # Recommended format remains: Focus groupe - Participants.docx.
+            institution = parts[0]
+            responsable = " - ".join(parts[1:]).strip()
+    else:
+        institution = parts[0] if parts else stem
 
     return {
         "institution": institution,
