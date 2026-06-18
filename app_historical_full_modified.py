@@ -3019,7 +3019,7 @@ def page_inferential_statistics():
     summary_box(
         """
         Cette section teste directement les réponses brutes des questions du questionnaire, sans utiliser les scores agrégés.
-        Les questions à faibles fréquences sont exclues automatiquement afin d’éviter des résultats instables. Dans le profil des répondants, les autres variables démographiques restent comparées à la variable sélectionnée, en excluant seulement l’auto-comparaison directe comme Genre selon Genre.
+        Dans le profil des répondants, les autres variables démographiques restent comparées à la variable sélectionnée, en excluant seulement l’auto-comparaison directe comme Genre selon Genre.
         """,
         color=USJ_BLUE,
         background="#F7F9FC"
@@ -3133,22 +3133,6 @@ def page_inferential_statistics():
         }).dropna(subset=["Groupe", "Réponse"])
 
         n_valid = int(len(temp))
-        if n_valid < 30:
-            return None, None, "N valide < 30"
-
-        # For the profile section only, keep demographic comparisons visible by regrouping rare
-        # categories into "Autres" instead of removing the whole comparison. For questionnaire
-        # sections, the strict low-frequency exclusion remains unchanged.
-        if is_profile_section:
-            response_counts_before = temp["Réponse"].value_counts()
-            rare_responses = response_counts_before[response_counts_before < 30].index.tolist()
-            if rare_responses:
-                temp["Réponse"] = temp["Réponse"].where(~temp["Réponse"].isin(rare_responses), "Autres")
-
-            group_counts_before = temp["Groupe"].value_counts()
-            rare_groups = group_counts_before[group_counts_before < 30].index.tolist()
-            if rare_groups:
-                temp["Groupe"] = temp["Groupe"].where(~temp["Groupe"].isin(rare_groups), "Autres")
 
         group_counts = temp["Groupe"].value_counts()
         response_counts = temp["Réponse"].value_counts()
@@ -3157,12 +3141,6 @@ def page_inferential_statistics():
             return None, None, "Moins de deux groupes valides"
         if response_counts.shape[0] < 2:
             return None, None, "Moins de deux modalités de réponse"
-
-        if not is_profile_section:
-            if group_counts.min() < 30:
-                return None, None, "Au moins un groupe a N < 30"
-            if response_counts.min() < 30:
-                return None, None, "Au moins une modalité a N < 30"
 
         contingency = pd.crosstab(temp["Réponse"], temp["Groupe"])
         if contingency.shape[0] < 2 or contingency.shape[1] < 2:
@@ -3175,10 +3153,6 @@ def page_inferential_statistics():
             chi2, p_value, dof, expected = stats.chi2_contingency(contingency)
         except Exception:
             return None, None, "Test non calculable"
-
-        expected_min = float(np.nanmin(expected)) if expected.size else np.nan
-        if not is_profile_section and pd.notna(expected_min) and expected_min < 5:
-            return None, None, "Effectif attendu minimal < 5"
 
         total = contingency.to_numpy().sum()
         min_dim = min(contingency.shape[0] - 1, contingency.shape[1] - 1)
@@ -3245,15 +3219,15 @@ def page_inferential_statistics():
     with c1:
         insight_card("Variable comparée", selected_group_label, "Groupes de comparaison", USJ_BLUE)
     with c2:
-        insight_card("Questions testées", len(results_df), "Fréquences suffisantes", USJ_GREEN if len(results_df) > 0 else USJ_RED)
+        insight_card("Questions testées", len(results_df), "Tests calculés", USJ_GREEN if len(results_df) > 0 else USJ_RED)
     with c3:
         significant_n = int(results_df["p-value"].lt(0.05).sum()) if not results_df.empty else 0
         insight_card("Différences significatives", significant_n, "p-value < 0.050", USJ_GREEN if significant_n > 0 else USJ_GOLD)
     with c4:
-        insight_card("Questions exclues", len(excluded_df), "N, fréquences ou auto-comparaison", USJ_ORANGE if len(excluded_df) > 0 else USJ_GREEN)
+        insight_card("Questions exclues", len(excluded_df), "Base nulle ou auto-comparaison", USJ_ORANGE if len(excluded_df) > 0 else USJ_GREEN)
 
     if results_df.empty:
-        st.warning("Aucune question de cette section ne respecte les seuils de fréquence nécessaires au test inférentiel.")
+        st.warning("Aucune question de cette section ne peut être testée avec les filtres sélectionnés.")
         if not excluded_df.empty:
             with st.expander("Voir les questions exclues"):
                 st.dataframe(excluded_df, use_container_width=True, hide_index=True)
@@ -3283,7 +3257,7 @@ def page_inferential_statistics():
             f"""
             <span style="font-size:20px; font-weight:800; color:{USJ_GOLD};">Lecture inférentielle</span><br>
             Aucune question de la section <b>{html_escape(selected_section_inf)}</b> ne présente une différence statistiquement significative
-            selon <b>{html_escape(selected_group_label)}</b> au seuil de 0.050, après exclusion des questions à faibles fréquences.
+            selon <b>{html_escape(selected_group_label)}</b> au seuil de 0.050.
             """,
             color=USJ_GOLD,
             background="#FFF8F0"
@@ -3326,6 +3300,43 @@ def page_inferential_statistics():
         dist["Pourcentage"] = dist.groupby("Groupe")["N"].transform(lambda x: x / x.sum() * 100)
 
         with st.expander(f"{selected_question_detail} | p-value = {selected_row['p-value']:.4f}", expanded=True):
+            positive_group_rows = []
+            for grp_name, grp_dist in dist.groupby("Groupe"):
+                positive_summary = get_positive_scale_summary(grp_dist[["Réponse", "N", "Pourcentage"]].copy())
+                if positive_summary:
+                    positive_group_rows.append({
+                        "Groupe": grp_name,
+                        "Label": positive_summary.get("label", "Réponses positives"),
+                        "Subtitle": positive_summary.get("subtitle", "Total des réponses positives"),
+                        "N positif": int(positive_summary.get("N positif", 0)),
+                        "N total": int(positive_summary.get("N total", 0)),
+                        "Pourcentage positif": float(positive_summary.get("Pourcentage positif", np.nan)),
+                    })
+
+            if positive_group_rows:
+                positive_group_df = pd.DataFrame(positive_group_rows).sort_values("Pourcentage positif", ascending=False)
+                positive_label = positive_group_df["Label"].iloc[0]
+                positive_subtitle = positive_group_df["Subtitle"].iloc[0]
+                st.markdown(
+                    f"<h4 style='color:{USJ_BLUE}; margin-top:6px;'>{html_escape(positive_label)} selon {html_escape(selected_group_label)}</h4>"
+                    f"<div style='color:#667085; font-size:13px; margin-top:-8px; margin-bottom:10px;'>{html_escape(positive_subtitle)}. Les modalités originales restent affichées dans le graphique et le tableau ci-dessous.</div>",
+                    unsafe_allow_html=True
+                )
+                kpi_cols = st.columns(min(4, len(positive_group_df)))
+                for k, (_, pos_row) in enumerate(positive_group_df.iterrows()):
+                    with kpi_cols[k % len(kpi_cols)]:
+                        color = kpi_color_percentage(pos_row["Pourcentage positif"])
+                        st.markdown(
+                            f"""
+                            <div style='background:#FFFFFF;border:1px solid #DDE5F0;border-left:7px solid {color};border-radius:16px;padding:12px 14px;margin:4px 0 12px 0;box-shadow:0 4px 12px rgba(0,0,0,0.04);font-family:Candara, Arial, sans-serif;'>
+                                <div style='font-size:13px;font-weight:900;color:{USJ_BLUE};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'>{html_escape(str(pos_row['Groupe']))}</div>
+                                <div style='font-size:25px;font-weight:900;color:{color};margin-top:5px;'>{safe_pct(pos_row['Pourcentage positif'])}</div>
+                                <div style='font-size:12px;color:{USJ_BLUE};font-weight:800;margin-top:3px;'>{int(pos_row['N positif']):,} / {int(pos_row['N total']):,}</div>
+                            </div>
+                            """.replace(",", " "),
+                            unsafe_allow_html=True
+                        )
+
             fig = px.bar(
                 dist,
                 x="Pourcentage",
