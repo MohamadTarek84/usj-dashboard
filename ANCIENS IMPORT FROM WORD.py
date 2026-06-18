@@ -1667,16 +1667,16 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
 
 
     /* Extra compact print spacing: pull the first section closer to the group name */
-    .admin-print-cover-header {
+    .admin-print-cover-header {{
         margin-bottom: -8mm !important;
         padding-bottom: 0 !important;
-    }
+    }}
 
-    .admin-print-cover-title {
+    .admin-print-cover-title {{
         margin-bottom: -10mm !important;
         padding-bottom: 0 !important;
         line-height: 0.95 !important;
-    }
+    }}
 
 
 }}
