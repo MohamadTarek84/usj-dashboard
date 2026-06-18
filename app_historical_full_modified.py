@@ -3,6 +3,7 @@ import os
 import re
 import textwrap
 import warnings
+import base64
 import html as html_lib
 
 import numpy as np
@@ -1670,59 +1671,209 @@ def render_landing_page():
     total_respondents = f"{len(df_coded):,}".replace(",", " ")
     question_count = len([c for c in df_original.columns if is_probable_survey_question(c)]) if "is_probable_survey_question" in globals() else len(df_original.columns)
 
+    logo_candidates = ["USJ LOGO 150.png", "LogoUAQ.png", "usj_logo.png"]
+    logo_path = next((lp for lp in logo_candidates if os.path.exists(lp)), None)
+    logo_html = ""
+    if logo_path:
+        try:
+            with open(logo_path, "rb") as f:
+                encoded_logo = base64.b64encode(f.read()).decode("utf-8")
+            logo_html = f"""
+            <div class='landing-logo-panel'>
+                <img src='data:image/png;base64,{encoded_logo}' class='landing-logo' />
+                <div class='landing-logo-caption'>{'Université Saint-Joseph de Beyrouth' if LANG == 'Français' else 'Saint Joseph University of Beirut'}</div>
+            </div>
+            """
+        except Exception:
+            logo_html = ""
+
+    if LANG == "Français":
+        hero_kicker = "Exit Survey Analytics 2022-2025"
+        strategic_line = "Une solution décisionnelle pour passer de la donnée collectée à l’action institutionnelle mesurable."
+        problem_title = "Pourquoi cette plateforme est essentielle ?"
+        problem_text = "Les réponses de l’Exit Survey contiennent des signaux stratégiques : satisfaction, expérience académique, services, insertion, infrastructures, accompagnement et perception globale de l’USJ. Sans plateforme intégrée, ces informations restent dispersées dans des fichiers Excel et sont difficiles à mobiliser rapidement pour la décision."
+        value_title = "Ce que la plateforme apporte"
+        value_items = [
+            ("Lecture claire", "Transformer les réponses brutes en tableaux, graphiques et indicateurs lisibles pour les décideurs."),
+            ("Comparaison historique", "Comparer les résultats des trois années sans mélanger les bases de répondants."),
+            ("Analyse approfondie", "Identifier les écarts significatifs selon le genre, la faculté, le campus et le niveau."),
+            ("Priorisation", "Repérer les forces, les alertes et les leviers d’amélioration à suivre dans le temps."),
+        ]
+        modules_title = "Parcours d’analyse recommandé"
+        modules = [
+            ("01", "Résultats descriptifs", "Comprendre les réponses question par question et vérifier les bases applicables."),
+            ("02", "Comparaison historique", "Suivre l’évolution des modalités et des réponses positives entre 2022-2023, 2023-2024 et 2024-2025."),
+            ("03", "Statistiques inférentielles", "Tester les différences entre groupes et visualiser les comparaisons détaillées."),
+            ("04", "Indicateurs et leviers", "Lire les KPI de synthèse et les facteurs clés d’amélioration."),
+        ]
+        tutorial_steps = [
+            "Sélectionnez la langue puis entrez dans le tableau de bord.",
+            "Choisissez les filtres d’analyse pour cibler une population spécifique.",
+            "Commencez par les résultats descriptifs pour valider les distributions de réponses.",
+            "Passez à la comparaison historique pour identifier les évolutions importantes.",
+            "Consultez les statistiques inférentielles pour repérer les différences significatives.",
+            "Utilisez les indicateurs et leviers pour préparer les décisions d’amélioration.",
+        ]
+        enter_label = tr("enter_dashboard")
+    else:
+        hero_kicker = "Exit Survey Analytics 2022-2025"
+        strategic_line = "A decision-support solution that turns collected data into measurable institutional action."
+        problem_title = "Why this platform matters"
+        problem_text = "Exit Survey responses contain strategic signals: satisfaction, academic experience, services, employability, infrastructure, support and overall perception of USJ. Without an integrated platform, these insights remain scattered across Excel files and are hard to use quickly for decision-making."
+        value_title = "What the platform delivers"
+        value_items = [
+            ("Clear reading", "Turn raw responses into readable tables, charts and indicators for decision-makers."),
+            ("Historical comparison", "Compare the three years without mixing respondent bases."),
+            ("Advanced analysis", "Identify significant differences by gender, faculty, campus and level."),
+            ("Prioritization", "Detect strengths, alerts and improvement drivers to monitor over time."),
+        ]
+        modules_title = "Recommended analytical journey"
+        modules = [
+            ("01", "Descriptive results", "Understand responses question by question and check applicable bases."),
+            ("02", "Historical comparison", "Track changes in modalities and positive responses across 2022-2023, 2023-2024 and 2024-2025."),
+            ("03", "Inferential statistics", "Test differences between groups and visualize detailed comparisons."),
+            ("04", "Indicators and drivers", "Read synthetic KPIs and key improvement drivers."),
+        ]
+        tutorial_steps = [
+            "Select the language and enter the dashboard.",
+            "Choose analysis filters to focus on a specific population.",
+            "Start with descriptive results to validate response distributions.",
+            "Move to historical comparison to identify meaningful trends.",
+            "Use inferential statistics to detect significant group differences.",
+            "Use indicators and drivers to prepare improvement decisions.",
+        ]
+        enter_label = tr("enter_dashboard")
+
+    value_cards_html = "".join(
+        f"""
+        <div class='landing-value-card'>
+            <div class='landing-value-dot'></div>
+            <div class='landing-value-title'>{html_escape(title)}</div>
+            <div class='landing-value-text'>{html_escape(text)}</div>
+        </div>
+        """
+        for title, text in value_items
+    )
+
+    modules_html = "".join(
+        f"""
+        <div class='landing-module'>
+            <div class='landing-module-number'>{num}</div>
+            <div>
+                <div class='landing-module-title'>{html_escape(title)}</div>
+                <div class='landing-module-text'>{html_escape(text)}</div>
+            </div>
+        </div>
+        """
+        for num, title, text in modules
+    )
+
+    tutorial_html = "".join(
+        f"<div class='tutorial-step'><span class='tutorial-step-number'>{i}</span><span>{html_escape(step)}</span></div>"
+        for i, step in enumerate(tutorial_steps, start=1)
+    )
+
     st.markdown(
         f"""
         <style>
-        .landing-hero {{background: radial-gradient(circle at top right, rgba(199,34,67,0.18), transparent 28%), linear-gradient(135deg, {USJ_BLUE} 0%, {USJ_BLUE_2} 55%, #151B4F 100%); border-radius: 30px; padding: 42px 46px; color: white; box-shadow: 0 18px 42px rgba(35,43,105,0.25); margin-top: 10px; margin-bottom: 24px; font-family: Candara, Arial, sans-serif;}}
-        .landing-badge {{display: inline-block; background: rgba(255,255,255,0.13); border: 1px solid rgba(255,255,255,0.25); color: white; padding: 8px 14px; border-radius: 999px; font-size: 14px; font-weight: 800; margin-bottom: 18px;}}
-        .landing-title {{font-size: 46px; line-height: 1.12; font-weight: 950; margin: 0 0 16px 0; color: white;}}
-        .landing-subtitle {{font-size: 19px; line-height: 1.6; max-width: 980px; color: rgba(255,255,255,0.92); margin-bottom: 24px;}}
-        .landing-card {{background: #FFFFFF; border: 1px solid #DDE5F0; border-radius: 22px; padding: 22px; min-height: 170px; box-shadow: 0 8px 22px rgba(35,43,105,0.08); font-family: Candara, Arial, sans-serif;}}
-        .landing-card-title {{color: {USJ_BLUE}; font-size: 20px; font-weight: 950; margin-bottom: 9px;}}
-        .landing-card-text {{color: #5F6B7A; font-size: 15px; line-height: 1.5;}}
-        .landing-stat {{background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.22); border-radius: 18px; padding: 15px 18px;}}
-        .landing-stat-value {{font-size: 28px; font-weight: 950; color: white;}}
-        .landing-stat-label {{font-size: 13px; color: rgba(255,255,255,0.84); margin-top: 4px;}}
-        .tutorial-box {{background: linear-gradient(135deg, #FFFFFF 0%, #F7F8FC 100%); border: 1px solid #DDE5F0; border-left: 8px solid {USJ_RED}; border-radius: 24px; padding: 24px 28px; margin-top: 24px; box-shadow: 0 8px 24px rgba(35,43,105,0.08); font-family: Candara, Arial, sans-serif;}}
-        .tutorial-step {{display:flex; gap:12px; align-items:flex-start; margin: 13px 0; color:{USJ_TEXT}; font-size:16px;}}
-        .tutorial-step-number {{background:{USJ_BLUE}; color:white; width:28px; height:28px; border-radius:999px; display:inline-flex; align-items:center; justify-content:center; font-weight:900; flex: 0 0 28px;}}
+        .landing-shell {{font-family: Candara, Arial, sans-serif;}}
+        .landing-hero {{
+            position: relative;
+            overflow: hidden;
+            background:
+                radial-gradient(circle at 87% 8%, rgba(199,34,67,0.30), transparent 24%),
+                radial-gradient(circle at 75% 80%, rgba(184,164,139,0.28), transparent 30%),
+                linear-gradient(135deg, {USJ_BLUE} 0%, #23306F 46%, #151B4F 100%);
+            border-radius: 34px;
+            padding: 44px 46px;
+            color: white;
+            box-shadow: 0 22px 52px rgba(35,43,105,0.28);
+            margin-top: 10px;
+            margin-bottom: 26px;
+        }}
+        .landing-hero-grid {{display:grid;grid-template-columns:minmax(0,1.9fr) minmax(260px,0.8fr);gap:28px;align-items:center;}}
+        .landing-badge {{display:inline-block;background:rgba(255,255,255,0.14);border:1px solid rgba(255,255,255,0.28);color:white;padding:9px 16px;border-radius:999px;font-size:14px;font-weight:900;margin-bottom:16px;}}
+        .landing-kicker {{font-size:15px;font-weight:900;letter-spacing:0.08em;text-transform:uppercase;color:#E8D9C7;margin-bottom:8px;}}
+        .landing-title {{font-size:48px;line-height:1.10;font-weight:950;margin:0 0 16px 0;color:white;max-width:1020px;}}
+        .landing-subtitle {{font-size:19px;line-height:1.65;max-width:980px;color:rgba(255,255,255,0.93);margin-bottom:12px;}}
+        .landing-strategic-line {{font-size:16px;line-height:1.55;color:#F3E7DA;font-weight:800;margin-bottom:24px;}}
+        .landing-stat-grid {{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;max-width:860px;}}
+        .landing-stat {{background:rgba(255,255,255,0.13);border:1px solid rgba(255,255,255,0.23);border-radius:20px;padding:16px 18px;backdrop-filter:blur(8px);}}
+        .landing-stat-value {{font-size:27px;font-weight:950;color:white;line-height:1.25;}}
+        .landing-stat-label {{font-size:13px;color:rgba(255,255,255,0.84);margin-top:6px;font-weight:700;}}
+        .landing-logo-panel {{background:rgba(255,255,255,0.94);border:1px solid rgba(255,255,255,0.55);border-radius:28px;padding:24px 20px;text-align:center;box-shadow:0 18px 38px rgba(0,0,0,0.16);}}
+        .landing-logo {{max-width:100%;height:auto;max-height:170px;object-fit:contain;}}
+        .landing-logo-caption {{color:{USJ_BLUE};font-weight:900;font-size:14px;margin-top:12px;}}
+        .landing-section-grid {{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:22px 0;}}
+        .landing-info-panel {{background:#FFFFFF;border:1px solid #DDE5F0;border-radius:26px;padding:26px 28px;box-shadow:0 10px 28px rgba(35,43,105,0.08);}}
+        .landing-panel-title {{font-size:25px;font-weight:950;color:{USJ_BLUE};margin-bottom:12px;}}
+        .landing-panel-text {{font-size:16px;line-height:1.72;color:{USJ_TEXT};}}
+        .landing-value-grid {{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin:22px 0 24px 0;}}
+        .landing-value-card {{background:#FFFFFF;border:1px solid #DDE5F0;border-radius:22px;padding:22px;min-height:176px;box-shadow:0 8px 22px rgba(35,43,105,0.07);}}
+        .landing-value-dot {{width:28px;height:6px;border-radius:999px;background:linear-gradient(90deg,{USJ_BLUE},{USJ_RED},{USJ_GOLD});margin-bottom:16px;}}
+        .landing-value-title {{color:{USJ_BLUE};font-size:20px;font-weight:950;margin-bottom:9px;}}
+        .landing-value-text {{color:#5F6B7A;font-size:15px;line-height:1.55;}}
+        .landing-module-panel {{background:linear-gradient(135deg,#FFFFFF 0%,#F8FAFE 100%);border:1px solid #DDE5F0;border-left:8px solid {USJ_BLUE};border-radius:26px;padding:26px 28px;box-shadow:0 10px 28px rgba(35,43,105,0.08);}}
+        .landing-module-grid {{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:16px;}}
+        .landing-module {{display:flex;gap:14px;background:#FFFFFF;border:1px solid #E4EAF4;border-radius:18px;padding:16px 18px;}}
+        .landing-module-number {{width:38px;height:38px;border-radius:12px;background:{USJ_BLUE};color:white;font-weight:950;display:flex;align-items:center;justify-content:center;flex:0 0 38px;}}
+        .landing-module-title {{font-size:17px;font-weight:950;color:{USJ_BLUE};margin-bottom:5px;}}
+        .landing-module-text {{font-size:14px;line-height:1.5;color:#5F6B7A;}}
+        .tutorial-box {{background:linear-gradient(135deg,#FFFFFF 0%,#F7F8FC 100%);border:1px solid #DDE5F0;border-left:8px solid {USJ_RED};border-radius:26px;padding:26px 28px;margin-top:22px;box-shadow:0 10px 28px rgba(35,43,105,0.08);}}
+        .tutorial-step {{display:flex;gap:12px;align-items:flex-start;margin:13px 0;color:{USJ_TEXT};font-size:16px;line-height:1.45;}}
+        .tutorial-step-number {{background:{USJ_BLUE};color:white;width:30px;height:30px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;font-weight:950;flex:0 0 30px;}}
+        @media (max-width: 900px) {{
+            .landing-hero-grid, .landing-section-grid, .landing-value-grid, .landing-module-grid {{grid-template-columns:1fr;}}
+            .landing-stat-grid {{grid-template-columns:1fr;}}
+            .landing-title {{font-size:36px;}}
+        }}
         </style>
-        <div class="landing-hero">
-            <div class="landing-badge">{tr('landing_badge')}</div>
-            <div class="landing-title">{tr('landing_title')}</div>
-            <div class="landing-subtitle">{tr('landing_subtitle')}</div>
-            <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;max-width:820px;">
-                <div class="landing-stat"><div class="landing-stat-value">{years_label}</div><div class="landing-stat-label">{tr('years')}</div></div>
-                <div class="landing-stat"><div class="landing-stat-value">{total_respondents}</div><div class="landing-stat-label">{tr('respondents')}</div></div>
-                <div class="landing-stat"><div class="landing-stat-value">{question_count}</div><div class="landing-stat-label">{tr('questions')}</div></div>
+        <div class='landing-shell'>
+            <div class='landing-hero'>
+                <div class='landing-hero-grid'>
+                    <div>
+                        <div class='landing-badge'>{html_escape(tr('landing_badge'))}</div>
+                        <div class='landing-kicker'>{html_escape(hero_kicker)}</div>
+                        <div class='landing-title'>{html_escape(tr('landing_title'))}</div>
+                        <div class='landing-subtitle'>{html_escape(tr('landing_subtitle'))}</div>
+                        <div class='landing-strategic-line'>{html_escape(strategic_line)}</div>
+                        <div class='landing-stat-grid'>
+                            <div class='landing-stat'><div class='landing-stat-value'>{html_escape(years_label)}</div><div class='landing-stat-label'>{html_escape(tr('years'))}</div></div>
+                            <div class='landing-stat'><div class='landing-stat-value'>{html_escape(total_respondents)}</div><div class='landing-stat-label'>{html_escape(tr('respondents'))}</div></div>
+                            <div class='landing-stat'><div class='landing-stat-value'>{html_escape(str(question_count))}</div><div class='landing-stat-label'>{html_escape(tr('questions'))}</div></div>
+                        </div>
+                    </div>
+                    <div>{logo_html}</div>
+                </div>
+            </div>
+            <div class='landing-section-grid'>
+                <div class='landing-info-panel'>
+                    <div class='landing-panel-title'>{html_escape(problem_title)}</div>
+                    <div class='landing-panel-text'>{html_escape(problem_text)}</div>
+                </div>
+                <div class='landing-info-panel'>
+                    <div class='landing-panel-title'>{html_escape(value_title)}</div>
+                    <div class='landing-panel-text'>{html_escape(strategic_line)}<br><br>{html_escape(tr('landing_subtitle'))}</div>
+                </div>
+            </div>
+            <div class='landing-value-grid'>{value_cards_html}</div>
+            <div class='landing-module-panel'>
+                <div class='landing-panel-title'>{html_escape(modules_title)}</div>
+                <div class='landing-module-grid'>{modules_html}</div>
+            </div>
+            <div class='tutorial-box'>
+                <div class='landing-panel-title'>{html_escape(tr('tutorial_title'))}</div>
+                {tutorial_html}
             </div>
         </div>
         """,
         unsafe_allow_html=True
     )
 
-    cards = [("01", tr("landing_card_1_title"), tr("landing_card_1_text")), ("02", tr("landing_card_2_title"), tr("landing_card_2_text")), ("03", tr("landing_card_3_title"), tr("landing_card_3_text")), ("04", tr("landing_card_4_title"), tr("landing_card_4_text"))]
-    c = st.columns(4)
-    for i, (num, title, text) in enumerate(cards):
-        with c[i]:
-            st.markdown(f"""<div class="landing-card"><div style="color:{USJ_RED};font-size:13px;font-weight:950;margin-bottom:8px;">{num}</div><div class="landing-card-title">{title}</div><div class="landing-card-text">{text}</div></div>""", unsafe_allow_html=True)
-
-    st.markdown(
-        f"""
-        <div class="tutorial-box">
-            <div style="font-size:25px;font-weight:950;color:{USJ_BLUE};margin-bottom:12px;">{tr('tutorial_title')}</div>
-            <div class="tutorial-step"><span class="tutorial-step-number">1</span><span>{tr('tutorial_1')}</span></div>
-            <div class="tutorial-step"><span class="tutorial-step-number">2</span><span>{tr('tutorial_2')}</span></div>
-            <div class="tutorial-step"><span class="tutorial-step-number">3</span><span>{tr('tutorial_3')}</span></div>
-            <div class="tutorial-step"><span class="tutorial-step-number">4</span><span>{tr('tutorial_4')}</span></div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
     st.markdown("<br>", unsafe_allow_html=True)
     start_col, _ = st.columns([1.2, 4])
     with start_col:
-        if st.button(tr("enter_dashboard"), use_container_width=True, type="primary"):
+        if st.button(enter_label, use_container_width=True, type="primary"):
             st.session_state["dashboard_started"] = True
             st.rerun()
 
