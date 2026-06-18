@@ -1535,7 +1535,7 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
 
 
     /* FINAL compact print override: remove the large blank cover space without changing content */
-    .admin-print-cover-header {
+    .admin-print-cover-header {{
         display: block !important;
         height: auto !important;
         min-height: 0 !important;
@@ -1544,29 +1544,29 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
         padding: 0 !important;
         break-after: auto !important;
         page-break-after: auto !important;
-    }
+    }}
 
-    .admin-print-cover-title {
+    .admin-print-cover-title {{
         position: static !important;
         transform: none !important;
         margin: 2mm 0 3mm 0 !important;
         padding: 0 !important;
         line-height: 1.05 !important;
-    }
+    }}
 
-    .usj-main-header {
+    .usj-main-header {{
         margin-bottom: 2mm !important;
         padding-bottom: 1mm !important;
         break-after: auto !important;
         page-break-after: auto !important;
-    }
+    }}
 
-    div[style*="border-left:7px"] {
+    div[style*="border-left:7px"] {{
         break-after: auto !important;
         page-break-after: auto !important;
         break-inside: auto !important;
         page-break-inside: auto !important;
-    }
+    }}
 
     /* Compact print spacing requested: reduce blank spaces in cover and conclusion printout */
     .admin-print-cover-title {{
