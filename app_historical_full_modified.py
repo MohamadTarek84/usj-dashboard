@@ -1805,9 +1805,8 @@ def render_landing_page():
         for i, step in enumerate(tutorial_steps, start=1)
     )
 
-    st.markdown(
-        textwrap.dedent(f"""
-        <style>
+    landing_html = textwrap.dedent(f"""
+<style>
         .landing-shell {{font-family: Candara, Arial, sans-serif;}}
         .landing-logo-strip {{display:flex;justify-content:flex-start;align-items:center;margin:2px 0 14px 2px;}}
         .landing-logo-clean {{height:92px;max-width:360px;object-fit:contain;}}
@@ -1913,9 +1912,12 @@ def render_landing_page():
                 {tutorial_html}
             </div>
         </div>
-        """).strip(),
-        unsafe_allow_html=True
-    )
+""").strip()
+    # IMPORTANT: remove leading spaces before HTML tags. Otherwise Streamlit Markdown
+    # can interpret the block as preformatted code and display raw <div> markup.
+    landing_html = re.sub(r"\n[ \t]+<", "\n<", landing_html)
+    landing_html = re.sub(r"^[ \t]+<", "<", landing_html)
+    st.markdown(landing_html, unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
     start_col, _ = st.columns([1.2, 4])
