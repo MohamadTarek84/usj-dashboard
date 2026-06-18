@@ -168,7 +168,7 @@ st.markdown(
         color: transparent !important;
     }}
 
-    /* Make long Program/Cursus values readable in dropdowns without creating empty white space */
+    /* Make long Program/Cursus values readable without forcing a large blank dropdown area */
     div[data-baseweb="select"] [class*="valueContainer"],
     div[data-baseweb="select"] [class*="singleValue"] {{
         white-space: normal !important;
@@ -178,31 +178,33 @@ st.markdown(
     }}
 
     div[data-baseweb="popover"] {{
-        width: min(920px, 92vw) !important;
-        max-width: 92vw !important;
+        width: auto !important;
+        min-width: 280px !important;
+        max-width: 520px !important;
     }}
 
     div[data-baseweb="popover"] > div,
     div[data-baseweb="popover"] [data-baseweb="menu"],
     div[data-baseweb="popover"] ul[role="listbox"],
     div[data-baseweb="popover"] div[role="listbox"] {{
-        width: 100% !important;
-        max-width: 100% !important;
+        width: auto !important;
+        min-width: 280px !important;
+        max-width: 520px !important;
     }}
 
     div[data-baseweb="popover"] div[role="option"],
     div[data-baseweb="popover"] li[role="option"] {{
-        width: 100% !important;
-        max-width: 100% !important;
+        width: auto !important;
+        max-width: 520px !important;
         white-space: normal !important;
         overflow: visible !important;
         text-overflow: clip !important;
         height: auto !important;
         min-height: 42px !important;
         line-height: 1.28 !important;
-        padding-top: 10px !important;
-        padding-bottom: 10px !important;
-        overflow-wrap: anywhere !important;
+        padding-top: 8px !important;
+        padding-bottom: 8px !important;
+        overflow-wrap: break-word !important;
         word-break: normal !important;
     }}
 
@@ -212,8 +214,8 @@ st.markdown(
         overflow: visible !important;
         text-overflow: clip !important;
         line-height: 1.28 !important;
-        max-width: 100% !important;
-        overflow-wrap: anywhere !important;
+        max-width: 500px !important;
+        overflow-wrap: break-word !important;
     }}
 
     button[kind="secondary"], .stButton button {{
