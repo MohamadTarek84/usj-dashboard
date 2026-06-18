@@ -1192,13 +1192,13 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
         height: auto !important;
         min-height: 0 !important;
         max-height: none !important;
-        margin: 0 0 2mm 0 !important;
+        margin: 0 !important;
         padding: 0 !important;
         overflow: visible !important;
         break-before: auto !important;
         page-break-before: auto !important;
-        break-after: auto !important;
-        page-break-after: auto !important;
+        break-after: avoid !important;
+        page-break-after: avoid !important;
     }}
 
     .admin-print-cover-header img {{
@@ -1213,10 +1213,10 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
         width: 100% !important;
         text-align: center !important;
         color: #001F5B !important;
-        font-size: 21px !important;
+        font-size: 22px !important;
         line-height: 1.05 !important;
         font-weight: 800 !important;
-        margin: 3mm 0 3mm 0 !important;
+        margin: 2mm 0 3mm 0 !important;
         padding: 0 !important;
     }}
 
@@ -1533,119 +1533,35 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
         padding-top: 0 !important;
     }}
 
-
-    /* FINAL compact print override: remove the large blank cover space without changing content */
-    .admin-print-cover-header {{
-        display: block !important;
-        height: auto !important;
-        min-height: 0 !important;
-        max-height: none !important;
-        margin: 0 0 2mm 0 !important;
-        padding: 0 !important;
-        break-after: auto !important;
-        page-break-after: auto !important;
-    }}
-
-    .admin-print-cover-title {{
-        position: static !important;
-        transform: none !important;
-        margin: 2mm 0 3mm 0 !important;
-        padding: 0 !important;
-        line-height: 1.05 !important;
-    }}
-
+    /* Balanced print spacing fix: keep layout professional without forcing all rows onto one page */
     .usj-main-header {{
-        margin-bottom: 2mm !important;
+        margin-bottom: 1mm !important;
         padding-bottom: 1mm !important;
-        break-after: auto !important;
-        page-break-after: auto !important;
+        break-after: avoid !important;
+        page-break-after: avoid !important;
     }}
 
-    div[style*="border-left:7px"] {{
-        break-after: auto !important;
-        page-break-after: auto !important;
-        break-inside: auto !important;
-        page-break-inside: auto !important;
-    }}
-
-    /* Compact print spacing requested: reduce blank spaces in cover and conclusion printout */
-    .admin-print-cover-title {{
-        margin: 4mm 0 4mm 0 !important;
-        line-height: 1.0 !important;
-    }}
-
-    div[data-testid="stTextArea"],
-    div[data-testid="stTextArea"] > div,
-    div[data-testid="stTextArea"] textarea,
-    .admin-original-answer-box {{
-        min-height: 17mm !important;
-        height: 17mm !important;
-        max-height: 17mm !important;
-        margin-top: 0 !important;
-        margin-bottom: 0 !important;
-        box-sizing: border-box !important;
-    }}
-
-    div[data-testid="stTextArea"] textarea {{
-        padding: 4px 6px !important;
-        line-height: 1.12 !important;
-    }}
-
-    .admin-answer-row-wrapper {{
-        margin-top: 0 !important;
-        margin-bottom: 0.6mm !important;
-    }}
-
-    .pour-finir-print-row {{
-        margin: 2px 0 5px 0 !important;
-    }}
-
-    .pour-finir-print-label {{
-        margin-bottom: 2px !important;
-        line-height: 1.1 !important;
-    }}
-
-    .pour-finir-print-box {{
-        min-height: 22px !important;
-        padding: 4px 6px !important;
-        margin: 0 0 3px 0 !important;
-        line-height: 1.12 !important;
-    }}
-
-    /* Final print correction: move the group name directly under the header/logo */
     .admin-print-cover-header {{
-        margin-top: -30mm !important;
-        margin-bottom: 1.5mm !important;
+        margin: 0 0 1mm 0 !important;
         padding: 0 !important;
-        height: auto !important;
-        min-height: 0 !important;
-        max-height: none !important;
+        break-after: avoid !important;
+        page-break-after: avoid !important;
     }}
 
     .admin-print-cover-title {{
-        margin-top: 0 !important;
-        margin-bottom: 3mm !important;
+        margin: 1mm 0 2mm 0 !important;
         padding: 0 !important;
         line-height: 1.0 !important;
     }}
 
-
-
-    /* Final requested print fix: reduce space after group title and allow SWOT/admin rows to split across pages */
-    .admin-print-cover-title {{
-        margin-top: 0 !important;
-        margin-bottom: 1mm !important;
-        line-height: 0.95 !important;
-    }}
-
     div[style*="border-left:7px"] {{
-        margin-top: 0 !important;
-        margin-bottom: 1mm !important;
+        margin-top: 1mm !important;
+        margin-bottom: 2mm !important;
         padding: 5px 10px !important;
-        break-inside: auto !important;
-        page-break-inside: auto !important;
-        break-after: auto !important;
-        page-break-after: auto !important;
+        break-after: avoid !important;
+        page-break-after: avoid !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
     }}
 
     div[data-testid="stHorizontalBlock"],
@@ -1653,73 +1569,34 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
     .admin-answer-row {{
         break-inside: auto !important;
         page-break-inside: auto !important;
+    }}
+
+    div[data-testid="stTextArea"],
+    div[data-testid="stTextArea"] > div,
+    div[data-testid="stTextArea"] textarea,
+    .admin-original-answer-box {{
+        min-height: 22mm !important;
+        height: 22mm !important;
+        max-height: 22mm !important;
         margin-top: 0 !important;
+        margin-bottom: 0.8mm !important;
+        box-sizing: border-box !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
     }}
 
-    div[data-testid="stVerticalBlock"],
-    div[data-testid="stElementContainer"],
-    div[data-testid="element-container"] {{
+    .admin-answer-row-wrapper {{
         margin-top: 0 !important;
-        margin-bottom: 0 !important;
-        padding-top: 0 !important;
-        padding-bottom: 0 !important;
+        margin-bottom: 1mm !important;
     }}
 
-
-    /* Extra compact print spacing: pull the first section closer to the group name */
-    .admin-print-cover-header {{
-        margin-bottom: -8mm !important;
-        padding-bottom: 0 !important;
-    }}
-
-    .admin-print-cover-title {{
-        margin-bottom: -10mm !important;
-        padding-bottom: 0 !important;
-        line-height: 0.95 !important;
-    }}
-
-    /* Stronger compact print override: remove Streamlit vertical gaps between group title and Section I */
     div[data-testid="stVerticalBlock"],
     div[data-testid="stVerticalBlockBorderWrapper"],
     div[data-testid="stElementContainer"],
-    div[data-testid="element-container"],
-    div[data-testid="stMarkdownContainer"] {{
-        gap: 0 !important;
-        row-gap: 0 !important;
-        margin-top: 0 !important;
-        margin-bottom: 0 !important;
-        padding-top: 0 !important;
-        padding-bottom: 0 !important;
+    div[data-testid="element-container"] {{
+        row-gap: 1mm !important;
+        gap: 1mm !important;
     }}
-
-    .admin-print-cover-header {{
-        margin-bottom: -18mm !important;
-        padding-bottom: 0 !important;
-    }}
-
-    .admin-print-cover-title {{
-        margin-top: 0 !important;
-        margin-bottom: -20mm !important;
-        padding: 0 !important;
-        line-height: 0.9 !important;
-    }}
-
-    hr,
-    div[data-testid="stMarkdownContainer"] hr {{
-        display: none !important;
-        height: 0 !important;
-        min-height: 0 !important;
-        max-height: 0 !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }}
-
-    div[style*="border-left:7px"] {{
-        margin-top: -6mm !important;
-        margin-bottom: 1mm !important;
-        padding: 4px 10px !important;
-    }}
-
 
 }}
 </style>
@@ -4024,7 +3901,7 @@ box-sizing:border-box;
                         label=f"{section_label}_{key}",
                         value=admin_value,
                         key=f"admin_edit_{selected_draft_code}_{section_label}_{key}",
-                        height=70
+                        height=95
                     )
         
                 if st.button(
@@ -4096,8 +3973,8 @@ box-sizing:border-box;
         font-size:18px;
         font-weight:700;
         color:{USJ_BLUE};
-        margin-top:4px;
-        margin-bottom:4px;
+        margin-top:12px;
+        margin-bottom:8px;
         ">
         &bull; {phrase}
         </div>
