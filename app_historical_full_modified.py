@@ -2058,6 +2058,7 @@ def page_historical_comparison():
         return pd.DataFrame(rows), pd.DataFrame(meta_rows)
 
     def render_comparison_pivot(dist_hist, years_hist, response_label="Réponse", max_rows=None):
+        """USJ-styled comparison table: modalities in rows and years in columns."""
         if dist_hist.empty:
             return
         pivot_pct = dist_hist.pivot_table(index="Réponse", columns="Année", values="Pourcentage", aggfunc="sum").fillna(0)
@@ -2068,15 +2069,97 @@ def page_historical_comparison():
         if max_rows is not None:
             pivot_pct = pivot_pct.head(max_rows)
             pivot_n = pivot_n.loc[pivot_pct.index]
-        display_rows = []
+
+        header_cells = [f"<th style='text-align:left;min-width:230px;'>{html_escape(response_label)}</th>"]
+        for y in years_hist:
+            header_cells.append(f"<th style='text-align:center;min-width:145px;'>{html_escape(y)}</th>")
+
+        body_rows = []
         for resp in pivot_pct.index:
-            row = {response_label: resp}
+            cells = [f"<td style='font-weight:800;color:{USJ_BLUE};'>{html_escape(resp)}</td>"]
             for y in years_hist:
-                pct_val = pivot_pct.loc[resp, y] if y in pivot_pct.columns else 0
-                n_val = pivot_n.loc[resp, y] if y in pivot_n.columns else 0
-                row[y] = f"{pct_val:.2f}% ({int(n_val)})"
-            display_rows.append(row)
-        st.dataframe(pd.DataFrame(display_rows), use_container_width=True, hide_index=True)
+                pct_val = float(pivot_pct.loc[resp, y]) if y in pivot_pct.columns else 0.0
+                n_val = int(pivot_n.loc[resp, y]) if y in pivot_n.columns else 0
+                bar_width = min(100, max(0, pct_val))
+                cells.append(
+                    f"""
+                    <td style='text-align:left;'>
+                        <div style='display:flex;align-items:center;gap:10px;'>
+                            <div style='height:9px;width:90px;background:#EEF2F8;border-radius:999px;overflow:hidden;'>
+                                <div style='height:9px;width:{bar_width:.1f}%;background:linear-gradient(90deg,{USJ_BLUE},{USJ_RED});border-radius:999px;'></div>
+                            </div>
+                            <div style='font-weight:900;color:{USJ_TEXT};white-space:nowrap;'>{pct_val:.2f}% <span style='font-weight:600;color:#667085;'>({n_val})</span></div>
+                        </div>
+                    </td>
+                    """
+                )
+            body_rows.append("<tr>" + "".join(cells) + "</tr>")
+
+        max_height = 420 if len(pivot_pct) > 12 else 300
+        st.markdown(
+            f"""
+            <div style='border:1px solid #DDE5F0;border-radius:16px;overflow:hidden;box-shadow:0 6px 18px rgba(0,27,117,0.06);margin-top:8px;margin-bottom:18px;background:white;'>
+                <div style='max-height:{max_height}px;overflow:auto;'>
+                    <table style='width:100%;border-collapse:collapse;font-family:Candara, Arial, sans-serif;font-size:14px;'>
+                        <thead style='position:sticky;top:0;z-index:2;'>
+                            <tr style='background:{USJ_BLUE};color:white;'>
+                                {''.join(header_cells)}
+                            </tr>
+                        </thead>
+                        <tbody>{''.join(body_rows)}</tbody>
+                    </table>
+                </div>
+            </div>
+            <style>
+                table th {{padding:11px 12px;border-right:1px solid rgba(255,255,255,0.18);}}
+                table td {{padding:10px 12px;border-bottom:1px solid #E6ECF3;border-right:1px solid #EEF2F8;vertical-align:middle;}}
+                table tbody tr:nth-child(even) td {{background:#FBFCFE;}}
+                table tbody tr:hover td {{background:#F4F7FF;}}
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
+
+    def render_clear_comparison_chart(dist_hist, years_hist, title="Comparaison des modalités par année", top_n=12):
+        """Clear grouped horizontal chart using the USJ logo palette."""
+        if dist_hist.empty:
+            return
+        order = (
+            dist_hist.groupby("Réponse", as_index=False)["Pourcentage"].mean()
+            .sort_values("Pourcentage", ascending=False)
+            .head(top_n)["Réponse"].tolist()
+        )
+        chart_df = dist_hist[dist_hist["Réponse"].isin(order)].copy()
+        chart_df["Réponse"] = pd.Categorical(chart_df["Réponse"], categories=list(reversed(order)), ordered=True)
+        fig = px.bar(
+            chart_df,
+            x="Pourcentage",
+            y="Réponse",
+            color="Année",
+            text="Pourcentage",
+            barmode="group",
+            orientation="h",
+            color_discrete_sequence=[USJ_BLUE, USJ_RED, USJ_GOLD, USJ_BLUE_2],
+            hover_data={"N": True, "Pourcentage": ":.2f"},
+            title=title
+        )
+        fig.update_traces(
+            texttemplate="%{text:.1f}%",
+            textposition="outside",
+            marker_line_color="white",
+            marker_line_width=1.1,
+            cliponaxis=False
+        )
+        fig.update_layout(
+            xaxis_title="Pourcentage des réponses valides",
+            yaxis_title="",
+            legend_title="Année",
+            legend=dict(orientation="h", yanchor="bottom", y=1.08, xanchor="left", x=0, font=dict(size=12)),
+            margin=dict(l=40, r=110, t=95, b=45),
+        )
+        fig.update_xaxes(range=[0, min(105, max(10, chart_df["Pourcentage"].max() + 8))])
+        theme_layout(fig, height=max(380, 36 * len(order)), showlegend=True)
+        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": True, "displaylogo": False})
 
     def render_age_comparison(question_col):
         age_rows = []
@@ -2220,40 +2303,26 @@ def page_historical_comparison():
             st.dataframe(meta_display[["Année", "Base applicable", "N valide", "Données manquantes (%)", "Non applicable"]], use_container_width=True, hide_index=True)
 
         if modalities_n > 30:
+            st.markdown(f"<h3 style='color:{USJ_BLUE}; margin-top:16px;'>Comparaison des modalités les plus fréquentes</h3>", unsafe_allow_html=True)
+            render_clear_comparison_chart(
+                dist_hist,
+                years_hist,
+                title="Top modalités comparées par année",
+                top_n=15
+            )
             st.markdown(f"<h3 style='color:{USJ_BLUE};'>Tableau comparatif par année</h3>", unsafe_allow_html=True)
-            render_comparison_pivot(dist_hist, years_hist, response_label="Modalité", max_rows=40)
+            render_comparison_pivot(dist_hist, years_hist, response_label="Modalité", max_rows=60)
             continue
 
         st.markdown(f"<h3 style='color:{USJ_BLUE}; margin-top:16px;'>Distribution comparative</h3>", unsafe_allow_html=True)
-        chart_col, table_col = st.columns([1.35, 1])
-        with chart_col:
-            fig_stack = px.bar(
-                dist_hist,
-                x="Année",
-                y="Pourcentage",
-                color="Réponse",
-                text="Pourcentage",
-                barmode="stack",
-                color_discrete_map=RESPONSE_COLORS,
-                color_discrete_sequence=[USJ_BLUE, USJ_RED, USJ_GOLD, USJ_BLUE_2],
-                hover_data={"N": True, "Pourcentage": ":.2f"},
-                title="Structure des réponses par année"
-            )
-            fig_stack.update_traces(texttemplate="%{text:.1f}%", textposition="inside", cliponaxis=False, marker_line_color="white", marker_line_width=0.8)
-            fig_stack.update_layout(
-                xaxis_title="Année",
-                yaxis_title="Pourcentage des réponses valides",
-                yaxis=dict(range=[0, 100]),
-                legend_title="Réponse",
-                legend=dict(orientation="h", yanchor="bottom", y=1.06, xanchor="left", x=0, font=dict(size=10)),
-                margin=dict(l=40, r=40, t=95, b=45),
-            )
-            theme_layout(fig_stack, height=410 if modalities_n > 6 else 360, showlegend=True)
-            st.plotly_chart(fig_stack, use_container_width=True, config={"displayModeBar": False}, key=f"hist_stack_all_{idx}_{re.sub(r'[^A-Za-z0-9_]+', '_', str(question_col))}")
-
-        with table_col:
-            st.markdown(f"<h4 style='color:{USJ_BLUE}; margin-top:0;'>Tableau comparatif</h4>", unsafe_allow_html=True)
-            render_comparison_pivot(dist_hist, years_hist, response_label="Réponse")
+        render_clear_comparison_chart(
+            dist_hist,
+            years_hist,
+            title="Comparaison des réponses par année",
+            top_n=12
+        )
+        st.markdown(f"<h3 style='color:{USJ_BLUE};'>Tableau comparatif par année</h3>", unsafe_allow_html=True)
+        render_comparison_pivot(dist_hist, years_hist, response_label="Réponse")
 
 
 # =====================================================
