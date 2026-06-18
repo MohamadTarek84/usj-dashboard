@@ -1192,13 +1192,13 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
         height: auto !important;
         min-height: 0 !important;
         max-height: none !important;
-        margin: 0 !important;
+        margin: 0 0 2mm 0 !important;
         padding: 0 !important;
         overflow: visible !important;
         break-before: auto !important;
         page-break-before: auto !important;
-        break-after: avoid !important;
-        page-break-after: avoid !important;
+        break-after: auto !important;
+        page-break-after: auto !important;
     }}
 
     .admin-print-cover-header img {{
@@ -1213,10 +1213,10 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
         width: 100% !important;
         text-align: center !important;
         color: #001F5B !important;
-        font-size: 22px !important;
+        font-size: 21px !important;
         line-height: 1.05 !important;
         font-weight: 800 !important;
-        margin: 8mm 0 6mm 0 !important;
+        margin: 3mm 0 3mm 0 !important;
         padding: 0 !important;
     }}
 
@@ -1532,6 +1532,42 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
         margin-top: 0 !important;
         padding-top: 0 !important;
     }}
+
+
+    /* FINAL compact print override: remove the large blank cover space without changing content */
+    .admin-print-cover-header {
+        display: block !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        margin: 0 0 2mm 0 !important;
+        padding: 0 !important;
+        break-after: auto !important;
+        page-break-after: auto !important;
+    }
+
+    .admin-print-cover-title {
+        position: static !important;
+        transform: none !important;
+        margin: 2mm 0 3mm 0 !important;
+        padding: 0 !important;
+        line-height: 1.05 !important;
+    }
+
+    .usj-main-header {
+        margin-bottom: 2mm !important;
+        padding-bottom: 1mm !important;
+        break-after: auto !important;
+        page-break-after: auto !important;
+    }
+
+    div[style*="border-left:7px"] {
+        break-after: auto !important;
+        page-break-after: auto !important;
+        break-inside: auto !important;
+        page-break-inside: auto !important;
+    }
+
     /* Compact print spacing requested: reduce blank spaces in cover and conclusion printout */
     .admin-print-cover-title {{
         margin: 4mm 0 4mm 0 !important;
