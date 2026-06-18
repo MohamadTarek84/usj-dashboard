@@ -1575,9 +1575,9 @@ st.divider()
 PAGE_OPTIONS = [
     "Résultats descriptifs de toutes les questions",
     "Comparaison historique",
+    "Statistiques inférentielles",
     "Vue générale des indicateurs",
     "Facteurs clés d’amélioration",
-    "Statistiques inférentielles",
     "Méthodologie des composantes",
     "Rapport synthétique imprimable"
 ]
