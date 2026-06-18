@@ -1678,6 +1678,48 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
         line-height: 0.95 !important;
     }}
 
+    /* Stronger compact print override: remove Streamlit vertical gaps between group title and Section I */
+    div[data-testid="stVerticalBlock"],
+    div[data-testid="stVerticalBlockBorderWrapper"],
+    div[data-testid="stElementContainer"],
+    div[data-testid="element-container"],
+    div[data-testid="stMarkdownContainer"] {{
+        gap: 0 !important;
+        row-gap: 0 !important;
+        margin-top: 0 !important;
+        margin-bottom: 0 !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+    }}
+
+    .admin-print-cover-header {{
+        margin-bottom: -18mm !important;
+        padding-bottom: 0 !important;
+    }}
+
+    .admin-print-cover-title {{
+        margin-top: 0 !important;
+        margin-bottom: -20mm !important;
+        padding: 0 !important;
+        line-height: 0.9 !important;
+    }}
+
+    hr,
+    div[data-testid="stMarkdownContainer"] hr {{
+        display: none !important;
+        height: 0 !important;
+        min-height: 0 !important;
+        max-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }}
+
+    div[style*="border-left:7px"] {{
+        margin-top: -6mm !important;
+        margin-bottom: 1mm !important;
+        padding: 4px 10px !important;
+    }}
+
 
 }}
 </style>
