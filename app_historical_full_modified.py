@@ -1808,7 +1808,7 @@ def render_landing_page():
     landing_html = textwrap.dedent(f"""
 <style>
         .landing-shell {{font-family: Candara, Arial, sans-serif;}}
-        .landing-logo-strip {{display:flex;justify-content:flex-start;align-items:center;margin:2px 0 14px 2px;}}
+        .landing-logo-strip {{display:flex;justify-content:flex-end;align-items:center;margin:2px 2px 14px 0;}}
         .landing-logo-clean {{height:92px;max-width:360px;object-fit:contain;}}
         .landing-hero {{
             position: relative;
