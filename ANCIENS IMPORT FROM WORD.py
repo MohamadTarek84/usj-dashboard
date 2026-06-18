@@ -1612,6 +1612,23 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
         line-height: 1.12 !important;
     }}
 
+    /* Final print correction: move the group name directly under the header/logo */
+    .admin-print-cover-header {{
+        margin-top: -30mm !important;
+        margin-bottom: 1.5mm !important;
+        padding: 0 !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+    }}
+
+    .admin-print-cover-title {{
+        margin-top: 0 !important;
+        margin-bottom: 3mm !important;
+        padding: 0 !important;
+        line-height: 1.0 !important;
+    }}
+
 
 }}
 </style>
