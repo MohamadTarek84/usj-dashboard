@@ -1532,6 +1532,51 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
         margin-top: 0 !important;
         padding-top: 0 !important;
     }}
+    /* Compact print spacing requested: reduce blank spaces in cover and conclusion printout */
+    .admin-print-cover-title {{
+        margin: 4mm 0 4mm 0 !important;
+        line-height: 1.0 !important;
+    }}
+
+    div[data-testid="stTextArea"],
+    div[data-testid="stTextArea"] > div,
+    div[data-testid="stTextArea"] textarea,
+    .admin-original-answer-box {{
+        min-height: 17mm !important;
+        height: 17mm !important;
+        max-height: 17mm !important;
+        margin-top: 0 !important;
+        margin-bottom: 0 !important;
+        box-sizing: border-box !important;
+    }}
+
+    div[data-testid="stTextArea"] textarea {{
+        padding: 4px 6px !important;
+        line-height: 1.12 !important;
+    }}
+
+    .admin-answer-row-wrapper {{
+        margin-top: 0 !important;
+        margin-bottom: 0.6mm !important;
+    }}
+
+    .pour-finir-print-row {{
+        margin: 2px 0 5px 0 !important;
+    }}
+
+    .pour-finir-print-label {{
+        margin-bottom: 2px !important;
+        line-height: 1.1 !important;
+    }}
+
+    .pour-finir-print-box {{
+        min-height: 22px !important;
+        padding: 4px 6px !important;
+        margin: 0 0 3px 0 !important;
+        line-height: 1.12 !important;
+    }}
+
+
 }}
 </style>
 """)
@@ -3835,7 +3880,7 @@ box-sizing:border-box;
                         label=f"{section_label}_{key}",
                         value=admin_value,
                         key=f"admin_edit_{selected_draft_code}_{section_label}_{key}",
-                        height=95
+                        height=70
                     )
         
                 if st.button(
@@ -3907,8 +3952,8 @@ box-sizing:border-box;
         font-size:18px;
         font-weight:700;
         color:{USJ_BLUE};
-        margin-top:12px;
-        margin-bottom:8px;
+        margin-top:4px;
+        margin-bottom:4px;
         ">
         &bull; {phrase}
         </div>
