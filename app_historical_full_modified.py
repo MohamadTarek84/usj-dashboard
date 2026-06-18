@@ -3293,24 +3293,8 @@ def page_inferential_statistics():
     if summary_button_key not in st.session_state:
         st.session_state[summary_button_key] = False
 
-    detail_button_key = f"inferential_show_details_{selected_group_label}_{selected_section_inf}"
-    if detail_button_key not in st.session_state:
-        st.session_state[detail_button_key] = False
-
-    excluded_button_key = f"inferential_show_excluded_{selected_group_label}_{selected_section_inf}"
-    if excluded_button_key not in st.session_state:
-        st.session_state[excluded_button_key] = False
-
-    btn_col1, btn_col2, btn_col3 = st.columns([1.2, 1.45, 1.2])
-    with btn_col1:
-        if st.button("Afficher / masquer la synthèse statistique", key=f"btn_{summary_button_key}", use_container_width=True):
-            st.session_state[summary_button_key] = not st.session_state[summary_button_key]
-    with btn_col2:
-        if st.button("Afficher / masquer les graphiques et tableaux par question", key=f"btn_{detail_button_key}", use_container_width=True):
-            st.session_state[detail_button_key] = not st.session_state[detail_button_key]
-    with btn_col3:
-        if st.button("Afficher / masquer les questions exclues", key=f"btn_{excluded_button_key}", use_container_width=True):
-            st.session_state[excluded_button_key] = not st.session_state[excluded_button_key]
+    if st.button("Afficher / masquer la synthèse statistique", key=f"btn_{summary_button_key}", use_container_width=True):
+        st.session_state[summary_button_key] = not st.session_state[summary_button_key]
 
     if st.session_state[summary_button_key]:
         st.markdown(f"<h3 style='color:{USJ_BLUE};'>Synthèse des tests par question</h3>", unsafe_allow_html=True)
@@ -3326,67 +3310,67 @@ def page_inferential_statistics():
             hide_index=True
         )
 
-    if st.session_state[detail_button_key]:
-        detail_source = results_df.sort_values(["p-value", "V de Cramer"], ascending=[True, False]).copy()
+    # The detailed visual comparisons are shown automatically.
+    # Only the statistical synthesis table remains behind a button to keep the page readable.
+    detail_source = results_df.sort_values(["p-value", "V de Cramer"], ascending=[True, False]).copy()
 
-        st.markdown(
-            f"<h3 style='color:{USJ_BLUE};'>Comparaisons détaillées par question</h3>",
-            unsafe_allow_html=True
-        )
+    st.markdown(
+        f"<h3 style='color:{USJ_BLUE};'>Comparaisons détaillées par question</h3>",
+        unsafe_allow_html=True
+    )
 
-        for _, selected_row in detail_source.iterrows():
-            selected_question_detail = selected_row["Question"]
-            detail_temp = details[selected_question_detail].copy()
-            dist = detail_temp.groupby(["Groupe", "Réponse"]).size().reset_index(name="N")
-            dist["Pourcentage"] = dist.groupby("Groupe")["N"].transform(lambda x: x / x.sum() * 100)
+    for _, selected_row in detail_source.iterrows():
+        selected_question_detail = selected_row["Question"]
+        detail_temp = details[selected_question_detail].copy()
+        dist = detail_temp.groupby(["Groupe", "Réponse"]).size().reset_index(name="N")
+        dist["Pourcentage"] = dist.groupby("Groupe")["N"].transform(lambda x: x / x.sum() * 100)
 
-            with st.expander(f"{selected_question_detail} | p-value = {selected_row['p-value']:.4f}"):
-                fig = px.bar(
-                    dist,
-                    x="Pourcentage",
-                    y="Réponse",
-                    color="Groupe",
-                    orientation="h",
-                    barmode="group",
-                    text="Pourcentage",
-                    color_discrete_sequence=[USJ_BLUE, USJ_RED, USJ_GOLD, USJ_BLUE_2, USJ_DARK_RED, "#B49C88", "#5E6C84"],
-                    hover_data={"N": True, "Pourcentage": ":.2f"},
-                    title=f"Distribution des réponses selon {selected_group_label}"
-                )
-                fig.update_traces(
-                    texttemplate="%{text:.1f}%",
-                    textposition="outside",
-                    marker_line_color="white",
-                    marker_line_width=1.1,
-                    cliponaxis=False
-                )
-                fig.update_layout(
-                    xaxis_title="Pourcentage des réponses valides dans chaque groupe",
-                    yaxis_title="",
-                    legend_title=selected_group_label,
-                    margin=dict(l=40, r=90, t=90, b=45),
-                )
-                theme_layout(fig, height=max(390, 42 * dist["Réponse"].nunique()), showlegend=True)
-                st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": True, "displaylogo": False}, key=f"inferential_detail_fig_{selected_group_label}_{selected_section_inf}_{re.sub(r'[^A-Za-z0-9_]+', '_', str(selected_question_detail))}")
+        with st.expander(f"{selected_question_detail} | p-value = {selected_row['p-value']:.4f}", expanded=True):
+            fig = px.bar(
+                dist,
+                x="Pourcentage",
+                y="Réponse",
+                color="Groupe",
+                orientation="h",
+                barmode="group",
+                text="Pourcentage",
+                color_discrete_sequence=[USJ_BLUE, USJ_RED, USJ_GOLD, USJ_BLUE_2, USJ_DARK_RED, "#B49C88", "#5E6C84"],
+                hover_data={"N": True, "Pourcentage": ":.2f"},
+                title=f"Distribution des réponses selon {selected_group_label}"
+            )
+            fig.update_traces(
+                texttemplate="%{text:.1f}%",
+                textposition="outside",
+                marker_line_color="white",
+                marker_line_width=1.1,
+                cliponaxis=False
+            )
+            fig.update_layout(
+                xaxis_title="Pourcentage des réponses valides dans chaque groupe",
+                yaxis_title="",
+                legend_title=selected_group_label,
+                margin=dict(l=40, r=90, t=90, b=45),
+            )
+            theme_layout(fig, height=max(390, 42 * dist["Réponse"].nunique()), showlegend=True)
+            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": True, "displaylogo": False}, key=f"inferential_detail_fig_{selected_group_label}_{selected_section_inf}_{re.sub(r'[^A-Za-z0-9_]+', '_', str(selected_question_detail))}")
 
-                pivot_pct = dist.pivot_table(index="Réponse", columns="Groupe", values="Pourcentage", aggfunc="sum").fillna(0)
-                pivot_n = dist.pivot_table(index="Réponse", columns="Groupe", values="N", aggfunc="sum").fillna(0)
-                row_order = pivot_pct.mean(axis=1).sort_values(ascending=False).index
-                pivot_pct = pivot_pct.loc[row_order]
-                pivot_n = pivot_n.loc[row_order]
+            pivot_pct = dist.pivot_table(index="Réponse", columns="Groupe", values="Pourcentage", aggfunc="sum").fillna(0)
+            pivot_n = dist.pivot_table(index="Réponse", columns="Groupe", values="N", aggfunc="sum").fillna(0)
+            row_order = pivot_pct.mean(axis=1).sort_values(ascending=False).index
+            pivot_pct = pivot_pct.loc[row_order]
+            pivot_n = pivot_n.loc[row_order]
 
-                display_rows = []
-                for resp in pivot_pct.index:
-                    row = {"Réponse": resp}
-                    for grp in pivot_pct.columns:
-                        row[str(grp)] = f"{pivot_pct.loc[resp, grp]:.2f}% ({int(pivot_n.loc[resp, grp])})"
-                    display_rows.append(row)
+            display_rows = []
+            for resp in pivot_pct.index:
+                row = {"Réponse": resp}
+                for grp in pivot_pct.columns:
+                    row[str(grp)] = f"{pivot_pct.loc[resp, grp]:.2f}% ({int(pivot_n.loc[resp, grp])})"
+                display_rows.append(row)
 
-                st.markdown(f"<h4 style='color:{USJ_BLUE};'>Tableau comparatif par {html_escape(selected_group_label.lower())}</h4>", unsafe_allow_html=True)
-                st.dataframe(pd.DataFrame(display_rows), use_container_width=True, hide_index=True)
+            st.markdown(f"<h4 style='color:{USJ_BLUE};'>Tableau comparatif par {html_escape(selected_group_label.lower())}</h4>", unsafe_allow_html=True)
+            st.dataframe(pd.DataFrame(display_rows), use_container_width=True, hide_index=True)
 
-    if st.session_state[excluded_button_key]:
-        st.markdown(f"<h3 style='color:{USJ_BLUE};'>Questions exclues des tests inférentiels</h3>", unsafe_allow_html=True)
+    with st.expander("Questions exclues des tests inférentiels", expanded=False):
         if excluded_df.empty:
             st.info("Aucune question exclue pour cette sélection.")
         else:
