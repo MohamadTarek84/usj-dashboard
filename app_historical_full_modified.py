@@ -2246,6 +2246,83 @@ def page_historical_comparison():
         theme_layout(fig, height=max(380, 36 * len(order)), showlegend=True)
         st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": True, "displaylogo": False})
 
+    def render_historical_positive_kpis(dist_hist, years_hist):
+        """Add yearly positive-answer KPIs for recognized scale questions while keeping original modalities."""
+        if dist_hist is None or dist_hist.empty:
+            return
+
+        positive_rows = []
+        for year_value in years_hist:
+            year_dist = dist_hist[dist_hist["Année"].astype(str) == str(year_value)][["Réponse", "N", "Pourcentage"]].copy()
+            if year_dist.empty:
+                continue
+            positive_summary = get_positive_scale_summary(year_dist)
+            if positive_summary:
+                positive_rows.append({
+                    "Année": str(year_value),
+                    "Label": positive_summary.get("label", "Réponses positives"),
+                    "Subtitle": positive_summary.get("subtitle", "Total des réponses positives"),
+                    "N positif": int(positive_summary.get("N positif", 0)),
+                    "N total": int(positive_summary.get("N total", 0)),
+                    "Pourcentage positif": float(positive_summary.get("Pourcentage positif", np.nan)),
+                })
+
+        if not positive_rows:
+            return
+
+        positive_df = pd.DataFrame(positive_rows)
+        kpi_label = positive_df["Label"].iloc[0]
+        kpi_subtitle = positive_df["Subtitle"].iloc[0]
+
+        st.markdown(
+            f"""
+            <div style='margin:8px 0 8px 0;font-family:Candara, Arial, sans-serif;'>
+                <div style='font-size:18px;font-weight:900;color:{USJ_BLUE};'>{html_escape(kpi_label)} par année</div>
+                <div style='font-size:13px;color:#667085;margin-top:2px;'>{html_escape(kpi_subtitle)}. Les modalités originales restent affichées dans le graphique et le tableau ci-dessous.</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        card_cols = st.columns(len(positive_df))
+        for col, (_, row) in zip(card_cols, positive_df.iterrows()):
+            pct = row["Pourcentage positif"]
+            color = kpi_color_percentage(pct)
+            with col:
+                st.markdown(
+                    f"""
+                    <div style='background:#FFFFFF;border:1px solid #DDE5F0;border-left:7px solid {color};border-radius:16px;padding:13px 15px;min-height:104px;box-shadow:0 5px 14px rgba(0,27,117,0.06);font-family:Candara, Arial, sans-serif;'>
+                        <div style='font-size:13px;font-weight:900;color:{USJ_TEXT};'>{html_escape(row['Année'])}</div>
+                        <div style='font-size:31px;font-weight:900;color:{color};line-height:1;margin-top:7px;'>{safe_pct(pct)}</div>
+                        <div style='font-size:13px;font-weight:800;color:{USJ_BLUE};margin-top:7px;'>{int(row['N positif']):,} / {int(row['N total']):,}</div>
+                    </div>
+                    """.replace(",", " "),
+                    unsafe_allow_html=True
+                )
+
+        if len(positive_df) >= 2:
+            fig_pos = go.Figure()
+            fig_pos.add_trace(go.Scatter(
+                x=positive_df["Année"],
+                y=positive_df["Pourcentage positif"],
+                mode="lines+markers+text",
+                text=positive_df["Pourcentage positif"].map(lambda x: f"{x:.1f}%" if pd.notna(x) else ""),
+                textposition="top center",
+                line=dict(color=USJ_BLUE, width=4),
+                marker=dict(size=12, color=USJ_RED, line=dict(color="white", width=2)),
+                hovertemplate="Année=%{x}<br>Pourcentage positif=%{y:.2f}%<extra></extra>",
+                name=kpi_label,
+            ))
+            fig_pos.update_layout(
+                title=f"Évolution de l’indicateur positif : {kpi_label}",
+                xaxis_title="Année",
+                yaxis_title="Pourcentage positif",
+                yaxis=dict(range=[0, 100]),
+                margin=dict(l=35, r=35, t=70, b=35),
+            )
+            theme_layout(fig_pos, height=320, showlegend=False)
+            st.plotly_chart(fig_pos, use_container_width=True, config={"displayModeBar": False})
+
     def render_age_comparison(question_col):
         age_rows = []
         band_rows = []
@@ -2340,7 +2417,7 @@ def page_historical_comparison():
 
         st.markdown(
             f"""
-            <div style='background:#FFFFFF;border:1px solid #DDE5F0;border-left:7px solid {USJ_BLUE};border-radius:16px;padding:14px 16px;margin:22px 0 10px 0;box-shadow:0 4px 12px rgba(0,0,0,0.04);font-family:Candara, Arial, sans-serif;'>
+            <div style='background:#FFFFFF;border:1px solid #DDE5F0;border-left:7px solid {USJ_BLUE};border-radius:16px;padding:10px 14px;margin:8px 0 4px 0;box-shadow:0 3px 10px rgba(0,0,0,0.04);font-family:Candara, Arial, sans-serif;'>
                 <div style='font-size:12px;font-weight:900;color:#667085;margin-bottom:4px;'>Question / variable</div>
                 <div style='font-size:19px;font-weight:900;color:{USJ_BLUE};line-height:1.35;'>{html_escape(question_label)}</div>
                 <div style='font-size:12px;color:#667085;margin-top:6px;'>Variable Excel : {html_escape(question_col)}</div>
@@ -2361,7 +2438,7 @@ def page_historical_comparison():
         parent_label = metadata["Question filtre"].iloc[0] if "Question filtre" in metadata.columns else "Aucune condition"
         if parent_label != "Aucune condition":
             st.markdown(
-                f"<div style='font-size:12px;color:#667085;margin-top:-4px;margin-bottom:10px;'>Question conditionnelle liée à : <b>{html_escape(parent_label)}</b></div>",
+                f"<div style='font-size:12px;color:#667085;margin-top:-2px;margin-bottom:6px;'>Question conditionnelle liée à : <b>{html_escape(parent_label)}</b></div>",
                 unsafe_allow_html=True
             )
 
@@ -2388,11 +2465,13 @@ def page_historical_comparison():
             st.dataframe(meta_display[["Année", "Base applicable", "N valide", "Données manquantes (%)", "Non applicable"]], use_container_width=True, hide_index=True)
 
         if modalities_n > 30:
-            st.markdown(f"<h3 style='color:{USJ_BLUE}; margin-top:16px;'>Tableau comparatif des modalités les plus fréquentes</h3>", unsafe_allow_html=True)
+            st.markdown(f"<h3 style='color:{USJ_BLUE}; margin-top:8px;'>Tableau comparatif des modalités les plus fréquentes</h3>", unsafe_allow_html=True)
             render_comparison_pivot(dist_hist, years_hist, response_label="Modalité", max_rows=60)
             continue
 
-        st.markdown(f"<h3 style='color:{USJ_BLUE}; margin-top:16px;'>Distribution comparative</h3>", unsafe_allow_html=True)
+        render_historical_positive_kpis(dist_hist, years_hist)
+
+        st.markdown(f"<h3 style='color:{USJ_BLUE}; margin-top:8px;'>Distribution comparative</h3>", unsafe_allow_html=True)
         render_clear_comparison_chart(
             dist_hist,
             years_hist,
