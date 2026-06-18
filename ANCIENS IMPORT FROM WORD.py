@@ -2237,7 +2237,53 @@ def parse_focus_group_word_template(uploaded_docx):
     return data
 
 
+def convert_word_import_to_admin_data(imported_data):
+    """
+    Converts the parsed Word structure to the exact structure used by admin_data_json.
+    This is used when importing the corrected/admin version of the same focus group.
+    """
+    if not isinstance(imported_data, dict):
+        imported_data = {}
+
+    return {
+        "I - Forces et faiblesses": imported_data.get("swot_analysis", {}).get("facteurs_internes", []),
+        "II - Opportunités et menaces": imported_data.get("swot_analysis", {}).get("facteurs_externes", []),
+        "III - Priorités": imported_data.get("priorities_initiatives", {}),
+        "IV - Conclusion": imported_data.get("pour_finir", {}),
+    }
+
+
 def render_admin_word_importer():
+    html_block(f"""
+<div style="
+background:#F7FAFD;
+border:1px solid #D6DEE8;
+border-left:7px solid {USJ_BLUE};
+border-radius:12px;
+padding:18px 22px;
+margin-bottom:18px;
+box-shadow:0 3px 12px rgba(0,31,91,0.08);
+">
+    <div style="font-size:22px; font-weight:800; color:{USJ_BLUE}; margin-bottom:6px;">
+        Import Word des réponses
+    </div>
+    <div style="font-size:16px; font-weight:600; color:#4F5B6B; line-height:1.35;">
+        Utilisez le premier choix pour importer la version originale des participants.
+        Utilisez le deuxième choix pour importer la version modifiée par l'admin pour le même groupe.
+    </div>
+</div>
+""")
+
+    import_target = st.radio(
+        "Type d'import",
+        [
+            "Réponses des participants (version originale)",
+            "Réponses modifiées par l'admin",
+        ],
+        horizontal=True,
+        key="admin_word_import_target"
+    )
+
     uploaded_docx = st.file_uploader(
         "Importer le fichier Word complété",
         type=["docx"],
@@ -2245,19 +2291,83 @@ def render_admin_word_importer():
     )
 
     detected = {"institution": "", "responsable": "", "draft_code": "", "filename_stem": ""}
+    target_draft_code = ""
 
     if uploaded_docx is not None:
         detected = parse_import_filename(uploaded_docx.name)
+
         col_inst, col_resp, col_file = st.columns(3)
         with col_inst:
-            st.text_input("Focus groupe détecté depuis le nom du fichier", value=detected["institution"], disabled=True, key="admin_word_detected_institution")
+            st.text_input(
+                "Focus groupe détecté depuis le nom du fichier",
+                value=detected["institution"],
+                disabled=True,
+                key="admin_word_detected_institution"
+            )
         with col_resp:
-            st.text_input("Participants détectés depuis le nom du fichier", value=detected["responsable"], disabled=True, key="admin_word_detected_responsable")
+            st.text_input(
+                "Participants détectés depuis le nom du fichier",
+                value=detected["responsable"],
+                disabled=True,
+                key="admin_word_detected_responsable"
+            )
         with col_file:
-            st.text_input("Nom du fichier", value=uploaded_docx.name, disabled=True, key="admin_word_detected_filename")
+            st.text_input(
+                "Nom du fichier",
+                value=uploaded_docx.name,
+                disabled=True,
+                key="admin_word_detected_filename"
+            )
+
         st.caption("Format conseillé du nom du fichier : Focus groupe - Participants.docx")
 
-    import_as_submitted = st.checkbox("Marquer comme Soumis", value=True, key="admin_word_import_submitted")
+    if import_target == "Réponses modifiées par l'admin":
+        try:
+            existing_df = load_responses()
+        except Exception:
+            existing_df = pd.DataFrame()
+
+        if existing_df.empty:
+            st.warning("Aucune version originale n'est encore enregistrée. Importez d'abord les réponses des participants.")
+        else:
+            existing_df = existing_df.copy()
+            existing_df["display_label"] = (
+                existing_df["draft_code"].fillna("") + " | " +
+                existing_df["respondent_unit"].fillna("") + " | " +
+                existing_df["respondent_name"].fillna("") + " | " +
+                existing_df["statut"].fillna("")
+            )
+
+            existing_df["fg_order"] = existing_df["draft_code"].astype(str).str.extract(r"FG(\d+)", expand=False).fillna(999).astype(int)
+            existing_df = existing_df.sort_values(["fg_order", "draft_code"]).reset_index(drop=True)
+
+            options = existing_df["display_label"].tolist()
+            default_index = 0
+
+            if detected.get("draft_code"):
+                for idx, label in enumerate(options):
+                    if str(label).split(" | ")[0].strip().upper() == detected["draft_code"].strip().upper():
+                        default_index = idx
+                        break
+
+            selected_target = st.selectbox(
+                "Associer cette version admin au sous-groupe suivant",
+                options=options,
+                index=default_index,
+                key="admin_word_import_admin_target_group"
+            )
+            target_draft_code = selected_target.split(" | ")[0].strip().upper()
+
+            st.info(
+                "Cette importation va remplir uniquement la version admin modifiée "
+                "et ne remplacera pas les réponses originales des participants."
+            )
+
+    import_as_submitted = st.checkbox(
+        "Marquer comme Soumis",
+        value=True,
+        key="admin_word_import_submitted"
+    )
 
     if st.button("Importer ce fichier Word", key="admin_word_import_button"):
         if uploaded_docx is None:
@@ -2267,37 +2377,75 @@ def render_admin_word_importer():
         try:
             detected = parse_import_filename(uploaded_docx.name)
             imported_data = parse_focus_group_word_template(uploaded_docx)
-            statut = "Soumis" if import_as_submitted else "Brouillon"
-            metadata = {
-                "institution": detected["institution"],
-                "responsable": detected["responsable"],
-                "email": "",
-                "response_date": datetime.now().strftime("%Y-%m-%d"),
-                "statut": statut,
-                "draft_code": detected["draft_code"],
-                "import_source": "Word",
-                "imported_filename": uploaded_docx.name,
-                "imported_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            }
-            imported_data["metadata"] = metadata
 
-            # IMPORTANT:
-            # The Word file is saved as the ORIGINAL version in data_json.
-            # Moderator/admin edits are saved later in admin_data_json only.
-            # Therefore, the imported Word answers are preserved and are never overwritten
-            # by the moderator modifications.
-            save_response(metadata, imported_data)
+            if import_target == "Réponses des participants (version originale)":
+                statut = "Soumis" if import_as_submitted else "Brouillon"
 
-            st.session_state["view_selected_form"] = True
-            st.session_state["view_selected_draft_code"] = detected["draft_code"]
-            st.session_state["current_draft_code"] = detected["draft_code"]
-            st.session_state["read_only_submitted"] = True
-            st.success(
-                "Le fichier Word a été importé avec succès. "
-                "La version Word originale est conservée séparément; "
-                "les modifications admin seront enregistrées dans une version distincte."
-            )
-            st.rerun()
+                metadata = {
+                    "institution": detected["institution"],
+                    "responsable": detected["responsable"],
+                    "email": "",
+                    "response_date": datetime.now().strftime("%Y-%m-%d"),
+                    "statut": statut,
+                    "draft_code": detected["draft_code"],
+                    "import_source": "Word participants",
+                    "imported_filename": uploaded_docx.name,
+                    "imported_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                }
+
+                imported_data["metadata"] = metadata
+
+                # Saved as the original participant version in data_json.
+                # Admin modifications remain separate in admin_data_json.
+                save_response(metadata, imported_data)
+
+                st.session_state["view_selected_form"] = True
+                st.session_state["view_selected_draft_code"] = detected["draft_code"]
+                st.session_state["current_draft_code"] = detected["draft_code"]
+                st.session_state["read_only_submitted"] = True
+
+                st.success(
+                    "La version originale des participants a été importée avec succès. "
+                    "Elle est conservée dans les réponses originales."
+                )
+                st.rerun()
+
+            else:
+                if not target_draft_code:
+                    st.error("Veuillez choisir le sous-groupe auquel associer la version admin.")
+                    st.stop()
+
+                existing_original = load_existing_draft_by_code(target_draft_code)
+                if not existing_original:
+                    st.error(
+                        "Aucune version originale n'existe pour ce sous-groupe. "
+                        "Importez d'abord les réponses des participants."
+                    )
+                    st.stop()
+
+                admin_imported_data = convert_word_import_to_admin_data(imported_data)
+                admin_imported_data["_admin_import_metadata"] = {
+                    "import_source": "Word admin",
+                    "imported_filename": uploaded_docx.name,
+                    "imported_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "detected_institution": detected.get("institution", ""),
+                    "detected_responsable": detected.get("responsable", ""),
+                }
+
+                # Saved only as the admin modified version in admin_data_json.
+                # The original participants' answers in data_json are not changed.
+                save_admin_version_by_code(target_draft_code, admin_imported_data)
+
+                st.session_state["view_selected_form"] = False
+                st.session_state["current_draft_code"] = target_draft_code
+                st.session_state["read_only_submitted"] = True
+
+                st.success(
+                    "La version modifiée par l'admin a été importée avec succès. "
+                    "Les réponses originales des participants n'ont pas été modifiées."
+                )
+                st.rerun()
+
         except Exception as e:
             st.error(f"Import impossible : {e}")
 
