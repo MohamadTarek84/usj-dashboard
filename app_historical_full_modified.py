@@ -2300,28 +2300,6 @@ def page_historical_comparison():
                     unsafe_allow_html=True
                 )
 
-        if len(positive_df) >= 2:
-            fig_pos = go.Figure()
-            fig_pos.add_trace(go.Scatter(
-                x=positive_df["Année"],
-                y=positive_df["Pourcentage positif"],
-                mode="lines+markers+text",
-                text=positive_df["Pourcentage positif"].map(lambda x: f"{x:.1f}%" if pd.notna(x) else ""),
-                textposition="top center",
-                line=dict(color=USJ_BLUE, width=4),
-                marker=dict(size=12, color=USJ_RED, line=dict(color="white", width=2)),
-                hovertemplate="Année=%{x}<br>Pourcentage positif=%{y:.2f}%<extra></extra>",
-                name=kpi_label,
-            ))
-            fig_pos.update_layout(
-                title=f"Évolution de l’indicateur positif : {kpi_label}",
-                xaxis_title="Année",
-                yaxis_title="Pourcentage positif",
-                yaxis=dict(range=[0, 100]),
-                margin=dict(l=35, r=35, t=70, b=35),
-            )
-            theme_layout(fig_pos, height=320, showlegend=False)
-            st.plotly_chart(fig_pos, use_container_width=True, config={"displayModeBar": False})
 
     def render_age_comparison(question_col):
         age_rows = []
