@@ -168,7 +168,7 @@ st.markdown(
         color: transparent !important;
     }}
 
-    /* Make long Program/Cursus values readable without forcing a large blank dropdown area */
+    /* Dropdowns: show full long labels without the large empty panel */
     div[data-baseweb="select"] [class*="valueContainer"],
     div[data-baseweb="select"] [class*="singleValue"] {{
         white-space: normal !important;
@@ -178,24 +178,24 @@ st.markdown(
     }}
 
     div[data-baseweb="popover"] {{
-        width: auto !important;
+        width: max-content !important;
         min-width: 280px !important;
-        max-width: 520px !important;
+        max-width: 92vw !important;
     }}
 
     div[data-baseweb="popover"] > div,
     div[data-baseweb="popover"] [data-baseweb="menu"],
     div[data-baseweb="popover"] ul[role="listbox"],
     div[data-baseweb="popover"] div[role="listbox"] {{
-        width: auto !important;
+        width: max-content !important;
         min-width: 280px !important;
-        max-width: 520px !important;
+        max-width: 92vw !important;
     }}
 
     div[data-baseweb="popover"] div[role="option"],
     div[data-baseweb="popover"] li[role="option"] {{
-        width: auto !important;
-        max-width: 520px !important;
+        width: 100% !important;
+        max-width: 92vw !important;
         white-space: normal !important;
         overflow: visible !important;
         text-overflow: clip !important;
@@ -204,7 +204,7 @@ st.markdown(
         line-height: 1.28 !important;
         padding-top: 8px !important;
         padding-bottom: 8px !important;
-        overflow-wrap: break-word !important;
+        overflow-wrap: anywhere !important;
         word-break: normal !important;
     }}
 
@@ -214,8 +214,8 @@ st.markdown(
         overflow: visible !important;
         text-overflow: clip !important;
         line-height: 1.28 !important;
-        max-width: 500px !important;
-        overflow-wrap: break-word !important;
+        max-width: 92vw !important;
+        overflow-wrap: anywhere !important;
     }}
 
     button[kind="secondary"], .stButton button {{
@@ -2100,6 +2100,12 @@ CAMPUS_COLUMN = next(
     None
 )
 
+# Faculty column can differ between Excel versions. Do not hardcode only Faculté_Institut_g.
+FACULTY_COLUMN = next(
+    (col for col in ["Faculté_Institut_g", "Faculté_Institut", "Faculté / Institut", "Faculté", "Faculty", "Institut"] if col in df_filter_base.columns),
+    None
+)
+
 available_years = year_filter_options(df_filter_base, "Year")
 if not available_years:
     st.error("Aucune année valide n’est disponible dans le fichier Excel.")
@@ -2128,11 +2134,15 @@ if genre != "Tous":
     df_after_genre = df_after_genre[df_after_genre["Genre"].astype(str) == genre]
 
 with filter_cols[filter_offset + 1]:
-    faculte = st.selectbox(tr("faculty"), filter_options(df_after_genre, "Faculté_Institut_g"), key="filter_faculte")
+    if FACULTY_COLUMN:
+        faculte = st.selectbox(tr("faculty"), filter_options(df_after_genre, FACULTY_COLUMN), key="filter_faculte")
+    else:
+        faculte = "Tous"
+        st.selectbox(tr("faculty"), ["Tous"], key="filter_faculte", disabled=True)
 
 df_after_faculte = df_after_genre.copy()
-if faculte != "Tous":
-    df_after_faculte = df_after_faculte[df_after_faculte["Faculté_Institut_g"].astype(str) == faculte]
+if FACULTY_COLUMN and faculte != "Tous":
+    df_after_faculte = df_after_faculte[df_after_faculte[FACULTY_COLUMN].astype(str) == faculte]
 
 with filter_cols[filter_offset + 2]:
     if CAMPUS_COLUMN:
@@ -2403,8 +2413,8 @@ def page_historical_comparison():
 
     if genre != "Tous" and "Genre" in data_hist.columns:
         data_hist = data_hist[data_hist["Genre"].astype(str) == str(genre)]
-    if faculte != "Tous" and "Faculté_Institut_g" in data_hist.columns:
-        data_hist = data_hist[data_hist["Faculté_Institut_g"].astype(str) == str(faculte)]
+    if FACULTY_COLUMN and faculte != "Tous" and FACULTY_COLUMN in data_hist.columns:
+        data_hist = data_hist[data_hist[FACULTY_COLUMN].astype(str) == str(faculte)]
     if CAMPUS_COLUMN and campus != "Tous" and CAMPUS_COLUMN in data_hist.columns:
         data_hist = data_hist[data_hist[CAMPUS_COLUMN].astype(str) == str(campus)]
     if cursus != "Tous" and "Cursus" in data_hist.columns:
