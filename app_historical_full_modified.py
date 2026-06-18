@@ -168,6 +168,46 @@ st.markdown(
         color: transparent !important;
     }}
 
+    /* Make long Program values readable in the filter dropdown */
+    div[data-baseweb="select"] [class*="valueContainer"],
+    div[data-baseweb="select"] [class*="singleValue"] {{
+        white-space: normal !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+        line-height: 1.25 !important;
+    }}
+
+    div[data-baseweb="popover"],
+    div[data-baseweb="popover"] > div {{
+        width: auto !important;
+        min-width: min(760px, 92vw) !important;
+        max-width: 92vw !important;
+    }}
+
+    div[role="listbox"] {{
+        width: auto !important;
+        min-width: min(760px, 92vw) !important;
+        max-width: 92vw !important;
+    }}
+
+    div[role="option"] {{
+        white-space: normal !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+        height: auto !important;
+        min-height: 38px !important;
+        line-height: 1.25 !important;
+        padding-top: 9px !important;
+        padding-bottom: 9px !important;
+    }}
+
+    div[role="option"] span {{
+        white-space: normal !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+        line-height: 1.25 !important;
+    }}
+
     button[kind="secondary"], .stButton button {{
         border-radius: 18px !important;
         border: 1px solid #C9D6EA !important;
