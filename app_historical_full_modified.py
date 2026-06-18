@@ -1577,8 +1577,6 @@ PAGE_OPTIONS = [
     "Résultats descriptifs de toutes les questions",
     "Comparaison historique",
     "Facteurs clés d’amélioration",
-    "Résultats descriptifs par section",
-    "Autres questions du questionnaire",
     "Statistiques inférentielles",
     "Méthodologie des composantes",
     "Rapport synthétique imprimable"
@@ -2061,64 +2059,151 @@ def page_historical_comparison():
         """USJ-styled comparison table: modalities in rows and years in columns."""
         if dist_hist.empty:
             return
+
         pivot_pct = dist_hist.pivot_table(index="Réponse", columns="Année", values="Pourcentage", aggfunc="sum").fillna(0)
         pivot_n = dist_hist.pivot_table(index="Réponse", columns="Année", values="N", aggfunc="sum").fillna(0)
         order = pivot_pct.mean(axis=1).sort_values(ascending=False).index
         pivot_pct = pivot_pct.loc[order]
         pivot_n = pivot_n.loc[order]
+
         if max_rows is not None:
             pivot_pct = pivot_pct.head(max_rows)
             pivot_n = pivot_n.loc[pivot_pct.index]
 
-        header_cells = [f"<th style='text-align:left;min-width:230px;'>{html_escape(response_label)}</th>"]
-        for y in years_hist:
-            header_cells.append(f"<th style='text-align:center;min-width:145px;'>{html_escape(y)}</th>")
+        year_colors = [USJ_BLUE, USJ_RED, USJ_GOLD, USJ_BLUE_2]
+
+        header_cells = [f"<th class='first-col'>{html_escape(response_label)}</th>"]
+        for i, y in enumerate(years_hist):
+            header_cells.append(
+                f"<th><span class='year-dot' style='background:{year_colors[i % len(year_colors)]};'></span>{html_escape(y)}</th>"
+            )
 
         body_rows = []
         for resp in pivot_pct.index:
-            cells = [f"<td style='font-weight:800;color:{USJ_BLUE};'>{html_escape(resp)}</td>"]
-            for y in years_hist:
+            cells = [f"<td class='modalite-cell'>{html_escape(resp)}</td>"]
+            for i, y in enumerate(years_hist):
                 pct_val = float(pivot_pct.loc[resp, y]) if y in pivot_pct.columns else 0.0
                 n_val = int(pivot_n.loc[resp, y]) if y in pivot_n.columns else 0
+                color = year_colors[i % len(year_colors)]
                 bar_width = min(100, max(0, pct_val))
                 cells.append(
                     f"""
-                    <td style='text-align:left;'>
-                        <div style='display:flex;align-items:center;gap:10px;'>
-                            <div style='height:9px;width:90px;background:#EEF2F8;border-radius:999px;overflow:hidden;'>
-                                <div style='height:9px;width:{bar_width:.1f}%;background:linear-gradient(90deg,{USJ_BLUE},{USJ_RED});border-radius:999px;'></div>
+                    <td>
+                        <div class='cell-wrap'>
+                            <div class='mini-bar'>
+                                <div class='mini-fill' style='width:{bar_width:.1f}%; background:{color};'></div>
                             </div>
-                            <div style='font-weight:900;color:{USJ_TEXT};white-space:nowrap;'>{pct_val:.2f}% <span style='font-weight:600;color:#667085;'>({n_val})</span></div>
+                            <div class='cell-value'>{pct_val:.2f}% <span>({n_val})</span></div>
                         </div>
                     </td>
                     """
                 )
             body_rows.append("<tr>" + "".join(cells) + "</tr>")
 
-        max_height = 420 if len(pivot_pct) > 12 else 300
-        st.markdown(
-            f"""
-            <div style='border:1px solid #DDE5F0;border-radius:16px;overflow:hidden;box-shadow:0 6px 18px rgba(0,27,117,0.06);margin-top:8px;margin-bottom:18px;background:white;'>
-                <div style='max-height:{max_height}px;overflow:auto;'>
-                    <table style='width:100%;border-collapse:collapse;font-family:Candara, Arial, sans-serif;font-size:14px;'>
-                        <thead style='position:sticky;top:0;z-index:2;'>
-                            <tr style='background:{USJ_BLUE};color:white;'>
-                                {''.join(header_cells)}
-                            </tr>
-                        </thead>
+        height = 92 + min(520, 48 * max(1, len(pivot_pct)))
+        table_html = f"""
+        <html>
+        <head>
+        <style>
+            body {{
+                margin:0;
+                font-family:Candara, Arial, sans-serif;
+                color:{USJ_TEXT};
+                background:white;
+            }}
+            .table-card {{
+                border:1px solid #DDE5F0;
+                border-radius:18px;
+                overflow:hidden;
+                box-shadow:0 8px 22px rgba(0,27,117,0.08);
+                background:white;
+            }}
+            .scroll-area {{
+                max-height:{min(520, 48 * max(1, len(pivot_pct)) + 58)}px;
+                overflow:auto;
+            }}
+            table {{
+                width:100%;
+                border-collapse:collapse;
+                font-size:14px;
+            }}
+            thead th {{
+                position:sticky;
+                top:0;
+                z-index:2;
+                background:{USJ_BLUE};
+                color:white;
+                padding:13px 14px;
+                text-align:left;
+                font-weight:900;
+                border-right:1px solid rgba(255,255,255,0.20);
+                white-space:nowrap;
+            }}
+            th.first-col {{ min-width:280px; }}
+            tbody td {{
+                padding:11px 14px;
+                border-bottom:1px solid #E6ECF3;
+                border-right:1px solid #EEF2F8;
+                vertical-align:middle;
+                background:#FFFFFF;
+            }}
+            tbody tr:nth-child(even) td {{ background:#FBFCFE; }}
+            tbody tr:hover td {{ background:#F3F6FF; }}
+            .modalite-cell {{
+                font-weight:900;
+                color:{USJ_BLUE};
+                line-height:1.25;
+            }}
+            .year-dot {{
+                display:inline-block;
+                width:10px;
+                height:10px;
+                border-radius:50%;
+                margin-right:8px;
+                vertical-align:middle;
+            }}
+            .cell-wrap {{
+                display:flex;
+                align-items:center;
+                gap:12px;
+                min-width:170px;
+            }}
+            .mini-bar {{
+                height:10px;
+                width:100px;
+                background:#EEF2F8;
+                border-radius:999px;
+                overflow:hidden;
+                box-shadow:inset 0 1px 2px rgba(0,0,0,0.08);
+            }}
+            .mini-fill {{
+                height:10px;
+                border-radius:999px;
+            }}
+            .cell-value {{
+                font-weight:900;
+                color:{USJ_TEXT};
+                white-space:nowrap;
+            }}
+            .cell-value span {{
+                font-weight:600;
+                color:#667085;
+            }}
+        </style>
+        </head>
+        <body>
+            <div class='table-card'>
+                <div class='scroll-area'>
+                    <table>
+                        <thead><tr>{''.join(header_cells)}</tr></thead>
                         <tbody>{''.join(body_rows)}</tbody>
                     </table>
                 </div>
             </div>
-            <style>
-                table th {{padding:11px 12px;border-right:1px solid rgba(255,255,255,0.18);}}
-                table td {{padding:10px 12px;border-bottom:1px solid #E6ECF3;border-right:1px solid #EEF2F8;vertical-align:middle;}}
-                table tbody tr:nth-child(even) td {{background:#FBFCFE;}}
-                table tbody tr:hover td {{background:#F4F7FF;}}
-            </style>
-            """,
-            unsafe_allow_html=True
-        )
+        </body>
+        </html>
+        """
+        st_components.html(table_html, height=height, scrolling=False)
 
     def render_clear_comparison_chart(dist_hist, years_hist, title="Comparaison des modalités par année", top_n=12):
         """Clear grouped horizontal chart using the USJ logo palette."""
@@ -2303,14 +2388,7 @@ def page_historical_comparison():
             st.dataframe(meta_display[["Année", "Base applicable", "N valide", "Données manquantes (%)", "Non applicable"]], use_container_width=True, hide_index=True)
 
         if modalities_n > 30:
-            st.markdown(f"<h3 style='color:{USJ_BLUE}; margin-top:16px;'>Comparaison des modalités les plus fréquentes</h3>", unsafe_allow_html=True)
-            render_clear_comparison_chart(
-                dist_hist,
-                years_hist,
-                title="Top modalités comparées par année",
-                top_n=15
-            )
-            st.markdown(f"<h3 style='color:{USJ_BLUE};'>Tableau comparatif par année</h3>", unsafe_allow_html=True)
+            st.markdown(f"<h3 style='color:{USJ_BLUE}; margin-top:16px;'>Tableau comparatif des modalités les plus fréquentes</h3>", unsafe_allow_html=True)
             render_comparison_pivot(dist_hist, years_hist, response_label="Modalité", max_rows=60)
             continue
 
