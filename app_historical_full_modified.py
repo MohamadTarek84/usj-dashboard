@@ -1806,7 +1806,7 @@ def render_landing_page():
     )
 
     st.markdown(
-        f"""
+        textwrap.dedent(f"""
         <style>
         .landing-shell {{font-family: Candara, Arial, sans-serif;}}
         .landing-logo-strip {{display:flex;justify-content:flex-start;align-items:center;margin:2px 0 14px 2px;}}
@@ -1913,7 +1913,7 @@ def render_landing_page():
                 {tutorial_html}
             </div>
         </div>
-        """,
+        """).strip(),
         unsafe_allow_html=True
     )
 
