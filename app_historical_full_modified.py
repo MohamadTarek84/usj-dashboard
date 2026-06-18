@@ -3377,21 +3377,11 @@ def page_inferential_statistics():
                     unsafe_allow_html=True
                 )
 
-            pivot_pct = dist.pivot_table(index="Réponse", columns="Groupe", values="Pourcentage", aggfunc="sum").fillna(0)
-            pivot_n = dist.pivot_table(index="Réponse", columns="Groupe", values="N", aggfunc="sum").fillna(0)
-            row_order = pivot_pct.mean(axis=1).sort_values(ascending=False).index
-            pivot_pct = pivot_pct.loc[row_order]
-            pivot_n = pivot_n.loc[row_order]
-
-            display_rows = []
-            for resp in pivot_pct.index:
-                row = {"Réponse": resp}
-                for grp in pivot_pct.columns:
-                    row[str(grp)] = f"{pivot_pct.loc[resp, grp]:.2f}% ({int(pivot_n.loc[resp, grp])})"
-                display_rows.append(row)
-
-            st.markdown(f"<h4 style='color:{USJ_BLUE};'>Tableau comparatif par {html_escape(selected_group_label.lower())}</h4>", unsafe_allow_html=True)
-            st.dataframe(pd.DataFrame(display_rows), use_container_width=True, hide_index=True)
+            render_usj_interactive_cross_table(
+                dist,
+                selected_group_label,
+                title=f"Tableau comparatif par {str(selected_group_label).lower()}"
+            )
 
     with st.expander("Questions exclues des tests inférentiels", expanded=False):
         if excluded_df.empty:
@@ -3403,6 +3393,200 @@ def page_inferential_statistics():
 # =====================================================
 # Page 6 - Printable synthetic faculty report
 # =====================================================
+
+
+
+def render_usj_interactive_cross_table(dist, group_label, title=None):
+    """USJ-styled cross table for inferential detail comparisons.
+
+    The variable with fewer modalities is placed in columns to keep horizontal
+    scrolling limited. Percentages remain calculated within each comparison group.
+    """
+    if dist is None or dist.empty:
+        return
+
+    temp = dist.copy()
+    temp["Réponse"] = temp["Réponse"].astype(str)
+    temp["Groupe"] = temp["Groupe"].astype(str)
+
+    n_resp = temp["Réponse"].nunique()
+    n_group = temp["Groupe"].nunique()
+
+    if n_resp <= n_group:
+        row_var = "Groupe"
+        col_var = "Réponse"
+        first_label = group_label
+        column_label = "Réponse"
+    else:
+        row_var = "Réponse"
+        col_var = "Groupe"
+        first_label = "Réponse"
+        column_label = group_label
+
+    pivot_pct = temp.pivot_table(index=row_var, columns=col_var, values="Pourcentage", aggfunc="sum").fillna(0)
+    pivot_n = temp.pivot_table(index=row_var, columns=col_var, values="N", aggfunc="sum").fillna(0)
+
+    # Sort rows by their strongest percentage to make the table easy to scan.
+    row_order = pivot_pct.max(axis=1).sort_values(ascending=False).index
+    pivot_pct = pivot_pct.loc[row_order]
+    pivot_n = pivot_n.loc[row_order]
+
+    # Sort columns by overall weight, while keeping only the low-modality variable in columns.
+    col_order = pivot_pct.mean(axis=0).sort_values(ascending=False).index
+    pivot_pct = pivot_pct[col_order]
+    pivot_n = pivot_n[col_order]
+
+    usj_colors = [USJ_BLUE, USJ_RED, USJ_GOLD, USJ_BLUE_2, USJ_DARK_RED, "#B49C88", "#5E6C84"]
+
+    header_cells = [f"<th class='first-col'>{html_escape(first_label)}</th>"]
+    for i, col in enumerate(pivot_pct.columns):
+        header_cells.append(
+            f"<th><span class='year-dot' style='background:{usj_colors[i % len(usj_colors)]};'></span>{html_escape(col)}</th>"
+        )
+
+    body_rows = []
+    for idx_val in pivot_pct.index:
+        cells = [f"<td class='modalite-cell'>{html_escape(idx_val)}</td>"]
+        for i, col in enumerate(pivot_pct.columns):
+            pct_val = float(pivot_pct.loc[idx_val, col]) if col in pivot_pct.columns else 0.0
+            n_val = int(pivot_n.loc[idx_val, col]) if col in pivot_n.columns else 0
+            color = usj_colors[i % len(usj_colors)]
+            bar_width = min(100, max(0, pct_val))
+            cells.append(
+                f"""
+                <td>
+                    <div class='cell-wrap'>
+                        <div class='mini-bar'>
+                            <div class='mini-fill' style='width:{bar_width:.1f}%; background:{color};'></div>
+                        </div>
+                        <div class='cell-value'>{pct_val:.2f}% <span>({n_val})</span></div>
+                    </div>
+                </td>
+                """
+            )
+        body_rows.append("<tr>" + "".join(cells) + "</tr>")
+
+    table_title = title or f"Tableau comparatif par {html_escape(str(group_label).lower())}"
+    scroll_height = min(430, 36 * max(1, len(pivot_pct)) + 44)
+    component_height = 86 + scroll_height
+
+    table_html = f"""
+    <html>
+    <head>
+    <style>
+        body {{
+            margin:0;
+            font-family:Candara, Arial, sans-serif;
+            color:{USJ_TEXT};
+            background:white;
+        }}
+        .title {{
+            font-size:22px;
+            font-weight:900;
+            color:{USJ_BLUE};
+            margin:0 0 10px 0;
+        }}
+        .subtitle {{
+            font-size:12px;
+            color:#667085;
+            margin:-6px 0 10px 0;
+        }}
+        .table-card {{
+            border:1px solid #DDE5F0;
+            border-radius:18px;
+            overflow:hidden;
+            box-shadow:0 8px 22px rgba(0,27,117,0.08);
+            background:white;
+        }}
+        .scroll-area {{
+            max-height:{scroll_height}px;
+            overflow:auto;
+        }}
+        table {{
+            width:100%;
+            border-collapse:collapse;
+            font-size:14px;
+        }}
+        thead th {{
+            position:sticky;
+            top:0;
+            z-index:2;
+            background:{USJ_BLUE};
+            color:white;
+            padding:9px 12px;
+            text-align:left;
+            font-weight:900;
+            border-right:1px solid rgba(255,255,255,0.20);
+            white-space:nowrap;
+        }}
+        th.first-col {{ min-width:270px; }}
+        tbody td {{
+            padding:7px 12px;
+            border-bottom:1px solid #E6ECF3;
+            border-right:1px solid #EEF2F8;
+            vertical-align:middle;
+            background:#FFFFFF;
+        }}
+        tbody tr:nth-child(even) td {{ background:#FBFCFE; }}
+        tbody tr:hover td {{ background:#F3F6FF; }}
+        .modalite-cell {{
+            font-weight:900;
+            color:{USJ_BLUE};
+            line-height:1.25;
+        }}
+        .year-dot {{
+            display:inline-block;
+            width:10px;
+            height:10px;
+            border-radius:50%;
+            margin-right:8px;
+            vertical-align:middle;
+        }}
+        .cell-wrap {{
+            display:flex;
+            align-items:center;
+            gap:12px;
+            min-width:165px;
+        }}
+        .mini-bar {{
+            height:8px;
+            width:86px;
+            background:#EEF2F8;
+            border-radius:999px;
+            overflow:hidden;
+            box-shadow:inset 0 1px 2px rgba(0,0,0,0.08);
+        }}
+        .mini-fill {{
+            height:8px;
+            border-radius:999px;
+        }}
+        .cell-value {{
+            font-weight:900;
+            color:{USJ_TEXT};
+            white-space:nowrap;
+        }}
+        .cell-value span {{
+            font-weight:600;
+            color:#667085;
+        }}
+    </style>
+    </head>
+    <body>
+        <div class='title'>{html_escape(table_title)}</div>
+        <div class='subtitle'>Les colonnes affichent la variable qui contient le moins de modalités afin de faciliter la lecture et limiter le défilement horizontal.</div>
+        <div class='table-card'>
+            <div class='scroll-area'>
+                <table>
+                    <thead><tr>{''.join(header_cells)}</tr></thead>
+                    <tbody>{''.join(body_rows)}</tbody>
+                </table>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    st_components.html(table_html, height=component_height, scrolling=False)
+
 
 def apply_current_filters_without_faculty(data):
     base = data.copy()
