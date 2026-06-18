@@ -3337,33 +3337,45 @@ def page_inferential_statistics():
                             unsafe_allow_html=True
                         )
 
-            fig = px.bar(
-                dist,
-                x="Pourcentage",
-                y="Réponse",
-                color="Groupe",
-                orientation="h",
-                barmode="group",
-                text="Pourcentage",
-                color_discrete_sequence=[USJ_BLUE, USJ_RED, USJ_GOLD, USJ_BLUE_2, USJ_DARK_RED, "#B49C88", "#5E6C84"],
-                hover_data={"N": True, "Pourcentage": ":.2f"},
-                title=f"Distribution des réponses selon {selected_group_label}"
-            )
-            fig.update_traces(
-                texttemplate="%{text:.1f}%",
-                textposition="outside",
-                marker_line_color="white",
-                marker_line_width=1.1,
-                cliponaxis=False
-            )
-            fig.update_layout(
-                xaxis_title="Pourcentage des réponses valides dans chaque groupe",
-                yaxis_title="",
-                legend_title=selected_group_label,
-                margin=dict(l=40, r=90, t=90, b=45),
-            )
-            theme_layout(fig, height=max(390, 42 * dist["Réponse"].nunique()), showlegend=True)
-            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": True, "displaylogo": False}, key=f"inferential_detail_fig_{selected_group_label}_{selected_section_inf}_{re.sub(r'[^A-Za-z0-9_]+', '_', str(selected_question_detail))}")
+            use_table_only = (dist["Réponse"].nunique() > 6) or (dist["Groupe"].nunique() > 4)
+
+            if not use_table_only:
+                fig = px.bar(
+                    dist,
+                    x="Pourcentage",
+                    y="Réponse",
+                    color="Groupe",
+                    orientation="h",
+                    barmode="group",
+                    text="Pourcentage",
+                    color_discrete_sequence=[USJ_BLUE, USJ_RED, USJ_GOLD, USJ_BLUE_2, USJ_DARK_RED, "#B49C88", "#5E6C84"],
+                    hover_data={"N": True, "Pourcentage": ":.2f"},
+                    title=f"Distribution des réponses selon {selected_group_label}"
+                )
+                fig.update_traces(
+                    texttemplate="%{text:.1f}%",
+                    textposition="outside",
+                    marker_line_color="white",
+                    marker_line_width=1.1,
+                    cliponaxis=False
+                )
+                fig.update_layout(
+                    xaxis_title="Pourcentage des réponses valides dans chaque groupe",
+                    yaxis_title="",
+                    legend_title=selected_group_label,
+                    margin=dict(l=40, r=90, t=90, b=45),
+                )
+                theme_layout(fig, height=max(390, 42 * dist["Réponse"].nunique()), showlegend=True)
+                st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": True, "displaylogo": False}, key=f"inferential_detail_fig_{selected_group_label}_{selected_section_inf}_{re.sub(r'[^A-Za-z0-9_]+', '_', str(selected_question_detail))}")
+            else:
+                st.markdown(
+                    f"""
+                    <div style='background:#F7F9FC;border-left:6px solid {USJ_BLUE};border-radius:14px;padding:12px 16px;margin:8px 0 14px 0;font-family:Candara, Arial, sans-serif;'>
+                        <b>Lecture adaptée :</b> cette question comporte plusieurs modalités ou groupes. Le graphique est remplacé par un tableau interactif afin de garder une lecture claire et professionnelle.
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
 
             pivot_pct = dist.pivot_table(index="Réponse", columns="Groupe", values="Pourcentage", aggfunc="sum").fillna(0)
             pivot_n = dist.pivot_table(index="Réponse", columns="Groupe", values="N", aggfunc="sum").fillna(0)
