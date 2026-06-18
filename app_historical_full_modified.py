@@ -3018,14 +3018,13 @@ def page_inferential_statistics():
 
     summary_box(
         """
-        Cette section ne compare plus les scores agrégés. Elle teste directement les réponses brutes des questions du questionnaire.
-        Les questions dont les fréquences sont insuffisantes sont exclues automatiquement afin d’éviter des résultats instables.
+        Cette section teste directement les réponses brutes des questions du questionnaire, sans utiliser les scores agrégés.
+        Les questions à faibles fréquences sont exclues automatiquement afin d’éviter des résultats instables. Les questions qui correspondent directement à la variable de comparaison sélectionnée sont également exclues, afin d’éviter les comparaisons non logiques comme Genre selon Genre.
         """,
         color=USJ_BLUE,
         background="#F7F9FC"
     )
 
-    # Keep the current year/filter context already selected at the top of the dashboard.
     data_inf = df_filtered.copy()
     original_inf = df_original.loc[data_inf.index].copy()
 
@@ -3033,7 +3032,6 @@ def page_inferential_statistics():
         st.warning("Aucune donnée disponible avec les filtres sélectionnés.")
         return
 
-    # Only the four variables requested by the user.
     inferential_group_candidates = {
         "Genre": ["Genre"],
         "Faculté": ["Faculté_Institut_g", "Faculté_Institut", "Faculté", "Institut"],
@@ -3073,7 +3071,39 @@ def page_inferential_statistics():
         st.warning("Aucune colonne trouvée dans le fichier Excel pour cette section.")
         return
 
+    def is_self_comparison_question(question_label, question_col):
+        """Exclude comparisons where the tested question is the same concept as the comparison variable."""
+        q_label_norm = normalize_question_key(question_label)
+        q_col_norm = normalize_question_key(question_col)
+        group_col_norm = normalize_question_key(selected_group_col)
+        group_label_norm = normalize_question_key(selected_group_label)
+
+        if q_col_norm == group_col_norm:
+            return True
+
+        if selected_group_label == "Genre":
+            return q_label_norm == "genre" or q_col_norm == "genre"
+
+        if selected_group_label == "Faculté":
+            return (
+                "faculte" in q_label_norm
+                or "faculte" in q_col_norm
+                or "institut" in q_label_norm
+                or q_col_norm in {"faculte_institut", "faculte_institut_g", "faculty"}
+            )
+
+        if selected_group_label == "Campus":
+            return "campus" in q_label_norm or q_col_norm in {"campus", "campus_g", "site"}
+
+        if selected_group_label == "Niveau":
+            return q_label_norm == "niveau" or q_col_norm in {"niveau", "niveau_lib"}
+
+        return group_label_norm in q_label_norm or group_col_norm == q_col_norm
+
     def chi_square_question_test(question_label, question_col):
+        if is_self_comparison_question(question_label, question_col):
+            return None, None, "Question identique à la variable de comparaison"
+
         responses, eligible_index, non_applicable_n, parent_col = get_applicable_response_series(
             df_original,
             data_inf,
@@ -3100,7 +3130,6 @@ def page_inferential_statistics():
         if response_counts.shape[0] < 2:
             return None, None, "Moins de deux modalités de réponse"
 
-        # Exclude low-frequency questions/modality structures from inferential testing.
         if group_counts.min() < 30:
             return None, None, "Au moins un groupe a N < 30"
         if response_counts.min() < 30:
@@ -3192,7 +3221,7 @@ def page_inferential_statistics():
         significant_n = int(results_df["p-value"].lt(0.05).sum()) if not results_df.empty else 0
         insight_card("Différences significatives", significant_n, "p-value < 0.050", USJ_GREEN if significant_n > 0 else USJ_GOLD)
     with c4:
-        insight_card("Questions exclues", len(excluded_df), "N ou fréquences insuffisants", USJ_ORANGE if len(excluded_df) > 0 else USJ_GREEN)
+        insight_card("Questions exclues", len(excluded_df), "N, fréquences ou auto-comparaison", USJ_ORANGE if len(excluded_df) > 0 else USJ_GREEN)
 
     if results_df.empty:
         st.warning("Aucune question de cette section ne respecte les seuils de fréquence nécessaires au test inférentiel.")
@@ -3224,8 +3253,7 @@ def page_inferential_statistics():
             <span style="font-size:20px; font-weight:800; color:{USJ_BLUE};">Lecture inférentielle</span><br>
             La différence la plus marquée concerne <b>{html_escape(str(strongest['Question']))}</b> selon
             <b>{html_escape(selected_group_label)}</b>, avec une p-value de <b>{strongest['p-value']:.4f}</b>
-            et un V de Cramer de <b>{strongest['V de Cramer']:.3f}</b>. Les résultats ci-dessous permettent
-            d’examiner la distribution des réponses par groupe sans utiliser les scores agrégés.
+            et un V de Cramer de <b>{strongest['V de Cramer']:.3f}</b>. Les détails visuels sont masqués par défaut pour garder la page simple pour les lecteurs.
             """,
             color=USJ_BLUE,
             background="#F7F9FC"
@@ -3241,72 +3269,76 @@ def page_inferential_statistics():
             background="#FFF8F0"
         )
 
-    selected_question_detail = st.selectbox(
-        "Choisir une question pour visualiser la comparaison détaillée",
-        results_df["Question"].tolist(),
-        key="inferential_question_detail_selector"
-    )
+    button_key = f"inferential_show_details_{selected_group_label}_{selected_section_inf}"
+    if button_key not in st.session_state:
+        st.session_state[button_key] = False
 
-    selected_row = results_df[results_df["Question"] == selected_question_detail].iloc[0]
-    detail_temp = details[selected_question_detail].copy()
+    if st.button("Afficher / masquer les comparaisons détaillées", key=f"btn_{button_key}"):
+        st.session_state[button_key] = not st.session_state[button_key]
 
-    dist = detail_temp.groupby(["Groupe", "Réponse"]).size().reset_index(name="N")
-    dist["Pourcentage"] = dist.groupby("Groupe")["N"].transform(lambda x: x / x.sum() * 100)
+    if st.session_state[button_key]:
+        detail_source = significant.copy() if not significant.empty else results_df.head(5).copy()
+        detail_source = detail_source.sort_values(["p-value", "V de Cramer"], ascending=[True, False]).head(5)
 
-    st.markdown(
-        f"""
-        <div style='background:#FFFFFF;border:1px solid #DDE5F0;border-left:7px solid {USJ_BLUE};border-radius:18px;padding:16px 18px;margin:18px 0 10px 0;box-shadow:0 5px 14px rgba(0,0,0,0.04);'>
-            <div style='font-size:13px;font-weight:800;color:#667085;margin-bottom:5px;'>Question sélectionnée</div>
-            <div style='font-size:20px;font-weight:900;color:{USJ_BLUE};line-height:1.35;'>{html_escape(selected_question_detail)}</div>
-            <div style='font-size:13px;color:#667085;margin-top:7px;'>Variable Excel : {html_escape(str(selected_row['Variable Excel']))}</div>
-            <div style='font-size:13px;color:#667085;margin-top:4px;'>Test : Khi-deux d’indépendance | p-value : <b>{selected_row['p-value']:.4f}</b> | V de Cramer : <b>{selected_row['V de Cramer']:.3f}</b></div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+        st.markdown(
+            f"<h3 style='color:{USJ_BLUE};'>Comparaisons détaillées des principales questions</h3>",
+            unsafe_allow_html=True
+        )
 
-    fig = px.bar(
-        dist,
-        x="Pourcentage",
-        y="Réponse",
-        color="Groupe",
-        orientation="h",
-        barmode="group",
-        text="Pourcentage",
-        color_discrete_sequence=[USJ_BLUE, USJ_RED, USJ_GOLD, USJ_BLUE_2, USJ_DARK_RED, "#B49C88", "#5E6C84"],
-        hover_data={"N": True, "Pourcentage": ":.2f"},
-        title=f"Distribution des réponses selon {selected_group_label}"
-    )
-    fig.update_traces(texttemplate="%{text:.1f}%", textposition="outside", marker_line_color="white", marker_line_width=1.1, cliponaxis=False)
-    fig.update_layout(
-        xaxis_title="Pourcentage des réponses valides dans chaque groupe",
-        yaxis_title="",
-        legend_title=selected_group_label,
-        margin=dict(l=40, r=90, t=90, b=45),
-    )
-    theme_layout(fig, height=max(430, 45 * dist["Réponse"].nunique()), showlegend=True)
-    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": True, "displaylogo": False})
+        for _, selected_row in detail_source.iterrows():
+            selected_question_detail = selected_row["Question"]
+            detail_temp = details[selected_question_detail].copy()
+            dist = detail_temp.groupby(["Groupe", "Réponse"]).size().reset_index(name="N")
+            dist["Pourcentage"] = dist.groupby("Groupe")["N"].transform(lambda x: x / x.sum() * 100)
 
-    pivot_pct = dist.pivot_table(index="Réponse", columns="Groupe", values="Pourcentage", aggfunc="sum").fillna(0)
-    pivot_n = dist.pivot_table(index="Réponse", columns="Groupe", values="N", aggfunc="sum").fillna(0)
-    row_order = pivot_pct.mean(axis=1).sort_values(ascending=False).index
-    pivot_pct = pivot_pct.loc[row_order]
-    pivot_n = pivot_n.loc[row_order]
+            with st.expander(f"{selected_question_detail} | p-value = {selected_row['p-value']:.4f}"):
+                fig = px.bar(
+                    dist,
+                    x="Pourcentage",
+                    y="Réponse",
+                    color="Groupe",
+                    orientation="h",
+                    barmode="group",
+                    text="Pourcentage",
+                    color_discrete_sequence=[USJ_BLUE, USJ_RED, USJ_GOLD, USJ_BLUE_2, USJ_DARK_RED, "#B49C88", "#5E6C84"],
+                    hover_data={"N": True, "Pourcentage": ":.2f"},
+                    title=f"Distribution des réponses selon {selected_group_label}"
+                )
+                fig.update_traces(
+                    texttemplate="%{text:.1f}%",
+                    textposition="outside",
+                    marker_line_color="white",
+                    marker_line_width=1.1,
+                    cliponaxis=False
+                )
+                fig.update_layout(
+                    xaxis_title="Pourcentage des réponses valides dans chaque groupe",
+                    yaxis_title="",
+                    legend_title=selected_group_label,
+                    margin=dict(l=40, r=90, t=90, b=45),
+                )
+                theme_layout(fig, height=max(390, 42 * dist["Réponse"].nunique()), showlegend=True)
+                st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": True, "displaylogo": False})
 
-    display_rows = []
-    for resp in pivot_pct.index:
-        row = {"Réponse": resp}
-        for grp in pivot_pct.columns:
-            row[str(grp)] = f"{pivot_pct.loc[resp, grp]:.2f}% ({int(pivot_n.loc[resp, grp])})"
-        display_rows.append(row)
+                pivot_pct = dist.pivot_table(index="Réponse", columns="Groupe", values="Pourcentage", aggfunc="sum").fillna(0)
+                pivot_n = dist.pivot_table(index="Réponse", columns="Groupe", values="N", aggfunc="sum").fillna(0)
+                row_order = pivot_pct.mean(axis=1).sort_values(ascending=False).index
+                pivot_pct = pivot_pct.loc[row_order]
+                pivot_n = pivot_n.loc[row_order]
 
-    st.markdown(f"<h3 style='color:{USJ_BLUE};'>Tableau comparatif par {html_escape(selected_group_label.lower())}</h3>", unsafe_allow_html=True)
-    st.dataframe(pd.DataFrame(display_rows), use_container_width=True, hide_index=True)
+                display_rows = []
+                for resp in pivot_pct.index:
+                    row = {"Réponse": resp}
+                    for grp in pivot_pct.columns:
+                        row[str(grp)] = f"{pivot_pct.loc[resp, grp]:.2f}% ({int(pivot_n.loc[resp, grp])})"
+                    display_rows.append(row)
+
+                st.markdown(f"<h4 style='color:{USJ_BLUE};'>Tableau comparatif par {html_escape(selected_group_label.lower())}</h4>", unsafe_allow_html=True)
+                st.dataframe(pd.DataFrame(display_rows), use_container_width=True, hide_index=True)
 
     if not excluded_df.empty:
         with st.expander("Questions exclues des tests inférentiels"):
             st.dataframe(excluded_df, use_container_width=True, hide_index=True)
-
 
 # =====================================================
 # Page 6 - Printable synthetic faculty report
