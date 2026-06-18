@@ -2100,7 +2100,7 @@ def page_historical_comparison():
                 )
             body_rows.append("<tr>" + "".join(cells) + "</tr>")
 
-        height = 92 + min(520, 48 * max(1, len(pivot_pct)))
+        height = 72 + min(360, 38 * max(1, len(pivot_pct)))
         table_html = f"""
         <html>
         <head>
@@ -2119,7 +2119,7 @@ def page_historical_comparison():
                 background:white;
             }}
             .scroll-area {{
-                max-height:{min(520, 48 * max(1, len(pivot_pct)) + 58)}px;
+                max-height:{min(360, 38 * max(1, len(pivot_pct)) + 44)}px;
                 overflow:auto;
             }}
             table {{
@@ -2133,7 +2133,7 @@ def page_historical_comparison():
                 z-index:2;
                 background:{USJ_BLUE};
                 color:white;
-                padding:13px 14px;
+                padding:9px 12px;
                 text-align:left;
                 font-weight:900;
                 border-right:1px solid rgba(255,255,255,0.20);
@@ -2141,7 +2141,7 @@ def page_historical_comparison():
             }}
             th.first-col {{ min-width:280px; }}
             tbody td {{
-                padding:11px 14px;
+                padding:7px 12px;
                 border-bottom:1px solid #E6ECF3;
                 border-right:1px solid #EEF2F8;
                 vertical-align:middle;
@@ -2169,15 +2169,15 @@ def page_historical_comparison():
                 min-width:170px;
             }}
             .mini-bar {{
-                height:10px;
-                width:100px;
+                height:8px;
+                width:90px;
                 background:#EEF2F8;
                 border-radius:999px;
                 overflow:hidden;
                 box-shadow:inset 0 1px 2px rgba(0,0,0,0.08);
             }}
             .mini-fill {{
-                height:10px;
+                height:8px;
                 border-radius:999px;
             }}
             .cell-value {{
@@ -2417,7 +2417,7 @@ def page_historical_comparison():
 
         st.markdown(
             f"""
-            <div style='background:#FFFFFF;border:1px solid #DDE5F0;border-left:7px solid {USJ_BLUE};border-radius:16px;padding:10px 14px;margin:8px 0 4px 0;box-shadow:0 3px 10px rgba(0,0,0,0.04);font-family:Candara, Arial, sans-serif;'>
+            <div style='background:#FFFFFF;border:1px solid #DDE5F0;border-left:7px solid {USJ_BLUE};border-radius:16px;padding:10px 14px;margin:6px 0 2px 0;box-shadow:0 3px 10px rgba(0,0,0,0.04);font-family:Candara, Arial, sans-serif;'>
                 <div style='font-size:12px;font-weight:900;color:#667085;margin-bottom:4px;'>Question / variable</div>
                 <div style='font-size:19px;font-weight:900;color:{USJ_BLUE};line-height:1.35;'>{html_escape(question_label)}</div>
                 <div style='font-size:12px;color:#667085;margin-top:6px;'>Variable Excel : {html_escape(question_col)}</div>
@@ -2465,20 +2465,20 @@ def page_historical_comparison():
             st.dataframe(meta_display[["Année", "Base applicable", "N valide", "Données manquantes (%)", "Non applicable"]], use_container_width=True, hide_index=True)
 
         if modalities_n > 30:
-            st.markdown(f"<h3 style='color:{USJ_BLUE}; margin-top:8px;'>Tableau comparatif des modalités les plus fréquentes</h3>", unsafe_allow_html=True)
+            st.markdown(f"<h3 style='color:{USJ_BLUE}; margin-top:4px;margin-bottom:2px;'>Tableau comparatif des modalités les plus fréquentes</h3>", unsafe_allow_html=True)
             render_comparison_pivot(dist_hist, years_hist, response_label="Modalité", max_rows=60)
             continue
 
         render_historical_positive_kpis(dist_hist, years_hist)
 
-        st.markdown(f"<h3 style='color:{USJ_BLUE}; margin-top:8px;'>Distribution comparative</h3>", unsafe_allow_html=True)
+        st.markdown(f"<h3 style='color:{USJ_BLUE}; margin-top:4px;margin-bottom:2px;'>Distribution comparative</h3>", unsafe_allow_html=True)
         render_clear_comparison_chart(
             dist_hist,
             years_hist,
             title="Comparaison des réponses par année",
             top_n=12
         )
-        st.markdown(f"<h3 style='color:{USJ_BLUE};'>Tableau comparatif par année</h3>", unsafe_allow_html=True)
+        st.markdown(f"<h3 style='color:{USJ_BLUE}; margin-top:4px;margin-bottom:2px;'>Tableau comparatif par année</h3>", unsafe_allow_html=True)
         render_comparison_pivot(dist_hist, years_hist, response_label="Réponse")
 
 
