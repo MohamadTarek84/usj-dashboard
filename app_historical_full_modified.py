@@ -3019,7 +3019,7 @@ def page_inferential_statistics():
     summary_box(
         """
         Cette section teste directement les réponses brutes des questions du questionnaire, sans utiliser les scores agrégés.
-        Les questions à faibles fréquences sont exclues automatiquement afin d’éviter des résultats instables. Les questions qui correspondent directement à la variable de comparaison sélectionnée sont également exclues, afin d’éviter les comparaisons non logiques comme Genre selon Genre.
+        Les questions à faibles fréquences sont exclues automatiquement afin d’éviter des résultats instables. Dans le profil des répondants, les autres variables démographiques restent comparées à la variable sélectionnée, en excluant seulement l’auto-comparaison directe comme Genre selon Genre.
         """,
         color=USJ_BLUE,
         background="#F7F9FC"
@@ -3113,14 +3113,42 @@ def page_inferential_statistics():
         if len(eligible_index) == 0:
             return None, None, "Base applicable nulle"
 
+        response_values = responses.map(clean_response_value)
+
+        # In the demographic profile section, keep the comparison between demographic variables.
+        # Age is treated as age groups instead of raw single-year values, otherwise it becomes unreadable
+        # and most ages are excluded because of small frequencies.
+        is_profile_section = selected_section_inf == "Profil des répondants"
+        q_norm_for_profile = normalize_question_key(question_col)
+        q_label_norm_for_profile = normalize_question_key(question_label)
+        if is_profile_section and (q_norm_for_profile in {"age", "âge"} or q_label_norm_for_profile in {"age", "âge"}):
+            age_numeric = pd.to_numeric(responses, errors="coerce")
+            bins = [0, 20, 22, 24, 26, 29, 34, 39, 49, 150]
+            labels = ["Moins de 20 ans", "20-21 ans", "22-23 ans", "24-25 ans", "26-29 ans", "30-34 ans", "35-39 ans", "40-49 ans", "50 ans et plus"]
+            response_values = pd.cut(age_numeric, bins=bins, labels=labels, right=False).astype(object)
+
         temp = pd.DataFrame({
             "Groupe": data_inf.loc[eligible_index, selected_group_col].map(clean_response_value),
-            "Réponse": responses.map(clean_response_value),
+            "Réponse": response_values,
         }).dropna(subset=["Groupe", "Réponse"])
 
         n_valid = int(len(temp))
         if n_valid < 30:
             return None, None, "N valide < 30"
+
+        # For the profile section only, keep demographic comparisons visible by regrouping rare
+        # categories into "Autres" instead of removing the whole comparison. For questionnaire
+        # sections, the strict low-frequency exclusion remains unchanged.
+        if is_profile_section:
+            response_counts_before = temp["Réponse"].value_counts()
+            rare_responses = response_counts_before[response_counts_before < 30].index.tolist()
+            if rare_responses:
+                temp["Réponse"] = temp["Réponse"].where(~temp["Réponse"].isin(rare_responses), "Autres")
+
+            group_counts_before = temp["Groupe"].value_counts()
+            rare_groups = group_counts_before[group_counts_before < 30].index.tolist()
+            if rare_groups:
+                temp["Groupe"] = temp["Groupe"].where(~temp["Groupe"].isin(rare_groups), "Autres")
 
         group_counts = temp["Groupe"].value_counts()
         response_counts = temp["Réponse"].value_counts()
@@ -3130,10 +3158,11 @@ def page_inferential_statistics():
         if response_counts.shape[0] < 2:
             return None, None, "Moins de deux modalités de réponse"
 
-        if group_counts.min() < 30:
-            return None, None, "Au moins un groupe a N < 30"
-        if response_counts.min() < 30:
-            return None, None, "Au moins une modalité a N < 30"
+        if not is_profile_section:
+            if group_counts.min() < 30:
+                return None, None, "Au moins un groupe a N < 30"
+            if response_counts.min() < 30:
+                return None, None, "Au moins une modalité a N < 30"
 
         contingency = pd.crosstab(temp["Réponse"], temp["Groupe"])
         if contingency.shape[0] < 2 or contingency.shape[1] < 2:
@@ -3148,7 +3177,7 @@ def page_inferential_statistics():
             return None, None, "Test non calculable"
 
         expected_min = float(np.nanmin(expected)) if expected.size else np.nan
-        if pd.notna(expected_min) and expected_min < 5:
+        if not is_profile_section and pd.notna(expected_min) and expected_min < 5:
             return None, None, "Effectif attendu minimal < 5"
 
         total = contingency.to_numpy().sum()
