@@ -1630,6 +1630,41 @@ div.st-key-download_export_excel div[data-testid="stDownloadButton"] button:hove
     }}
 
 
+
+    /* Final requested print fix: reduce space after group title and allow SWOT/admin rows to split across pages */
+    .admin-print-cover-title {{
+        margin-top: 0 !important;
+        margin-bottom: 1mm !important;
+        line-height: 0.95 !important;
+    }}
+
+    div[style*="border-left:7px"] {{
+        margin-top: 0 !important;
+        margin-bottom: 1mm !important;
+        padding: 5px 10px !important;
+        break-inside: auto !important;
+        page-break-inside: auto !important;
+        break-after: auto !important;
+        page-break-after: auto !important;
+    }}
+
+    div[data-testid="stHorizontalBlock"],
+    .admin-answer-row-wrapper,
+    .admin-answer-row {{
+        break-inside: auto !important;
+        page-break-inside: auto !important;
+        margin-top: 0 !important;
+    }}
+
+    div[data-testid="stVerticalBlock"],
+    div[data-testid="stElementContainer"],
+    div[data-testid="element-container"] {{
+        margin-top: 0 !important;
+        margin-bottom: 0 !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+    }}
+
 }}
 </style>
 """)
