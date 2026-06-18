@@ -1542,6 +1542,199 @@ with st.spinner("Chargement du tableau de bord..."):
     )
 
 # =====================================================
+# Bilingual interface and landing page
+# =====================================================
+
+TEXTS = {
+    "Français": {
+        "title": "Tableau de bord – Exit Survey USJ 2022-2025",
+        "subtitle": "Analyse historique, indicateurs clés, comparaisons et leviers d’amélioration",
+        "landing_badge": "Plateforme institutionnelle d’analyse décisionnelle",
+        "landing_title": "Transformez les réponses de l’Exit Survey en décisions stratégiques",
+        "landing_subtitle": "Une plateforme interactive pour comprendre l’expérience des diplômés, suivre les tendances historiques, identifier les priorités d’amélioration et appuyer les décisions institutionnelles avec des données fiables.",
+        "enter_dashboard": "Entrer dans le tableau de bord",
+        "review_intro": "Revoir l’introduction",
+        "landing_card_1_title": "Vision globale",
+        "landing_card_1_text": "Suivez les résultats clés de satisfaction, de recommandation, d’expérience académique, de services et d’infrastructures.",
+        "landing_card_2_title": "Comparaison historique",
+        "landing_card_2_text": "Comparez les résultats de 2022-2023, 2023-2024 et 2024-2025 sans mélanger les années.",
+        "landing_card_3_title": "Analyse statistique",
+        "landing_card_3_text": "Repérez les différences significatives selon le genre, la faculté, le campus et le niveau.",
+        "landing_card_4_title": "Décision et amélioration",
+        "landing_card_4_text": "Identifiez les forces, les signaux faibles et les leviers prioritaires pour améliorer l’expérience étudiante.",
+        "tutorial_title": "Comment utiliser la plateforme ?",
+        "tutorial_1": "Choisissez les filtres d’analyse pour cibler une population spécifique.",
+        "tutorial_2": "Consultez les résultats descriptifs pour lire les réponses brutes question par question.",
+        "tutorial_3": "Utilisez la comparaison historique pour suivre l’évolution des réponses sur les trois années.",
+        "tutorial_4": "Explorez les statistiques inférentielles pour identifier les différences significatives entre groupes.",
+        "years": "Années analysées",
+        "respondents": "Répondants",
+        "questions": "Questions et variables",
+        "filters_title": "Filtres d’analyse",
+        "control_title": "Pilotage du tableau de bord",
+        "control_subtitle": "Ajustez les filtres pour actualiser automatiquement l’ensemble des indicateurs, comparaisons, analyses descriptives, statistiques inférentielles et rapports synthétiques.",
+        "active_file": "Fichier actif",
+        "size": "Taille",
+        "last_update": "Dernière modification",
+        "reset_filters": "↺ Réinitialiser les filtres",
+        "refresh_data": "⟳ Actualiser les données Excel",
+        "year": "Année",
+        "gender": "Genre",
+        "faculty": "Faculté",
+        "campus": "Campus",
+        "program": "Cursus",
+        "level": "Niveau",
+        "population": "Population actuellement analysée",
+        "no_specific_filter": "Aucun filtre spécifique appliqué",
+        "nav_title": "Navigation analytique",
+        "footer": "Université Saint-Joseph de Beyrouth – Exit Survey 2022-2025",
+    },
+    "English": {
+        "title": "USJ Exit Survey Dashboard 2022-2025",
+        "subtitle": "Historical analysis, key indicators, comparisons and improvement drivers",
+        "landing_badge": "Institutional decision-support analytics platform",
+        "landing_title": "Turn Exit Survey responses into strategic decisions",
+        "landing_subtitle": "An interactive platform to understand graduate experience, track historical trends, identify improvement priorities and support institutional decisions with reliable evidence.",
+        "enter_dashboard": "Enter Dashboard",
+        "review_intro": "Back to introduction",
+        "landing_card_1_title": "Executive overview",
+        "landing_card_1_text": "Monitor key satisfaction, recommendation, academic experience, services and infrastructure indicators.",
+        "landing_card_2_title": "Historical comparison",
+        "landing_card_2_text": "Compare 2022-2023, 2023-2024 and 2024-2025 results without combining survey years.",
+        "landing_card_3_title": "Statistical analysis",
+        "landing_card_3_text": "Identify significant differences by gender, faculty, campus and level.",
+        "landing_card_4_title": "Decision and improvement",
+        "landing_card_4_text": "Detect strengths, weak signals and priority improvement drivers for the student experience.",
+        "tutorial_title": "How to use the platform",
+        "tutorial_1": "Choose analysis filters to focus on a specific population.",
+        "tutorial_2": "Use descriptive results to read raw responses question by question.",
+        "tutorial_3": "Use historical comparison to track response evolution across the three years.",
+        "tutorial_4": "Explore inferential statistics to identify significant differences between groups.",
+        "years": "Years analyzed",
+        "respondents": "Respondents",
+        "questions": "Questions and variables",
+        "filters_title": "Analysis filters",
+        "control_title": "Dashboard control panel",
+        "control_subtitle": "Adjust filters to automatically update indicators, comparisons, descriptive analyses, inferential statistics and synthetic reports.",
+        "active_file": "Active file",
+        "size": "Size",
+        "last_update": "Last modification",
+        "reset_filters": "↺ Reset filters",
+        "refresh_data": "⟳ Refresh Excel data",
+        "year": "Year",
+        "gender": "Gender",
+        "faculty": "Faculty",
+        "campus": "Campus",
+        "program": "Program",
+        "level": "Level",
+        "population": "Current analyzed population",
+        "no_specific_filter": "No specific filter applied",
+        "nav_title": "Analytical navigation",
+        "footer": "Saint Joseph University of Beirut – Exit Survey 2022-2025",
+    }
+}
+
+PAGE_TRANSLATIONS = {
+    "Français": {
+        "Résultats descriptifs de toutes les questions": "Résultats descriptifs de toutes les questions",
+        "Comparaison historique": "Comparaison historique",
+        "Statistiques inférentielles": "Statistiques inférentielles",
+        "Vue générale des indicateurs": "Vue générale des indicateurs",
+        "Facteurs clés d’amélioration": "Facteurs clés d’amélioration",
+        "Méthodologie des composantes": "Méthodologie des composantes",
+        "Rapport synthétique imprimable": "Rapport synthétique imprimable",
+    },
+    "English": {
+        "Résultats descriptifs de toutes les questions": "Descriptive results for all questions",
+        "Comparaison historique": "Historical comparison",
+        "Statistiques inférentielles": "Inferential statistics",
+        "Vue générale des indicateurs": "Overview indicators",
+        "Facteurs clés d’amélioration": "Key improvement drivers",
+        "Méthodologie des composantes": "Component methodology",
+        "Rapport synthétique imprimable": "Printable synthetic report",
+    }
+}
+
+LANG = st.selectbox("Langue / Language", ["Français", "English"], index=0, key="interface_language")
+TXT = TEXTS[LANG]
+
+def tr(key):
+    return TXT.get(key, key)
+
+def page_label(page_name):
+    return PAGE_TRANSLATIONS.get(LANG, {}).get(page_name, page_name)
+
+def render_landing_page():
+    years_list = sorted(df_coded["Year"].dropna().astype(str).unique().tolist()) if "Year" in df_coded.columns else []
+    years_label = " | ".join(years_list) if years_list else "2022-2025"
+    total_respondents = f"{len(df_coded):,}".replace(",", " ")
+    question_count = len([c for c in df_original.columns if is_probable_survey_question(c)]) if "is_probable_survey_question" in globals() else len(df_original.columns)
+
+    st.markdown(
+        f"""
+        <style>
+        .landing-hero {{background: radial-gradient(circle at top right, rgba(199,34,67,0.18), transparent 28%), linear-gradient(135deg, {USJ_BLUE} 0%, {USJ_BLUE_2} 55%, #151B4F 100%); border-radius: 30px; padding: 42px 46px; color: white; box-shadow: 0 18px 42px rgba(35,43,105,0.25); margin-top: 10px; margin-bottom: 24px; font-family: Candara, Arial, sans-serif;}}
+        .landing-badge {{display: inline-block; background: rgba(255,255,255,0.13); border: 1px solid rgba(255,255,255,0.25); color: white; padding: 8px 14px; border-radius: 999px; font-size: 14px; font-weight: 800; margin-bottom: 18px;}}
+        .landing-title {{font-size: 46px; line-height: 1.12; font-weight: 950; margin: 0 0 16px 0; color: white;}}
+        .landing-subtitle {{font-size: 19px; line-height: 1.6; max-width: 980px; color: rgba(255,255,255,0.92); margin-bottom: 24px;}}
+        .landing-card {{background: #FFFFFF; border: 1px solid #DDE5F0; border-radius: 22px; padding: 22px; min-height: 170px; box-shadow: 0 8px 22px rgba(35,43,105,0.08); font-family: Candara, Arial, sans-serif;}}
+        .landing-card-title {{color: {USJ_BLUE}; font-size: 20px; font-weight: 950; margin-bottom: 9px;}}
+        .landing-card-text {{color: #5F6B7A; font-size: 15px; line-height: 1.5;}}
+        .landing-stat {{background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.22); border-radius: 18px; padding: 15px 18px;}}
+        .landing-stat-value {{font-size: 28px; font-weight: 950; color: white;}}
+        .landing-stat-label {{font-size: 13px; color: rgba(255,255,255,0.84); margin-top: 4px;}}
+        .tutorial-box {{background: linear-gradient(135deg, #FFFFFF 0%, #F7F8FC 100%); border: 1px solid #DDE5F0; border-left: 8px solid {USJ_RED}; border-radius: 24px; padding: 24px 28px; margin-top: 24px; box-shadow: 0 8px 24px rgba(35,43,105,0.08); font-family: Candara, Arial, sans-serif;}}
+        .tutorial-step {{display:flex; gap:12px; align-items:flex-start; margin: 13px 0; color:{USJ_TEXT}; font-size:16px;}}
+        .tutorial-step-number {{background:{USJ_BLUE}; color:white; width:28px; height:28px; border-radius:999px; display:inline-flex; align-items:center; justify-content:center; font-weight:900; flex: 0 0 28px;}}
+        </style>
+        <div class="landing-hero">
+            <div class="landing-badge">{tr('landing_badge')}</div>
+            <div class="landing-title">{tr('landing_title')}</div>
+            <div class="landing-subtitle">{tr('landing_subtitle')}</div>
+            <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;max-width:820px;">
+                <div class="landing-stat"><div class="landing-stat-value">{years_label}</div><div class="landing-stat-label">{tr('years')}</div></div>
+                <div class="landing-stat"><div class="landing-stat-value">{total_respondents}</div><div class="landing-stat-label">{tr('respondents')}</div></div>
+                <div class="landing-stat"><div class="landing-stat-value">{question_count}</div><div class="landing-stat-label">{tr('questions')}</div></div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    cards = [("01", tr("landing_card_1_title"), tr("landing_card_1_text")), ("02", tr("landing_card_2_title"), tr("landing_card_2_text")), ("03", tr("landing_card_3_title"), tr("landing_card_3_text")), ("04", tr("landing_card_4_title"), tr("landing_card_4_text"))]
+    c = st.columns(4)
+    for i, (num, title, text) in enumerate(cards):
+        with c[i]:
+            st.markdown(f"""<div class="landing-card"><div style="color:{USJ_RED};font-size:13px;font-weight:950;margin-bottom:8px;">{num}</div><div class="landing-card-title">{title}</div><div class="landing-card-text">{text}</div></div>""", unsafe_allow_html=True)
+
+    st.markdown(
+        f"""
+        <div class="tutorial-box">
+            <div style="font-size:25px;font-weight:950;color:{USJ_BLUE};margin-bottom:12px;">{tr('tutorial_title')}</div>
+            <div class="tutorial-step"><span class="tutorial-step-number">1</span><span>{tr('tutorial_1')}</span></div>
+            <div class="tutorial-step"><span class="tutorial-step-number">2</span><span>{tr('tutorial_2')}</span></div>
+            <div class="tutorial-step"><span class="tutorial-step-number">3</span><span>{tr('tutorial_3')}</span></div>
+            <div class="tutorial-step"><span class="tutorial-step-number">4</span><span>{tr('tutorial_4')}</span></div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+    st.markdown("<br>", unsafe_allow_html=True)
+    start_col, _ = st.columns([1.2, 4])
+    with start_col:
+        if st.button(tr("enter_dashboard"), use_container_width=True, type="primary"):
+            st.session_state["dashboard_started"] = True
+            st.rerun()
+
+if "dashboard_started" not in st.session_state:
+    st.session_state["dashboard_started"] = False
+
+if not st.session_state["dashboard_started"]:
+    render_landing_page()
+    st.stop()
+
+
+# =====================================================
 # Header
 # =====================================================
 
@@ -1551,14 +1744,17 @@ with header_left:
     st.markdown(
         f"""
         <h1 style="color:{USJ_BLUE}; margin-bottom:0;">
-            Tableau de bord – Exit Survey USJ 2022-2025
+            {tr("title")}
         </h1>
         <p style="font-size:18px; color:#555; margin-top:4px;">
-            Analyse historique, indicateurs clés, comparaisons et leviers d’amélioration
+            {tr("subtitle")}
         </p>
         """,
         unsafe_allow_html=True
     )
+    if st.button(tr("review_intro"), use_container_width=False):
+        st.session_state["dashboard_started"] = False
+        st.rerun()
 
 with header_right:
     if os.path.exists("LogoUAQ.png"):
@@ -1597,15 +1793,14 @@ file_size_mb = excel_file_size / (1024 * 1024)
 st.markdown(
     f"""
     <div class="control-panel">
-        <div class="control-title">Pilotage du tableau de bord</div>
+        <div class="control-title">{tr("control_title")}</div>
         <div class="control-subtitle">
-            Ajustez les filtres pour actualiser automatiquement l’ensemble des indicateurs, comparaisons, analyses descriptives,
-            statistiques inférentielles et rapports synthétiques.
+            {tr("control_subtitle")}
         </div>
         <div class="data-chip-row">
-            <span class="data-chip">📁 <strong>Fichier actif</strong> {excel_file_path}</span>
-            <span class="data-chip">💾 <strong>Taille</strong> {file_size_mb:.2f} Mo</span>
-            <span class="data-chip">🕒 <strong>Dernière modification</strong> {last_update_label}</span>
+            <span class="data-chip">📁 <strong>{tr("active_file")}</strong> {excel_file_path}</span>
+            <span class="data-chip">💾 <strong>{tr("size")}</strong> {file_size_mb:.2f} Mo</span>
+            <span class="data-chip">🕒 <strong>{tr("last_update")}</strong> {last_update_label}</span>
         </div>
     </div>
     """,
@@ -1615,7 +1810,7 @@ st.markdown(
 filter_action_cols = st.columns([1.15, 1.35, 6.5])
 
 with filter_action_cols[0]:
-    if st.button("↺ Réinitialiser les filtres", use_container_width=True):
+    if st.button(tr("reset_filters"), use_container_width=True):
         available_years_reset = year_filter_options(df_coded, "Year")
         st.session_state["filter_year"] = available_years_reset[-1] if available_years_reset else ""
         st.session_state["filter_genre"] = "Tous"
@@ -1626,7 +1821,7 @@ with filter_action_cols[0]:
         st.rerun()
 
 with filter_action_cols[1]:
-    if st.button("⟳ Actualiser les données Excel", use_container_width=True):
+    if st.button(tr("refresh_data"), use_container_width=True):
         st.cache_data.clear()
         st.rerun()
 
@@ -1640,7 +1835,7 @@ st.markdown(
         font-weight:900;
         font-size:17px;
     ">
-        Filtres d’analyse
+        {tr("filters_title")}
     </div>
     """,
     unsafe_allow_html=True
@@ -1671,19 +1866,19 @@ if IS_HISTORICAL_PAGE:
     filter_offset = 0
 else:
     with filter_cols[0]:
-        year = st.selectbox("Année", available_years, key="filter_year")
+        year = st.selectbox(tr("year"), available_years, key="filter_year")
     df_after_year = df_filter_base[df_filter_base["Year"].astype(str) == year].copy()
     filter_offset = 1
 
 with filter_cols[filter_offset + 0]:
-    genre = st.selectbox("Genre", filter_options(df_after_year, "Genre"), key="filter_genre")
+    genre = st.selectbox(tr("gender"), filter_options(df_after_year, "Genre"), key="filter_genre")
 
 df_after_genre = df_after_year.copy()
 if genre != "Tous":
     df_after_genre = df_after_genre[df_after_genre["Genre"].astype(str) == genre]
 
 with filter_cols[filter_offset + 1]:
-    faculte = st.selectbox("Faculté", filter_options(df_after_genre, "Faculté_Institut_g"), key="filter_faculte")
+    faculte = st.selectbox(tr("faculty"), filter_options(df_after_genre, "Faculté_Institut_g"), key="filter_faculte")
 
 df_after_faculte = df_after_genre.copy()
 if faculte != "Tous":
@@ -1691,24 +1886,24 @@ if faculte != "Tous":
 
 with filter_cols[filter_offset + 2]:
     if CAMPUS_COLUMN:
-        campus = st.selectbox("Campus", filter_options(df_after_faculte, CAMPUS_COLUMN), key="filter_campus")
+        campus = st.selectbox(tr("campus"), filter_options(df_after_faculte, CAMPUS_COLUMN), key="filter_campus")
     else:
         campus = "Tous"
-        st.selectbox("Campus", ["Tous"], key="filter_campus", disabled=True)
+        st.selectbox(tr("campus"), ["Tous"], key="filter_campus", disabled=True)
 
 df_after_campus = df_after_faculte.copy()
 if CAMPUS_COLUMN and campus != "Tous":
     df_after_campus = df_after_campus[df_after_campus[CAMPUS_COLUMN].astype(str) == campus]
 
 with filter_cols[filter_offset + 3]:
-    cursus = st.selectbox("Cursus", filter_options(df_after_campus, "Cursus"), key="filter_cursus")
+    cursus = st.selectbox(tr("program"), filter_options(df_after_campus, "Cursus"), key="filter_cursus")
 
 df_after_cursus = df_after_campus.copy()
 if cursus != "Tous":
     df_after_cursus = df_after_cursus[df_after_cursus["Cursus"].astype(str) == cursus]
 
 with filter_cols[filter_offset + 4]:
-    niveau = st.selectbox("Niveau", filter_options(df_after_cursus, "Niveau"), key="filter_niveau")
+    niveau = st.selectbox(tr("level"), filter_options(df_after_cursus, "Niveau"), key="filter_niveau")
 
 df_filtered = df_after_cursus.copy()
 if niveau != "Tous":
@@ -1727,13 +1922,13 @@ if cursus != "Tous":
     active_filter_labels.append(f"Cursus : {cursus}")
 if niveau != "Tous":
     active_filter_labels.append(f"Niveau : {niveau}")
-active_filter_text = " | ".join(active_filter_labels) if active_filter_labels else "Aucun filtre spécifique appliqué"
+active_filter_text = " | ".join(active_filter_labels) if active_filter_labels else tr("no_specific_filter")
 
 st.markdown(
     f"""
     <div class="respondent-card">
         <div>
-            <div class="label">Population actuellement analysée</div>
+            <div class="label">{tr("population")}</div>
             <div style="font-size:13px; opacity:0.90; margin-top:4px;">{active_filter_text}</div>
         </div>
         <div class="value">{len(df_filtered):,}</div>
@@ -1746,14 +1941,15 @@ st.markdown(
 # Navigation
 # =====================================================
 
-st.markdown('<div class="nav-title">Navigation analytique</div>', unsafe_allow_html=True)
+st.markdown(f'<div class="nav-title">{tr("nav_title")}</div>', unsafe_allow_html=True)
 
 page = st.radio(
-    "Navigation analytique",
+    tr("nav_title"),
     PAGE_OPTIONS,
     horizontal=True,
     label_visibility="collapsed",
-    key="nav_page"
+    key="nav_page",
+    format_func=page_label
 )
 
 year_summary_all = build_year_summary(df_coded, q43)
@@ -6201,7 +6397,7 @@ st.markdown(
         font-size:14px;
         box-shadow:0 4px 14px rgba(0,0,0,0.08);
     ">
-        Université Saint-Joseph de Beyrouth – Exit Survey 2022-2025
+        {tr("footer")}
     </div>
     """,
     unsafe_allow_html=True
