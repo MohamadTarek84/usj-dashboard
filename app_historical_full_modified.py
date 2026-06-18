@@ -3261,18 +3261,9 @@ def page_inferential_statistics():
 
     results_df = results_df.sort_values(["p-value", "V de Cramer"], ascending=[True, False]).reset_index(drop=True)
 
-    st.markdown(f"<h3 style='color:{USJ_BLUE};'>Synthèse des tests par question</h3>", unsafe_allow_html=True)
-    display_results = results_df.copy()
-    display_results["p-value"] = display_results["p-value"].map(lambda x: f"{x:.4f}" if pd.notna(x) else "")
-    display_results["V de Cramer"] = display_results["V de Cramer"].map(lambda x: f"{x:.3f}" if pd.notna(x) else "")
-    st.dataframe(
-        display_results[[
-            "Question", "Variable de comparaison", "N valide", "Groupes", "Modalités",
-            "p-value", "V de Cramer", "Effet", "Interprétation"
-        ]],
-        use_container_width=True,
-        hide_index=True
-    )
+    # The inferential page remains simple by default.
+    # Detailed statistical tables and visual comparisons are available only through buttons,
+    # so readers are not overloaded unless they choose to go deeper.
 
     significant = results_df[results_df["p-value"] < 0.05]
     if not significant.empty:
@@ -3282,7 +3273,7 @@ def page_inferential_statistics():
             <span style="font-size:20px; font-weight:800; color:{USJ_BLUE};">Lecture inférentielle</span><br>
             La différence la plus marquée concerne <b>{html_escape(str(strongest['Question']))}</b> selon
             <b>{html_escape(selected_group_label)}</b>, avec une p-value de <b>{strongest['p-value']:.4f}</b>
-            et un V de Cramer de <b>{strongest['V de Cramer']:.3f}</b>. Les détails visuels sont masqués par défaut pour garder la page simple pour les lecteurs.
+            et un V de Cramer de <b>{strongest['V de Cramer']:.3f}</b>. Les tableaux statistiques et les comparaisons visuelles sont masqués par défaut afin de garder la page simple pour les lecteurs.
             """,
             color=USJ_BLUE,
             background="#F7F9FC"
@@ -3298,19 +3289,48 @@ def page_inferential_statistics():
             background="#FFF8F0"
         )
 
-    button_key = f"inferential_show_details_{selected_group_label}_{selected_section_inf}"
-    if button_key not in st.session_state:
-        st.session_state[button_key] = False
+    summary_button_key = f"inferential_show_summary_{selected_group_label}_{selected_section_inf}"
+    if summary_button_key not in st.session_state:
+        st.session_state[summary_button_key] = False
 
-    if st.button("Afficher / masquer les comparaisons détaillées", key=f"btn_{button_key}"):
-        st.session_state[button_key] = not st.session_state[button_key]
+    detail_button_key = f"inferential_show_details_{selected_group_label}_{selected_section_inf}"
+    if detail_button_key not in st.session_state:
+        st.session_state[detail_button_key] = False
 
-    if st.session_state[button_key]:
-        detail_source = significant.copy() if not significant.empty else results_df.head(5).copy()
-        detail_source = detail_source.sort_values(["p-value", "V de Cramer"], ascending=[True, False]).head(5)
+    excluded_button_key = f"inferential_show_excluded_{selected_group_label}_{selected_section_inf}"
+    if excluded_button_key not in st.session_state:
+        st.session_state[excluded_button_key] = False
+
+    btn_col1, btn_col2, btn_col3 = st.columns([1.2, 1.45, 1.2])
+    with btn_col1:
+        if st.button("Afficher / masquer la synthèse statistique", key=f"btn_{summary_button_key}", use_container_width=True):
+            st.session_state[summary_button_key] = not st.session_state[summary_button_key]
+    with btn_col2:
+        if st.button("Afficher / masquer les graphiques et tableaux par question", key=f"btn_{detail_button_key}", use_container_width=True):
+            st.session_state[detail_button_key] = not st.session_state[detail_button_key]
+    with btn_col3:
+        if st.button("Afficher / masquer les questions exclues", key=f"btn_{excluded_button_key}", use_container_width=True):
+            st.session_state[excluded_button_key] = not st.session_state[excluded_button_key]
+
+    if st.session_state[summary_button_key]:
+        st.markdown(f"<h3 style='color:{USJ_BLUE};'>Synthèse des tests par question</h3>", unsafe_allow_html=True)
+        display_results = results_df.copy()
+        display_results["p-value"] = display_results["p-value"].map(lambda x: f"{x:.4f}" if pd.notna(x) else "")
+        display_results["V de Cramer"] = display_results["V de Cramer"].map(lambda x: f"{x:.3f}" if pd.notna(x) else "")
+        st.dataframe(
+            display_results[[
+                "Question", "Variable de comparaison", "N valide", "Groupes", "Modalités",
+                "p-value", "V de Cramer", "Effet", "Interprétation"
+            ]],
+            use_container_width=True,
+            hide_index=True
+        )
+
+    if st.session_state[detail_button_key]:
+        detail_source = results_df.sort_values(["p-value", "V de Cramer"], ascending=[True, False]).copy()
 
         st.markdown(
-            f"<h3 style='color:{USJ_BLUE};'>Comparaisons détaillées des principales questions</h3>",
+            f"<h3 style='color:{USJ_BLUE};'>Comparaisons détaillées par question</h3>",
             unsafe_allow_html=True
         )
 
@@ -3347,7 +3367,7 @@ def page_inferential_statistics():
                     margin=dict(l=40, r=90, t=90, b=45),
                 )
                 theme_layout(fig, height=max(390, 42 * dist["Réponse"].nunique()), showlegend=True)
-                st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": True, "displaylogo": False})
+                st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": True, "displaylogo": False}, key=f"inferential_detail_fig_{selected_group_label}_{selected_section_inf}_{re.sub(r'[^A-Za-z0-9_]+', '_', str(selected_question_detail))}")
 
                 pivot_pct = dist.pivot_table(index="Réponse", columns="Groupe", values="Pourcentage", aggfunc="sum").fillna(0)
                 pivot_n = dist.pivot_table(index="Réponse", columns="Groupe", values="N", aggfunc="sum").fillna(0)
@@ -3365,9 +3385,13 @@ def page_inferential_statistics():
                 st.markdown(f"<h4 style='color:{USJ_BLUE};'>Tableau comparatif par {html_escape(selected_group_label.lower())}</h4>", unsafe_allow_html=True)
                 st.dataframe(pd.DataFrame(display_rows), use_container_width=True, hide_index=True)
 
-    if not excluded_df.empty:
-        with st.expander("Questions exclues des tests inférentiels"):
+    if st.session_state[excluded_button_key]:
+        st.markdown(f"<h3 style='color:{USJ_BLUE};'>Questions exclues des tests inférentiels</h3>", unsafe_allow_html=True)
+        if excluded_df.empty:
+            st.info("Aucune question exclue pour cette sélection.")
+        else:
             st.dataframe(excluded_df, use_container_width=True, hide_index=True)
+
 
 # =====================================================
 # Page 6 - Printable synthetic faculty report
