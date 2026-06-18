@@ -21,6 +21,11 @@ except Exception:
 
 warnings.filterwarnings("ignore")
 
+
+# Early HTML escape helper used by the bilingual landing page
+def html_escape(value):
+    return html_lib.escape(str(value))
+
 # =====================================================
 # Page configuration
 # =====================================================
