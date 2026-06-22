@@ -312,15 +312,11 @@ def preload_draft_into_session(data):
     for i, row in enumerate(saved_priorities, start=1):
         st.session_state[f"priority_{i}"] = row.get("priorite_strategique", "")
 
-        initiative_numbers = []
-        for key in row.keys():
-            if key.startswith("initiative_"):
-                try:
-                    initiative_numbers.append(int(key.split("_", 1)[1]))
-                except ValueError:
-                    pass
-
-        st.session_state[f"initiative_rows_{i}"] = max(3, max(initiative_numbers, default=0))
+        initiative_keys = [
+            key for key in row.keys()
+            if key.startswith("initiative_")
+        ]
+        st.session_state[f"initiative_rows_{i}"] = max(3, len(initiative_keys))
 
         for j in range(1, st.session_state[f"initiative_rows_{i}"] + 1):
             st.session_state[f"initiative_{i}_{j}"] = row.get(f"initiative_{j}", "")
@@ -1663,7 +1659,7 @@ def render_priorities_table():
             )
 
         row_data = {
-            "priorite_strategique": priority_value,
+            "priorite_strategique": priority_value
         }
 
         with col2:
