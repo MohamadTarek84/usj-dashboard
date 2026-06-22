@@ -299,16 +299,31 @@ def preload_draft_into_session(data):
 
     for section_key, rows in data.get("swot_analysis", {}).items():
         prefix = "swot_internal" if section_key == "facteurs_internes" else "swot_external"
+        rows_key = f"{prefix}_rows"
+        st.session_state[rows_key] = max(5, len(rows))
 
         for i, row in enumerate(rows, start=1):
             for col_name, value in row.items():
                 st.session_state[f"{prefix}_{col_name}_{i}"] = value
 
-    for i, row in enumerate(data.get("priorities_initiatives", []), start=1):
+    saved_priorities = data.get("priorities_initiatives", [])
+    st.session_state["priority_rows"] = max(3, len(saved_priorities))
+
+    for i, row in enumerate(saved_priorities, start=1):
         st.session_state[f"priority_{i}"] = row.get("priorite_strategique", "")
-        st.session_state[f"initiative_{i}_1"] = row.get("initiative_1", "")
-        st.session_state[f"initiative_{i}_2"] = row.get("initiative_2", "")
-        st.session_state[f"initiative_{i}_3"] = row.get("initiative_3", "")
+
+        initiative_numbers = []
+        for key in row.keys():
+            if key.startswith("initiative_"):
+                try:
+                    initiative_numbers.append(int(key.split("_", 1)[1]))
+                except ValueError:
+                    pass
+
+        st.session_state[f"initiative_rows_{i}"] = max(3, max(initiative_numbers, default=0))
+
+        for j in range(1, st.session_state[f"initiative_rows_{i}"] + 1):
+            st.session_state[f"initiative_{i}_{j}"] = row.get(f"initiative_{j}", "")
 
     phrases = [
         "Nous souhaitons que l’USJ soit reconnue pour …",
@@ -1479,6 +1494,11 @@ def render_swot_intro():
 
 def render_swot_table(section_key, left_title, right_title):
     rows = []
+    read_only = st.session_state.get("read_only_submitted", False)
+    rows_key = f"{section_key}_rows"
+
+    if rows_key not in st.session_state:
+        st.session_state[rows_key] = 5
 
     col1, col2 = st.columns(2)
 
@@ -1496,7 +1516,7 @@ def render_swot_table(section_key, left_title, right_title):
 </div>
 """)
 
-    for i in range(1, 6):
+    for i in range(1, st.session_state[rows_key] + 1):
         col1, col2 = st.columns(2)
 
         with col1:
@@ -1519,6 +1539,12 @@ def render_swot_table(section_key, left_title, right_title):
             left_title: left_value,
             right_title: right_value,
         })
+
+    if not read_only:
+        if st.button("Ajouter une ligne", key=f"add_{section_key}_row"):
+            st.session_state[rows_key] += 1
+            st.session_state["autosave_requested"] = True
+            st.rerun()
 
     return rows
 
@@ -1544,7 +1570,7 @@ def render_swot_analysis():
     <strong>1. Facteurs internes :</strong> Identification des <strong>forces</strong> et des <strong>faiblesses</strong> propres à l'Université (Exemples de Forces et Faiblesses en {annexe_b_hover_html}).
     </p>
     <p style="text-align:left; font-size:17px; line-height:1.55; color:#0070C0; font-weight:700; font-style:italic; margin-bottom:0;">
-    Nous vous remercions de bien vouloir compléter le tableau ci-dessous en indiquant au maximum <span style="text-decoration:underline; font-weight:700; font-style:italic;">cinq forces et cinq faiblesses</span>. Vos réponses seront déduites de l’analyse de l’état actuel interne (<a href="#section-iii" style="text-decoration:underline; color:#0000FF; font-weight:700; font-style:italic;">section III</a> principalement).
+    Nous vous remercions de bien vouloir compléter le tableau ci-dessous en indiquant au moins <span style="text-decoration:underline; font-weight:700; font-style:italic;">cinq forces et cinq faiblesses</span>, avec la possibilité d’en ajouter davantage. Vos réponses seront déduites de l’analyse de l’état actuel interne (<a href="#section-iii" style="text-decoration:underline; color:#0000FF; font-weight:700; font-style:italic;">section III</a> principalement).
     </p>
 </div>
 """, unsafe_allow_html=True)
@@ -1563,7 +1589,7 @@ def render_swot_analysis():
     <strong>2. Facteurs externes :</strong> Identification des <strong>opportunités</strong> de développement et des <strong>menaces</strong> émanant de l'environnement extérieur (Exemples d’Opportunités et de Menaces en {annexe_c_hover_html}).
     </p>
     <p style="text-align:left; font-size:17px; line-height:1.55; color:#0070C0; font-weight:700; font-style:italic; margin-bottom:0;">
-    Nous vous remercions de bien vouloir compléter le tableau ci-dessous en indiquant au maximum <span style="text-decoration:underline; font-weight:700; font-style:italic;">cinq opportunités et cinq menaces</span>. Vos réponses seront déduites de l’analyse de l’état actuel externe (<a href="#section-iv" style="text-decoration:underline; color:#0000FF; font-weight:700; font-style:italic;">section IV</a> principalement).
+    Nous vous remercions de bien vouloir compléter le tableau ci-dessous en indiquant au moins <span style="text-decoration:underline; font-weight:700; font-style:italic;">cinq opportunités et cinq menaces</span>, avec la possibilité d’en ajouter davantage. Vos réponses seront déduites de l’analyse de l’état actuel externe (<a href="#section-iv" style="text-decoration:underline; color:#0000FF; font-weight:700; font-style:italic;">section IV</a> principalement).
     </p>
 </div>
 """)
@@ -1591,7 +1617,7 @@ def render_priorities_intro():
     </p>
 
     <p style="text-align:left; font-size:17px; line-height:1.55; color:#0070C0; font-weight:700; font-style:italic; margin-bottom:0;">
-    Nous vous remercions de bien vouloir compléter le tableau ci-dessous en indiquant au maximum <span style="text-decoration:underline; font-weight:700; font-style:italic;">trois priorités stratégiques et 1 à 3 initiatives par priorité</span>. Les initiatives peuvent être au niveau de l’Université et/ou au niveau de l’institution. Vos réponses seront déduites de l’analyse SWOT. Vous pouvez hiérarchiser les priorités en les numérotant de 1 à 3.
+    Nous vous remercions de bien vouloir compléter le tableau ci-dessous en indiquant au moins <span style="text-decoration:underline; font-weight:700; font-style:italic;">trois priorités stratégiques et 1 à 3 initiatives par priorité</span>, avec la possibilité d’en ajouter davantage. Les initiatives peuvent être au niveau de l’Université et/ou au niveau de l’institution. Vos réponses seront déduites de l’analyse SWOT. Vous pouvez hiérarchiser les priorités en les numérotant de 1 à 3.
     </p>
 </div>
 """)
@@ -1599,6 +1625,10 @@ def render_priorities_intro():
 
 def render_priorities_table():
     priorities_rows = []
+    read_only = st.session_state.get("read_only_submitted", False)
+
+    if "priority_rows" not in st.session_state:
+        st.session_state["priority_rows"] = 3
 
     col1, col2 = st.columns([1.2, 1.8])
 
@@ -1616,7 +1646,12 @@ def render_priorities_table():
 </div>
 """)
 
-    for i in range(1, 4):
+    for i in range(1, st.session_state["priority_rows"] + 1):
+        initiative_rows_key = f"initiative_rows_{i}"
+
+        if initiative_rows_key not in st.session_state:
+            st.session_state[initiative_rows_key] = 3
+
         col1, col2 = st.columns([1.2, 1.8], gap="small")
 
         with col1:
@@ -1627,34 +1662,35 @@ def render_priorities_table():
                 max_words=30
             )
 
-        with col2:
-            initiative_1 = word_limited_text_area(
-                label=f"Initiative {i}.1",
-                key=f"initiative_{i}_1",
-                height=70,
-                max_words=30
-            )
-
-            initiative_2 = word_limited_text_area(
-                label=f"Initiative {i}.2",
-                key=f"initiative_{i}_2",
-                height=70,
-                max_words=30
-            )
-
-            initiative_3 = word_limited_text_area(
-                label=f"Initiative {i}.3",
-                key=f"initiative_{i}_3",
-                height=70,
-                max_words=30
-            )
-
-        priorities_rows.append({
+        row_data = {
             "priorite_strategique": priority_value,
-            "initiative_1": initiative_1,
-            "initiative_2": initiative_2,
-            "initiative_3": initiative_3,
-        })
+        }
+
+        with col2:
+            for j in range(1, st.session_state[initiative_rows_key] + 1):
+                initiative_value = word_limited_text_area(
+                    label=f"Initiative {i}.{j}",
+                    key=f"initiative_{i}_{j}",
+                    height=70,
+                    max_words=30
+                )
+
+                row_data[f"initiative_{j}"] = initiative_value
+
+            if not read_only:
+                if st.button("Ajouter une initiative", key=f"add_initiative_{i}"):
+                    st.session_state[initiative_rows_key] += 1
+                    st.session_state["autosave_requested"] = True
+                    st.rerun()
+
+        priorities_rows.append(row_data)
+
+    if not read_only:
+        if st.button("Ajouter une priorité stratégique", key="add_priority_row"):
+            st.session_state["priority_rows"] += 1
+            st.session_state[f"initiative_rows_{st.session_state['priority_rows']}"] = 3
+            st.session_state["autosave_requested"] = True
+            st.rerun()
 
     return priorities_rows
 
