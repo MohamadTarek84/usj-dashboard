@@ -119,11 +119,11 @@ DEMO_USERS = {
     # =========================
     # CFP - PSG
     # =========================
-    "717612": {"role": "psg", "name": "Angel BAHOUT MRAD", "poste": "Chef d'unité - formation continue", "faculty": "CFP", "institution": "CFP", "department": "", "email": "angel...", "director_name": "Fadi HAGE", "director_code": "703328", "director_email": "fadi..."},
-    "715919": {"role": "psg", "name": "Josiane DIAB MAALOUF KHALAF", "poste": "Développeur d'affaires", "faculty": "CFP", "institution": "CFP", "department": "", "email": "josiane...", "director_name": "Fadi HAGE", "director_code": "703328", "director_email": "fadi..."},
-    "719455": {"role": "psg", "name": "Elissa MAKHOUL", "poste": "Chargé de communication", "faculty": "CFP", "institution": "CFP", "department": "", "email": "elissa...", "director_name": "Fadi HAGE", "director_code": "703328", "director_email": "fadi..."},
-    "718851": {"role": "psg", "name": "Elyse SAADEH DIBO", "poste": "Chargé de support administratif", "faculty": "CFP", "institution": "CFP", "department": "", "email": "elyse...", "director_name": "Fadi HAGE", "director_code": "703328", "director_email": "fadi..."},
-    "718491": {"role": "psg", "name": "Albert YAMMINE", "poste": "Coordinateur de la formation continue", "faculty": "CFP", "institution": "CFP", "department": "", "email": "albert...", "director_name": "Fadi HAGE", "director_code": "703328", "director_email": "fadi..."},
+    "717612": {"role": "psg", "name": "Angel BAHOUT MRAD", "poste": "Chef d'unité - formation continue", "faculty": "CFP", "institution": "CFP", "department": "", "email": "angel...", "director_name": "Albert YAMMINE", "director_code": "718491CFP2026", "director_email": "albert..."},
+    "715919": {"role": "psg", "name": "Josiane DIAB MAALOUF KHALAF", "poste": "Développeur d'affaires", "faculty": "CFP", "institution": "CFP", "department": "", "email": "josiane...", "director_name": "Albert YAMMINE", "director_code": "718491CFP2026", "director_email": "albert..."},
+    "719455": {"role": "psg", "name": "Elissa MAKHOUL", "poste": "Chargé de communication", "faculty": "CFP", "institution": "CFP", "department": "", "email": "elissa...", "director_name": "Albert YAMMINE", "director_code": "718491CFP2026", "director_email": "albert..."},
+    "718851": {"role": "psg", "name": "Elyse SAADEH DIBO", "poste": "Chargé de support administratif", "faculty": "CFP", "institution": "CFP", "department": "", "email": "elyse...", "director_name": "Albert YAMMINE", "director_code": "718491CFP2026", "director_email": "albert..."},
+    "718491": {"role": "psg", "name": "Albert YAMMINE", "poste": "Coordinateur de la formation continue", "faculty": "CFP", "institution": "CFP", "department": "", "email": "albert...", "director_name": "Albert YAMMINE", "director_code": "718491CFP2026", "director_email": "albert..."},
 
     # =========================
     # DIRECTORS
@@ -148,6 +148,16 @@ DEMO_USERS = {
         "institution": "CFP",
         "department": "",
         "email": "fadi..."
+    },
+
+    "718491CFP2026": {
+        "role": "director",
+        "name": "Albert YAMMINE",
+        "poste": "Coordinateur de la formation continue",
+        "faculty": "CFP",
+        "institution": "CFP",
+        "department": "",
+        "email": "albert..."
     },
 
     # =========================
