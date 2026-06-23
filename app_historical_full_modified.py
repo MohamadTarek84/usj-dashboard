@@ -2502,6 +2502,7 @@ def page_historical_comparison():
                 counts = valid.value_counts(dropna=True).reset_index()
                 counts.columns = ["Réponse", "N"]
                 counts["Pourcentage"] = counts["N"] / counts["N"].sum() * 100
+                counts = sort_likert_distribution(counts, "Réponse")
                 for _, row in counts.iterrows():
                     rows.append({
                         "Année": str(year_value),
@@ -2518,7 +2519,11 @@ def page_historical_comparison():
 
         pivot_pct = dist_hist.pivot_table(index="Réponse", columns="Année", values="Pourcentage", aggfunc="sum").fillna(0)
         pivot_n = dist_hist.pivot_table(index="Réponse", columns="Année", values="N", aggfunc="sum").fillna(0)
-        order = pivot_pct.mean(axis=1).sort_values(ascending=False).index
+        likert_order = get_likert_response_order(pivot_pct.index)
+        if likert_order:
+            order = [x for x in likert_order if x in pivot_pct.index]
+        else:
+            order = pivot_pct.mean(axis=1).sort_values(ascending=False).index
         pivot_pct = pivot_pct.loc[order]
         pivot_n = pivot_n.loc[order]
 
@@ -2665,13 +2670,17 @@ def page_historical_comparison():
         """Clear grouped horizontal chart using the USJ logo palette."""
         if dist_hist.empty:
             return
-        order = (
-            dist_hist.groupby("Réponse", as_index=False)["Pourcentage"].mean()
-            .sort_values("Pourcentage", ascending=False)
-            .head(top_n)["Réponse"].tolist()
-        )
-        chart_df = dist_hist[dist_hist["Réponse"].isin(order)].copy()
-        chart_df["Réponse"] = pd.Categorical(chart_df["Réponse"], categories=list(reversed(order)), ordered=True)
+        likert_order = get_likert_response_order(dist_hist["Réponse"])
+        if likert_order:
+            order = [x for x in likert_order if x in set(dist_hist["Réponse"].astype(str))]
+        else:
+            order = (
+                dist_hist.groupby("Réponse", as_index=False)["Pourcentage"].mean()
+                .sort_values("Pourcentage", ascending=False)
+                .head(top_n)["Réponse"].tolist()
+            )
+        chart_df = dist_hist[dist_hist["Réponse"].astype(str).isin([str(x) for x in order])].copy()
+        chart_df["Réponse"] = pd.Categorical(chart_df["Réponse"].astype(str), categories=list(reversed(order)), ordered=True)
         fig = px.bar(
             chart_df,
             x="Pourcentage",
@@ -3599,6 +3608,9 @@ def page_inferential_statistics():
             return None, None, "Moins de deux modalités de réponse"
 
         contingency = pd.crosstab(temp["Réponse"], temp["Groupe"])
+        likert_order = get_likert_response_order(contingency.index)
+        if likert_order:
+            contingency = contingency.reindex([x for x in likert_order if x in contingency.index])
         if contingency.shape[0] < 2 or contingency.shape[1] < 2:
             return None, None, "Tableau croisé insuffisant"
 
@@ -3754,6 +3766,11 @@ def page_inferential_statistics():
         detail_temp = details[selected_question_detail].copy()
         dist = detail_temp.groupby(["Groupe", "Réponse"]).size().reset_index(name="N")
         dist["Pourcentage"] = dist.groupby("Groupe")["N"].transform(lambda x: x / x.sum() * 100)
+        order = get_likert_response_order(dist["Réponse"])
+        if order:
+            dist["Réponse"] = pd.Categorical(dist["Réponse"].astype(str), categories=order, ordered=True)
+            dist = dist.sort_values(["Groupe", "Réponse"]).copy()
+            dist["Réponse"] = dist["Réponse"].astype(str)
 
         with st.expander(f"{selected_question_detail} | p-value = {selected_row['p-value']:.4f}", expanded=True):
             positive_group_rows = []
@@ -3882,13 +3899,20 @@ def render_usj_interactive_cross_table(dist, group_label, title=None):
     pivot_pct = temp.pivot_table(index=row_var, columns=col_var, values="Pourcentage", aggfunc="sum").fillna(0)
     pivot_n = temp.pivot_table(index=row_var, columns=col_var, values="N", aggfunc="sum").fillna(0)
 
-    # Sort rows by their strongest percentage to make the table easy to scan.
-    row_order = pivot_pct.max(axis=1).sort_values(ascending=False).index
+    # Sort Likert responses from very positive to very negative when applicable.
+    row_likert_order = get_likert_response_order(pivot_pct.index) if row_var == "Réponse" else None
+    if row_likert_order:
+        row_order = [x for x in row_likert_order if x in pivot_pct.index]
+    else:
+        row_order = pivot_pct.max(axis=1).sort_values(ascending=False).index
     pivot_pct = pivot_pct.loc[row_order]
     pivot_n = pivot_n.loc[row_order]
 
-    # Sort columns by overall weight, while keeping only the low-modality variable in columns.
-    col_order = pivot_pct.mean(axis=0).sort_values(ascending=False).index
+    col_likert_order = get_likert_response_order(pivot_pct.columns) if col_var == "Réponse" else None
+    if col_likert_order:
+        col_order = [x for x in col_likert_order if x in pivot_pct.columns]
+    else:
+        col_order = pivot_pct.mean(axis=0).sort_values(ascending=False).index
     pivot_pct = pivot_pct[col_order]
     pivot_n = pivot_n[col_order]
 
@@ -4267,6 +4291,11 @@ def build_other_question_distribution(original_data, coded_filter_data, question
         return pd.DataFrame()
     dist = temp.groupby(["Année", "Réponse"]).size().reset_index(name="N")
     dist["Pourcentage"] = dist.groupby("Année")["N"].transform(lambda x: x / x.sum() * 100)
+    order = get_likert_response_order(dist["Réponse"])
+    if order:
+        dist["Réponse"] = pd.Categorical(dist["Réponse"].astype(str), categories=order, ordered=True)
+        dist = dist.sort_values(["Année", "Réponse"]).copy()
+        dist["Réponse"] = dist["Réponse"].astype(str)
     return dist
 
 
@@ -4880,6 +4909,7 @@ def build_simple_distribution(data, col):
     dist = s.value_counts().reset_index()
     dist.columns = ["Réponse", "N"]
     dist["Pourcentage"] = dist["N"] / dist["N"].sum() * 100
+    dist = sort_likert_distribution(dist, "Réponse")
     return dist
 
 
@@ -4897,6 +4927,11 @@ def build_simple_year_distribution(original_data, coded_data, col):
 
     dist = temp.groupby(["Année", "Réponse"]).size().reset_index(name="N")
     dist["Pourcentage"] = dist.groupby("Année")["N"].transform(lambda x: x / x.sum() * 100)
+    order = get_likert_response_order(dist["Réponse"])
+    if order:
+        dist["Réponse"] = pd.Categorical(dist["Réponse"].astype(str), categories=order, ordered=True)
+        dist = dist.sort_values(["Année", "Réponse"]).copy()
+        dist["Réponse"] = dist["Réponse"].astype(str)
     return dist
 
 
@@ -4989,6 +5024,63 @@ SCALE_SIGNATURE_GROUPS = [
         "subtitle": "Oui, suffisamment"
     },
 ]
+
+
+LIKERT_DISPLAY_ORDERS = [
+    [
+        "Très satisfaisante", "Très satisfait", "Très satisfaisant", "Très satisfaite",
+        "Satisfaisante", "Satisfait", "Satisfaisant", "Satisfaite",
+        "Neutre", "Ni satisfait ni insatisfait", "Ni satisfaite ni insatisfaite",
+        "Insatisfaisante", "Insatisfait", "Insatisfaisant", "Insatisfaite",
+        "Très insatisfaisante", "Très insatisfait", "Très insatisfaisant", "Très insatisfaite",
+    ],
+    [
+        "Tout à fait d’accord", "D’accord", "Neutre", "Pas d’accord", "Pas du tout d’accord",
+    ],
+    [
+        "Tout à fait", "Plutôt oui", "Neutre", "Plutôt non", "Pas du tout",
+    ],
+    [
+        "Oui, suffisamment", "Oui, mais pas suffisamment", "Non",
+    ],
+]
+
+
+def get_likert_response_order(responses):
+    """Return the positive-to-negative order for recognized Likert-type responses."""
+    present_original = [r for r in pd.Series(responses).dropna().astype(str).tolist()]
+    present_norm = {normalize_response_label_for_kpi(r): r for r in present_original}
+
+    for order in LIKERT_DISPLAY_ORDERS:
+        order_norm = [normalize_response_label_for_kpi(x) for x in order]
+        matched_norm = [norm for norm in order_norm if norm in present_norm]
+        if len(matched_norm) >= 2:
+            matched_set = set(matched_norm)
+            has_positive = any(norm in POSITIVE_SCALE_RESPONSES for norm in matched_set)
+            has_negative = any(norm in NEGATIVE_SCALE_RESPONSES for norm in matched_set)
+            if has_positive and has_negative:
+                return [present_norm[norm] for norm in matched_norm]
+    return None
+
+
+def sort_likert_distribution(dist, response_col="Réponse", ascending_positive=True):
+    """Sort Likert-type distributions from very positive to very negative.
+
+    Non-Likert questions keep their existing frequency-based order.
+    """
+    if dist is None or dist.empty or response_col not in dist.columns:
+        return dist
+
+    order = get_likert_response_order(dist[response_col])
+    if not order:
+        return dist
+
+    out = dist.copy()
+    categories = order if ascending_positive else list(reversed(order))
+    out[response_col] = pd.Categorical(out[response_col].astype(str), categories=categories, ordered=True)
+    out = out.sort_values(response_col).copy()
+    out[response_col] = out[response_col].astype(str)
+    return out
 
 
 def get_positive_scale_summary(dist):
@@ -5197,7 +5289,11 @@ def render_all_questions_single_result(question_label, question_col, original_fi
         st.dataframe(display_dist, use_container_width=True, hide_index=True)
         return
 
-    dist_chart = dist.sort_values("Pourcentage", ascending=True).copy()
+    likert_order = get_likert_response_order(dist["Réponse"])
+    if likert_order:
+        dist_chart = sort_likert_distribution(dist, "Réponse", ascending_positive=False).copy()
+    else:
+        dist_chart = dist.sort_values("Pourcentage", ascending=True).copy()
     fig = px.bar(
         dist_chart,
         x="Pourcentage",
@@ -5238,7 +5334,7 @@ def render_all_questions_single_result(question_label, question_col, original_fi
     with table_col:
         if positive_summary:
             render_positive_scale_kpi(positive_summary)
-        display_dist = dist.sort_values("Pourcentage", ascending=False).copy()
+        display_dist = sort_likert_distribution(dist, "Réponse").copy() if get_likert_response_order(dist["Réponse"]) else dist.sort_values("Pourcentage", ascending=False).copy()
         display_dist["Pourcentage"] = display_dist["Pourcentage"].map(lambda x: f"{x:.2f}%")
         st.markdown(f"<h4 style='color:{USJ_BLUE}; margin-top:0;'>Tableau des fréquences</h4>", unsafe_allow_html=True)
         st.dataframe(display_dist, use_container_width=True, hide_index=True)
