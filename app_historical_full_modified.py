@@ -3,7 +3,6 @@ import os
 import re
 import textwrap
 import warnings
-import base64
 import html as html_lib
 
 import numpy as np
@@ -21,11 +20,6 @@ except Exception:
 
 warnings.filterwarnings("ignore")
 
-
-# Early HTML escape helper used by the bilingual landing page
-def html_escape(value):
-    return html_lib.escape(str(value))
-
 # =====================================================
 # Page configuration
 # =====================================================
@@ -40,48 +34,48 @@ st.set_page_config(
 # Institutional colors close to USJ / UAQ identity
 # =====================================================
 
-# Institutional color palette based on the USJ 150 logo
-USJ_BLUE = "#232B69"
-USJ_BLUE_2 = "#2F3D8E"
-USJ_LIGHT_BLUE = "#EEF2FF"
-USJ_RED = "#C72243"
-USJ_DARK_RED = "#9F1731"
+USJ_BLUE = "#001B75"
+USJ_BLUE_2 = "#003A8C"
+USJ_LIGHT_BLUE = "#EAF2FF"
+USJ_RED = "#C0003B"
+USJ_DARK_RED = "#8B1538"
 USJ_GREEN = "#2E7D32"
-USJ_ORANGE = "#C9852B"
-USJ_GOLD = "#A99786"
-USJ_GRAY = "#F7F8FC"
+USJ_ORANGE = "#F57C00"
+USJ_GOLD = "#C9A227"
+USJ_GRAY = "#F5F7FB"
 USJ_TEXT = "#1B2A41"
 
-# Professional institutional palettes using the USJ logo colors
+# Professional institutional palettes
 PLOTLY_SEQ = [
     USJ_BLUE,
-    USJ_RED,
+    USJ_DARK_RED,
+    USJ_GREEN,
     USJ_GOLD,
     USJ_BLUE_2,
-    "#6F7FB8",
-    "#B7A897",
-    "#5A638C",
-    "#D35A70",
-    "#8894C8",
-    "#7A6A5E",
+    "#6D4C41",
+    "#5E6C84",
+    "#00838F",
+    "#7E57C2",
+    "#455A64",
 ]
 
 # Continuous scale used for satisfaction percentages.
+# Low results are burgundy, mid results are gold/light blue, high results are institutional blue/green.
 PLOTLY_CONT = [
     [0.00, USJ_DARK_RED],
     [0.35, USJ_RED],
     [0.55, USJ_GOLD],
-    [0.75, "#D8DEFF"],
-    [0.90, USJ_BLUE_2],
-    [1.00, USJ_BLUE],
+    [0.72, USJ_LIGHT_BLUE],
+    [0.86, USJ_BLUE_2],
+    [1.00, USJ_GREEN],
 ]
 
 PLOTLY_DIVERGING = [
-    [0.00, USJ_RED],
-    [0.35, "#E8CCD2"],
-    [0.50, "#F7F8FC"],
-    [0.70, "#D8DEFF"],
-    [1.00, USJ_BLUE],
+    [0.00, USJ_DARK_RED],
+    [0.25, USJ_RED],
+    [0.50, "#F4F6FA"],
+    [0.75, USJ_BLUE_2],
+    [1.00, USJ_GREEN],
 ]
 
 RESPONSE_COLORS = {
@@ -166,56 +160,6 @@ st.markdown(
         pointer-events: none !important;
         caret-color: transparent !important;
         color: transparent !important;
-    }}
-
-    /* Dropdowns: show full long labels without the large empty panel */
-    div[data-baseweb="select"] [class*="valueContainer"],
-    div[data-baseweb="select"] [class*="singleValue"] {{
-        white-space: normal !important;
-        overflow: visible !important;
-        text-overflow: clip !important;
-        line-height: 1.25 !important;
-    }}
-
-    div[data-baseweb="popover"] {{
-        width: max-content !important;
-        min-width: 280px !important;
-        max-width: 92vw !important;
-    }}
-
-    div[data-baseweb="popover"] > div,
-    div[data-baseweb="popover"] [data-baseweb="menu"],
-    div[data-baseweb="popover"] ul[role="listbox"],
-    div[data-baseweb="popover"] div[role="listbox"] {{
-        width: max-content !important;
-        min-width: 280px !important;
-        max-width: 92vw !important;
-    }}
-
-    div[data-baseweb="popover"] div[role="option"],
-    div[data-baseweb="popover"] li[role="option"] {{
-        width: 100% !important;
-        max-width: 92vw !important;
-        white-space: normal !important;
-        overflow: visible !important;
-        text-overflow: clip !important;
-        height: auto !important;
-        min-height: 42px !important;
-        line-height: 1.28 !important;
-        padding-top: 8px !important;
-        padding-bottom: 8px !important;
-        overflow-wrap: anywhere !important;
-        word-break: normal !important;
-    }}
-
-    div[data-baseweb="popover"] div[role="option"] *,
-    div[data-baseweb="popover"] li[role="option"] * {{
-        white-space: normal !important;
-        overflow: visible !important;
-        text-overflow: clip !important;
-        line-height: 1.28 !important;
-        max-width: 92vw !important;
-        overflow-wrap: anywhere !important;
     }}
 
     button[kind="secondary"], .stButton button {{
@@ -436,13 +380,6 @@ def filter_options(data, column):
         return ["Tous"]
     values = sorted(data[column].dropna().astype(str).unique())
     return ["Tous"] + values
-
-
-def year_filter_options(data, column="Year"):
-    """Year filter without Tous to avoid combined-year results in the dashboard."""
-    if column not in data.columns:
-        return []
-    return sorted(data[column].dropna().astype(str).unique())
 
 
 def summary_box(text, color=USJ_BLUE, background="#F7F9FC"):
@@ -965,10 +902,6 @@ OTHER_QUESTION_LABELS = {
 
     "11-Avez-vous pris des cours d’anglais à l’USJ et comment évaluez-vous votre apprentissage ?": "11-Avez-vous pris des cours d’anglais à l’USJ et comment évaluez-vous votre apprentissage ?",
     "12- Avez-vous contacté le Service de l’insertion professionnelle de l’USJ ?": "12-Avez-vous contacté le Service de l’insertion professionnelle de l’USJ ?",
-    "12_a- Vous a-t-il proposé un stage?": "12_a-Le Service de l’insertion professionnelle vous a-t-il proposé un stage ?",
-    "12_a- Vous a-t-il proposé un stage ?": "12_a-Le Service de l’insertion professionnelle vous a-t-il proposé un stage ?",
-    "12_b- Vous a-t-il proposé un emploi ?": "12_b-Le Service de l’insertion professionnelle vous a-t-il proposé un emploi ?",
-    "12_b- Vous a-t-il proposé un emploi?": "12_b-Le Service de l’insertion professionnelle vous a-t-il proposé un emploi ?",
     "13-Avez-vous participé au Job Fair organisé par le Service ?": "13-Avez-vous participé au Job Fair organisé par le Service de l’insertion professionnelle ?",
 
     "14_a- Recherche d’emploi": "14_a-Avez-vous suivi une formation du Service de l’insertion professionnelle sur : Recherche d’emploi",
@@ -982,18 +915,6 @@ OTHER_QUESTION_LABELS = {
     "14_i- Créez votre propre blog": "14_i-Avez-vous suivi une formation du Service de l’insertion professionnelle sur : Créer votre propre blog",
 
     "15-De manière générale, êtes-vous satisfait des formations que vous avez suivies au Service de l’insertion professionnelle de l’USJ ?": "15-De manière générale, êtes-vous satisfait des formations suivies au Service de l’insertion professionnelle de l’USJ ?",
-
-    "10_autre- Autres test d'anglais": "10_autre-Précisez l’autre test d’anglais normalisé passé",
-    "10a_a- Raison: Pour s'inscrire à un programme de master/Doctorat": "10a_a-Pour quelle raison avez-vous passé un test d’anglais ? S’inscrire à un programme de master/doctorat",
-    "10a_b- Raison: Pour postuler à un emploi": "10a_b-Pour quelle raison avez-vous passé un test d’anglais ? Postuler à un emploi",
-    "10a_c- Raison: Pour faire une demande de visa": "10a_c-Pour quelle raison avez-vous passé un test d’anglais ? Faire une demande de visa",
-    "10a_d- Raison: Requis par la faculté/institution": "10a_d-Pour quelle raison avez-vous passé un test d’anglais ? Requis par la faculté/institution",
-    "10b- Obtenu le score requis dès la première fois que vous avez passé le test ?": "10b-Avez-vous obtenu le score requis dès la première tentative au test d’anglais ?",
-    "10c_a-Avez-vous utilisé: Cours d'entraînement pour le test": "10c_a-Avez-vous utilisé des cours d’entraînement pour le test ?",
-    "10c_b-Avez-vous utilisé: Cours pour améliorer les compétences en anglais (en dehors de l'USJ)": "10c_b-Avez-vous utilisé des cours pour améliorer vos compétences en anglais hors USJ ?",
-    "10c_c-Avez-vous utilisé:Tuteur particulier": "10c_c-Avez-vous utilisé un tuteur particulier pour préparer le test ?",
-    "10c_d-Avez-vous utilisé:Etudes individuelles": "10c_d-Avez-vous utilisé des études individuelles pour préparer le test ?",
-    "10c_e-Avez-vous utilisé:Cours USJ": "10c_e-Avez-vous utilisé des cours USJ pour préparer le test ?",
 
     "16_a-À l’USJ, dans la même discipline": "16_a-Envisagez-vous de poursuivre vos études à l’USJ dans la même discipline ?",
     "16_b-À l’USJ, dans une autre discipline": "16_b-Envisagez-vous de poursuivre vos études à l’USJ dans une autre discipline ?",
@@ -1018,38 +939,11 @@ OTHER_QUESTION_LABELS = {
 
     "31-Êtes-vous étudiant en situation de handicap ?": "31-Êtes-vous étudiant en situation de handicap ?",
 
-    "32_a- De type ; Déficience intellectuelle": "32_a-De quel type de handicap s’agit-il ? Déficience intellectuelle",
-    "32_b- De type ; Déficience motrice": "32_b-De quel type de handicap s’agit-il ? Déficience motrice",
-    "32_c- De type ; Déficience auditive": "32_c-De quel type de handicap s’agit-il ? Déficience auditive",
-    "32_d- De type ; Déficience visuelle": "32_d-De quel type de handicap s’agit-il ? Déficience visuelle",
-    "32_e- De type ; Trouble d'apprentissage": "32_e-De quel type de handicap s’agit-il ? Trouble d’apprentissage",
-    "32_f- De type ; Trouble de communication": "32_f-De quel type de handicap s’agit-il ? Trouble de communication",
-    "32_g- De type ; Trouble de comportement": "32_g-De quel type de handicap s’agit-il ? Trouble de comportement",
-    "33-Avez-vous eu besoin d’un service au sein de votre établissement ?": "33-Avez-vous eu besoin d’un service au sein de votre établissement ?",
-    "33-Avez-vous eu besoin d’un service au sein de votre établissement ?": "33-Avez-vous eu besoin d’un service au sein de votre établissement ?",
-    "33a- De quels types de service ?": "33a-De quels types de service avez-vous eu besoin au sein de votre établissement ?",
-    "33a- De quels types de service ?  ": "33a-De quels types de service avez-vous eu besoin au sein de votre établissement ?",
-    "33b- À qui vous adressez-vous pour obtenir ces services ?": "33b-À qui vous adressez-vous pour obtenir ces services ?",
-    "33c- Ont-ils été mis à votre disposition ?": "33c-Ces services ont-ils été mis à votre disposition ?",
-    "34- Êtes-vous globalement satisfait de vos conditions d’études et d’accueil ?": "34-Êtes-vous globalement satisfait de vos conditions d’études et d’accueil ?",
-    "34- Êtes-vous globalement satisfait de vos conditions d'etudes et d'accueil ?": "34-Êtes-vous globalement satisfait de vos conditions d’études et d’accueil ?",
-    "34-Êtes-vous globalement satisfait de vos conditions d’études et d’accueil ?": "34-Êtes-vous globalement satisfait de vos conditions d’études et d’accueil ?",
-
     "35-Consultez-vous le site de l'USJ ?": "35-Consultez-vous le site web de l’USJ ?",
     "36-Suivez-vous les pages et comptes USJ sur les réseaux sociaux (Facebook, Linkedln, Twitter, YouTube, Instagram, …) ?": "36-Suivez-vous les pages et comptes de l’USJ sur les réseaux sociaux ?",
     "37-À quelle fréquence visitez-vous les pages et comptes USJ sur les réseaux sociaux": "37-À quelle fréquence visitez-vous les pages et comptes de l’USJ sur les réseaux sociaux ?",
     "38-Suivez-vous les pages et comptes de la Fédération des Associations des Anciens USJ sur les réseaux sociaux": "38-Suivez-vous les pages et comptes de la Fédération des Associations des Anciens USJ sur les réseaux sociaux ?",
     "39-À quelle fréquence visitez-vous les pages et comptes de la Fédération des Associations des Anciens USJ sur les réseaux sociaux": "39-À quelle fréquence visitez-vous les pages et comptes de la Fédération des Associations des Anciens USJ sur les réseaux sociaux ?",
-
-    "22a_a- Raisons de départ: Poursuivre des études": "22a_a-Pour quelles raisons prévoyez-vous de quitter le Liban ? Poursuivre des études",
-    "22a_b- Raisons de départ: Travailler": "22a_b-Pour quelles raisons prévoyez-vous de quitter le Liban ? Travailler",
-    "22a_c- Raisons de départ: Emigrer": "22a_c-Pour quelles raisons prévoyez-vous de quitter le Liban ? Émigrer",
-    "22a_d- Raisons de départ: Rejoindre ou accompagner un membre de la famille": "22a_d-Pour quelles raisons prévoyez-vous de quitter le Liban ? Rejoindre ou accompagner un membre de la famille",
-    "22a_e- Raisons de départ: Crise économique de 2019": "22a_e-Pour quelles raisons prévoyez-vous de quitter le Liban ? Crise économique de 2019",
-    "22a_f- Raisons de départ: Absence de sécurité": "22a_f-Pour quelles raisons prévoyez-vous de quitter le Liban ? Absence de sécurité",
-    "22a_autre- Raisons de départ: Autre": "22a_autre-Pour quelles raisons prévoyez-vous de quitter le Liban ? Autre",
-    "23- Vers quel pays prévoyez-vous partir ?": "23-Vers quel pays prévoyez-vous partir ?",
-    "23_autre- Autre pays": "23_autre-Vers quel pays prévoyez-vous partir ? Autre pays",
 
     "44_a- Financé vos études à l’USJ : Parents": "44-Comment avez-vous financé vos études à l’USJ ? (2024-2025)",
   
@@ -1071,12 +965,6 @@ def clean_other_question_label(question):
     if q_norm.startswith("11"):
         return "11-Avez-vous pris des cours d’anglais à l’USJ et comment évaluez-vous votre apprentissage ?"
 
-    if q_norm.startswith(normalize_question_key("12_a-")):
-        return "12_a-Le Service de l’insertion professionnelle vous a-t-il proposé un stage ?"
-
-    if q_norm.startswith(normalize_question_key("12_b-")):
-        return "12_b-Le Service de l’insertion professionnelle vous a-t-il proposé un emploi ?"
-
     if q_norm.startswith("12"):
         return "12-Avez-vous contacté le Service de l’insertion professionnelle de l’USJ ?"
 
@@ -1095,6 +983,117 @@ def normalize_question_key(value):
     return text.strip()
 
 
+
+# =====================================================
+# Likert response ordering helpers
+# =====================================================
+
+LIKERT_RESPONSE_ORDER_GROUPS = [
+    # Satisfaction scale, feminine wording
+    ["tres satisfaisante", "satisfaisante", "neutre", "insatisfaisante", "tres insatisfaisante"],
+    # Satisfaction scale, masculine wording
+    ["tres satisfaisant", "satisfaisant", "neutre", "insatisfaisant", "tres insatisfaisant"],
+    # Satisfaction scale, personal wording
+    ["tres satisfait", "satisfait", "neutre", "insatisfait", "tres insatisfait"],
+    ["tres satisfaite", "satisfaite", "neutre", "insatisfaite", "tres insatisfaite"],
+    # Agreement scale
+    ["tout a fait d'accord", "d'accord", "neutre", "ni d'accord ni pas d'accord", "pas d'accord", "pas du tout d'accord"],
+    # Generic positive / negative scale
+    ["tout a fait", "plutot oui", "neutre", "plutot non", "pas du tout"],
+    # Sufficiency scale
+    ["oui, suffisamment", "oui, mais pas suffisamment", "non"],
+    # Learning scale
+    ["oui et j'ai beaucoup appris", "oui et j'ai bien appris", "oui mais j'ai peu appris", "non"],
+]
+
+
+def get_likert_response_order(values):
+    """Return exact response labels ordered from very positive to very negative.
+
+    The function detects Likert-type scales and keeps the original labels exactly
+    as written in the Excel file. If the responses do not match a recognized
+    ordered scale, it returns None.
+    """
+    if values is None:
+        return None
+
+    exact_by_norm = {}
+    for value in pd.Series(list(values)).dropna().astype(str):
+        clean_value = value.strip()
+        norm_value = normalize_question_key(clean_value)
+        if norm_value and norm_value not in exact_by_norm:
+            exact_by_norm[norm_value] = clean_value
+
+    present = set(exact_by_norm.keys())
+    if not present:
+        return None
+
+    for order_group in LIKERT_RESPONSE_ORDER_GROUPS:
+        present_in_group = [norm for norm in order_group if norm in present]
+        if len(present_in_group) >= 2:
+            ordered_labels = [exact_by_norm[norm] for norm in order_group if norm in exact_by_norm]
+            extras = [
+                exact_by_norm[norm]
+                for norm in sorted(present)
+                if norm not in set(order_group)
+            ]
+            return ordered_labels + extras
+
+    return None
+
+
+def sort_response_distribution(dist, response_col="Réponse", pct_col="Pourcentage", n_col="N", fallback="frequency_desc"):
+    """Sort responses consistently.
+
+    Likert-scale responses are always ordered:
+    very positive → positive → neutral → negative → very negative.
+    Non-Likert responses keep frequency sorting.
+    """
+    if dist is None or dist.empty or response_col not in dist.columns:
+        return dist
+
+    out = dist.copy()
+    ordered_labels = get_likert_response_order(out[response_col].dropna().unique())
+
+    if ordered_labels:
+        order_map = {label: i for i, label in enumerate(ordered_labels)}
+        out["_response_order"] = out[response_col].map(order_map).fillna(len(order_map) + 999).astype(int)
+
+        secondary_cols = []
+        ascending = []
+        if n_col in out.columns:
+            secondary_cols.append(n_col)
+            ascending.append(False)
+        elif pct_col in out.columns:
+            secondary_cols.append(pct_col)
+            ascending.append(False)
+
+        out = out.sort_values(["_response_order"] + secondary_cols, ascending=[True] + ascending)
+        return out.drop(columns=["_response_order"], errors="ignore").reset_index(drop=True)
+
+    if fallback == "frequency_asc" and pct_col in out.columns:
+        return out.sort_values(pct_col, ascending=True).reset_index(drop=True)
+    if fallback == "frequency_desc" and pct_col in out.columns:
+        return out.sort_values(pct_col, ascending=False).reset_index(drop=True)
+    if fallback == "count_desc" and n_col in out.columns:
+        return out.sort_values(n_col, ascending=False).reset_index(drop=True)
+
+    return out.reset_index(drop=True)
+
+
+def get_plotly_y_category_array_for_responses(values):
+    """Return Plotly y-axis category array so the first Likert label appears on top."""
+    ordered_labels = get_likert_response_order(values)
+    if not ordered_labels:
+        return None
+    return list(reversed(ordered_labels))
+
+
+def get_plotly_color_category_order_for_responses(values):
+    """Return Plotly legend/category order for response colors."""
+    return get_likert_response_order(values)
+
+
 def is_yes_response(value):
     """Detect affirmative answers used for skip-pattern eligibility.
 
@@ -1108,70 +1107,6 @@ def is_yes_response(value):
         return False
     text = normalize_question_key(value)
     return text in {"oui", "yes", "y"} or text.startswith("oui") or text.startswith("yes")
-
-
-def is_english_test_response(value):
-    """Eligibility for Q10 follow-up questions.
-
-    Q10 follow-up questions are applicable to respondents who passed a standardized
-    English test. Only the explicit negative answer is excluded from the denominator.
-    This keeps TOEFL, IELTS, TOEIC and other affirmative test responses in the base.
-    """
-    if pd.isna(value):
-        return False
-    text = normalize_question_key(value)
-    if text in {"", "nan", "none", "nat", "<na>"}:
-        return False
-    if text in {"non", "no", "0", "0- non", "0 - non"}:
-        return False
-    if text.startswith("non") or text.startswith("no"):
-        return False
-    return True
-
-
-def is_english_other_test_response(value):
-    """Eligibility for 10_autre: only respondents who selected the 'Oui, autre' test option."""
-    if pd.isna(value):
-        return False
-    text = normalize_question_key(value)
-    if text in {"", "nan", "none", "nat", "<na>"}:
-        return False
-    if text.startswith("non") or text.startswith("no") or text in {"0", "0- non", "0 - non"}:
-        return False
-    return "autre" in text or "other" in text
-
-
-def get_parent_eligibility_mask(question_col, parent_values):
-    """Apply the correct parent-question eligibility rule for conditional questions."""
-    q_norm = normalize_question_key(question_col)
-
-    if q_norm.startswith(normalize_question_key("10_autre-")):
-        return parent_values.map(is_english_other_test_response).fillna(False)
-
-    if any(q_norm.startswith(normalize_question_key(prefix)) for prefix in [
-        "10a_a-", "10a_b-", "10a_c-", "10a_d-",
-        "10b-",
-        "10c_a-", "10c_b-", "10c_c-", "10c_d-", "10c_e-"
-    ]):
-        return parent_values.map(is_english_test_response).fillna(False)
-
-    return parent_values.map(is_yes_response).fillna(False)
-
-
-def should_exclude_question_from_presentation(question_col):
-    """Questions intentionally hidden from the descriptive presentation."""
-    q_norm = normalize_question_key(question_col)
-    hidden_prefixes = [
-        "10a_e-",
-        "18_autre-",
-        "19_o-",
-        "19_autre-",
-        "20_autre-",
-        "22a_autre-",
-        "23_autre-",
-        "32_autre-",
-    ]
-    return any(q_norm.startswith(normalize_question_key(prefix)) for prefix in hidden_prefixes)
 
 
 def find_column_by_prefix(columns, prefixes):
@@ -1192,113 +1127,12 @@ def get_question_dependency(question_col, original_data=None):
 
     dependency_rules = [
         {
-            "child_prefixes": ["4a_a-", "4a_b-", "4a_c-", "4a_d-", "4a_e-", "4a_f-", "4a_g-", "4a_h-", "4b_a-", "4b_b-", "4b_c-", "4b_d-", "4b_e-", "4b_f-"],
-            "parent_prefixes": ["4- sollicite un soutien", "4- sollicité un soutien", "4- avez-vous sollicite un soutien", "4- avez-vous sollicité un soutien"],
-        },
-        {
-            "child_prefixes": ["6a_a-", "6a_b-", "6a_c-"],
-            "parent_prefixes": [
-                "6- etudie a l'etranger",
-                "6- étudié à l'étranger",
-                "6- avez-vous effectue une periode d'etudes a l'etranger",
-                "6- avez-vous effectué une période d’études à l'étranger",
-                "6- avez-vous effectué une période d'études à l'étranger",
-                "6- etudié à l'étranger",
-                "6- etudie a l’étranger",
-            ],
-        },
-        {
-            "child_prefixes": ["10_autre-"],
-            "parent_prefixes": [
-                "10- avez-vous passe un test d'anglais normalise",
-                "10- avez-vous passé un test d’anglais normalisé",
-                "10- avez-vous passé un test d'anglais normalisé",
-                "10- passe un test d'anglais",
-            ],
-        },
-        {
-            "child_prefixes": ["10a_a-", "10a_b-", "10a_c-", "10a_d-", "10b-", "10c_a-", "10c_b-", "10c_c-", "10c_d-", "10c_e-"],
-            "parent_prefixes": [
-                "10- avez-vous passe un test d'anglais normalise",
-                "10- avez-vous passé un test d’anglais normalisé",
-                "10- avez-vous passé un test d'anglais normalisé",
-                "10- passe un test d'anglais",
-            ],
-        },
-        {
-            "child_prefixes": ["12_a-", "12_b-"],
-            "parent_prefixes": [
-                "12- avez-vous contacte le service de l’insertion professionnelle",
-                "12- avez-vous contacté le Service de l’insertion professionnelle",
-                "12- avez-vous contacté le service de l'insertion professionnelle",
-                "12- avez-vous contacte le service de l'insertion professionnelle",
-            ],
-        },
-        {
             "child_prefixes": ["9a-", "9b_a-", "9b_b-", "9b_c-", "9b_d-", "9b_e-", "9b_f-", "9b_g-", "9b_h-", "9c-", "9d_a-", "9d_b-", "9d_c-", "9d_d-", "9d_e-"],
             "parent_prefixes": ["9- avez-vous realise un stage", "9- avez-vous réalisé un stage"],
         },
         {
-            # Employment follow-up questions are applicable only to respondents
-            # who reported a paid activity in Q17. Respondents who answered Non
-            # are excluded from the denominator.
-            "child_prefixes": [
-                "18-", "18_autre-",
-                "19_a-", "19_b-", "19_c-", "19_d-", "19_e-", "19_f-", "19_g-", "19_h-", "19_i-", "19_j-", "19_k-", "19_l-", "19_m-", "19_n-", "19_o-", "19_autre-",
-                "20_a-", "20_b-", "20_c-", "20_d-", "20_e-", "20_f-", "20_g-", "20_h-", "20_i-", "20_j-", "20_autre-",
-                "21_a-", "21_b-", "21_c-"
-            ],
-            "parent_prefixes": [
-                "17- exercer une activite remuneree",
-                "17- exercer une activité rémunérée",
-                "17- exercez-vous une activite remuneree",
-                "17- exercez-vous une activité rémunérée",
-                "17- avez-vous exerce une activite remuneree",
-                "17- avez-vous exercé une activité rémunérée"
-            ],
-        },
-        {
-            # Departure follow-up questions are applicable only to respondents
-            # who answered Oui to Q22: Prévoyez-vous de quitter le Liban ?
-            "child_prefixes": [
-                "22a_a-", "22a_b-", "22a_c-", "22a_d-", "22a_e-", "22a_f-", "22a_autre-",
-                "23-", "23_autre-"
-            ],
-            "parent_prefixes": [
-                "22- prevoyez-vous de quitter le liban",
-                "22- prévoyez-vous de quitter le liban",
-                "22-prevoyez-vous de quitter le liban",
-                "22-prévoyez-vous de quitter le liban",
-            ],
-        },
-
-        {
-            # Disability follow-up questions are applicable only to respondents
-            # who answered Oui to Q31: Étudiant en situation de handicap.
-            # 32_autre is hidden from presentation, but the rule is kept for completeness.
-            "child_prefixes": [
-                "32_a-", "32_b-", "32_c-", "32_d-", "32_e-", "32_f-", "32_g-", "32_autre-",
-                "33-", "33a-", "33b-", "34-"
-            ],
-            "parent_prefixes": [
-                "31-etes-vous etudiant en situation de handicap",
-                "31-êtes-vous étudiant en situation de handicap",
-                "31- etes-vous etudiant en situation de handicap",
-                "31- êtes-vous étudiant en situation de handicap",
-            ],
-        },
-        {
-            # Availability follow-up question is applicable only to respondents
-            # who answered Oui to Q33: Besoin d’un service au sein de l’établissement.
-            # 33a, 33b and Q34 are treated as linked to Q31 according to the requested dashboard logic.
-            "child_prefixes": ["33c-"],
-            "parent_prefixes": [
-                "33- avez-vous eu besoin d’un service au sein de votre établissement",
-                "33- avez-vous eu besoin d'un service au sein de votre etablissement",
-                "33- avez-vous eu besoin d’un service au sein de votre etablissement",
-                "33-avez-vous eu besoin d’un service au sein de votre établissement",
-                "33-avez-vous eu besoin d'un service au sein de votre etablissement",
-            ],
+            "child_prefixes": ["21_a-", "21_b-", "21_c-"],
+            "parent_prefixes": ["17- exercer une activite remuneree", "17- exercer une activité rémunérée"],
         },
         {
             "child_prefixes": ["24a-"],
@@ -1383,7 +1217,7 @@ def get_applicable_response_series(original_data, coded_filter_data, question_co
 
     if parent_col and parent_col in original_data.columns:
         parent_values = original_data.loc[available_index, parent_col].map(clean_response_value)
-        eligible_mask = get_parent_eligibility_mask(question_col, parent_values)
+        eligible_mask = parent_values.map(is_yes_response).fillna(False)
         eligible_index = eligible_mask[eligible_mask].index
     else:
         eligible_index = available_index
@@ -1561,7 +1395,7 @@ def response_distribution(original_data, coded_data, items):
     if dist.empty:
         return dist
     dist["Pourcentage"] = dist.groupby(["Année", "Question"])["N"].transform(lambda x: x / x.sum() * 100)
-    return dist
+    return sort_response_distribution(dist, fallback="frequency_desc")
 
 
 def correlation_with_section_mean(data, items):
@@ -1598,393 +1432,6 @@ with st.spinner("Chargement du tableau de bord..."):
     )
 
 # =====================================================
-# Bilingual interface and landing page
-# =====================================================
-
-TEXTS = {
-    "Français": {
-        "title": "Tableau de bord – Exit Survey USJ 2022-2025",
-        "subtitle": "Analyse historique, indicateurs clés, comparaisons et leviers d’amélioration",
-        "landing_badge": "Plateforme institutionnelle d’analyse décisionnelle",
-        "landing_title": "Transformez les réponses de l’Exit Survey en décisions stratégiques",
-        "landing_subtitle": "Une plateforme interactive pour comprendre l’expérience des diplômés, suivre les tendances historiques, identifier les priorités d’amélioration et appuyer les décisions institutionnelles avec des données fiables.",
-        "enter_dashboard": "Entrer dans le tableau de bord",
-        "review_intro": "Revoir l’introduction",
-        "landing_card_1_title": "Vision globale",
-        "landing_card_1_text": "Suivez les résultats clés de satisfaction, de recommandation, d’expérience académique, de services et d’infrastructures.",
-        "landing_card_2_title": "Comparaison historique",
-        "landing_card_2_text": "Comparez les résultats de 2022-2023, 2023-2024 et 2024-2025 sans mélanger les années.",
-        "landing_card_3_title": "Analyse statistique",
-        "landing_card_3_text": "Repérez les différences significatives selon le genre, la faculté, le campus et le niveau.",
-        "landing_card_4_title": "Décision et amélioration",
-        "landing_card_4_text": "Identifiez les forces, les signaux faibles et les leviers prioritaires pour améliorer l’expérience étudiante.",
-        "tutorial_title": "Comment utiliser la plateforme ?",
-        "tutorial_1": "Choisissez les filtres d’analyse pour cibler une population spécifique.",
-        "tutorial_2": "Consultez les résultats descriptifs pour lire les réponses brutes question par question.",
-        "tutorial_3": "Utilisez la comparaison historique pour suivre l’évolution des réponses sur les trois années.",
-        "tutorial_4": "Explorez les statistiques inférentielles pour identifier les différences significatives entre groupes.",
-        "years": "Années analysées",
-        "respondents": "Répondants",
-        "questions": "Questions et variables",
-        "filters_title": "Filtres d’analyse",
-        "control_title": "Pilotage du tableau de bord",
-        "control_subtitle": "Ajustez les filtres pour actualiser automatiquement l’ensemble des indicateurs, comparaisons, analyses descriptives, statistiques inférentielles et rapports synthétiques.",
-        "active_file": "Fichier actif",
-        "size": "Taille",
-        "last_update": "Dernière modification",
-        "reset_filters": "↺ Réinitialiser les filtres",
-        "refresh_data": "⟳ Actualiser les données Excel",
-        "year": "Année",
-        "gender": "Genre",
-        "faculty": "Faculté",
-        "campus": "Campus",
-        "program": "Cursus",
-        "level": "Niveau",
-        "population": "Population actuellement analysée",
-        "no_specific_filter": "Aucun filtre spécifique appliqué",
-        "nav_title": "Navigation analytique",
-        "footer": "Université Saint-Joseph de Beyrouth – Exit Survey 2022-2025",
-    },
-    "English": {
-        "title": "USJ Exit Survey Dashboard 2022-2025",
-        "subtitle": "Historical analysis, key indicators, comparisons and improvement drivers",
-        "landing_badge": "Institutional decision-support analytics platform",
-        "landing_title": "Turn Exit Survey responses into strategic decisions",
-        "landing_subtitle": "An interactive platform to understand graduate experience, track historical trends, identify improvement priorities and support institutional decisions with reliable evidence.",
-        "enter_dashboard": "Enter Dashboard",
-        "review_intro": "Back to introduction",
-        "landing_card_1_title": "Executive overview",
-        "landing_card_1_text": "Monitor key satisfaction, recommendation, academic experience, services and infrastructure indicators.",
-        "landing_card_2_title": "Historical comparison",
-        "landing_card_2_text": "Compare 2022-2023, 2023-2024 and 2024-2025 results without combining survey years.",
-        "landing_card_3_title": "Statistical analysis",
-        "landing_card_3_text": "Identify significant differences by gender, faculty, campus and level.",
-        "landing_card_4_title": "Decision and improvement",
-        "landing_card_4_text": "Detect strengths, weak signals and priority improvement drivers for the student experience.",
-        "tutorial_title": "How to use the platform",
-        "tutorial_1": "Choose analysis filters to focus on a specific population.",
-        "tutorial_2": "Use descriptive results to read raw responses question by question.",
-        "tutorial_3": "Use historical comparison to track response evolution across the three years.",
-        "tutorial_4": "Explore inferential statistics to identify significant differences between groups.",
-        "years": "Years analyzed",
-        "respondents": "Respondents",
-        "questions": "Questions and variables",
-        "filters_title": "Analysis filters",
-        "control_title": "Dashboard control panel",
-        "control_subtitle": "Adjust filters to automatically update indicators, comparisons, descriptive analyses, inferential statistics and synthetic reports.",
-        "active_file": "Active file",
-        "size": "Size",
-        "last_update": "Last modification",
-        "reset_filters": "↺ Reset filters",
-        "refresh_data": "⟳ Refresh Excel data",
-        "year": "Year",
-        "gender": "Gender",
-        "faculty": "Faculty",
-        "campus": "Campus",
-        "program": "Program",
-        "level": "Level",
-        "population": "Current analyzed population",
-        "no_specific_filter": "No specific filter applied",
-        "nav_title": "Analytical navigation",
-        "footer": "Saint Joseph University of Beirut – Exit Survey 2022-2025",
-    }
-}
-
-PAGE_TRANSLATIONS = {
-    "Français": {
-        "Résultats descriptifs de toutes les questions": "Résultats descriptifs de toutes les questions",
-        "Comparaison historique": "Comparaison historique",
-        "Statistiques inférentielles": "Statistiques inférentielles",
-        "Vue générale des indicateurs": "Vue générale des indicateurs",
-        "Facteurs clés d’amélioration": "Facteurs clés d’amélioration",
-        "Méthodologie des composantes": "Méthodologie des composantes",
-        "Rapport synthétique imprimable": "Rapport synthétique imprimable",
-    },
-    "English": {
-        "Résultats descriptifs de toutes les questions": "Descriptive results for all questions",
-        "Comparaison historique": "Historical comparison",
-        "Statistiques inférentielles": "Inferential statistics",
-        "Vue générale des indicateurs": "Overview indicators",
-        "Facteurs clés d’amélioration": "Key improvement drivers",
-        "Méthodologie des composantes": "Component methodology",
-        "Rapport synthétique imprimable": "Printable synthetic report",
-    }
-}
-
-LANG = st.selectbox("Langue / Language", ["Français", "English"], index=0, key="interface_language")
-TXT = TEXTS[LANG]
-
-def tr(key):
-    return TXT.get(key, key)
-
-def page_label(page_name):
-    return PAGE_TRANSLATIONS.get(LANG, {}).get(page_name, page_name)
-
-def render_landing_page():
-    years_list = sorted(df_coded["Year"].dropna().astype(str).unique().tolist()) if "Year" in df_coded.columns else []
-    years_label = " | ".join(years_list) if years_list else "2022-2025"
-    total_respondents = f"{len(df_coded):,}".replace(",", " ")
-    question_count = len([c for c in df_original.columns if is_probable_survey_question(c)]) if "is_probable_survey_question" in globals() else len(df_original.columns)
-
-    # Use the UAQ/USJ institutional logo as a standalone visual element, not inside a box.
-    logo_candidates = ["LogoUAQ.png", "USJ LOGO 150.png", "usj_logo.png"]
-    logo_path = next((lp for lp in logo_candidates if os.path.exists(lp)), None)
-    logo_html = ""
-    if logo_path:
-        try:
-            with open(logo_path, "rb") as f:
-                encoded_logo = base64.b64encode(f.read()).decode("utf-8")
-            logo_html = f"""
-            <div class='landing-logo-strip'>
-                <img src='data:image/png;base64,{encoded_logo}' class='landing-logo-clean' />
-            </div>
-            """
-        except Exception:
-            logo_html = ""
-
-    if LANG == "Français":
-        hero_kicker = "EXIT SURVEY ANALYTICS 2022-2025"
-        strategic_line = "Une solution décisionnelle qui transforme les réponses collectées en actions institutionnelles mesurables, comparables et directement exploitables."
-        platform_scope = "Cette plateforme consolide les résultats de l’Exit Survey sur plusieurs années afin de donner une lecture claire de l’expérience des diplômés, des services universitaires, des infrastructures, de l’accompagnement, de l’insertion professionnelle et de la satisfaction globale."
-        problem_title = "Pourquoi cette plateforme est stratégique ?"
-        problem_text = "Les enquêtes de sortie contiennent des informations précieuses, mais elles deviennent difficiles à exploiter lorsqu’elles restent dispersées dans des fichiers Excel, des tableaux séparés ou des rapports statiques. La plateforme centralise ces données, structure les résultats, corrige les bases applicables des questions conditionnelles et permet une lecture rapide des signaux importants pour la gouvernance universitaire."
-        decision_title = "Ce qu’elle permet de décider"
-        decision_text = "Elle aide à identifier ce qui fonctionne, ce qui doit être amélioré et ce qui évolue dans le temps. Les responsables peuvent comparer les résultats par année, faculté, campus, niveau ou genre, repérer les différences significatives et transformer les constats en priorités d’action concrètes."
-        value_title = "Valeur ajoutée pour l’USJ"
-        value_items = [
-            ("Lecture institutionnelle", "Une vue consolidée et lisible de l’expérience des diplômés, utile pour les directions, les facultés, les services et les instances qualité."),
-            ("Comparaison historique", "Une comparaison claire des résultats 2022-2023, 2023-2024 et 2024-2025 sans mélanger les bases annuelles."),
-            ("Résultats bruts maîtrisés", "Une présentation question par question avant le calcul des scores, afin de conserver la transparence analytique."),
-            ("Questions conditionnelles", "Des dénominateurs corrigés pour éviter de considérer les répondants non concernés comme des données manquantes."),
-            ("Statistiques inférentielles", "Des tests adaptés pour comparer les réponses selon le genre, la faculté, le campus et le niveau."),
-            ("Pilotage de l’amélioration", "Des signaux clairs pour prioriser les actions, suivre les progrès et documenter les décisions institutionnelles."),
-        ]
-        modules_title = "Ce que l’utilisateur peut explorer"
-        modules = [
-            ("01", "Résultats descriptifs", "Visualiser toutes les questions d’une section, avec fréquences, pourcentages, bases applicables et indicateurs positifs pour les échelles."),
-            ("02", "Comparaison historique", "Comparer les distributions des réponses entre les trois années, avec tableaux interactifs et lecture des tendances."),
-            ("03", "Statistiques inférentielles", "Comparer les réponses entre groupes et repérer les différences statistiquement significatives sans alourdir la lecture principale."),
-            ("04", "Indicateurs de synthèse", "Consulter les KPI principaux de satisfaction, recommandation, services, infrastructures et expérience académique."),
-            ("05", "Facteurs clés", "Identifier les dimensions les plus liées à la satisfaction globale et à la recommandation."),
-            ("06", "Rapport imprimable", "Préparer une synthèse utilisable pour les réunions, les comités qualité et les discussions institutionnelles."),
-        ]
-        audience_title = "À qui s’adresse la plateforme ?"
-        audience_items = ["Direction et gouvernance", "Assurance qualité", "Facultés et instituts", "Services étudiants", "Responsables académiques", "Cellules d’amélioration continue"]
-        tutorial_steps = [
-            "Choisissez la langue de l’interface : Français ou English.",
-            "Entrez dans le tableau de bord pour accéder aux filtres et aux modules analytiques.",
-            "Commencez par les résultats descriptifs afin de comprendre les réponses brutes sans agrégation prématurée.",
-            "Utilisez la comparaison historique pour observer les tendances, les stabilités et les ruptures entre les années.",
-            "Consultez les statistiques inférentielles lorsque vous voulez vérifier si les différences entre groupes sont significatives.",
-            "Terminez par les indicateurs et facteurs clés pour transformer l’analyse en priorités d’amélioration.",
-        ]
-        evidence_title = "Une plateforme pensée pour la décision"
-        evidence_text = "L’objectif n’est pas seulement de visualiser des résultats. L’objectif est de soutenir une culture de décision fondée sur les données : comprendre, comparer, expliquer, prioriser et agir."
-        enter_label = tr("enter_dashboard")
-    else:
-        hero_kicker = "EXIT SURVEY ANALYTICS 2022-2025"
-        strategic_line = "A decision-support solution that transforms collected responses into measurable, comparable and directly actionable institutional decisions."
-        platform_scope = "This platform consolidates Exit Survey results across multiple years to provide a clear reading of graduate experience, university services, infrastructure, support, employability and overall satisfaction."
-        problem_title = "Why this platform is strategic"
-        problem_text = "Exit surveys contain valuable institutional intelligence, but they become difficult to use when they remain scattered across Excel files, separate tables or static reports. The platform centralizes the data, structures the results, corrects applicable bases for conditional questions and makes key signals immediately readable for university governance."
-        decision_title = "What it helps decide"
-        decision_text = "It helps identify what works, what needs improvement and what changes over time. Decision-makers can compare results by year, faculty, campus, level or gender, detect significant differences and translate evidence into concrete action priorities."
-        value_title = "Added value for USJ"
-        value_items = [
-            ("Institutional reading", "A consolidated and readable view of graduate experience for leadership, faculties, services and quality assurance bodies."),
-            ("Historical comparison", "A clear comparison of 2022-2023, 2023-2024 and 2024-2025 results without mixing annual respondent bases."),
-            ("Controlled raw results", "Question-by-question presentation before score calculation, preserving analytical transparency."),
-            ("Conditional questions", "Correct denominators to avoid treating non-applicable respondents as missing data."),
-            ("Inferential statistics", "Appropriate tests to compare responses by gender, faculty, campus and level."),
-            ("Improvement steering", "Clear signals to prioritize actions, monitor progress and document institutional decisions."),
-        ]
-        modules_title = "What users can explore"
-        modules = [
-            ("01", "Descriptive results", "Explore all questions within a section, with frequencies, percentages, applicable bases and positive indicators for scale questions."),
-            ("02", "Historical comparison", "Compare response distributions across the three years through interactive tables and trend-oriented reading."),
-            ("03", "Inferential statistics", "Compare responses between groups and identify statistically significant differences without overloading the main page."),
-            ("04", "Overview indicators", "Review core KPIs for satisfaction, recommendation, services, infrastructure and academic experience."),
-            ("05", "Key drivers", "Identify the dimensions most strongly linked to overall satisfaction and recommendation."),
-            ("06", "Printable report", "Prepare a synthetic output for meetings, quality committees and institutional discussions."),
-        ]
-        audience_title = "Who the platform is for"
-        audience_items = ["Leadership and governance", "Quality assurance", "Faculties and institutes", "Student services", "Academic managers", "Continuous improvement teams"]
-        tutorial_steps = [
-            "Choose the interface language: Français or English.",
-            "Enter the dashboard to access filters and analytical modules.",
-            "Start with descriptive results to understand raw responses before aggregation.",
-            "Use historical comparison to identify trends, stability and changes across years.",
-            "Use inferential statistics when you need to verify whether differences between groups are significant.",
-            "Finish with indicators and key drivers to translate analysis into improvement priorities.",
-        ]
-        evidence_title = "Designed for decision-making"
-        evidence_text = "The goal is not only to visualize results. The goal is to support a data-informed decision culture: understand, compare, explain, prioritize and act."
-        enter_label = tr("enter_dashboard")
-
-    value_cards_html = "".join(
-        f"""
-        <div class='landing-value-card'>
-            <div class='landing-value-dot'></div>
-            <div class='landing-value-title'>{html_escape(title)}</div>
-            <div class='landing-value-text'>{html_escape(text)}</div>
-        </div>
-        """
-        for title, text in value_items
-    )
-
-    modules_html = "".join(
-        f"""
-        <div class='landing-module'>
-            <div class='landing-module-number'>{num}</div>
-            <div>
-                <div class='landing-module-title'>{html_escape(title)}</div>
-                <div class='landing-module-text'>{html_escape(text)}</div>
-            </div>
-        </div>
-        """
-        for num, title, text in modules
-    )
-
-    audience_html = "".join(
-        f"<span class='landing-audience-chip'>{html_escape(item)}</span>"
-        for item in audience_items
-    )
-
-    tutorial_html = "".join(
-        f"<div class='tutorial-step'><span class='tutorial-step-number'>{i}</span><span>{html_escape(step)}</span></div>"
-        for i, step in enumerate(tutorial_steps, start=1)
-    )
-
-    landing_html = textwrap.dedent(f"""
-<style>
-        .landing-shell {{font-family: Candara, Arial, sans-serif;}}
-        .landing-logo-strip {{display:flex;justify-content:flex-end;align-items:center;margin:2px 2px 14px 0;}}
-        .landing-logo-clean {{height:92px;max-width:360px;object-fit:contain;}}
-        .landing-hero {{
-            position: relative;
-            overflow: hidden;
-            background:
-                radial-gradient(circle at 90% 8%, rgba(199,34,67,0.28), transparent 23%),
-                radial-gradient(circle at 72% 82%, rgba(184,164,139,0.30), transparent 31%),
-                linear-gradient(135deg, {USJ_BLUE} 0%, #232B69 46%, #151B4F 100%);
-            border-radius: 34px;
-            padding: 48px 52px;
-            color: white;
-            box-shadow: 0 22px 52px rgba(35,43,105,0.28);
-            margin-top: 8px;
-            margin-bottom: 26px;
-        }}
-        .landing-hero:after {{content:"";position:absolute;right:-160px;top:-160px;width:420px;height:420px;border-radius:999px;border:1px solid rgba(255,255,255,0.13);}}
-        .landing-hero-content {{position:relative;z-index:1;max-width:1120px;}}
-        .landing-badge {{display:inline-block;background:rgba(255,255,255,0.14);border:1px solid rgba(255,255,255,0.28);color:white;padding:9px 16px;border-radius:999px;font-size:14px;font-weight:900;margin-bottom:18px;}}
-        .landing-kicker {{font-size:15px;font-weight:950;letter-spacing:0.11em;text-transform:uppercase;color:#E8D9C7;margin-bottom:10px;}}
-        .landing-title {{font-size:50px;line-height:1.10;font-weight:950;margin:0 0 18px 0;color:white;max-width:1050px;}}
-        .landing-subtitle {{font-size:20px;line-height:1.65;max-width:1100px;color:rgba(255,255,255,0.94);margin-bottom:12px;}}
-        .landing-strategic-line {{font-size:16px;line-height:1.55;color:#F3E7DA;font-weight:850;margin-bottom:26px;max-width:1050px;}}
-        .landing-stat-grid {{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;max-width:900px;}}
-        .landing-stat {{background:rgba(255,255,255,0.13);border:1px solid rgba(255,255,255,0.23);border-radius:20px;padding:16px 18px;backdrop-filter:blur(8px);}}
-        .landing-stat-value {{font-size:28px;font-weight:950;color:white;line-height:1.25;}}
-        .landing-stat-label {{font-size:13px;color:rgba(255,255,255,0.84);margin-top:6px;font-weight:750;}}
-        .landing-section-grid {{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:22px 0;}}
-        .landing-info-panel {{background:#FFFFFF;border:1px solid #DDE5F0;border-radius:26px;padding:27px 30px;box-shadow:0 10px 28px rgba(35,43,105,0.08);}}
-        .landing-info-panel.gold {{border-left:8px solid {USJ_GOLD};}}
-        .landing-info-panel.red {{border-left:8px solid {USJ_RED};}}
-        .landing-panel-title {{font-size:25px;font-weight:950;color:{USJ_BLUE};margin-bottom:12px;}}
-        .landing-panel-text {{font-size:16px;line-height:1.78;color:{USJ_TEXT};}}
-        .landing-value-grid {{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:22px 0 24px 0;}}
-        .landing-value-card {{background:#FFFFFF;border:1px solid #DDE5F0;border-radius:22px;padding:22px;min-height:188px;box-shadow:0 8px 22px rgba(35,43,105,0.07);transition:all 0.18s ease;}}
-        .landing-value-card:hover {{transform:translateY(-3px);box-shadow:0 14px 30px rgba(35,43,105,0.12);}}
-        .landing-value-dot {{width:34px;height:6px;border-radius:999px;background:linear-gradient(90deg,{USJ_BLUE},{USJ_RED},{USJ_GOLD});margin-bottom:16px;}}
-        .landing-value-title {{color:{USJ_BLUE};font-size:20px;font-weight:950;margin-bottom:9px;}}
-        .landing-value-text {{color:#5F6B7A;font-size:15px;line-height:1.58;}}
-        .landing-module-panel {{background:linear-gradient(135deg,#FFFFFF 0%,#F8FAFE 100%);border:1px solid #DDE5F0;border-left:8px solid {USJ_BLUE};border-radius:26px;padding:27px 30px;box-shadow:0 10px 28px rgba(35,43,105,0.08);}}
-        .landing-module-grid {{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:16px;}}
-        .landing-module {{display:flex;gap:14px;background:#FFFFFF;border:1px solid #E4EAF4;border-radius:18px;padding:17px 18px;}}
-        .landing-module-number {{width:40px;height:40px;border-radius:12px;background:{USJ_BLUE};color:white;font-weight:950;display:flex;align-items:center;justify-content:center;flex:0 0 40px;}}
-        .landing-module-title {{font-size:17px;font-weight:950;color:{USJ_BLUE};margin-bottom:5px;}}
-        .landing-module-text {{font-size:14px;line-height:1.52;color:#5F6B7A;}}
-        .landing-audience-box {{background:#FFFFFF;border:1px solid #DDE5F0;border-radius:26px;padding:25px 28px;box-shadow:0 10px 28px rgba(35,43,105,0.08);margin:22px 0;}}
-        .landing-audience-chips {{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;}}
-        .landing-audience-chip {{display:inline-flex;align-items:center;border:1px solid #DDE5F0;background:#F7F8FC;border-radius:999px;padding:9px 13px;color:{USJ_BLUE};font-weight:850;font-size:14px;}}
-        .tutorial-box {{background:linear-gradient(135deg,#FFFFFF 0%,#F7F8FC 100%);border:1px solid #DDE5F0;border-left:8px solid {USJ_RED};border-radius:26px;padding:27px 30px;margin-top:22px;box-shadow:0 10px 28px rgba(35,43,105,0.08);}}
-        .tutorial-step {{display:flex;gap:12px;align-items:flex-start;margin:13px 0;color:{USJ_TEXT};font-size:16px;line-height:1.45;}}
-        .tutorial-step-number {{background:{USJ_BLUE};color:white;width:30px;height:30px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;font-weight:950;flex:0 0 30px;}}
-        @media (max-width: 900px) {{
-            .landing-section-grid, .landing-value-grid, .landing-module-grid {{grid-template-columns:1fr;}}
-            .landing-stat-grid {{grid-template-columns:1fr;}}
-            .landing-title {{font-size:36px;}}
-            .landing-logo-clean {{height:74px;}}
-        }}
-        </style>
-        <div class='landing-shell'>
-            {logo_html}
-            <div class='landing-hero'>
-                <div class='landing-hero-content'>
-                    <div class='landing-badge'>{html_escape(tr('landing_badge'))}</div>
-                    <div class='landing-kicker'>{html_escape(hero_kicker)}</div>
-                    <div class='landing-title'>{html_escape(tr('landing_title'))}</div>
-                    <div class='landing-subtitle'>{html_escape(tr('landing_subtitle'))}</div>
-                    <div class='landing-strategic-line'>{html_escape(strategic_line)}</div>
-                    <div class='landing-stat-grid'>
-                        <div class='landing-stat'><div class='landing-stat-value'>{html_escape(years_label)}</div><div class='landing-stat-label'>{html_escape(tr('years'))}</div></div>
-                        <div class='landing-stat'><div class='landing-stat-value'>{html_escape(total_respondents)}</div><div class='landing-stat-label'>{html_escape(tr('respondents'))}</div></div>
-                        <div class='landing-stat'><div class='landing-stat-value'>{html_escape(str(question_count))}</div><div class='landing-stat-label'>{html_escape(tr('questions'))}</div></div>
-                    </div>
-                </div>
-            </div>
-            <div class='landing-section-grid'>
-                <div class='landing-info-panel gold'>
-                    <div class='landing-panel-title'>{html_escape(problem_title)}</div>
-                    <div class='landing-panel-text'>{html_escape(problem_text)}</div>
-                </div>
-                <div class='landing-info-panel red'>
-                    <div class='landing-panel-title'>{html_escape(decision_title)}</div>
-                    <div class='landing-panel-text'>{html_escape(decision_text)}</div>
-                </div>
-            </div>
-            <div class='landing-info-panel'>
-                <div class='landing-panel-title'>{html_escape(evidence_title)}</div>
-                <div class='landing-panel-text'>{html_escape(platform_scope)}<br><br>{html_escape(evidence_text)}</div>
-            </div>
-            <div class='landing-panel-title' style='margin-top:26px;'>{html_escape(value_title)}</div>
-            <div class='landing-value-grid'>{value_cards_html}</div>
-            <div class='landing-module-panel'>
-                <div class='landing-panel-title'>{html_escape(modules_title)}</div>
-                <div class='landing-module-grid'>{modules_html}</div>
-            </div>
-            <div class='landing-audience-box'>
-                <div class='landing-panel-title'>{html_escape(audience_title)}</div>
-                <div class='landing-panel-text'>{html_escape('La plateforme est conçue pour différents profils institutionnels qui ont besoin de lire rapidement les données, approfondir les résultats ou préparer des décisions documentées.' if LANG == 'Français' else 'The platform is designed for different institutional users who need to read data quickly, explore results in depth or prepare evidence-based decisions.')}</div>
-                <div class='landing-audience-chips'>{audience_html}</div>
-            </div>
-            <div class='tutorial-box'>
-                <div class='landing-panel-title'>{html_escape(tr('tutorial_title'))}</div>
-                {tutorial_html}
-            </div>
-        </div>
-""").strip()
-    # IMPORTANT: remove leading spaces before HTML tags. Otherwise Streamlit Markdown
-    # can interpret the block as preformatted code and display raw <div> markup.
-    landing_html = re.sub(r"\n[ \t]+<", "\n<", landing_html)
-    landing_html = re.sub(r"^[ \t]+<", "<", landing_html)
-    st.markdown(landing_html, unsafe_allow_html=True)
-
-    st.markdown("<br>", unsafe_allow_html=True)
-    start_col, _ = st.columns([1.2, 4])
-    with start_col:
-        if st.button(enter_label, use_container_width=True, type="primary"):
-            st.session_state["dashboard_started"] = True
-            st.rerun()
-
-if "dashboard_started" not in st.session_state:
-    st.session_state["dashboard_started"] = False
-
-if not st.session_state["dashboard_started"]:
-    render_landing_page()
-    st.stop()
-
-
-# =====================================================
 # Header
 # =====================================================
 
@@ -1994,17 +1441,14 @@ with header_left:
     st.markdown(
         f"""
         <h1 style="color:{USJ_BLUE}; margin-bottom:0;">
-            {tr("title")}
+            Tableau de bord – Exit Survey USJ 2022-2025
         </h1>
         <p style="font-size:18px; color:#555; margin-top:4px;">
-            {tr("subtitle")}
+            Analyse historique, indicateurs clés, comparaisons et leviers d’amélioration
         </p>
         """,
         unsafe_allow_html=True
     )
-    if st.button(tr("review_intro"), use_container_width=False):
-        st.session_state["dashboard_started"] = False
-        st.rerun()
 
 with header_right:
     if os.path.exists("LogoUAQ.png"):
@@ -2013,25 +1457,6 @@ with header_right:
         st.image("usj_logo.png", width=230)
 
 st.divider()
-
-# =====================================================
-# Page state used to adapt filters
-# =====================================================
-
-PAGE_OPTIONS = [
-    "Résultats descriptifs de toutes les questions",
-    "Comparaison historique",
-    "Statistiques inférentielles",
-    "Vue générale des indicateurs",
-    "Facteurs clés d’amélioration",
-    "Méthodologie des composantes",
-    "Rapport synthétique imprimable"
-]
-
-CURRENT_PAGE = st.session_state.get("nav_page", "Vue générale des indicateurs")
-if CURRENT_PAGE not in PAGE_OPTIONS:
-    CURRENT_PAGE = "Vue générale des indicateurs"
-IS_HISTORICAL_PAGE = CURRENT_PAGE == "Comparaison historique"
 
 # =====================================================
 # Professional control panel and linked filters
@@ -2043,14 +1468,15 @@ file_size_mb = excel_file_size / (1024 * 1024)
 st.markdown(
     f"""
     <div class="control-panel">
-        <div class="control-title">{tr("control_title")}</div>
+        <div class="control-title">Pilotage du tableau de bord</div>
         <div class="control-subtitle">
-            {tr("control_subtitle")}
+            Ajustez les filtres pour actualiser automatiquement l’ensemble des indicateurs, comparaisons, analyses descriptives,
+            statistiques inférentielles et rapports synthétiques.
         </div>
         <div class="data-chip-row">
-            <span class="data-chip">📁 <strong>{tr("active_file")}</strong> {excel_file_path}</span>
-            <span class="data-chip">💾 <strong>{tr("size")}</strong> {file_size_mb:.2f} Mo</span>
-            <span class="data-chip">🕒 <strong>{tr("last_update")}</strong> {last_update_label}</span>
+            <span class="data-chip">📁 <strong>Fichier actif</strong> {excel_file_path}</span>
+            <span class="data-chip">💾 <strong>Taille</strong> {file_size_mb:.2f} Mo</span>
+            <span class="data-chip">🕒 <strong>Dernière modification</strong> {last_update_label}</span>
         </div>
     </div>
     """,
@@ -2060,18 +1486,16 @@ st.markdown(
 filter_action_cols = st.columns([1.15, 1.35, 6.5])
 
 with filter_action_cols[0]:
-    if st.button(tr("reset_filters"), use_container_width=True):
-        available_years_reset = year_filter_options(df_coded, "Year")
-        st.session_state["filter_year"] = available_years_reset[-1] if available_years_reset else ""
+    if st.button("↺ Réinitialiser les filtres", use_container_width=True):
+        st.session_state["filter_year"] = "Tous"
         st.session_state["filter_genre"] = "Tous"
         st.session_state["filter_faculte"] = "Tous"
-        st.session_state["filter_campus"] = "Tous"
         st.session_state["filter_cursus"] = "Tous"
         st.session_state["filter_niveau"] = "Tous"
         st.rerun()
 
 with filter_action_cols[1]:
-    if st.button(tr("refresh_data"), use_container_width=True):
+    if st.button("⟳ Actualiser les données Excel", use_container_width=True):
         st.cache_data.clear()
         st.rerun()
 
@@ -2085,110 +1509,68 @@ st.markdown(
         font-weight:900;
         font-size:17px;
     ">
-        {tr("filters_title")}
+        Filtres d’analyse
     </div>
     """,
     unsafe_allow_html=True
 )
 
-filter_cols = st.columns(5 if IS_HISTORICAL_PAGE else 6)
+filter_cols = st.columns(5)
 df_filter_base = df_coded.copy()
 
-# Campus can have slightly different names depending on the Excel file.
-CAMPUS_COLUMN = next(
-    (col for col in ["Campus", "campus", "Campus_g", "Campus principal", "Campus_principal", "Site", "site"] if col in df_filter_base.columns),
-    None
-)
+with filter_cols[0]:
+    year = st.selectbox("Année", filter_options(df_filter_base, "Year"), key="filter_year")
 
-# Faculty column can differ between Excel versions. Do not hardcode only Faculté_Institut_g.
-FACULTY_COLUMN = next(
-    (col for col in ["Faculté_Institut_g", "Faculté_Institut", "Faculté / Institut", "Faculté", "Faculty", "Institut"] if col in df_filter_base.columns),
-    None
-)
+df_after_year = df_filter_base.copy()
+if year != "Tous":
+    df_after_year = df_after_year[df_after_year["Year"].astype(str) == year]
 
-available_years = year_filter_options(df_filter_base, "Year")
-if not available_years:
-    st.error("Aucune année valide n’est disponible dans le fichier Excel.")
-    st.stop()
-
-# The global year filter intentionally excludes "Tous".
-# This prevents the overview and descriptive pages from combining several survey years.
-if st.session_state.get("filter_year") not in available_years:
-    st.session_state["filter_year"] = available_years[-1]
-
-if IS_HISTORICAL_PAGE:
-    year = "Tous"
-    df_after_year = df_filter_base.copy()
-    filter_offset = 0
-else:
-    with filter_cols[0]:
-        year = st.selectbox(tr("year"), available_years, key="filter_year")
-    df_after_year = df_filter_base[df_filter_base["Year"].astype(str) == year].copy()
-    filter_offset = 1
-
-with filter_cols[filter_offset + 0]:
-    genre = st.selectbox(tr("gender"), filter_options(df_after_year, "Genre"), key="filter_genre")
+with filter_cols[1]:
+    genre = st.selectbox("Genre", filter_options(df_after_year, "Genre"), key="filter_genre")
 
 df_after_genre = df_after_year.copy()
 if genre != "Tous":
     df_after_genre = df_after_genre[df_after_genre["Genre"].astype(str) == genre]
 
-with filter_cols[filter_offset + 1]:
-    if FACULTY_COLUMN:
-        faculte = st.selectbox(tr("faculty"), filter_options(df_after_genre, FACULTY_COLUMN), key="filter_faculte")
-    else:
-        faculte = "Tous"
-        st.selectbox(tr("faculty"), ["Tous"], key="filter_faculte", disabled=True)
+with filter_cols[2]:
+    faculte = st.selectbox("Faculté", filter_options(df_after_genre, "Faculté_Institut_g"), key="filter_faculte")
 
 df_after_faculte = df_after_genre.copy()
-if FACULTY_COLUMN and faculte != "Tous":
-    df_after_faculte = df_after_faculte[df_after_faculte[FACULTY_COLUMN].astype(str) == faculte]
+if faculte != "Tous":
+    df_after_faculte = df_after_faculte[df_after_faculte["Faculté_Institut_g"].astype(str) == faculte]
 
-with filter_cols[filter_offset + 2]:
-    if CAMPUS_COLUMN:
-        campus = st.selectbox(tr("campus"), filter_options(df_after_faculte, CAMPUS_COLUMN), key="filter_campus")
-    else:
-        campus = "Tous"
-        st.selectbox(tr("campus"), ["Tous"], key="filter_campus", disabled=True)
+with filter_cols[3]:
+    cursus = st.selectbox("Cursus", filter_options(df_after_faculte, "Cursus"), key="filter_cursus")
 
-df_after_campus = df_after_faculte.copy()
-if CAMPUS_COLUMN and campus != "Tous":
-    df_after_campus = df_after_campus[df_after_campus[CAMPUS_COLUMN].astype(str) == campus]
-
-with filter_cols[filter_offset + 3]:
-    cursus = st.selectbox(tr("program"), filter_options(df_after_campus, "Cursus"), key="filter_cursus")
-
-df_after_cursus = df_after_campus.copy()
+df_after_cursus = df_after_faculte.copy()
 if cursus != "Tous":
     df_after_cursus = df_after_cursus[df_after_cursus["Cursus"].astype(str) == cursus]
 
-with filter_cols[filter_offset + 4]:
-    niveau = st.selectbox(tr("level"), filter_options(df_after_cursus, "Niveau"), key="filter_niveau")
+with filter_cols[4]:
+    niveau = st.selectbox("Niveau", filter_options(df_after_cursus, "Niveau"), key="filter_niveau")
 
 df_filtered = df_after_cursus.copy()
 if niveau != "Tous":
     df_filtered = df_filtered[df_filtered["Niveau"].astype(str) == niveau]
 
 active_filter_labels = []
-if year != "Tous" and not IS_HISTORICAL_PAGE:
+if year != "Tous":
     active_filter_labels.append(f"Année : {year}")
 if genre != "Tous":
     active_filter_labels.append(f"Genre : {genre}")
 if faculte != "Tous":
     active_filter_labels.append(f"Faculté : {faculte}")
-if CAMPUS_COLUMN and campus != "Tous":
-    active_filter_labels.append(f"Campus : {campus}")
 if cursus != "Tous":
     active_filter_labels.append(f"Cursus : {cursus}")
 if niveau != "Tous":
     active_filter_labels.append(f"Niveau : {niveau}")
-active_filter_text = " | ".join(active_filter_labels) if active_filter_labels else tr("no_specific_filter")
+active_filter_text = " | ".join(active_filter_labels) if active_filter_labels else "Aucun filtre spécifique appliqué"
 
 st.markdown(
     f"""
     <div class="respondent-card">
         <div>
-            <div class="label">{tr("population")}</div>
+            <div class="label">Population actuellement analysée</div>
             <div style="font-size:13px; opacity:0.90; margin-top:4px;">{active_filter_text}</div>
         </div>
         <div class="value">{len(df_filtered):,}</div>
@@ -2201,39 +1583,27 @@ st.markdown(
 # Navigation
 # =====================================================
 
-st.markdown(f'<div class="nav-title">{tr("nav_title")}</div>', unsafe_allow_html=True)
+st.markdown('<div class="nav-title">Navigation analytique</div>', unsafe_allow_html=True)
 
 page = st.radio(
-    tr("nav_title"),
-    PAGE_OPTIONS,
+    "Navigation analytique",
+    [
+        "Vue générale des indicateurs",
+        "Comparaison historique",
+        "Facteurs clés d’amélioration",
+        "Résultats descriptifs par section",
+        "Autres questions du questionnaire",
+        "Statistiques inférentielles",
+        "Méthodologie des composantes",
+        "Rapport synthétique imprimable"
+    ],
     horizontal=True,
-    label_visibility="collapsed",
-    key="nav_page",
-    format_func=page_label
+    label_visibility="collapsed"
 )
 
 year_summary_all = build_year_summary(df_coded, q43)
 year_summary_filtered = build_year_summary(df_filtered, q43)
 component_long_filtered = build_component_long(df_filtered)
-
-
-def get_single_year_context(page_key, label="Année à afficher"):
-    """For selected pages, force one year instead of combining all years when global year is Tous."""
-    years_available = sorted(df_coded["Year"].dropna().astype(str).unique().tolist()) if "Year" in df_coded.columns else []
-    if not years_available:
-        return year, df_filtered.copy(), df_original.loc[df_filtered.index].copy()
-
-    if year != "Tous":
-        page_year = str(year)
-    else:
-        default_index = len(years_available) - 1
-        st.info("Cette page n’agrège pas les années. Sélectionnez une année spécifique pour afficher les résultats.")
-        page_year = st.selectbox(label, years_available, index=default_index, key=f"single_year_{page_key}")
-
-    data_page = df_filtered[df_filtered["Year"].astype(str) == page_year].copy()
-    original_page = df_original.loc[data_page.index].copy()
-    return page_year, data_page, original_page
-
 
 # =====================================================
 # Page 1 - Overview
@@ -2242,29 +1612,23 @@ def get_single_year_context(page_key, label="Année à afficher"):
 def page_indicators():
     section_header(
         "Vue générale des indicateurs",
-        "Synthèse dynamique des principaux indicateurs de satisfaction et de recommandation pour une année sélectionnée."
+        "Synthèse dynamique des principaux indicateurs de satisfaction et de recommandation."
     )
 
-    selected_year, data_ind, original_ind = get_single_year_context("indicators")
+    selected_year = year
 
-    if data_ind.empty:
-        st.warning("Aucune donnée disponible pour l’année et les filtres sélectionnés.")
-        return
+    satisfaction_pct = pct_from_mean(df_filtered["Score satisfaction globale"].mean())
+    recommandation_pct = calculate_recommendation_rate(df_filtered, q43)
 
-    local_year_summary = build_year_summary(data_ind, q43)
-
-    satisfaction_pct = pct_from_mean(data_ind["Score satisfaction globale"].mean())
-    recommandation_pct = calculate_recommendation_rate(data_ind, q43)
-
-    delta_sat = compute_previous_delta(local_year_summary, selected_year, "Satisfaction globale")
-    delta_rec = compute_previous_delta(local_year_summary, selected_year, "Taux de recommandation")
+    delta_sat = compute_previous_delta(year_summary_filtered, selected_year, "Satisfaction globale")
+    delta_rec = compute_previous_delta(year_summary_filtered, selected_year, "Taux de recommandation")
 
     c1, c2, c3 = st.columns(3)
 
     with c1:
         kpi_card(
             "Satisfaction globale à l’Université",
-            data_ind["Score satisfaction globale"].mean(),
+            df_filtered["Score satisfaction globale"].mean(),
             "Pourcentage de satisfaction",
             delta=delta_sat
         )
@@ -2280,43 +1644,43 @@ def page_indicators():
     with c3:
         kpi_card(
             "Expérience globale USJ",
-            data_ind["Score expérience globale USJ"].mean(),
+            df_filtered["Score expérience globale USJ"].mean(),
             "Expérience académique et personnelle"
         )
 
     c4, c5, c6 = st.columns(3)
 
     with c4:
-        kpi_card("Enseignement et apprentissage", data_ind["Score enseignement et apprentissage"].mean())
+        kpi_card("Enseignement et apprentissage", df_filtered["Score enseignement et apprentissage"].mean())
 
     with c5:
-        kpi_card("Accompagnement et encadrement", data_ind["Score accompagnement et encadrement"].mean())
+        kpi_card("Accompagnement et encadrement", df_filtered["Score accompagnement et encadrement"].mean())
 
     with c6:
-        kpi_card("Développement des compétences", data_ind["Score développement des compétences"].mean())
+        kpi_card("Développement des compétences", df_filtered["Score développement des compétences"].mean())
 
     c7, c8, c9 = st.columns(3)
 
     with c7:
-        kpi_card("Services de l’USJ", data_ind["Score services USJ"].mean())
+        kpi_card("Services de l’USJ", df_filtered["Score services USJ"].mean())
 
     with c8:
         kpi_card(
             "Vie étudiante et activités",
-            data_ind["Score vie étudiante et activités"].mean(),
+            df_filtered["Score vie étudiante et activités"].mean(),
             "Pas au courant exclu"
         )
 
     with c9:
-        kpi_card("Infrastructures et équipements", data_ind["Score infrastructures et équipements"].mean())
+        kpi_card("Infrastructures et équipements", df_filtered["Score infrastructures et équipements"].mean())
 
     c10, c11 = st.columns(2)
 
     with c10:
-        kpi_card("Frais de scolarité / qualité de l’enseignement", data_ind["Score frais / qualité enseignement"].mean())
+        kpi_card("Frais de scolarité / qualité de l’enseignement", df_filtered["Score frais / qualité enseignement"].mean())
 
     with c11:
-        kpi_card("Frais de scolarité / autres universités", data_ind["Score frais / autres universités"].mean())
+        kpi_card("Frais de scolarité / autres universités", df_filtered["Score frais / autres universités"].mean())
 
     component_summary = pd.DataFrame({
         "Dimension": [
@@ -2331,15 +1695,15 @@ def page_indicators():
             "Frais / autres universités"
         ],
         "Pourcentage": [
-            pct_from_mean(data_ind["Score enseignement et apprentissage"].mean()),
-            pct_from_mean(data_ind["Score accompagnement et encadrement"].mean()),
-            pct_from_mean(data_ind["Score développement des compétences"].mean()),
-            pct_from_mean(data_ind["Score expérience globale USJ"].mean()),
-            pct_from_mean(data_ind["Score services USJ"].mean()),
-            pct_from_mean(data_ind["Score vie étudiante et activités"].mean()),
-            pct_from_mean(data_ind["Score infrastructures et équipements"].mean()),
-            pct_from_mean(data_ind["Score frais / qualité enseignement"].mean()),
-            pct_from_mean(data_ind["Score frais / autres universités"].mean())
+            pct_from_mean(df_filtered["Score enseignement et apprentissage"].mean()),
+            pct_from_mean(df_filtered["Score accompagnement et encadrement"].mean()),
+            pct_from_mean(df_filtered["Score développement des compétences"].mean()),
+            pct_from_mean(df_filtered["Score expérience globale USJ"].mean()),
+            pct_from_mean(df_filtered["Score services USJ"].mean()),
+            pct_from_mean(df_filtered["Score vie étudiante et activités"].mean()),
+            pct_from_mean(df_filtered["Score infrastructures et équipements"].mean()),
+            pct_from_mean(df_filtered["Score frais / qualité enseignement"].mean()),
+            pct_from_mean(df_filtered["Score frais / autres universités"].mean())
         ]
     }).dropna()
 
@@ -2362,10 +1726,10 @@ def page_indicators():
             background="#F7F9FC"
         )
 
-    if False and year == "Tous" and len(local_year_summary) > 1:
+    if year == "Tous" and len(year_summary_filtered) > 1:
         section_header("Évolution synthétique", "Tendance globale des indicateurs principaux sur les années disponibles.")
 
-        trend = local_year_summary[["Année", "Satisfaction globale", "Taux de recommandation"]].melt(
+        trend = year_summary_filtered[["Année", "Satisfaction globale", "Taux de recommandation"]].melt(
             id_vars="Année",
             var_name="Indicateur",
             value_name="Pourcentage"
@@ -2398,522 +1762,249 @@ def page_indicators():
 def page_historical_comparison():
     section_header(
         "Comparaison historique",
-        "Comparaison des questions de la section sélectionnée sur toutes les années disponibles."
+        "Analyse de l’évolution des indicateurs par année, avec écarts, tableaux comparatifs et tests statistiques."
     )
 
-    summary_box(
-        """
-        Cette page compare automatiquement toutes les années disponibles. Le filtre Année n’est pas utilisé dans cette page afin de garder une vraie lecture historique. Les autres filtres actifs restent appliqués.
-        """,
-        color=USJ_BLUE,
-        background="#F7F8FC"
-    )
-
-    data_hist = df_coded.copy()
-
-    if genre != "Tous" and "Genre" in data_hist.columns:
-        data_hist = data_hist[data_hist["Genre"].astype(str) == str(genre)]
-    if FACULTY_COLUMN and faculte != "Tous" and FACULTY_COLUMN in data_hist.columns:
-        data_hist = data_hist[data_hist[FACULTY_COLUMN].astype(str) == str(faculte)]
-    if CAMPUS_COLUMN and campus != "Tous" and CAMPUS_COLUMN in data_hist.columns:
-        data_hist = data_hist[data_hist[CAMPUS_COLUMN].astype(str) == str(campus)]
-    if cursus != "Tous" and "Cursus" in data_hist.columns:
-        data_hist = data_hist[data_hist["Cursus"].astype(str) == str(cursus)]
-    if niveau != "Tous" and "Niveau" in data_hist.columns:
-        data_hist = data_hist[data_hist["Niveau"].astype(str) == str(niveau)]
-
-    if data_hist.empty:
+    if len(year_summary_filtered) == 0:
         st.warning("Aucune donnée disponible pour les filtres sélectionnés.")
         return
 
-    years_hist = sorted(data_hist["Year"].dropna().astype(str).unique().tolist()) if "Year" in data_hist.columns else []
-    if len(years_hist) < 2:
-        st.warning("La comparaison historique nécessite au moins deux années disponibles après application des filtres.")
-        return
+    c1, c2, c3, c4 = st.columns(4)
+    years_available = year_summary_filtered["Année"].nunique()
 
-    def compact_card(title, value, subtitle, color=USJ_BLUE):
-        st.markdown(
-            f"""
-            <div style='background:#FFFFFF;border:1px solid #DDE5F0;border-radius:14px;padding:12px 14px;min-height:92px;box-shadow:0 3px 10px rgba(0,0,0,0.04);font-family:Candara, Arial, sans-serif;'>
-                <div style='font-size:13px;font-weight:900;color:{USJ_TEXT};'>{html_escape(title)}</div>
-                <div style='font-size:26px;font-weight:900;color:{color};margin-top:6px;line-height:1;'>{html_escape(value)}</div>
-                <div style='font-size:12px;color:#667085;margin-top:8px;'>{html_escape(subtitle)}</div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+    with c1:
+        insight_card("Années couvertes", years_available, "Période historique", USJ_BLUE)
 
-    available_sections = list(ALL_SURVEY_SECTION_NUMBERS.keys())
-    selected_section_comp = st.selectbox(
-        "Choisir une section du questionnaire",
-        available_sections,
-        key="historical_section_selector_clean"
+    with c2:
+        latest_year = year_summary_filtered["Année"].max()
+        latest_sat = year_summary_filtered.loc[year_summary_filtered["Année"] == latest_year, "Satisfaction globale"].iloc[0]
+        insight_card("Dernière satisfaction", safe_pct(latest_sat), latest_year, kpi_color_percentage(latest_sat))
+
+    with c3:
+        if years_available > 1:
+            first_sat = year_summary_filtered.sort_values("Année")["Satisfaction globale"].iloc[0]
+            last_sat = year_summary_filtered.sort_values("Année")["Satisfaction globale"].iloc[-1]
+            evolution = last_sat - first_sat
+            insight_card("Évolution globale", f"{evolution:+.1f} pts", "Première vs dernière année", USJ_GREEN if evolution >= 0 else USJ_RED)
+        else:
+            insight_card("Évolution globale", "NA", "Sélectionnez plusieurs années", "#777777")
+
+    with c4:
+        latest_rec = year_summary_filtered.loc[year_summary_filtered["Année"] == latest_year, "Taux de recommandation"].iloc[0]
+        insight_card("Dernière recommandation", safe_pct(latest_rec), latest_year, kpi_color_percentage(latest_rec))
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # Main trend chart
+    trend_cols = ["Satisfaction globale", "Taux de recommandation"]
+    trend = year_summary_filtered[["Année"] + trend_cols].melt(
+        id_vars="Année",
+        var_name="Indicateur",
+        value_name="Pourcentage"
     )
 
-    question_map = get_columns_for_all_questions_section(df_original, selected_section_comp)
-    if not question_map:
-        st.warning("Aucune colonne trouvée dans le fichier Excel pour cette section.")
-        return
+    fig_trend = px.line(
+        trend,
+        x="Année",
+        y="Pourcentage",
+        color="Indicateur",
+        markers=True,
+        text="Pourcentage",
+        color_discrete_sequence=[USJ_BLUE, "#7BC4FF"]
+    )
+    fig_trend.update_traces(texttemplate="%{text:.1f}%", textposition="top center", mode="lines+markers+text")
+    fig_trend.update_layout(
+        title="Évolution de la satisfaction globale et de la recommandation",
+        yaxis_title="Pourcentage",
+        xaxis_title="Année"
+    )
+    theme_layout(fig_trend, height=450)
+    st.plotly_chart(fig_trend, use_container_width=True, config={"displayModeBar": False})
 
-    base_by_year = data_hist.groupby("Year").size().reindex(years_hist).fillna(0).astype(int)
-    k1, k2, k3 = st.columns([1, 1, 1.8])
-    with k1:
-        compact_card("Années comparées", str(len(years_hist)), " | ".join(years_hist), USJ_BLUE)
-    with k2:
-        compact_card("Base totale", f"{len(data_hist):,}".replace(",", " "), "Toutes années", USJ_BLUE_2)
-    with k3:
-        base_txt = " | ".join([f"{y}: {int(base_by_year.loc[y]):,}".replace(',', ' ') for y in years_hist])
-        compact_card("Bases annuelles", base_txt, "Répondants par année", USJ_GOLD)
+    # Component heatmap
+    heatmap_data = component_long_filtered.copy()
+    if not heatmap_data.empty:
+        heatmap_pivot = heatmap_data.pivot_table(
+            index="Dimension",
+            columns="Année",
+            values="Pourcentage",
+            aggfunc="mean"
+        )
 
-    summary_box(
-        f"""
-        La section <b>{html_escape(selected_section_comp)}</b> contient <b>{len(question_map)}</b> question(s). Toutes les questions de cette section sont affichées ci-dessous, sans menu de sélection question par question.
-        """,
-        color=USJ_BLUE,
-        background="#F7F8FC"
+        fig_heat = px.imshow(
+            heatmap_pivot,
+            text_auto=".1f",
+            aspect="auto",
+            color_continuous_scale=PLOTLY_CONT,
+            zmin=70,
+            zmax=85,
+            title="Carte thermique des dimensions par année"
+        )
+        fig_heat.update_traces(textfont=dict(size=13, family="Candara, Arial"), hovertemplate="Dimension=%{y}<br>Année=%{x}<br>Résultat=%{z:.1f}%<extra></extra>")
+        fig_heat.update_layout(
+            xaxis_title="Année",
+            yaxis_title="Dimension",
+            coloraxis_colorbar=dict(title="%")
+        )
+        theme_layout(fig_heat, height=540, showlegend=False)
+        st.plotly_chart(fig_heat, use_container_width=True, config={"displayModeBar": False})
+
+        latest_hm_year = heatmap_pivot.columns[-1]
+        latest_hm = heatmap_pivot[latest_hm_year].dropna().sort_values(ascending=False)
+        if not latest_hm.empty:
+            summary_box(
+                f"""
+                <span style="font-size:20px; font-weight:800; color:{USJ_BLUE};">Lecture de la carte thermique</span><br>
+                En <b>{latest_hm_year}</b>, la dimension la mieux positionnée est
+                <b>{latest_hm.index[0]}</b> avec <b>{latest_hm.iloc[0]:.1f}%</b>, tandis que la dimension
+                la plus fragile est <b>{latest_hm.index[-1]}</b> avec <b>{latest_hm.iloc[-1]:.1f}%</b>.
+                Les couleurs permettent de repérer rapidement les zones de performance élevée et les zones
+                où un suivi institutionnel plus ciblé est recommandé.
+                """,
+                color=USJ_BLUE,
+                background="#F7F9FC"
+            )
+
+        # Year-over-year changes
+        diff_df = heatmap_pivot.copy()
+        if diff_df.shape[1] >= 2:
+            first_year = diff_df.columns[0]
+            last_year = diff_df.columns[-1]
+            diff_df["Évolution"] = diff_df[last_year] - diff_df[first_year]
+            diff_plot = diff_df["Évolution"].reset_index().sort_values("Évolution")
+
+            diff_plot["Libellé"] = diff_plot["Évolution"].apply(lambda x: f"{x:+.2f} pts")
+            diff_plot["Sens"] = np.where(diff_plot["Évolution"] >= 0, "Progression", "Baisse")
+
+            fig_diff = go.Figure()
+            for sens, color in [("Baisse", USJ_RED), ("Progression", USJ_GREEN)]:
+                sub = diff_plot[diff_plot["Sens"] == sens]
+                if not sub.empty:
+                    fig_diff.add_trace(
+                        go.Bar(
+                            x=sub["Évolution"],
+                            y=sub["Dimension"],
+                            orientation="h",
+                            name=sens,
+                            marker=dict(color=color, line=dict(color="white", width=1.2)),
+                            text=sub["Libellé"],
+                            textposition="outside",
+                            cliponaxis=False,
+                            hovertemplate="<b>%{y}</b><br>Évolution: %{x:+.2f} pts<extra></extra>",
+                        )
+                    )
+
+            max_abs = max(1, float(np.nanmax(np.abs(diff_plot["Évolution"]))))
+            fig_diff.add_vline(x=0, line_width=1.5, line_color="#8A94A6")
+            fig_diff.update_layout(
+                title=f"Évolution des dimensions entre {first_year} et {last_year}",
+                xaxis_title="Évolution en points de pourcentage",
+                yaxis_title="",
+                xaxis=dict(range=[-max_abs - 1.2, max_abs + 1.2], zeroline=False),
+                bargap=0.28,
+                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+            )
+            theme_layout(fig_diff, height=540, showlegend=True)
+            st.plotly_chart(fig_diff, use_container_width=True, config={"displayModeBar": True})
+
+            best_gain = diff_plot.sort_values("Évolution", ascending=False).iloc[0]
+            largest_decline = diff_plot.sort_values("Évolution", ascending=True).iloc[0]
+            summary_box(
+                f"""
+                <span style="font-size:20px; font-weight:800; color:{USJ_BLUE};">Lecture comparative</span><br>
+                Entre <b>{first_year}</b> et <b>{last_year}</b>, la plus forte progression concerne
+                <b>{best_gain["Dimension"]}</b> avec <b>{best_gain["Évolution"]:+.1f} points</b>.
+                La dimension la plus en recul est <b>{largest_decline["Dimension"]}</b> avec
+                <b>{largest_decline["Évolution"]:+.1f} points</b>. Ces écarts permettent d’identifier
+                les domaines où les actions semblent produire une amélioration et ceux qui nécessitent
+                une attention prioritaire.
+                """,
+                color=USJ_BLUE,
+                background="#F7F9FC"
+            )
+
+    # Statistical tests table
+    st.markdown(f"<h3 style='color:{USJ_BLUE};'>Tests statistiques de comparaison entre années</h3>", unsafe_allow_html=True)
+
+    stat_rows = []
+    for col in SCORE_COLUMNS:
+        if col in df_filtered.columns:
+            p_value, test_name = anova_or_kruskal(df_filtered, col)
+            stat_rows.append({
+                "Indicateur": SCORE_LABELS[col],
+                "p-value": round(p_value, 3) if pd.notna(p_value) else np.nan,
+                "Interprétation": p_interpretation(p_value)
+            })
+
+    p_rec = chi_square_recommendation(df_filtered, q43)
+    stat_rows.append({
+        "Indicateur": "Taux de recommandation",
+        "p-value": round(p_rec, 3) if pd.notna(p_rec) else np.nan,
+        "Interprétation": p_interpretation(p_rec)
+    })
+
+    stat_df = pd.DataFrame(stat_rows)
+    stat_df["p-value"] = stat_df["p-value"].apply(lambda x: "" if pd.isna(x) else f"{float(x):.3f}")
+
+    def style_pvalue_table(row):
+        interpretation = str(row.get("Interprétation", ""))
+        if "hautement" in interpretation:
+            color = USJ_GREEN
+            bg = "#E8F5E9"
+        elif ("très" in interpretation) or ("significative" in interpretation and "non" not in interpretation):
+            color = USJ_BLUE
+            bg = "#EAF2FF"
+        else:
+            color = "#5F6B7A"
+            bg = "#F2F4F7"
+        return ["", "", f"background-color:{bg}; color:{color}; font-weight:700;"]
+
+    st.dataframe(
+        stat_df.style.apply(style_pvalue_table, axis=1),
+        use_container_width=True,
+        hide_index=True
     )
 
-    def build_historical_distribution_for_question(question_col):
-        rows = []
-        meta_rows = []
-        for year_value in years_hist:
-            year_data = data_hist[data_hist["Year"].astype(str) == str(year_value)].copy()
-            if year_data.empty:
-                continue
-            responses, eligible_index, non_applicable_n, parent_col = get_applicable_response_series(
-                df_original,
-                year_data,
-                question_col
-            )
-            valid = responses.dropna()
-            eligible_n = int(len(eligible_index))
-            valid_n = int(valid.shape[0])
-            missing_n = int(responses.isna().sum()) if eligible_n > 0 else 0
-            missing_pct = missing_n / eligible_n * 100 if eligible_n > 0 else np.nan
-            meta_rows.append({
-                "Année": str(year_value),
-                "Base applicable": eligible_n,
-                "N valide": valid_n,
-                "Données manquantes (%)": missing_pct,
-                "Non applicable": int(non_applicable_n),
-                "Question filtre": clean_other_question_label(parent_col) if parent_col else "Aucune condition",
-            })
-            if valid_n > 0:
-                counts = valid.value_counts(dropna=True).reset_index()
-                counts.columns = ["Réponse", "N"]
-                counts["Pourcentage"] = counts["N"] / counts["N"].sum() * 100
-                for _, row in counts.iterrows():
-                    rows.append({
-                        "Année": str(year_value),
-                        "Réponse": row["Réponse"],
-                        "N": int(row["N"]),
-                        "Pourcentage": float(row["Pourcentage"]),
-                    })
-        return pd.DataFrame(rows), pd.DataFrame(meta_rows)
+    # Table details
+    display_table = year_summary_filtered.copy()
+    for col in display_table.columns:
+        if col not in ["Année", "N"]:
+            display_table[col] = display_table[col].map(lambda x: "" if pd.isna(x) else f"{x:.1f}%")
+    st.markdown(f"<h3 style='color:{USJ_BLUE};'>Tableau comparatif par année</h3>", unsafe_allow_html=True)
+    st.dataframe(display_table, use_container_width=True, hide_index=True)
 
-    def render_comparison_pivot(dist_hist, years_hist, response_label="Réponse", max_rows=None):
-        """USJ-styled comparison table: modalities in rows and years in columns."""
-        if dist_hist.empty:
-            return
+    # Faculty heatmap
+    if faculte == "Tous" and "Faculté_Institut_g" in df_filtered.columns:
+        st.markdown(f"<h3 style='color:{USJ_BLUE};'>Comparaison par faculté et par année</h3>", unsafe_allow_html=True)
 
-        pivot_pct = dist_hist.pivot_table(index="Réponse", columns="Année", values="Pourcentage", aggfunc="sum").fillna(0)
-        pivot_n = dist_hist.pivot_table(index="Réponse", columns="Année", values="N", aggfunc="sum").fillna(0)
-        order = pivot_pct.mean(axis=1).sort_values(ascending=False).index
-        pivot_pct = pivot_pct.loc[order]
-        pivot_n = pivot_n.loc[order]
-
-        if max_rows is not None:
-            pivot_pct = pivot_pct.head(max_rows)
-            pivot_n = pivot_n.loc[pivot_pct.index]
-
-        year_colors = [USJ_BLUE, USJ_RED, USJ_GOLD, USJ_BLUE_2]
-
-        header_cells = [f"<th class='first-col'>{html_escape(response_label)}</th>"]
-        for i, y in enumerate(years_hist):
-            header_cells.append(
-                f"<th><span class='year-dot' style='background:{year_colors[i % len(year_colors)]};'></span>{html_escape(y)}</th>"
-            )
-
-        body_rows = []
-        for resp in pivot_pct.index:
-            cells = [f"<td class='modalite-cell'>{html_escape(resp)}</td>"]
-            for i, y in enumerate(years_hist):
-                pct_val = float(pivot_pct.loc[resp, y]) if y in pivot_pct.columns else 0.0
-                n_val = int(pivot_n.loc[resp, y]) if y in pivot_n.columns else 0
-                color = year_colors[i % len(year_colors)]
-                bar_width = min(100, max(0, pct_val))
-                cells.append(
-                    f"""
-                    <td>
-                        <div class='cell-wrap'>
-                            <div class='mini-bar'>
-                                <div class='mini-fill' style='width:{bar_width:.1f}%; background:{color};'></div>
-                            </div>
-                            <div class='cell-value'>{pct_val:.2f}% <span>({n_val})</span></div>
-                        </div>
-                    </td>
-                    """
-                )
-            body_rows.append("<tr>" + "".join(cells) + "</tr>")
-
-        height = 72 + min(360, 38 * max(1, len(pivot_pct)))
-        table_html = f"""
-        <html>
-        <head>
-        <style>
-            body {{
-                margin:0;
-                font-family:Candara, Arial, sans-serif;
-                color:{USJ_TEXT};
-                background:white;
-            }}
-            .table-card {{
-                border:1px solid #DDE5F0;
-                border-radius:18px;
-                overflow:hidden;
-                box-shadow:0 8px 22px rgba(0,27,117,0.08);
-                background:white;
-            }}
-            .scroll-area {{
-                max-height:{min(360, 38 * max(1, len(pivot_pct)) + 44)}px;
-                overflow:auto;
-            }}
-            table {{
-                width:100%;
-                border-collapse:collapse;
-                font-size:14px;
-            }}
-            thead th {{
-                position:sticky;
-                top:0;
-                z-index:2;
-                background:{USJ_BLUE};
-                color:white;
-                padding:9px 12px;
-                text-align:left;
-                font-weight:900;
-                border-right:1px solid rgba(255,255,255,0.20);
-                white-space:nowrap;
-            }}
-            th.first-col {{ min-width:280px; }}
-            tbody td {{
-                padding:7px 12px;
-                border-bottom:1px solid #E6ECF3;
-                border-right:1px solid #EEF2F8;
-                vertical-align:middle;
-                background:#FFFFFF;
-            }}
-            tbody tr:nth-child(even) td {{ background:#FBFCFE; }}
-            tbody tr:hover td {{ background:#F3F6FF; }}
-            .modalite-cell {{
-                font-weight:900;
-                color:{USJ_BLUE};
-                line-height:1.25;
-            }}
-            .year-dot {{
-                display:inline-block;
-                width:10px;
-                height:10px;
-                border-radius:50%;
-                margin-right:8px;
-                vertical-align:middle;
-            }}
-            .cell-wrap {{
-                display:flex;
-                align-items:center;
-                gap:12px;
-                min-width:170px;
-            }}
-            .mini-bar {{
-                height:8px;
-                width:90px;
-                background:#EEF2F8;
-                border-radius:999px;
-                overflow:hidden;
-                box-shadow:inset 0 1px 2px rgba(0,0,0,0.08);
-            }}
-            .mini-fill {{
-                height:8px;
-                border-radius:999px;
-            }}
-            .cell-value {{
-                font-weight:900;
-                color:{USJ_TEXT};
-                white-space:nowrap;
-            }}
-            .cell-value span {{
-                font-weight:600;
-                color:#667085;
-            }}
-        </style>
-        </head>
-        <body>
-            <div class='table-card'>
-                <div class='scroll-area'>
-                    <table>
-                        <thead><tr>{''.join(header_cells)}</tr></thead>
-                        <tbody>{''.join(body_rows)}</tbody>
-                    </table>
-                </div>
-            </div>
-        </body>
-        </html>
-        """
-        st_components.html(table_html, height=height, scrolling=False)
-
-    def render_clear_comparison_chart(dist_hist, years_hist, title="Comparaison des modalités par année", top_n=12):
-        """Clear grouped horizontal chart using the USJ logo palette."""
-        if dist_hist.empty:
-            return
-        order = (
-            dist_hist.groupby("Réponse", as_index=False)["Pourcentage"].mean()
-            .sort_values("Pourcentage", ascending=False)
-            .head(top_n)["Réponse"].tolist()
+        fac_year = (
+            df_filtered
+            .groupby(["Faculté_Institut_g", "Year"])["Score satisfaction globale"]
+            .mean()
+            .reset_index()
         )
-        chart_df = dist_hist[dist_hist["Réponse"].isin(order)].copy()
-        chart_df["Réponse"] = pd.Categorical(chart_df["Réponse"], categories=list(reversed(order)), ordered=True)
-        fig = px.bar(
-            chart_df,
-            x="Pourcentage",
-            y="Réponse",
-            color="Année",
-            text="Pourcentage",
-            barmode="group",
-            orientation="h",
-            color_discrete_sequence=[USJ_BLUE, USJ_RED, USJ_GOLD, USJ_BLUE_2],
-            hover_data={"N": True, "Pourcentage": ":.2f"},
-            title=title
-        )
-        fig.update_traces(
-            texttemplate="%{text:.1f}%",
-            textposition="outside",
-            marker_line_color="white",
-            marker_line_width=1.1,
-            cliponaxis=False
-        )
-        fig.update_layout(
-            xaxis_title="Pourcentage des réponses valides",
-            yaxis_title="",
-            legend_title="Année",
-            legend=dict(orientation="h", yanchor="bottom", y=1.08, xanchor="left", x=0, font=dict(size=12)),
-            margin=dict(l=40, r=110, t=95, b=45),
-        )
-        fig.update_xaxes(range=[0, min(105, max(10, chart_df["Pourcentage"].max() + 8))])
-        theme_layout(fig, height=max(380, 36 * len(order)), showlegend=True)
-        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": True, "displaylogo": False})
+        fac_year["Satisfaction globale (%)"] = fac_year["Score satisfaction globale"].apply(pct_from_mean)
 
-    def render_historical_positive_kpis(dist_hist, years_hist):
-        """Add yearly positive-answer KPIs for recognized scale questions while keeping original modalities."""
-        if dist_hist is None or dist_hist.empty:
-            return
-
-        positive_rows = []
-        for year_value in years_hist:
-            year_dist = dist_hist[dist_hist["Année"].astype(str) == str(year_value)][["Réponse", "N", "Pourcentage"]].copy()
-            if year_dist.empty:
-                continue
-            positive_summary = get_positive_scale_summary(year_dist)
-            if positive_summary:
-                positive_rows.append({
-                    "Année": str(year_value),
-                    "Label": positive_summary.get("label", "Réponses positives"),
-                    "Subtitle": positive_summary.get("subtitle", "Total des réponses positives"),
-                    "N positif": int(positive_summary.get("N positif", 0)),
-                    "N total": int(positive_summary.get("N total", 0)),
-                    "Pourcentage positif": float(positive_summary.get("Pourcentage positif", np.nan)),
-                })
-
-        if not positive_rows:
-            return
-
-        positive_df = pd.DataFrame(positive_rows)
-        kpi_label = positive_df["Label"].iloc[0]
-        kpi_subtitle = positive_df["Subtitle"].iloc[0]
-
-        st.markdown(
-            f"""
-            <div style='margin:8px 0 8px 0;font-family:Candara, Arial, sans-serif;'>
-                <div style='font-size:18px;font-weight:900;color:{USJ_BLUE};'>{html_escape(kpi_label)} par année</div>
-                <div style='font-size:13px;color:#667085;margin-top:2px;'>{html_escape(kpi_subtitle)}. Les modalités originales restent affichées dans le graphique et le tableau ci-dessous.</div>
-            </div>
-            """,
-            unsafe_allow_html=True
+        fac_pivot = fac_year.pivot_table(
+            index="Faculté_Institut_g",
+            columns="Year",
+            values="Satisfaction globale (%)",
+            aggfunc="mean"
         )
 
-        card_cols = st.columns(len(positive_df))
-        for col, (_, row) in zip(card_cols, positive_df.iterrows()):
-            pct = row["Pourcentage positif"]
-            color = kpi_color_percentage(pct)
-            with col:
-                st.markdown(
-                    f"""
-                    <div style='background:#FFFFFF;border:1px solid #DDE5F0;border-left:7px solid {color};border-radius:16px;padding:13px 15px;min-height:104px;box-shadow:0 5px 14px rgba(0,27,117,0.06);font-family:Candara, Arial, sans-serif;'>
-                        <div style='font-size:13px;font-weight:900;color:{USJ_TEXT};'>{html_escape(row['Année'])}</div>
-                        <div style='font-size:31px;font-weight:900;color:{color};line-height:1;margin-top:7px;'>{safe_pct(pct)}</div>
-                        <div style='font-size:13px;font-weight:800;color:{USJ_BLUE};margin-top:7px;'>{int(row['N positif']):,} / {int(row['N total']):,}</div>
-                    </div>
-                    """.replace(",", " "),
-                    unsafe_allow_html=True
-                )
-
-
-    def render_age_comparison(question_col):
-        age_rows = []
-        band_rows = []
-        labels = ["Moins de 20 ans", "20-21 ans", "22-23 ans", "24-25 ans", "26-29 ans", "30-34 ans", "35 ans et plus"]
-        bins = [0, 20, 22, 24, 26, 30, 35, 150]
-        for year_value in years_hist:
-            year_data = data_hist[data_hist["Year"].astype(str) == str(year_value)].copy()
-            responses, eligible_index, non_applicable_n, parent_col = get_applicable_response_series(df_original, year_data, question_col)
-            age_numeric = pd.to_numeric(responses, errors="coerce").dropna()
-            if age_numeric.empty:
-                continue
-            age_rows.append({
-                "Année": str(year_value),
-                "Moyenne": float(age_numeric.mean()),
-                "Médiane": float(age_numeric.median()),
-                "N valide": int(age_numeric.shape[0]),
-            })
-            grouped = pd.cut(age_numeric, bins=bins, labels=labels, right=False)
-            counts = grouped.value_counts().reindex(labels).fillna(0).astype(int)
-            total = int(counts.sum())
-            for band, n in counts.items():
-                band_rows.append({
-                    "Année": str(year_value),
-                    "Tranche d’âge": str(band),
-                    "N": int(n),
-                    "Pourcentage": (int(n) / total * 100) if total > 0 else np.nan,
-                })
-        age_df = pd.DataFrame(age_rows)
-        band_df = pd.DataFrame(band_rows)
-        if age_df.empty:
-            st.warning("Aucune donnée numérique valide disponible pour l’âge.")
-            return
-
-        c1, c2, c3 = st.columns(3)
-        with c1:
-            compact_card("Âge moyen", f"{age_df.iloc[-1]['Moyenne']:.1f}", f"Dernière année : {age_df.iloc[-1]['Année']}", USJ_BLUE)
-        with c2:
-            compact_card("Âge médian", f"{age_df.iloc[-1]['Médiane']:.1f}", "Dernière année", USJ_BLUE_2)
-        with c3:
-            delta = age_df.sort_values("Année").iloc[-1]["Moyenne"] - age_df.sort_values("Année").iloc[0]["Moyenne"] if len(age_df) >= 2 else np.nan
-            compact_card("Évolution moyenne", f"{delta:+.1f} an" if pd.notna(delta) else "NA", f"{years_hist[0]} à {years_hist[-1]}", USJ_RED if pd.notna(delta) and delta < 0 else USJ_GOLD)
-
-        fig_mean = go.Figure()
-        fig_mean.add_trace(go.Scatter(
-            x=age_df["Année"], y=age_df["Moyenne"], mode="lines+markers+text",
-            name="Moyenne", text=age_df["Moyenne"].map(lambda x: f"{x:.1f}"), textposition="top center",
-            line=dict(color=USJ_BLUE, width=4), marker=dict(size=11, color=USJ_BLUE, line=dict(color="white", width=2)),
-            hovertemplate="Année=%{x}<br>Âge moyen=%{y:.2f}<extra></extra>"
-        ))
-        fig_mean.add_trace(go.Scatter(
-            x=age_df["Année"], y=age_df["Médiane"], mode="lines+markers+text",
-            name="Médiane", text=age_df["Médiane"].map(lambda x: f"{x:.1f}"), textposition="bottom center",
-            line=dict(color=USJ_RED, width=3, dash="dot"), marker=dict(size=10, color=USJ_RED, line=dict(color="white", width=2)),
-            hovertemplate="Année=%{x}<br>Âge médian=%{y:.2f}<extra></extra>"
-        ))
-        fig_mean.update_layout(title="Évolution de l’âge moyen et médian", xaxis_title="Année", yaxis_title="Âge")
-        theme_layout(fig_mean, height=360, showlegend=True)
-        st.plotly_chart(fig_mean, use_container_width=True, config={"displayModeBar": False})
-
-        if not band_df.empty:
-            fig_band = px.bar(
-                band_df,
-                x="Tranche d’âge",
-                y="Pourcentage",
-                color="Année",
-                text="Pourcentage",
-                barmode="group",
-                color_discrete_sequence=[USJ_BLUE, USJ_RED, USJ_GOLD, USJ_BLUE_2],
-                hover_data={"N": True, "Pourcentage": ":.2f"},
-                title="Comparaison par tranches d’âge"
-            )
-            fig_band.update_traces(texttemplate="%{text:.1f}%", textposition="outside", marker_line_color="white", marker_line_width=1.2)
-            fig_band.update_layout(xaxis_title="Tranche d’âge", yaxis_title="Pourcentage des âges valides", legend_title="Année")
-            fig_band.update_xaxes(tickangle=-20)
-            theme_layout(fig_band, height=420, showlegend=True)
-            st.plotly_chart(fig_band, use_container_width=True, config={"displayModeBar": False})
-
-        display_age = age_df.copy()
-        display_age["Moyenne"] = display_age["Moyenne"].map(lambda x: f"{x:.2f}")
-        display_age["Médiane"] = display_age["Médiane"].map(lambda x: f"{x:.2f}")
-        st.dataframe(display_age, use_container_width=True, hide_index=True)
-
-    current_main_group = None
-    for idx, (question_label, question_col) in enumerate(question_map.items(), start=1):
-        group_info = get_main_question_group_header(question_col)
-        group_code = group_info["code"] if group_info else None
-        if group_code and group_code != current_main_group:
-            render_main_question_group_header(group_info)
-            current_main_group = group_code
-        elif not group_code:
-            current_main_group = None
-
-        st.markdown(
-            f"""
-            <div style='background:#FFFFFF;border:1px solid #DDE5F0;border-left:7px solid {USJ_BLUE};border-radius:16px;padding:10px 14px;margin:6px 0 2px 0;box-shadow:0 3px 10px rgba(0,0,0,0.04);font-family:Candara, Arial, sans-serif;'>
-                <div style='font-size:12px;font-weight:900;color:#667085;margin-bottom:4px;'>Question / variable</div>
-                <div style='font-size:19px;font-weight:900;color:{USJ_BLUE};line-height:1.35;'>{html_escape(question_label)}</div>
-                <div style='font-size:12px;color:#667085;margin-top:6px;'>Variable Excel : {html_escape(question_col)}</div>
-            </div>
-            """,
-            unsafe_allow_html=True
+        fig_fac = px.imshow(
+            fac_pivot,
+            text_auto=".1f",
+            aspect="auto",
+            color_continuous_scale=PLOTLY_CONT,
+            zmin=65,
+            zmax=100,
+            title="Satisfaction globale par faculté et par année"
         )
-
-        if normalize_question_key(question_col) in {"age", "âge"} or normalize_question_key(question_label) in {"age", "âge"}:
-            render_age_comparison(question_col)
-            continue
-
-        dist_hist, metadata = build_historical_distribution_for_question(question_col)
-        if metadata.empty:
-            st.warning("Aucune information disponible pour cette question.")
-            continue
-
-        parent_label = metadata["Question filtre"].iloc[0] if "Question filtre" in metadata.columns else "Aucune condition"
-        if parent_label != "Aucune condition":
-            st.markdown(
-                f"<div style='font-size:12px;color:#667085;margin-top:-2px;margin-bottom:6px;'>Question conditionnelle liée à : <b>{html_escape(parent_label)}</b></div>",
-                unsafe_allow_html=True
-            )
-
-        total_valid = int(metadata["N valide"].sum())
-        total_base = int(metadata["Base applicable"].sum())
-        avg_missing = metadata["Données manquantes (%)"].replace([np.inf, -np.inf], np.nan).mean()
-        modalities_n = int(dist_hist["Réponse"].dropna().nunique()) if not dist_hist.empty else 0
-
-        c1, c2, c3 = st.columns(3)
-        with c1:
-            compact_card("Base applicable", f"{total_base:,}".replace(",", " "), "Somme annuelle", USJ_BLUE_2)
-        with c2:
-            compact_card("N valide", f"{total_valid:,}".replace(",", " "), "Réponses valides", USJ_BLUE)
-        with c3:
-            compact_card("Données manquantes moy.", safe_pct(avg_missing), "Moyenne annuelle", USJ_RED if pd.notna(avg_missing) and avg_missing > 10 else USJ_GOLD)
-
-        if dist_hist.empty or total_valid == 0:
-            st.warning("Aucune réponse valide disponible pour cette question sur les années comparées.")
-            continue
-
-        with st.expander("Voir les bases de calcul par année", expanded=False):
-            meta_display = metadata.copy()
-            meta_display["Données manquantes (%)"] = meta_display["Données manquantes (%)"].map(lambda x: "" if pd.isna(x) else f"{x:.1f}%")
-            st.dataframe(meta_display[["Année", "Base applicable", "N valide", "Données manquantes (%)", "Non applicable"]], use_container_width=True, hide_index=True)
-
-        if modalities_n > 30:
-            st.markdown(f"<h3 style='color:{USJ_BLUE}; margin-top:4px;margin-bottom:2px;'>Tableau comparatif des modalités les plus fréquentes</h3>", unsafe_allow_html=True)
-            render_comparison_pivot(dist_hist, years_hist, response_label="Modalité", max_rows=60)
-            continue
-
-        render_historical_positive_kpis(dist_hist, years_hist)
-
-        st.markdown(f"<h3 style='color:{USJ_BLUE}; margin-top:4px;margin-bottom:2px;'>Distribution comparative</h3>", unsafe_allow_html=True)
-        render_clear_comparison_chart(
-            dist_hist,
-            years_hist,
-            title="Comparaison des réponses par année",
-            top_n=12
-        )
-        st.markdown(f"<h3 style='color:{USJ_BLUE}; margin-top:4px;margin-bottom:2px;'>Tableau comparatif par année</h3>", unsafe_allow_html=True)
-        render_comparison_pivot(dist_hist, years_hist, response_label="Réponse")
+        fig_fac.update_traces(textfont=dict(size=12, family="Candara, Arial"), hovertemplate="Faculté=%{y}<br>Année=%{x}<br>Satisfaction=%{z:.1f}%<extra></extra>")
+        fig_fac.update_layout(xaxis_title="Année", yaxis_title="Faculté", coloraxis_colorbar=dict(title="%"))
+        theme_layout(fig_fac, height=max(520, 26 * len(fac_pivot)), showlegend=False)
+        st.plotly_chart(fig_fac, use_container_width=True, config={"displayModeBar": False})
 
 
 # =====================================================
@@ -3254,6 +2345,7 @@ def page_descriptive_sections():
 
         dist_q = dist[dist["Question"] == selected_question_short]
 
+        color_order = get_plotly_color_category_order_for_responses(dist_q["Réponse"])
         fig_dist = px.bar(
             dist_q,
             x="Année",
@@ -3262,7 +2354,8 @@ def page_descriptive_sections():
             text="Pourcentage",
             barmode="stack",
             color_discrete_map=RESPONSE_COLORS,
-            hover_data={"Question complète": True, "N": True}
+            hover_data={"Question complète": True, "N": True},
+            category_orders={"Réponse": color_order} if color_order else None
         )
         fig_dist.update_traces(texttemplate="%{text:.2f}%", textposition="inside", hovertemplate="Réponse: %{fullData.name}<br>Année: %{x}<br>Pourcentage: %{y:.2f}%<extra></extra>")
         fig_dist.update_layout(
@@ -3465,584 +2558,246 @@ def build_inferential_results(data, group_col, variables_dict):
     return pd.DataFrame(rows)
 
 
-
 def page_inferential_statistics():
     section_header(
-        "Statistiques inférentielles par question",
-        "Comparaison statistique des réponses aux questions du questionnaire selon le genre, la faculté, le campus et le niveau."
+        "Statistiques inférentielles par variables démographiques",
+        "Comparaison des moyennes des dimensions et des questions selon le genre, la faculté, le niveau et la langue de démarrage."
     )
 
     summary_box(
-        """
-        Cette section teste directement les réponses brutes des questions du questionnaire, sans utiliser les scores agrégés.
-        Dans le profil des répondants, les autres variables démographiques restent comparées à la variable sélectionnée, en excluant seulement l’auto-comparaison directe comme Genre selon Genre.
+        f"""
+        Cette section permet de tester si les résultats moyens diffèrent significativement entre les groupes démographiques.
+        Les moyennes sont présentées en pourcentage afin de rester cohérentes avec les autres pages du tableau de bord.
+        Pour deux groupes, le tableau utilise un <b>Welch t-test</b>. Pour trois groupes ou plus, il utilise une <b>ANOVA</b>. Les comparaisons couvrent aussi la <b>Langue de démarrage</b> lorsque cette colonne existe dans le fichier.
+        Une p-value inférieure à <b>0.050</b> indique une différence statistiquement significative entre les groupes comparés.
         """,
         color=USJ_BLUE,
         background="#F7F9FC"
     )
 
-    data_inf = df_filtered.copy()
-    original_inf = df_original.loc[data_inf.index].copy()
-
-    if data_inf.empty:
-        st.warning("Aucune donnée disponible avec les filtres sélectionnés.")
-        return
-
-    inferential_group_candidates = {
-        "Genre": ["Genre"],
-        "Faculté": ["Faculté_Institut_g", "Faculté_Institut", "Faculté", "Institut"],
-        "Campus": ["Campus", "campus", "Campus_g", "Campus principal", "Campus_principal", "Site", "site"],
-        "Niveau": ["Niveau", "Niveau_Lib"],
+    # Variables requested for inferential comparisons.
+    # The language variable can have different names depending on the Excel export,
+    # so the code detects the available column automatically.
+    demographic_candidates = {
+        "Genre": "Genre",
+        "Faculté_Institut_g": "Faculté / Institut",
+        "Niveau_Lib": "Niveau",
+        "startlanguage": "Langue de démarrage",
+        "StartLanguage": "Langue de démarrage",
+        "start_language": "Langue de démarrage",
+        "Langue": "Langue de démarrage",
+        "Language": "Langue de démarrage",
     }
 
-    available_groups = {}
-    for display_name, candidates in inferential_group_candidates.items():
-        found_col = resolve_first_existing_column(data_inf, candidates)
-        if found_col:
-            available_groups[display_name] = found_col
+    available_demo = {}
+    for col, label in demographic_candidates.items():
+        if col in df_filtered.columns:
+            # Avoid displaying duplicated language entries if several aliases exist.
+            if label == "Langue de démarrage" and "Langue de démarrage" in available_demo.values():
+                continue
+            available_demo[col] = label
 
-    if not available_groups:
-        st.warning("Aucune des variables de comparaison demandées n’est disponible dans le fichier filtré.")
+    if "Niveau_Lib" not in available_demo and "Niveau" in df_filtered.columns:
+        available_demo["Niveau"] = "Niveau"
+
+    if not available_demo:
+        st.warning("Aucune des variables démographiques demandées n’est disponible dans le fichier filtré.")
         return
 
-    control_cols = st.columns([1.1, 2.2])
-    with control_cols[0]:
-        selected_group_label = st.selectbox(
-            "Comparer les réponses selon",
-            list(available_groups.keys()),
-            key="inferential_question_group_selector"
+    controls = st.columns([1.4, 1.2, 1.8])
+    with controls[0]:
+        selected_demo = st.selectbox(
+            "Variable démographique",
+            list(available_demo.keys()),
+            format_func=lambda x: available_demo[x]
         )
-    selected_group_col = available_groups[selected_group_label]
-
-    with control_cols[1]:
-        available_sections = list(ALL_SURVEY_SECTION_NUMBERS.keys())
-        selected_section_inf = st.selectbox(
-            "Choisir une section du questionnaire",
-            available_sections,
-            key="inferential_question_section_selector"
+    with controls[1]:
+        analysis_level = st.selectbox(
+            "Niveau d’analyse",
+            ["Moyennes des sections", "Questions d’une section"]
         )
+    with controls[2]:
+        selected_section_inf = None
+        if analysis_level == "Questions d’une section":
+            available_sections = [sec for sec, items in components.items() if len(items) > 0]
+            selected_section_inf = st.selectbox("Section à comparer", available_sections)
 
-    question_map = get_columns_for_all_questions_section(df_original, selected_section_inf)
-    if not question_map:
-        st.warning("Aucune colonne trouvée dans le fichier Excel pour cette section.")
-        return
-
-    def is_self_comparison_question(question_label, question_col):
-        """Exclude comparisons where the tested question is the same concept as the comparison variable."""
-        q_label_norm = normalize_question_key(question_label)
-        q_col_norm = normalize_question_key(question_col)
-        group_col_norm = normalize_question_key(selected_group_col)
-        group_label_norm = normalize_question_key(selected_group_label)
-
-        if q_col_norm == group_col_norm:
-            return True
-
-        if selected_group_label == "Genre":
-            return q_label_norm == "genre" or q_col_norm == "genre"
-
-        if selected_group_label == "Faculté":
-            return (
-                "faculte" in q_label_norm
-                or "faculte" in q_col_norm
-                or "institut" in q_label_norm
-                or q_col_norm in {"faculte_institut", "faculte_institut_g", "faculty"}
-            )
-
-        if selected_group_label == "Campus":
-            return "campus" in q_label_norm or q_col_norm in {"campus", "campus_g", "site"}
-
-        if selected_group_label == "Niveau":
-            return q_label_norm == "niveau" or q_col_norm in {"niveau", "niveau_lib"}
-
-        return group_label_norm in q_label_norm or group_col_norm == q_col_norm
-
-    def chi_square_question_test(question_label, question_col):
-        if is_self_comparison_question(question_label, question_col):
-            return None, None, "Question identique à la variable de comparaison"
-
-        responses, eligible_index, non_applicable_n, parent_col = get_applicable_response_series(
-            df_original,
-            data_inf,
-            question_col
-        )
-
-        if len(eligible_index) == 0:
-            return None, None, "Base applicable nulle"
-
-        response_values = responses.map(clean_response_value)
-
-        # In the demographic profile section, keep the comparison between demographic variables.
-        # Age is treated as age groups instead of raw single-year values, otherwise it becomes unreadable
-        # and most ages are excluded because of small frequencies.
-        is_profile_section = selected_section_inf == "Profil des répondants"
-        q_norm_for_profile = normalize_question_key(question_col)
-        q_label_norm_for_profile = normalize_question_key(question_label)
-        if is_profile_section and (q_norm_for_profile in {"age", "âge"} or q_label_norm_for_profile in {"age", "âge"}):
-            age_numeric = pd.to_numeric(responses, errors="coerce")
-            bins = [0, 20, 22, 24, 26, 29, 34, 39, 49, 150]
-            labels = ["Moins de 20 ans", "20-21 ans", "22-23 ans", "24-25 ans", "26-29 ans", "30-34 ans", "35-39 ans", "40-49 ans", "50 ans et plus"]
-            response_values = pd.cut(age_numeric, bins=bins, labels=labels, right=False).astype(object)
-
-        temp = pd.DataFrame({
-            "Groupe": data_inf.loc[eligible_index, selected_group_col].map(clean_response_value),
-            "Réponse": response_values,
-        }).dropna(subset=["Groupe", "Réponse"])
-
-        n_valid = int(len(temp))
-
-        group_counts = temp["Groupe"].value_counts()
-        response_counts = temp["Réponse"].value_counts()
-
-        if group_counts.shape[0] < 2:
-            return None, None, "Moins de deux groupes valides"
-        if response_counts.shape[0] < 2:
-            return None, None, "Moins de deux modalités de réponse"
-
-        contingency = pd.crosstab(temp["Réponse"], temp["Groupe"])
-        if contingency.shape[0] < 2 or contingency.shape[1] < 2:
-            return None, None, "Tableau croisé insuffisant"
-
-        if stats is None:
-            return None, None, "SciPy non disponible"
-
-        try:
-            chi2, p_value, dof, expected = stats.chi2_contingency(contingency)
-        except Exception:
-            return None, None, "Test non calculable"
-
-        total = contingency.to_numpy().sum()
-        min_dim = min(contingency.shape[0] - 1, contingency.shape[1] - 1)
-        cramers_v = np.sqrt((chi2 / total) / min_dim) if total > 0 and min_dim > 0 else np.nan
-
-        if pd.isna(p_value):
-            interpretation = "Non calculable"
-        elif p_value < 0.001:
-            interpretation = "Différence hautement significative"
-        elif p_value < 0.01:
-            interpretation = "Différence très significative"
-        elif p_value < 0.05:
-            interpretation = "Différence significative"
-        else:
-            interpretation = "Différence non significative"
-
-        if pd.isna(cramers_v):
-            effect_label = "NA"
-        elif cramers_v < 0.10:
-            effect_label = "Très faible"
-        elif cramers_v < 0.30:
-            effect_label = "Faible"
-        elif cramers_v < 0.50:
-            effect_label = "Modéré"
-        else:
-            effect_label = "Fort"
-
-        row = {
-            "Section": selected_section_inf,
-            "Question": question_label,
-            "Variable Excel": question_col,
-            "Variable de comparaison": selected_group_label,
-            "Base applicable": int(len(eligible_index)),
-            "Non applicable": int(non_applicable_n),
-            "N valide": n_valid,
-            "Groupes": int(group_counts.shape[0]),
-            "Modalités": int(response_counts.shape[0]),
-            "p-value": float(p_value),
-            "V de Cramer": float(cramers_v) if pd.notna(cramers_v) else np.nan,
-            "Effet": effect_label,
-            "Interprétation": interpretation,
-            "Question filtre": clean_other_question_label(parent_col) if parent_col else "Aucune condition",
+    if analysis_level == "Moyennes des sections":
+        variables_dict = {
+            col: SCORE_LABELS[col]
+            for col in SCORE_COLUMNS
+            if col in df_filtered.columns and df_filtered[col].notna().sum() > 0
         }
-        return row, temp, None
+        title_suffix = "les dimensions"
+    else:
+        items = [item for item in components.get(selected_section_inf, []) if item in df_filtered.columns]
+        variables_dict = {item: clean_question_name(item) for item in items}
+        title_suffix = f"les questions de la section {selected_section_inf}"
 
-    results = []
-    details = {}
-    excluded = []
-
-    for question_label, question_col in question_map.items():
-        if should_exclude_question_from_presentation(question_col):
-            continue
-        row, temp, reason = chi_square_question_test(question_label, question_col)
-        if row is not None:
-            results.append(row)
-            details[question_label] = temp
-        else:
-            excluded.append({"Question": question_label, "Variable Excel": question_col, "Raison d’exclusion": reason})
-
-    results_df = pd.DataFrame(results)
-    excluded_df = pd.DataFrame(excluded)
-
-    c1, c2, c3, c4 = st.columns(4)
-    with c1:
-        insight_card("Variable comparée", selected_group_label, "Groupes de comparaison", USJ_BLUE)
-    with c2:
-        insight_card("Questions testées", len(results_df), "Tests calculés", USJ_GREEN if len(results_df) > 0 else USJ_RED)
-    with c3:
-        significant_n = int(results_df["p-value"].lt(0.05).sum()) if not results_df.empty else 0
-        insight_card("Différences significatives", significant_n, "p-value < 0.050", USJ_GREEN if significant_n > 0 else USJ_GOLD)
-    with c4:
-        insight_card("Questions exclues", len(excluded_df), "Base nulle ou auto-comparaison", USJ_ORANGE if len(excluded_df) > 0 else USJ_GREEN)
-
-    if results_df.empty:
-        st.warning("Aucune question de cette section ne peut être testée avec les filtres sélectionnés.")
-        if not excluded_df.empty:
-            with st.expander("Voir les questions exclues"):
-                st.dataframe(excluded_df, use_container_width=True, hide_index=True)
+    if not variables_dict:
+        st.warning("Aucune variable numérique disponible pour cette comparaison.")
         return
 
-    results_df = results_df.sort_values(["p-value", "V de Cramer"], ascending=[True, False]).reset_index(drop=True)
+    mean_table = build_group_mean_table(df_filtered, selected_demo, variables_dict)
+    inferential_df = build_inferential_results(df_filtered, selected_demo, variables_dict)
 
-    # The inferential page remains simple by default.
-    # Detailed statistical tables and visual comparisons are available only through buttons,
-    # so readers are not overloaded unless they choose to go deeper.
+    if mean_table.empty:
+        st.warning("Aucune donnée valide disponible après application des filtres.")
+        return
 
-    significant = results_df[results_df["p-value"] < 0.05]
-    if not significant.empty:
-        strongest = significant.iloc[0]
+    group_count = mean_table["Groupe"].nunique()
+    variable_count = mean_table["Variable"].nunique()
+    significant_count = inferential_df["p_numeric"].lt(0.05).sum() if "p_numeric" in inferential_df.columns else 0
+
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        insight_card("Groupes comparés", group_count, available_demo[selected_demo], USJ_BLUE)
+    with c2:
+        insight_card("Indicateurs analysés", variable_count, title_suffix, USJ_BLUE_2)
+    with c3:
+        insight_card("Différences significatives", significant_count, "p-value < 0.050", USJ_GREEN if significant_count > 0 else "#777777")
+
+    tab_heat, tab_detail, tab_tests = st.tabs([
+        "Vue comparative interactive",
+        "Comparaison détaillée",
+        "Tests statistiques"
+    ])
+
+    with tab_heat:
+        pivot = mean_table.pivot_table(index="Variable", columns="Groupe", values="Moyenne (%)", aggfunc="mean")
+        pivot = pivot.loc[[variables_dict[col] for col in variables_dict.keys() if variables_dict[col] in pivot.index]]
+        wrapped_index = [wrap_plot_label(x, 44) for x in pivot.index]
+        pivot_display = pivot.copy()
+        pivot_display.index = wrapped_index
+
+        fig_heat = px.imshow(
+            pivot_display,
+            text_auto=".2f",
+            aspect="auto",
+            color_continuous_scale=PLOTLY_CONT,
+            zmin=max(0, np.nanmin(pivot.values) - 5) if np.isfinite(np.nanmin(pivot.values)) else None,
+            zmax=min(100, np.nanmax(pivot.values) + 5) if np.isfinite(np.nanmax(pivot.values)) else None,
+            title=f"Carte comparative des moyennes par {available_demo[selected_demo]}"
+        )
+        fig_heat.update_layout(
+            xaxis_title=available_demo[selected_demo],
+            yaxis_title="Indicateur",
+            coloraxis_colorbar=dict(title="Moyenne (%)"),
+            hoverlabel=dict(bgcolor="white", font_size=13, font_family="Candara")
+        )
+        theme_layout(fig_heat, height=max(520, 46 * len(pivot_display)), showlegend=False)
+        st.plotly_chart(fig_heat, use_container_width=True, config={"displayModeBar": True, "displaylogo": False})
+
+        best_row = mean_table.sort_values("Moyenne (%)", ascending=False).iloc[0]
+        weak_row = mean_table.sort_values("Moyenne (%)", ascending=True).iloc[0]
         summary_box(
             f"""
-            <span style="font-size:20px; font-weight:800; color:{USJ_BLUE};">Lecture inférentielle</span><br>
-            La différence la plus marquée concerne <b>{html_escape(str(strongest['Question']))}</b> selon
-            <b>{html_escape(selected_group_label)}</b>, avec une p-value de <b>{strongest['p-value']:.4f}</b>
-            et un V de Cramer de <b>{strongest['V de Cramer']:.3f}</b>. Les tableaux statistiques et les comparaisons visuelles sont masqués par défaut afin de garder la page simple pour les lecteurs.
+            <span style="font-size:20px; font-weight:800; color:{USJ_BLUE};">Lecture comparative</span><br>
+            Le résultat moyen le plus élevé est observé pour <b>{best_row['Variable']}</b> dans le groupe
+            <b>{best_row['Groupe']}</b>, avec <b>{best_row['Moyenne (%)']:.2f}%</b>.
+            Le résultat moyen le plus faible est observé pour <b>{weak_row['Variable']}</b> dans le groupe
+            <b>{weak_row['Groupe']}</b>, avec <b>{weak_row['Moyenne (%)']:.2f}%</b>.
+            Cette lecture permet de repérer les écarts les plus visibles avant l’interprétation statistique.
             """,
             color=USJ_BLUE,
             background="#F7F9FC"
         )
-    else:
-        summary_box(
-            f"""
-            <span style="font-size:20px; font-weight:800; color:{USJ_GOLD};">Lecture inférentielle</span><br>
-            Aucune question de la section <b>{html_escape(selected_section_inf)}</b> ne présente une différence statistiquement significative
-            selon <b>{html_escape(selected_group_label)}</b> au seuil de 0.050.
-            """,
-            color=USJ_GOLD,
-            background="#FFF8F0"
+
+    with tab_detail:
+        selected_variable_label = st.selectbox(
+            "Indicateur à explorer",
+            list(variables_dict.values())
         )
+        detail = mean_table[mean_table["Variable"] == selected_variable_label].sort_values("Moyenne (%)", ascending=False)
 
-    summary_button_key = f"inferential_show_summary_{selected_group_label}_{selected_section_inf}"
-    if summary_button_key not in st.session_state:
-        st.session_state[summary_button_key] = False
-
-    if st.button("Afficher / masquer la synthèse statistique", key=f"btn_{summary_button_key}", use_container_width=True):
-        st.session_state[summary_button_key] = not st.session_state[summary_button_key]
-
-    if st.session_state[summary_button_key]:
-        st.markdown(f"<h3 style='color:{USJ_BLUE};'>Synthèse des tests par question</h3>", unsafe_allow_html=True)
-        display_results = results_df.copy()
-        display_results["p-value"] = display_results["p-value"].map(lambda x: f"{x:.4f}" if pd.notna(x) else "")
-        display_results["V de Cramer"] = display_results["V de Cramer"].map(lambda x: f"{x:.3f}" if pd.notna(x) else "")
-        st.dataframe(
-            display_results[[
-                "Question", "Variable de comparaison", "N valide", "Groupes", "Modalités",
-                "p-value", "V de Cramer", "Effet", "Interprétation"
-            ]],
-            use_container_width=True,
-            hide_index=True
+        fig_bar = px.bar(
+            detail,
+            x="Groupe",
+            y="Moyenne (%)",
+            text="Moyenne (%)",
+            error_y="Écart-type (%)",
+            color="Moyenne (%)",
+            color_continuous_scale=PLOTLY_CONT,
+            hover_data={"N": True, "Écart-type (%)": ":.2f"},
+            title=f"Comparaison de l’indicateur : {selected_variable_label}"
         )
+        fig_bar.update_traces(texttemplate="%{text:.2f}%", textposition="outside", marker_line_color="white", marker_line_width=1.2)
+        fig_bar.update_layout(
+            xaxis_title=available_demo[selected_demo],
+            yaxis_title="Moyenne (%)",
+            yaxis=dict(range=[0, min(105, max(100, detail["Moyenne (%)"].max() + 10))])
+        )
+        theme_layout(fig_bar, height=520, showlegend=False)
+        st.plotly_chart(fig_bar, use_container_width=True, config={"displayModeBar": True, "displaylogo": False})
 
-    # The detailed visual comparisons are shown automatically.
-    # Only the statistical synthesis table remains behind a button to keep the page readable.
-    detail_source = results_df.sort_values(["p-value", "V de Cramer"], ascending=[True, False]).copy()
+        # Boxplot on the original 1-4 scale for the same indicator
+        reverse_lookup = {v: k for k, v in variables_dict.items()}
+        selected_col = reverse_lookup[selected_variable_label]
+        box_data = df_filtered[[selected_demo, selected_col]].copy()
+        box_data[selected_demo] = box_data[selected_demo].astype(str).str.strip()
+        box_data = box_data.replace({"nan": np.nan, "None": np.nan, "": np.nan})
+        box_data[selected_col] = pd.to_numeric(box_data[selected_col], errors="coerce")
+        box_data = box_data.dropna(subset=[selected_demo, selected_col])
+        box_data["Résultat (%)"] = box_data[selected_col].apply(pct_from_mean)
 
-    st.markdown(
-        f"<h3 style='color:{USJ_BLUE};'>Comparaisons détaillées par question</h3>",
-        unsafe_allow_html=True
-    )
+        fig_box = px.box(
+            box_data,
+            x=selected_demo,
+            y="Résultat (%)",
+            color=selected_demo,
+            points="outliers",
+            color_discrete_sequence=PLOTLY_SEQ,
+            title="Distribution des réponses par groupe"
+        )
+        fig_box.update_layout(
+            xaxis_title=available_demo[selected_demo],
+            yaxis_title="Résultat (%)",
+            showlegend=False
+        )
+        theme_layout(fig_box, height=500, showlegend=False)
+        st.plotly_chart(fig_box, use_container_width=True, config={"displayModeBar": True, "displaylogo": False})
 
-    for _, selected_row in detail_source.iterrows():
-        selected_question_detail = selected_row["Question"]
-        detail_temp = details[selected_question_detail].copy()
-        dist = detail_temp.groupby(["Groupe", "Réponse"]).size().reset_index(name="N")
-        dist["Pourcentage"] = dist.groupby("Groupe")["N"].transform(lambda x: x / x.sum() * 100)
+        display_detail = detail[["Groupe", "Moyenne (%)", "Écart-type (%)", "N"]].copy()
+        display_detail["Moyenne (%)"] = display_detail["Moyenne (%)"].map(lambda x: f"{x:.2f}%" if pd.notna(x) else "")
+        display_detail["Écart-type (%)"] = display_detail["Écart-type (%)"].map(lambda x: f"{x:.2f}" if pd.notna(x) else "")
+        st.dataframe(display_detail, use_container_width=True, hide_index=True)
 
-        with st.expander(f"{selected_question_detail} | p-value = {selected_row['p-value']:.4f}", expanded=True):
-            positive_group_rows = []
-            for grp_name, grp_dist in dist.groupby("Groupe"):
-                positive_summary = get_positive_scale_summary(grp_dist[["Réponse", "N", "Pourcentage"]].copy())
-                if positive_summary:
-                    positive_group_rows.append({
-                        "Groupe": grp_name,
-                        "Label": positive_summary.get("label", "Réponses positives"),
-                        "Subtitle": positive_summary.get("subtitle", "Total des réponses positives"),
-                        "N positif": int(positive_summary.get("N positif", 0)),
-                        "N total": int(positive_summary.get("N total", 0)),
-                        "Pourcentage positif": float(positive_summary.get("Pourcentage positif", np.nan)),
-                    })
+    with tab_tests:
+        display_tests = inferential_df.drop(columns=["p_numeric"], errors="ignore").copy()
+        st.dataframe(display_tests, use_container_width=True, hide_index=True)
 
-            if positive_group_rows:
-                positive_group_df = pd.DataFrame(positive_group_rows).sort_values("Pourcentage positif", ascending=False)
-                positive_label = positive_group_df["Label"].iloc[0]
-                positive_subtitle = positive_group_df["Subtitle"].iloc[0]
-                st.markdown(
-                    f"<h4 style='color:{USJ_BLUE}; margin-top:6px;'>{html_escape(positive_label)} selon {html_escape(selected_group_label)}</h4>"
-                    f"<div style='color:#667085; font-size:13px; margin-top:-8px; margin-bottom:10px;'>{html_escape(positive_subtitle)}. Les modalités originales restent affichées dans le graphique et le tableau ci-dessous.</div>",
-                    unsafe_allow_html=True
-                )
-                kpi_cols = st.columns(min(4, len(positive_group_df)))
-                for k, (_, pos_row) in enumerate(positive_group_df.iterrows()):
-                    with kpi_cols[k % len(kpi_cols)]:
-                        color = kpi_color_percentage(pos_row["Pourcentage positif"])
-                        st.markdown(
-                            f"""
-                            <div style='background:#FFFFFF;border:1px solid #DDE5F0;border-left:7px solid {color};border-radius:16px;padding:12px 14px;margin:4px 0 12px 0;box-shadow:0 4px 12px rgba(0,0,0,0.04);font-family:Candara, Arial, sans-serif;'>
-                                <div style='font-size:13px;font-weight:900;color:{USJ_BLUE};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'>{html_escape(str(pos_row['Groupe']))}</div>
-                                <div style='font-size:25px;font-weight:900;color:{color};margin-top:5px;'>{safe_pct(pos_row['Pourcentage positif'])}</div>
-                                <div style='font-size:12px;color:{USJ_BLUE};font-weight:800;margin-top:3px;'>{int(pos_row['N positif']):,} / {int(pos_row['N total']):,}</div>
-                            </div>
-                            """.replace(",", " "),
-                            unsafe_allow_html=True
-                        )
-
-            use_table_only = (dist["Réponse"].nunique() > 6) or (dist["Groupe"].nunique() > 4)
-
-            if not use_table_only:
-                fig = px.bar(
-                    dist,
-                    x="Pourcentage",
-                    y="Réponse",
-                    color="Groupe",
-                    orientation="h",
-                    barmode="group",
-                    text="Pourcentage",
-                    color_discrete_sequence=[USJ_BLUE, USJ_RED, USJ_GOLD, USJ_BLUE_2, USJ_DARK_RED, "#B49C88", "#5E6C84"],
-                    hover_data={"N": True, "Pourcentage": ":.2f"},
-                    title=f"Distribution des réponses selon {selected_group_label}"
-                )
-                fig.update_traces(
-                    texttemplate="%{text:.1f}%",
-                    textposition="outside",
-                    marker_line_color="white",
-                    marker_line_width=1.1,
-                    cliponaxis=False
-                )
-                fig.update_layout(
-                    xaxis_title="Pourcentage des réponses valides dans chaque groupe",
-                    yaxis_title="",
-                    legend_title=selected_group_label,
-                    margin=dict(l=40, r=90, t=90, b=45),
-                )
-                theme_layout(fig, height=max(390, 42 * dist["Réponse"].nunique()), showlegend=True)
-                st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": True, "displaylogo": False}, key=f"inferential_detail_fig_{selected_group_label}_{selected_section_inf}_{re.sub(r'[^A-Za-z0-9_]+', '_', str(selected_question_detail))}")
-            else:
-                st.markdown(
-                    f"""
-                    <div style='background:#F7F9FC;border-left:6px solid {USJ_BLUE};border-radius:14px;padding:12px 16px;margin:8px 0 14px 0;font-family:Candara, Arial, sans-serif;'>
-                        <b>Lecture adaptée :</b> cette question comporte plusieurs modalités ou groupes. Le graphique est remplacé par un tableau interactif afin de garder une lecture claire et professionnelle.
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-
-            render_usj_interactive_cross_table(
-                dist,
-                selected_group_label,
-                title=f"Tableau comparatif par {str(selected_group_label).lower()}"
+        significant = inferential_df[inferential_df["p_numeric"].lt(0.05)].copy()
+        if not significant.empty:
+            significant = significant.sort_values("p_numeric").head(5)
+            items_html = "".join(
+                f"<li><b>{row['Indicateur']}</b> : p-value = <b>{row['p-value']}</b>, {row['Interprétation'].lower()}.</li>"
+                for _, row in significant.iterrows()
+            )
+            summary_box(
+                f"""
+                <span style="font-size:20px; font-weight:800; color:{USJ_GREEN};">Résultats significatifs à retenir</span><br>
+                Les différences statistiquement significatives les plus marquées concernent :
+                <ul style="margin-top:8px; margin-bottom:0;">{items_html}</ul>
+                """,
+                color=USJ_GREEN,
+                background="#F3FAF5"
+            )
+        else:
+            summary_box(
+                f"""
+                <span style="font-size:20px; font-weight:800; color:{USJ_ORANGE};">Lecture statistique</span><br>
+                Aucun indicateur ne présente une différence statistiquement significative au seuil de 0.050 pour
+                la variable <b>{available_demo[selected_demo]}</b> avec les filtres actuellement appliqués.
+                """,
+                color=USJ_ORANGE,
+                background="#FFF8F0"
             )
 
-    with st.expander("Questions exclues des tests inférentiels", expanded=False):
-        if excluded_df.empty:
-            st.info("Aucune question exclue pour cette sélection.")
-        else:
-            st.dataframe(excluded_df, use_container_width=True, hide_index=True)
 
 
 # =====================================================
 # Page 6 - Printable synthetic faculty report
 # =====================================================
-
-
-
-def render_usj_interactive_cross_table(dist, group_label, title=None):
-    """USJ-styled cross table for inferential detail comparisons.
-
-    The variable with fewer modalities is placed in columns to keep horizontal
-    scrolling limited. Percentages remain calculated within each comparison group.
-    """
-    if dist is None or dist.empty:
-        return
-
-    temp = dist.copy()
-    temp["Réponse"] = temp["Réponse"].astype(str)
-    temp["Groupe"] = temp["Groupe"].astype(str)
-
-    n_resp = temp["Réponse"].nunique()
-    n_group = temp["Groupe"].nunique()
-
-    if n_resp <= n_group:
-        row_var = "Groupe"
-        col_var = "Réponse"
-        first_label = group_label
-        column_label = "Réponse"
-    else:
-        row_var = "Réponse"
-        col_var = "Groupe"
-        first_label = "Réponse"
-        column_label = group_label
-
-    pivot_pct = temp.pivot_table(index=row_var, columns=col_var, values="Pourcentage", aggfunc="sum").fillna(0)
-    pivot_n = temp.pivot_table(index=row_var, columns=col_var, values="N", aggfunc="sum").fillna(0)
-
-    # Sort rows by their strongest percentage to make the table easy to scan.
-    row_order = pivot_pct.max(axis=1).sort_values(ascending=False).index
-    pivot_pct = pivot_pct.loc[row_order]
-    pivot_n = pivot_n.loc[row_order]
-
-    # Sort columns by overall weight, while keeping only the low-modality variable in columns.
-    col_order = pivot_pct.mean(axis=0).sort_values(ascending=False).index
-    pivot_pct = pivot_pct[col_order]
-    pivot_n = pivot_n[col_order]
-
-    usj_colors = [USJ_BLUE, USJ_RED, USJ_GOLD, USJ_BLUE_2, USJ_DARK_RED, "#B49C88", "#5E6C84"]
-
-    header_cells = [f"<th class='first-col'>{html_escape(first_label)}</th>"]
-    for i, col in enumerate(pivot_pct.columns):
-        header_cells.append(
-            f"<th><span class='year-dot' style='background:{usj_colors[i % len(usj_colors)]};'></span>{html_escape(col)}</th>"
-        )
-
-    body_rows = []
-    for idx_val in pivot_pct.index:
-        cells = [f"<td class='modalite-cell'>{html_escape(idx_val)}</td>"]
-        for i, col in enumerate(pivot_pct.columns):
-            pct_val = float(pivot_pct.loc[idx_val, col]) if col in pivot_pct.columns else 0.0
-            n_val = int(pivot_n.loc[idx_val, col]) if col in pivot_n.columns else 0
-            color = usj_colors[i % len(usj_colors)]
-            bar_width = min(100, max(0, pct_val))
-            cells.append(
-                f"""
-                <td>
-                    <div class='cell-wrap'>
-                        <div class='mini-bar'>
-                            <div class='mini-fill' style='width:{bar_width:.1f}%; background:{color};'></div>
-                        </div>
-                        <div class='cell-value'>{pct_val:.2f}% <span>({n_val})</span></div>
-                    </div>
-                </td>
-                """
-            )
-        body_rows.append("<tr>" + "".join(cells) + "</tr>")
-
-    table_title = title or f"Tableau comparatif par {html_escape(str(group_label).lower())}"
-    scroll_height = min(430, 36 * max(1, len(pivot_pct)) + 44)
-    component_height = 86 + scroll_height
-
-    table_html = f"""
-    <html>
-    <head>
-    <style>
-        body {{
-            margin:0;
-            font-family:Candara, Arial, sans-serif;
-            color:{USJ_TEXT};
-            background:white;
-        }}
-        .title {{
-            font-size:22px;
-            font-weight:900;
-            color:{USJ_BLUE};
-            margin:0 0 10px 0;
-        }}
-        .subtitle {{
-            font-size:12px;
-            color:#667085;
-            margin:-6px 0 10px 0;
-        }}
-        .table-card {{
-            border:1px solid #DDE5F0;
-            border-radius:18px;
-            overflow:hidden;
-            box-shadow:0 8px 22px rgba(0,27,117,0.08);
-            background:white;
-        }}
-        .scroll-area {{
-            max-height:{scroll_height}px;
-            overflow:auto;
-        }}
-        table {{
-            width:100%;
-            border-collapse:collapse;
-            font-size:14px;
-        }}
-        thead th {{
-            position:sticky;
-            top:0;
-            z-index:2;
-            background:{USJ_BLUE};
-            color:white;
-            padding:9px 12px;
-            text-align:left;
-            font-weight:900;
-            border-right:1px solid rgba(255,255,255,0.20);
-            white-space:nowrap;
-        }}
-        th.first-col {{ min-width:270px; }}
-        tbody td {{
-            padding:7px 12px;
-            border-bottom:1px solid #E6ECF3;
-            border-right:1px solid #EEF2F8;
-            vertical-align:middle;
-            background:#FFFFFF;
-        }}
-        tbody tr:nth-child(even) td {{ background:#FBFCFE; }}
-        tbody tr:hover td {{ background:#F3F6FF; }}
-        .modalite-cell {{
-            font-weight:900;
-            color:{USJ_BLUE};
-            line-height:1.25;
-        }}
-        .year-dot {{
-            display:inline-block;
-            width:10px;
-            height:10px;
-            border-radius:50%;
-            margin-right:8px;
-            vertical-align:middle;
-        }}
-        .cell-wrap {{
-            display:flex;
-            align-items:center;
-            gap:12px;
-            min-width:165px;
-        }}
-        .mini-bar {{
-            height:8px;
-            width:86px;
-            background:#EEF2F8;
-            border-radius:999px;
-            overflow:hidden;
-            box-shadow:inset 0 1px 2px rgba(0,0,0,0.08);
-        }}
-        .mini-fill {{
-            height:8px;
-            border-radius:999px;
-        }}
-        .cell-value {{
-            font-weight:900;
-            color:{USJ_TEXT};
-            white-space:nowrap;
-        }}
-        .cell-value span {{
-            font-weight:600;
-            color:#667085;
-        }}
-    </style>
-    </head>
-    <body>
-        <div class='title'>{html_escape(table_title)}</div>
-        <div class='subtitle'>Les colonnes affichent la variable qui contient le moins de modalités afin de faciliter la lecture et limiter le défilement horizontal.</div>
-        <div class='table-card'>
-            <div class='scroll-area'>
-                <table>
-                    <thead><tr>{''.join(header_cells)}</tr></thead>
-                    <tbody>{''.join(body_rows)}</tbody>
-                </table>
-            </div>
-        </div>
-    </body>
-    </html>
-    """
-    st_components.html(table_html, height=component_height, scrolling=False)
-
 
 def apply_current_filters_without_faculty(data):
     base = data.copy()
@@ -4050,8 +2805,6 @@ def apply_current_filters_without_faculty(data):
         base = base[base["Year"].astype(str) == str(year)]
     if genre != "Tous" and "Genre" in base.columns:
         base = base[base["Genre"].astype(str) == str(genre)]
-    if CAMPUS_COLUMN and campus != "Tous" and CAMPUS_COLUMN in base.columns:
-        base = base[base[CAMPUS_COLUMN].astype(str) == str(campus)]
     if cursus != "Tous" and "Cursus" in base.columns:
         base = base[base["Cursus"].astype(str) == str(cursus)]
     if niveau != "Tous" and "Niveau" in base.columns:
@@ -4092,7 +2845,7 @@ def get_excluded_non_question_columns():
     """Columns that should not be treated as questionnaire items."""
     base_cols = {
         "Year", "Année", "Genre", "Faculté_Institut_g", "Faculté", "Faculté_Institut", "Faculty", "Institut",
-        "Cursus", "Campus", "campus", "Campus_g", "Campus principal", "Campus_principal", "Site", "site", "Niveau", "Niveau_Lib", "startlanguage", "StartLanguage", "Language", "Langue", "Age",
+        "Cursus", "Niveau", "Niveau_Lib", "startlanguage", "StartLanguage", "Language", "Langue", "Age",
         "Date", "Horodateur", "Timestamp", "Institution", "Responsable", "Email", "Adresse e-mail", "ID", "Id", "id",
         "Code", "Nom", "Prénom", "StartDate", "EndDate", "Status", "IPAddress", "Progress", "Duration",
         "Finished", "RecordedDate", "ResponseId", "RecipientLastName", "RecipientFirstName", "RecipientEmail",
@@ -4172,9 +2925,6 @@ def get_other_question_columns(original_data):
     for col in original_data.columns:
         col_str = str(col).strip()
         col_norm = normalize_question_key(col_str)
-
-        if should_exclude_question_from_presentation(col_str):
-            continue
 
         if col_str in excluded:
             continue
@@ -4267,7 +3017,7 @@ def build_other_question_distribution(original_data, coded_filter_data, question
         return pd.DataFrame()
     dist = temp.groupby(["Année", "Réponse"]).size().reset_index(name="N")
     dist["Pourcentage"] = dist.groupby("Année")["N"].transform(lambda x: x / x.sum() * 100)
-    return dist
+    return sort_response_distribution(dist, fallback="frequency_desc")
 
 
 
@@ -4403,938 +3153,6 @@ def summarize_other_questions_for_report(original_data, coded_filter_data, max_q
     out = pd.DataFrame(rows)
     out = out.sort_values(["Priorité", "N valide", "Pourcentage"], ascending=[False, False, False]).head(max_questions)
     return out.drop(columns=["Priorité"], errors="ignore")
-
-
-
-# =====================================================
-# Page - Demographic profile
-# =====================================================
-
-def resolve_first_existing_column(data, candidates):
-    for col in candidates:
-        if col in data.columns:
-            return col
-    return None
-
-
-def make_frequency_table(data, col, top_n=None, include_other=True):
-    if col is None or col not in data.columns:
-        return pd.DataFrame()
-    s = data[col].map(clean_response_value).dropna()
-    if s.empty:
-        return pd.DataFrame()
-    out = s.value_counts().reset_index()
-    out.columns = ["Modalité", "N"]
-    out["Pourcentage"] = out["N"] / out["N"].sum() * 100
-    out = out.sort_values(["N", "Modalité"], ascending=[False, True]).reset_index(drop=True)
-    if top_n is not None and len(out) > top_n:
-        if include_other:
-            top = out.head(top_n).copy()
-            other = pd.DataFrame({
-                "Modalité": ["Autres"],
-                "N": [int(out.iloc[top_n:]["N"].sum())],
-                "Pourcentage": [float(out.iloc[top_n:]["Pourcentage"].sum())]
-            })
-            out = pd.concat([top, other], ignore_index=True)
-        else:
-            out = out.head(top_n).copy()
-    return out.reset_index(drop=True)
-
-
-def render_professional_frequency_table(
-    df,
-    title,
-    note=None,
-    max_rows=None,
-    show_rank=False,
-    sort_by_frequency=True
-):
-    if df is None or df.empty:
-        st.warning(f"Aucune donnée disponible pour {title}.")
-        return
-
-    table = df.copy()
-    if max_rows is not None:
-        table = table.head(max_rows).copy()
-
-    if "Pourcentage" in table.columns:
-        table["Pourcentage"] = pd.to_numeric(table["Pourcentage"], errors="coerce")
-
-    if sort_by_frequency and "Pourcentage" in table.columns:
-        table = table.sort_values(["Pourcentage", "N"], ascending=[False, False]) if "N" in table.columns else table.sort_values("Pourcentage", ascending=False)
-
-    table = table.reset_index(drop=True)
-
-    if show_rank:
-        table.insert(0, "Rang", range(1, len(table) + 1))
-
-    display = table.copy()
-    if "Pourcentage" in display.columns:
-        display["Pourcentage"] = display["Pourcentage"].map(lambda x: "" if pd.isna(x) else f"{x:.2f}%")
-    if "N" in display.columns:
-        display["N"] = display["N"].map(lambda x: "" if pd.isna(x) else f"{int(x):,}".replace(",", " "))
-
-    numeric_cols = ["N", "Pourcentage"]
-
-    header_html = "".join(
-        f"<th style='text-align:{'right' if col in numeric_cols else 'left'};'>{html_escape(col)}</th>"
-        for col in display.columns
-    )
-
-    body_html = ""
-    for _, row in display.iterrows():
-        cells = []
-        for col in display.columns:
-            align = "right" if col in numeric_cols else "left"
-            weight = "800" if col in ["N", "Pourcentage"] else "500"
-            cells.append(f"<td style='text-align:{align}; font-weight:{weight};'>{html_escape(row[col])}</td>")
-        body_html += "<tr>" + "".join(cells) + "</tr>"
-
-    note_html = f"<div style='font-size:13px;color:#667085;margin-top:6px;'>{note}</div>" if note else ""
-
-    st.markdown(
-        f"""
-        <div style='background:#FFFFFF;border:1px solid #DDE5F0;border-radius:18px;padding:18px 20px;margin:18px 0;box-shadow:0 6px 18px rgba(0,0,0,0.05);'>
-            <div style='display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:10px;'>
-                <div>
-                    <div style='font-size:20px;font-weight:900;color:{USJ_BLUE};font-family:Candara, Arial, sans-serif;'>{html_escape(title)}</div>
-                    {note_html}
-                </div>
-                <div style='background:{USJ_LIGHT_BLUE};color:{USJ_BLUE};border-radius:999px;padding:7px 12px;font-size:13px;font-weight:800;'>
-                    {len(table)} modalités
-                </div>
-            </div>
-            <table style='width:100%;border-collapse:collapse;font-family:Candara, Arial, sans-serif;font-size:14px;'>
-                <thead>
-                    <tr style='background:{USJ_BLUE};color:white;'>{header_html}</tr>
-                </thead>
-                <tbody>{body_html}</tbody>
-            </table>
-        </div>
-        <style>
-            table td, table th {{ padding:10px 12px; border-bottom:1px solid #E6ECF3; vertical-align:top; }}
-            table tbody tr:nth-child(even) td {{ background:#FBFCFE; }}
-            table tbody tr:hover td {{ background:#F2F6FF; }}
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
-
-
-def make_age_group_table(age_series):
-    age_numeric = pd.to_numeric(age_series, errors="coerce").dropna()
-    if age_numeric.empty:
-        return pd.DataFrame()
-
-    bins = [0, 20, 22, 24, 26, 29, 34, 39, 49, 150]
-    labels = ["Moins de 20 ans", "20-21 ans", "22-23 ans", "24-25 ans", "26-29 ans", "30-34 ans", "35-39 ans", "40-49 ans", "50 ans et plus"]
-    grouped = pd.cut(age_numeric, bins=bins, labels=labels, right=False)
-    out = grouped.value_counts().reindex(labels).dropna().reset_index()
-    out.columns = ["Modalité", "N"]
-    out = out[out["N"] > 0].copy()
-    out["Pourcentage"] = out["N"] / out["N"].sum() * 100
-    return out.reset_index(drop=True)
-
-
-def make_diploma_faculty_table(data, diplome_col, fac_col, top_n=None):
-    if diplome_col is None or diplome_col not in data.columns:
-        return pd.DataFrame()
-    temp = data[[diplome_col] + ([fac_col] if fac_col and fac_col in data.columns else [])].copy()
-    temp[diplome_col] = temp[diplome_col].map(clean_response_value)
-    if fac_col and fac_col in temp.columns:
-        temp[fac_col] = temp[fac_col].map(clean_response_value)
-    else:
-        temp["Faculté / Institut"] = "Non disponible"
-        fac_col = "Faculté / Institut"
-    temp = temp.dropna(subset=[diplome_col])
-    if temp.empty:
-        return pd.DataFrame()
-
-    rows = []
-    total = len(temp)
-    grouped = temp.groupby([diplome_col, fac_col], dropna=False).size().reset_index(name="N")
-    grouped["Pourcentage"] = grouped["N"] / total * 100
-    grouped = grouped.sort_values(["N", diplome_col], ascending=[False, True])
-    for _, row in grouped.iterrows():
-        rows.append({
-            "Intitulé diplôme": row[diplome_col],
-            "Faculté / Institut": row[fac_col] if pd.notna(row[fac_col]) else "Non renseigné",
-            "N": int(row["N"]),
-            "Pourcentage": float(row["Pourcentage"]),
-        })
-    out = pd.DataFrame(rows)
-    if top_n is not None:
-        out = out.head(top_n).copy()
-    return out.reset_index(drop=True)
-
-
-def demographic_bar_chart(freq, title, orientation="h", height=430):
-    if freq.empty:
-        st.warning(f"Aucune donnée disponible pour {title}.")
-        return
-    plot_df = freq.copy()
-    if orientation == "h":
-        plot_df = plot_df.sort_values("Pourcentage", ascending=True)
-        fig = px.bar(
-            plot_df,
-            x="Pourcentage",
-            y="Modalité",
-            orientation="h",
-            text="Pourcentage",
-            color="Pourcentage",
-            color_continuous_scale=[[0, "#EAF2FF"], [0.5, "#7FA6D9"], [1, USJ_BLUE]],
-            hover_data={"N": True, "Pourcentage": ":.2f"},
-            title=title
-        )
-        fig.update_layout(xaxis_title="Pourcentage", yaxis_title="")
-    else:
-        fig = px.bar(
-            plot_df,
-            x="Modalité",
-            y="Pourcentage",
-            text="Pourcentage",
-            color="Pourcentage",
-            color_continuous_scale=[[0, "#EAF2FF"], [0.5, "#7FA6D9"], [1, USJ_BLUE]],
-            hover_data={"N": True, "Pourcentage": ":.2f"},
-            title=title
-        )
-        fig.update_layout(xaxis_title="", yaxis_title="Pourcentage")
-    fig.update_traces(texttemplate="%{text:.1f}%", textposition="outside", marker_line_color="white", marker_line_width=1)
-    fig.update_layout(coloraxis_showscale=False, margin=dict(l=30, r=70, t=70, b=50))
-    theme_layout(fig, height=height, showlegend=False)
-    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
-
-
-def page_demographics():
-    section_header(
-        "Profil des répondants selon le genre, l’âge, le campus, la faculté ou institut, le niveau et l’intitulé du diplôme."
-    )
-
-    selected_year, data_demo, original_demo = get_single_year_context("demographics")
-
-    if data_demo.empty:
-        st.warning("Aucune donnée disponible pour l’année et les filtres sélectionnés.")
-        return
-
-    genre_col = resolve_first_existing_column(data_demo, ["Genre"])
-    age_col = resolve_first_existing_column(data_demo, ["Age", "Âge"])
-    fac_col = resolve_first_existing_column(data_demo, ["Faculté_Institut", "Faculté_Institut_g", "Faculté", "Institut"])
-    campus_col = resolve_first_existing_column(data_demo, ["Campus", "campus", "Campus_g", "Campus principal", "Campus_principal", "Site", "site"])
-    niveau_col = resolve_first_existing_column(data_demo, ["Niveau", "Niveau_Lib"])
-    diplome_col = resolve_first_existing_column(data_demo, ["Intitulé Diplôme", "Intitulé_Diplôme", "Intitulé Diplome", "Diplôme", "Intitule Diplome"])
-
-    k1, k2, k3, k4, k5 = st.columns(5)
-    with k1:
-        insight_card("Année affichée", selected_year, "Analyse non agrégée", USJ_BLUE)
-    with k2:
-        insight_card("Répondants", len(data_demo), "Base filtrée", USJ_GREEN)
-    with k3:
-        fac_n = data_demo[fac_col].map(clean_response_value).dropna().nunique() if fac_col else 0
-        insight_card("Facultés / Instituts", fac_n, "Modalités observées", USJ_BLUE_2)
-    with k4:
-        campus_n = data_demo[campus_col].map(clean_response_value).dropna().nunique() if campus_col else 0
-        insight_card("Campus", campus_n, "Modalités observées", USJ_ORANGE)
-    with k5:
-        diplome_n = data_demo[diplome_col].map(clean_response_value).dropna().nunique() if diplome_col else 0
-        insight_card("Diplômes", diplome_n, "Intitulés distincts", USJ_GOLD)
-
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    genre_freq = make_frequency_table(data_demo, genre_col)
-    age_numeric = pd.to_numeric(data_demo[age_col], errors="coerce") if age_col else pd.Series(dtype=float)
-    age_group_freq = make_age_group_table(age_numeric) if age_col else pd.DataFrame()
-    fac_freq = make_frequency_table(data_demo, fac_col, top_n=18, include_other=False)
-    campus_freq = make_frequency_table(data_demo, campus_col)
-    niveau_freq = make_frequency_table(data_demo, niveau_col)
-    diplome_fac_table = make_diploma_faculty_table(data_demo, diplome_col, fac_col)
-
-    c_left, c_right = st.columns([1, 1])
-
-    with c_left:
-        if not genre_freq.empty:
-            fig_genre = px.pie(
-                genre_freq,
-                names="Modalité",
-                values="N",
-                hole=0.55,
-                color_discrete_sequence=PLOTLY_SEQ,
-                title="Répartition des répondants par genre"
-            )
-            fig_genre.update_traces(
-                textposition="inside",
-                textinfo="percent+label",
-                hovertemplate="%{label}<br>N=%{value}<br>%{percent}<extra></extra>"
-            )
-            theme_layout(fig_genre, height=430, showlegend=True)
-            st.plotly_chart(fig_genre, use_container_width=True, config={"displayModeBar": False})
-        else:
-            st.warning("Aucune donnée disponible pour le genre.")
-
-    with c_right:
-        if not age_group_freq.empty:
-            plot_age = age_group_freq.copy()
-            fig_age = px.bar(
-                plot_age,
-                x="Modalité",
-                y="Pourcentage",
-                text="Pourcentage",
-                color="Pourcentage",
-                color_continuous_scale=[[0, "#EAF2FF"], [0.5, "#7FA6D9"], [1, USJ_BLUE]],
-                hover_data={"N": True, "Pourcentage": ":.2f"},
-                title="Distribution de l’âge des répondants"
-            )
-            fig_age.update_traces(
-                texttemplate="%{text:.1f}%",
-                textposition="outside",
-                marker_line_color="white",
-                marker_line_width=1.2,
-                cliponaxis=False
-            )
-            fig_age.update_layout(
-                xaxis_title="Tranche d’âge",
-                yaxis_title="Pourcentage des répondants",
-                coloraxis_showscale=False,
-                margin=dict(l=40, r=60, t=75, b=95)
-            )
-            fig_age.update_xaxes(tickangle=-25)
-            theme_layout(fig_age, height=430, showlegend=False)
-            st.plotly_chart(fig_age, use_container_width=True, config={"displayModeBar": False})
-            st.markdown(
-                f"""
-                <div style='background:#F7F9FC;border-left:6px solid {USJ_BLUE};border-radius:14px;padding:12px 16px;margin-top:-6px;'>
-                    <b>Âge moyen :</b> {safe_num(age_numeric.mean(), 1)} ans &nbsp; | &nbsp; <b>Âge médian :</b> {safe_num(age_numeric.median(), 1)} ans
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-        else:
-            st.warning("Aucune donnée numérique disponible pour l’âge.")
-
-    st.divider()
-
-    if campus_col:
-        demographic_bar_chart(campus_freq, "Répartition par campus", orientation="h", height=max(360, 38 * len(campus_freq)))
-        st.divider()
-
-    c_fac, c_niveau = st.columns([1.35, 1])
-    with c_fac:
-        demographic_bar_chart(fac_freq, "Répartition par faculté / institut", orientation="h", height=max(470, 30 * len(fac_freq)))
-
-    with c_niveau:
-        demographic_bar_chart(niveau_freq, "Répartition par niveau", orientation="v", height=470)
-
-    st.divider()
-
-    st.markdown(f"<h3 style='color:{USJ_BLUE};'>Tableaux démographiques détaillés</h3>", unsafe_allow_html=True)
-    summary_box(
-        """
-        Les tableaux ci-dessous remplacent le graphique des intitulés de diplôme afin de permettre une lecture plus précise.
-        Les tableaux de fréquences sont triés automatiquement du pourcentage le plus élevé au plus faible, sauf l’âge qui est présenté selon l’ordre naturel des tranches. Pour les diplômes, la faculté ou l’institut associé est affiché à côté de chaque intitulé.
-        """,
-        color=USJ_BLUE,
-        background="#F7F9FC"
-    )
-
-    t1, t2 = st.columns([1, 1])
-    with t1:
-        render_professional_frequency_table(
-            genre_freq,
-            "Genre des répondants",
-            "Effectifs et pourcentages calculés sur les réponses valides."
-        )
-    with t2:
-        render_professional_frequency_table(
-            age_group_freq,
-            "Âge des répondants par tranche",
-            "Les pourcentages sont calculés sur les âges valides. Le tableau est trié selon l’ordre naturel des tranches d’âge.",
-            show_rank=False,
-            sort_by_frequency=False
-        )
-
-    if campus_col:
-        render_professional_frequency_table(
-            campus_freq,
-            "Campus",
-            "Répartition par campus dans l’année sélectionnée."
-        )
-
-    t3, t4 = st.columns([1.2, 1])
-    with t3:
-        render_professional_frequency_table(
-            fac_freq,
-            "Faculté / Institut",
-            "Tableau trié du poids le plus élevé au plus faible."
-        )
-    with t4:
-        render_professional_frequency_table(
-            niveau_freq,
-            "Niveau d’études",
-            "Répartition par niveau dans l’année sélectionnée."
-        )
-
-    render_professional_frequency_table(
-        diplome_fac_table,
-        "Intitulés de diplôme avec faculté / institut associé",
-        "Chaque ligne correspond à un couple diplôme + faculté/institut, trié du plus fréquent au moins fréquent."
-    )
-
-
-# =====================================================
-# Page 5 - Results of all questions before KPI calculation
-# =====================================================
-
-DEMOGRAPHIC_FIELDS = {
-    "Genre": ["Genre"],
-    "Age": ["Age", "Âge"],
-    "Faculté / Institut": ["Faculté_Institut", "Faculté_Institut_g", "Faculté", "Institut"],
-    "Campus": ["Campus", "campus", "Campus_g", "Campus principal", "Campus_principal", "Site", "site"],
-    "Niveau": ["Niveau", "Niveau_Lib"],
-    "Intitulé Diplôme": ["Intitulé Diplôme", "Intitulé_Diplôme", "Intitulé Diplome", "Intitule Diplome", "Diplôme", "Diplome"],
-}
-
-ALL_SURVEY_SECTION_NUMBERS = {
-    "Profil des répondants": "DEMOGRAPHICS",
-    "Satisfaction dans l’expérience académique": [1, 2],
-    "Politique d’accompagnement": [3, 4],
-    "Développement des compétences et mobilité internationale": [5, 6, 7],
-    "Plateforme Alumni et expérience de stage": [8, 9],
-    "Apprentissage de l’anglais": [10, 11],
-    "Service de l’insertion professionnelle de l’USJ": [12, 13, 14, 15],
-    "Perspectives d’avenir": [16, 17, 18, 19, 20, 21, 22, 23],
-    "Évaluation des services, des infrastructures et de la satisfaction globale à l’USJ": list(range(24, 44)),
-    "Financement des études à l’USJ": [44, 45, 46],
-    "Propositions et commentaires": [47],
-}
-
-
-def extract_question_number(col_name):
-    text = str(col_name).strip()
-    match = re.match(r"^\s*(\d+)", text)
-    if match:
-        return int(match.group(1))
-    return None
-
-
-def find_existing_demographic_columns(data):
-    found = {}
-    normalized_cols = {normalize_question_key(col): col for col in data.columns}
-
-    for display_name, possible_cols in DEMOGRAPHIC_FIELDS.items():
-        selected_col = None
-        for col in possible_cols:
-            if col in data.columns:
-                selected_col = col
-                break
-            norm_col = normalize_question_key(col)
-            if norm_col in normalized_cols:
-                selected_col = normalized_cols[norm_col]
-                break
-        if selected_col is not None:
-            found[display_name] = selected_col
-
-    return found
-
-
-def get_columns_for_all_questions_section(original_data, section_name):
-    section_spec = ALL_SURVEY_SECTION_NUMBERS.get(section_name)
-
-    if section_spec == "DEMOGRAPHICS":
-        return find_existing_demographic_columns(original_data)
-
-    selected_numbers = set(section_spec)
-    cols = []
-
-    for col in original_data.columns:
-        col_str = str(col).strip()
-
-        if should_exclude_question_from_presentation(col_str):
-            continue
-
-        if col_str in get_excluded_non_question_columns():
-            continue
-
-        if col_str.startswith("Score "):
-            continue
-
-        q_number = extract_question_number(col_str)
-        if q_number in selected_numbers:
-            cols.append(col_str)
-
-    def sort_key(col):
-        qn = extract_question_number(col)
-        return (qn if qn is not None else 9999, str(col))
-
-    cols = sorted(cols, key=sort_key)
-    return {clean_other_question_label(col): col for col in cols}
-
-
-def build_simple_distribution(data, col):
-    if col not in data.columns:
-        return pd.DataFrame()
-
-    s = data[col].map(clean_response_value).dropna()
-
-    if s.empty:
-        return pd.DataFrame()
-
-    dist = s.value_counts().reset_index()
-    dist.columns = ["Réponse", "N"]
-    dist["Pourcentage"] = dist["N"] / dist["N"].sum() * 100
-    return dist
-
-
-def build_simple_year_distribution(original_data, coded_data, col):
-    if col not in original_data.columns or "Year" not in coded_data.columns:
-        return pd.DataFrame()
-
-    temp = pd.DataFrame({
-        "Année": coded_data["Year"].astype(str),
-        "Réponse": original_data.loc[coded_data.index, col].map(clean_response_value)
-    }).dropna(subset=["Réponse"])
-
-    if temp.empty:
-        return pd.DataFrame()
-
-    dist = temp.groupby(["Année", "Réponse"]).size().reset_index(name="N")
-    dist["Pourcentage"] = dist.groupby("Année")["N"].transform(lambda x: x / x.sum() * 100)
-    return dist
-
-
-
-
-def normalize_response_label_for_kpi(value):
-    """Normalize response labels to detect positive answers across satisfaction and agreement scales."""
-    if pd.isna(value):
-        return ""
-    import unicodedata
-    text = str(value).strip().replace("\u00a0", " ")
-    text = unicodedata.normalize("NFKD", text)
-    text = "".join(ch for ch in text if not unicodedata.combining(ch))
-    text = text.lower()
-    text = text.replace("’", "'")
-    text = re.sub(r"\s+", " ", text).strip()
-    return text
-
-
-POSITIVE_SCALE_RESPONSES = {
-    # Satisfaction scale, feminine and masculine
-    "satisfaisante",
-    "tres satisfaisante",
-    "satisfaisant",
-    "tres satisfaisant",
-    "satisfait",
-    "tres satisfait",
-    "satisfaite",
-    "tres satisfaite",
-
-    # Agreement scale
-    "d'accord",
-    "tout a fait d'accord",
-
-    # Utility / usefulness scale used in some questions
-    "plutot oui",
-    "tout a fait",
-    "oui, suffisamment",
-    "oui et j'ai beaucoup appris",
-    "oui et j'ai bien appris",
-}
-
-NEGATIVE_SCALE_RESPONSES = {
-    # Satisfaction scale
-    "insatisfaisante",
-    "tres insatisfaisante",
-    "insatisfaisant",
-    "tres insatisfaisant",
-    "insatisfait",
-    "tres insatisfait",
-    "insatisfaite",
-    "tres insatisfaite",
-
-    # Agreement scale
-    "pas d'accord",
-    "pas du tout d'accord",
-
-    # Utility / usefulness scale used in some questions
-    "plutot non",
-    "pas du tout",
-    "oui, mais pas suffisamment",
-    "non",
-    "oui mais j'ai peu appris",
-}
-
-
-SCALE_SIGNATURE_GROUPS = [
-    {
-        "positive": {"satisfaisante", "tres satisfaisante", "satisfaisant", "tres satisfaisant", "satisfait", "tres satisfait", "satisfaite", "tres satisfaite"},
-        "negative": {"insatisfaisante", "tres insatisfaisante", "insatisfaisant", "tres insatisfaisant", "insatisfait", "tres insatisfait", "insatisfaite", "tres insatisfaite"},
-        "label": "Satisfaction positive",
-        "subtitle": "Satisfait(e) + très satisfait(e)"
-    },
-    {
-        "positive": {"d'accord", "tout a fait d'accord"},
-        "negative": {"pas d'accord", "pas du tout d'accord"},
-        "label": "Accord positif",
-        "subtitle": "D’accord + tout à fait d’accord"
-    },
-    {
-        "positive": {"plutot oui", "tout a fait"},
-        "negative": {"plutot non", "pas du tout"},
-        "label": "Réponses positives",
-        "subtitle": "Plutôt oui + tout à fait"
-    },
-    {
-        "positive": {"oui, suffisamment"},
-        "negative": {"oui, mais pas suffisamment", "non"},
-        "label": "Formation suffisante",
-        "subtitle": "Oui, suffisamment"
-    },
-]
-
-
-def get_positive_scale_summary(dist):
-    """Return positive percentage/frequency only for recognized scale questions.
-
-    The original response distribution remains unchanged. This helper only adds an
-    additional KPI when the response modalities clearly correspond to a satisfaction,
-    agreement, usefulness, or sufficiency scale.
-    """
-    if dist is None or dist.empty or "Réponse" not in dist.columns or "N" not in dist.columns:
-        return None
-
-    temp = dist.copy()
-    temp["_norm"] = temp["Réponse"].map(normalize_response_label_for_kpi)
-    present = set(temp["_norm"].dropna().tolist())
-
-    for signature in SCALE_SIGNATURE_GROUPS:
-        has_positive = len(present.intersection(signature["positive"])) > 0
-        has_negative = len(present.intersection(signature["negative"])) > 0
-        if has_positive and has_negative:
-            pos_n = int(temp.loc[temp["_norm"].isin(signature["positive"]), "N"].sum())
-            total_n = int(temp["N"].sum())
-            pos_pct = pos_n / total_n * 100 if total_n > 0 else np.nan
-            return {
-                "label": signature["label"],
-                "subtitle": signature["subtitle"],
-                "N positif": pos_n,
-                "N total": total_n,
-                "Pourcentage positif": pos_pct,
-            }
-
-    return None
-
-
-def render_positive_scale_kpi(positive_summary):
-    """Render an attractive KPI card for total positive answers."""
-    if not positive_summary:
-        return
-
-    pct = positive_summary.get("Pourcentage positif", np.nan)
-    pos_n = positive_summary.get("N positif", 0)
-    total_n = positive_summary.get("N total", 0)
-    label = positive_summary.get("label", "Réponses positives")
-    subtitle = positive_summary.get("subtitle", "Total des réponses positives")
-    color = kpi_color_percentage(pct)
-
-    st.markdown(
-        f"""
-        <div style='
-            background:linear-gradient(135deg, #FFFFFF 0%, #F7F9FC 100%);
-            border:1px solid #DDE5F0;
-            border-left:8px solid {color};
-            border-radius:20px;
-            padding:18px 20px;
-            margin:0 0 14px 0;
-            box-shadow:0 6px 18px rgba(0,0,0,0.06);
-            font-family:Candara, Arial, sans-serif;
-        '>
-            <div style='font-size:14px;font-weight:900;color:{USJ_TEXT};margin-bottom:6px;'>{html_escape(label)}</div>
-            <div style='display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;'>
-                <div style='font-size:38px;font-weight:900;color:{color};line-height:1;'>{safe_pct(pct)}</div>
-                <div style='font-size:18px;font-weight:900;color:{USJ_BLUE};line-height:1.25;'>{int(pos_n):,} / {int(total_n):,}</div>
-            </div>
-            <div style='font-size:13px;color:#667085;margin-top:8px;'>{html_escape(subtitle)}</div>
-        </div>
-        """.replace(",", " "),
-        unsafe_allow_html=True
-    )
-
-
-def get_main_question_group_header(question_col):
-    """Return the main questionnaire wording that should appear before grouped sub-items."""
-    q_norm = normalize_question_key(question_col)
-
-    if q_norm.startswith("28_") or q_norm.startswith("28-"):
-        return {
-            "code": "28",
-            "title": "28- Comment évaluez-vous la qualité des services suivants offerts par l’USJ ?",
-            "subtitle": "Les résultats ci-dessous détaillent l’évaluation de chaque service proposé par l’USJ."
-        }
-
-    if q_norm.startswith("29_") or q_norm.startswith("29-"):
-        return {
-            "code": "29",
-            "title": "29- Évaluez chacun des aspects suivants de votre expérience de vie étudiante à l’USJ :",
-            "subtitle": "Les résultats ci-dessous détaillent les différents aspects de l’expérience de vie étudiante."
-        }
-
-    return None
-
-
-def render_main_question_group_header(group_info):
-    """Display the main question before its detailed sub-questions."""
-    if not group_info:
-        return
-
-    st.markdown(
-        f"""
-        <div style='
-            background:linear-gradient(135deg, #F7F9FC 0%, #EEF4FF 100%);
-            border:1px solid #DDE5F0;
-            border-left:8px solid {USJ_BLUE};
-            border-radius:20px;
-            padding:20px 22px;
-            margin:28px 0 14px 0;
-            box-shadow:0 6px 18px rgba(0,27,117,0.07);
-            font-family:Candara, Arial, sans-serif;
-        '>
-            <div style='font-size:13px;font-weight:900;color:#667085;margin-bottom:6px;'>Question principale</div>
-            <div style='font-size:23px;font-weight:900;color:{USJ_BLUE};line-height:1.35;'>{html_escape(group_info['title'])}</div>
-            <div style='font-size:14px;color:#5F6B7A;margin-top:8px;'>{html_escape(group_info['subtitle'])}</div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-
-def render_all_questions_single_result(question_label, question_col, original_filtered, total_n, coded_filter_data=None):
-    """Render one complete descriptive result block for a question within the selected section.
-
-    Conditional questions use the applicable denominator only. Example: 4a and 4b
-    questions are calculated only among respondents who answered Oui to Q4.
-    """
-    if question_col not in df_original.columns and question_col not in original_filtered.columns:
-        return
-
-    if coded_filter_data is not None:
-        selected_series, eligible_index, non_applicable_n, parent_col = get_applicable_response_series(
-            df_original,
-            coded_filter_data,
-            question_col
-        )
-        valid_series = selected_series.dropna()
-        eligible_n = int(len(eligible_index))
-        valid_n = int(valid_series.shape[0])
-        missing_n = int(selected_series.isna().sum()) if eligible_n > 0 else 0
-        missing_pct = missing_n / eligible_n * 100 if eligible_n > 0 else np.nan
-        modalities_n = int(valid_series.nunique()) if valid_n > 0 else 0
-        base_label = "Base applicable" if parent_col else "Base filtrée"
-        base_subtitle = "Répondants concernés" if parent_col else "Répondants sélectionnés"
-        base_n = eligible_n
-        dependency_label = clean_other_question_label(parent_col) if parent_col else None
-
-        if valid_series.empty:
-            dist = pd.DataFrame()
-        else:
-            dist = valid_series.value_counts().reset_index()
-            dist.columns = ["Réponse", "N"]
-            dist["Pourcentage"] = dist["N"] / dist["N"].sum() * 100
-    else:
-        if question_col not in original_filtered.columns:
-            return
-        dist = build_simple_distribution(original_filtered, question_col)
-        valid_n = int(original_filtered[question_col].map(clean_response_value).dropna().shape[0])
-        missing_n = int(total_n - valid_n)
-        missing_pct = missing_n / total_n * 100 if total_n > 0 else np.nan
-        modalities_n = int(original_filtered[question_col].map(clean_response_value).dropna().nunique())
-        base_label = "Base filtrée"
-        base_subtitle = "Répondants sélectionnés"
-        base_n = int(total_n)
-        parent_col = None
-        non_applicable_n = 0
-        dependency_label = None
-
-    condition_html = ""
-    if parent_col:
-        condition_html = (
-            f"<div style='font-size:13px;color:#667085;margin-top:8px;'>"
-            f"Question conditionnelle liée à : <b>{html_escape(dependency_label)}</b>"
-            f"</div>"
-            f"<div style='font-size:13px;color:#667085;margin-top:4px;'>"
-            f"Non applicables exclus du dénominateur : <b>{int(non_applicable_n):,}</b>"
-            f"</div>"
-        ).replace(',', ' ')
-
-    st.markdown(
-        f"""
-        <div style='background:#FFFFFF;border:1px solid #DDE5F0;border-left:7px solid {USJ_BLUE};border-radius:18px;padding:18px 20px;margin:24px 0 12px 0;box-shadow:0 5px 16px rgba(0,0,0,0.05);'>
-            <div style='font-size:13px;font-weight:800;color:#667085;margin-bottom:6px;'>Question / variable</div>
-            <div style='font-size:20px;font-weight:900;color:{USJ_BLUE};line-height:1.35;'>{html_escape(question_label)}</div>
-            <div style='font-size:13px;color:#667085;margin-top:8px;'>Variable Excel : {html_escape(question_col)}</div>
-            {condition_html}
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    m1, m2, m3, m4 = st.columns(4)
-    with m1:
-        insight_card(base_label, base_n, base_subtitle, USJ_BLUE_2)
-    with m2:
-        insight_card("N valide", valid_n, "Réponses non manquantes", USJ_GREEN if valid_n > 0 else USJ_RED)
-    with m3:
-        insight_card("Données manquantes", safe_pct(missing_pct), "Dans la base applicable" if parent_col else "Dans la base filtrée", USJ_ORANGE if pd.notna(missing_pct) and missing_pct > 10 else USJ_GREEN)
-    with m4:
-        insight_card("Modalités", modalities_n, "Réponses distinctes", USJ_GOLD)
-
-    if dist.empty:
-        st.warning("Aucune réponse valide disponible pour cette question avec les filtres sélectionnés.")
-        return
-
-    if modalities_n > 30:
-        display_dist = dist.sort_values("N", ascending=False).head(30).copy()
-        display_dist["Pourcentage"] = display_dist["Pourcentage"].map(lambda x: f"{x:.2f}%")
-        st.markdown(f"<h4 style='color:{USJ_BLUE};'>Réponses les plus fréquentes</h4>", unsafe_allow_html=True)
-        st.dataframe(display_dist, use_container_width=True, hide_index=True)
-        return
-
-    dist_chart = dist.sort_values("Pourcentage", ascending=True).copy()
-    fig = px.bar(
-        dist_chart,
-        x="Pourcentage",
-        y="Réponse",
-        orientation="h",
-        text="Pourcentage",
-        color="Pourcentage",
-        color_continuous_scale=[[0, "#EAF2FF"], [0.5, "#7FA6D9"], [1, USJ_BLUE]],
-        hover_data={"N": True, "Pourcentage": ":.2f"},
-        title="Distribution des réponses"
-    )
-    fig.update_traces(
-        texttemplate="%{text:.2f}%",
-        textposition="outside",
-        marker_line_color="white",
-        marker_line_width=1,
-        cliponaxis=False
-    )
-    fig.update_layout(
-        xaxis_title="Pourcentage des réponses valides",
-        yaxis_title="",
-        coloraxis_showscale=False,
-        margin=dict(l=40, r=80, t=75, b=45)
-    )
-    theme_layout(fig, height=max(390, 38 * len(dist_chart)), showlegend=False)
-
-    positive_summary = get_positive_scale_summary(dist)
-
-    chart_col, table_col = st.columns([1.55, 1])
-    with chart_col:
-        st.plotly_chart(
-            fig,
-            use_container_width=True,
-            config={"displayModeBar": False},
-            key=f"all_questions_chart_{re.sub(r'[^A-Za-z0-9_]+', '_', str(question_col))}"
-        )
-
-    with table_col:
-        if positive_summary:
-            render_positive_scale_kpi(positive_summary)
-        display_dist = dist.sort_values("Pourcentage", ascending=False).copy()
-        display_dist["Pourcentage"] = display_dist["Pourcentage"].map(lambda x: f"{x:.2f}%")
-        st.markdown(f"<h4 style='color:{USJ_BLUE}; margin-top:0;'>Tableau des fréquences</h4>", unsafe_allow_html=True)
-        st.dataframe(display_dist, use_container_width=True, hide_index=True)
-
-    top_dist = dist.sort_values("Pourcentage", ascending=False).iloc[0]
-    conditional_note = " Cette lecture est calculée uniquement sur la base applicable à la question conditionnelle." if parent_col else ""
-    st.markdown(
-        f"""
-        <div style='background:#F7F9FC;border-left:6px solid {USJ_BLUE};border-radius:14px;padding:12px 16px;margin-top:4px;margin-bottom:8px;'>
-            <b>Lecture descriptive :</b> la modalité la plus fréquente est <b>{html_escape(top_dist['Réponse'])}</b>,
-            avec <b>{top_dist['Pourcentage']:.2f}%</b> des réponses valides.{conditional_note}
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-def page_all_questions_results():
-    section_header(
-        "Résultats descriptifs de toutes les questions",
-        "Présentation descriptive question par question, avant le calcul des scores et des indicateurs."
-    )
-
-    summary_box(
-        """
-        Cette page présente les résultats bruts de chaque question du questionnaire avant toute agrégation en scores ou KPI.
-        Les résultats sont affichés pour une seule année à la fois. Les comparaisons historiques seront traitées séparément dans la page dédiée.
-        Les bases applicables des questions conditionnelles sont corrigées automatiquement lorsque la question filtre est identifiée.
-        """,
-        color=USJ_BLUE,
-        background="#F7F9FC"
-    )
-
-    selected_year, data_questions, original_questions = get_single_year_context("all_questions")
-
-    if data_questions.empty:
-        st.warning("Aucune donnée disponible pour l’année et les filtres sélectionnés.")
-        return
-
-    available_sections = list(ALL_SURVEY_SECTION_NUMBERS.keys())
-
-    selected_section_all = st.selectbox(
-        "Choisir une section du questionnaire",
-        available_sections,
-        key="all_questions_section_selector"
-    )
-
-    question_map = get_columns_for_all_questions_section(df_original, selected_section_all)
-
-    if not question_map:
-        st.warning("Aucune colonne trouvée dans le fichier Excel pour cette section.")
-        return
-
-    original_filtered = original_questions.copy()
-    total_n = int(len(original_filtered))
-    question_count = len(question_map)
-
-    valid_counts = []
-    for _, col in question_map.items():
-        if col in original_filtered.columns:
-            valid_counts.append(int(original_filtered[col].map(clean_response_value).dropna().shape[0]))
-    average_valid_n = np.mean(valid_counts) if valid_counts else np.nan
-
-    c1, c2, c3, c4 = st.columns(4)
-    with c1:
-        insight_card("Section", selected_section_all, "Titre du questionnaire", USJ_BLUE)
-    with c2:
-        insight_card("Année", selected_year, "Année affichée", USJ_BLUE_2)
-    with c3:
-        insight_card("Questions", question_count, "Variables affichées", USJ_GOLD)
-    with c4:
-        insight_card("Base filtrée", total_n, "Répondants sélectionnés", USJ_GREEN if total_n > 0 else USJ_RED)
-
-    summary_box(
-        f"""
-        La section <b>{html_escape(selected_section_all)}</b> contient <b>{question_count}</b> question(s) ou variable(s) affichées directement sur cette page.
-        Il n’y a plus de sélection question par question. Chaque bloc présente la distribution, le tableau des fréquences, le nombre de réponses valides et les données manquantes.
-        """,
-        color=USJ_BLUE,
-        background="#F7F9FC"
-    )
-
-    if question_count > 12:
-        st.info("Cette section contient plusieurs questions. Les blocs ci-dessous peuvent être longs à afficher, mais toutes les questions de la section sont présentées sans menu de sélection supplémentaire.")
-
-    current_main_group = None
-    for question_label, question_col in question_map.items():
-        group_info = get_main_question_group_header(question_col)
-        group_code = group_info["code"] if group_info else None
-        if group_code and group_code != current_main_group:
-            render_main_question_group_header(group_info)
-            current_main_group = group_code
-        elif not group_code:
-            current_main_group = None
-
-        render_all_questions_single_result(question_label, question_col, original_filtered, total_n, data_questions)
-
 
 Q44_FINANCING_ITEMS = {
     "44_a- Financé vos études à l’USJ : Parents": "Parents",
@@ -5582,10 +3400,12 @@ def page_other_questions():
         overall = valid_series.value_counts(dropna=True).reset_index()
         overall.columns = ["Réponse", "N"]
         overall["Pourcentage"] = overall["N"] / overall["N"].sum() * 100
-        overall = overall.sort_values("Pourcentage", ascending=True)
+        overall = sort_response_distribution(overall, fallback="frequency_desc")
+        likert_y_order = get_plotly_y_category_array_for_responses(overall["Réponse"])
+        overall_chart = overall.copy() if likert_y_order else overall.sort_values("Pourcentage", ascending=True).copy()
 
         fig_overall = px.bar(
-            overall,
+            overall_chart,
             x="Pourcentage",
             y="Réponse",
             orientation="h",
@@ -5593,15 +3413,19 @@ def page_other_questions():
             color="Pourcentage",
             color_continuous_scale=[[0, "#EAF2FF"], [0.5, "#7FA6D9"], [1, USJ_BLUE]],
             hover_data={"N": True, "Pourcentage": ":.2f"},
-            title="Distribution globale des réponses parmi les répondants concernés"
+            title="Distribution globale des réponses parmi les répondants concernés",
+            category_orders={"Réponse": list(reversed(likert_y_order))} if likert_y_order else None
         )
         fig_overall.update_traces(texttemplate="%{text:.2f}%", textposition="outside", marker_line_color="white", marker_line_width=1, cliponaxis=False)
         fig_overall.update_layout(xaxis_title="Pourcentage des réponses valides", yaxis_title="", coloraxis_showscale=False, margin=dict(l=40, r=80, t=90, b=50))
+        if likert_y_order:
+            fig_overall.update_yaxes(categoryorder="array", categoryarray=likert_y_order)
         theme_layout(fig_overall, height=max(460, 42 * len(overall)), showlegend=False)
         st.plotly_chart(fig_overall, use_container_width=True, config={"displayModeBar": False})
 
         if not dist_year.empty and dist_year["Année"].nunique() > 1:
             response_count = dist_year["Réponse"].nunique()
+            color_order = get_plotly_color_category_order_for_responses(dist_year["Réponse"])
             fig_stack = px.bar(
                 dist_year,
                 x="Année",
@@ -5611,7 +3435,8 @@ def page_other_questions():
                 barmode="stack",
                 color_discrete_sequence=PLOTLY_SEQ,
                 hover_data={"N": True, "Pourcentage": ":.2f"},
-                title="Évolution de la distribution par année"
+                title="Évolution de la distribution par année",
+                category_orders={"Réponse": color_order} if color_order else None
             )
             fig_stack.update_traces(texttemplate="%{text:.1f}%", textposition="inside", cliponaxis=False)
             fig_stack.update_layout(
@@ -5656,7 +3481,7 @@ def page_other_questions():
             background="#F7F9FC"
         )
 
-        display_overall = overall.sort_values("Pourcentage", ascending=False).copy()
+        display_overall = sort_response_distribution(overall, fallback="frequency_desc").copy()
         display_overall["Pourcentage"] = display_overall["Pourcentage"].map(lambda x: f"{x:.2f}%")
         st.dataframe(display_overall, use_container_width=True, hide_index=True)
 
@@ -5809,7 +3634,7 @@ def build_printable_report_html():
         best = {"Dimension": "Non disponible", "Résultat": np.nan}
         weak = {"Dimension": "Non disponible", "Résultat": np.nan}
 
-    generated_filters = f"Année : {year} | Genre : {genre} | Faculté : {faculte} | Campus : {campus if CAMPUS_COLUMN else 'Non disponible'} | Niveau : {niveau}"
+    generated_filters = f"Année : {year} | Genre : {genre} | Faculté : {faculte} | Niveau : {niveau}"
 
     # -------------------------------------------------
     # Dimensional ranking table
@@ -6615,10 +4440,6 @@ def page_methodology():
 if page == "Vue générale des indicateurs":
     page_indicators()
 
-
-elif page == "Résultats descriptifs de toutes les questions":
-    page_all_questions_results()
-
 elif page == "Comparaison historique":
     page_historical_comparison()
 
@@ -6657,7 +4478,7 @@ st.markdown(
         font-size:14px;
         box-shadow:0 4px 14px rgba(0,0,0,0.08);
     ">
-        {tr("footer")}
+        Université Saint-Joseph de Beyrouth – Exit Survey 2022-2025
     </div>
     """,
     unsafe_allow_html=True
