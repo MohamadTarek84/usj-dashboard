@@ -653,6 +653,83 @@ def _extract_answer_rectangles(uploaded_pdf):
     return result
 
 
+
+def _append_missing_layout_answers(parsed, uploaded_pdf):
+    """Add answer text blocks that were missed by rectangle extraction.
+
+    Some PDFs draw one answer box on a new page with borders that PyMuPDF does not
+    expose as a normal rectangle. In that case the text is available as a text
+    block but the rectangle parser misses it. This function only adds short,
+    clean text blocks and keeps the original section/column logic.
+    """
+    try:
+        blocks = extract_pdf_blocks_with_layout(uploaded_pdf)
+    except Exception:
+        return parsed
+
+    def exists(section, category, candidate):
+        cand = normalize_for_match(candidate)
+        if not cand:
+            return True
+        for old in parsed.get(section, {}).get(category, []):
+            old_norm = normalize_for_match(old)
+            if cand == old_norm or cand in old_norm or old_norm in cand:
+                return True
+        return False
+
+    def add(section, category, candidate):
+        candidate = _clean_answer_line_for_layout(candidate)
+        candidate = re.sub(r"\s+", " ", candidate).strip()
+        if not candidate:
+            return
+        # Add only likely single-box answers. This avoids reintroducing merged paragraph errors.
+        if len(candidate) > 140:
+            return
+        if exists(section, category, candidate):
+            return
+        parsed.setdefault(section, {}).setdefault(category, []).append(candidate)
+
+    for block in blocks:
+        candidate = _clean_answer_line_for_layout(block.get("text", ""))
+        if not candidate:
+            continue
+        # Ignore long merged text blocks. The rectangle parser is the source of truth for those.
+        if len(candidate) > 140:
+            continue
+        section_no = None
+        # Determine section from existing section headings in layout blocks.
+        previous_headings = []
+        for b in blocks:
+            if (b["page"] < block["page"]) or (b["page"] == block["page"] and b["y0"] <= block["y0"]):
+                for no in [1, 2, 3, 4]:
+                    if _is_section_heading(b["norm"], no):
+                        previous_headings.append(no)
+            elif b["page"] > block["page"] or b["y0"] > block["y0"]:
+                # blocks are sorted, so stop once past the current block
+                if b["page"] >= block["page"]:
+                    break
+        if previous_headings:
+            section_no = previous_headings[-1]
+        if section_no not in {1, 2, 3, 4}:
+            continue
+
+        x_center = (block["x0"] + block["x1"]) / 2.0
+        page_mid = block["page_width"] / 2.0
+        if section_no == 1:
+            add("I - Forces et Faiblesses", "Forces" if x_center < page_mid else "Faiblesses", candidate)
+        elif section_no == 2:
+            add("II - Opportunités et Menaces", "Opportunités" if x_center < page_mid else "Menaces", candidate)
+        elif section_no == 3:
+            add("III - Priorités", "Priorités", candidate)
+        elif section_no == 4:
+            add("IV - Conclusion", "Conclusion", candidate)
+
+    for section, fields in ADMIN_FIELDS.items():
+        for category in fields:
+            parsed[section][category] = _dedupe_answers(parsed[section][category])
+    return parsed
+
+
 def parse_report_pdf_layout(uploaded_pdf, raw_text=None):
     """Primary parser: one visible PDF answer box becomes one editable platform box."""
     parsed = _extract_answer_rectangles(uploaded_pdf)
@@ -661,7 +738,7 @@ def parse_report_pdf_layout(uploaded_pdf, raw_text=None):
     # parser for SWOT tables because it creates the merged-column errors shown in the screenshots.
     has_values = any(parsed[s][c] for s in ADMIN_FIELDS for c in ADMIN_FIELDS[s])
     if has_values:
-        return parsed
+        return _append_missing_layout_answers(parsed, uploaded_pdf)
 
     blocks = extract_pdf_blocks_with_layout(uploaded_pdf)
     forces, faiblesses = _extract_two_column_section(blocks, 1, "Forces", "Faiblesses", 2)
