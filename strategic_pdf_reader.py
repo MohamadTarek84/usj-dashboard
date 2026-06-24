@@ -342,6 +342,20 @@ def _clean_answer_line_for_layout(text):
     line = clean_text(text)
     line = re.sub(r"^[\u2022\-*–—\d\.\)\s]+", "", line).strip()
     line = re.sub(r"\s+", " ", line)
+
+    # Remove category titles when PyMuPDF reads the blue header and the answer
+    # as one rectangle, e.g. "Forces Corps professoral...".
+    # This prevents duplicated first answers in the admin editor.
+    previous = None
+    while previous != line:
+        previous = line
+        line = re.sub(
+            r"^(forces|faiblesses|opportunit[eé]s|menaces|priorit[eé]s|conclusion)\s*[:：-]?\s+",
+            "",
+            line,
+            flags=re.IGNORECASE,
+        ).strip()
+
     norm = normalize_for_match(line)
 
     blocked_exact = {
