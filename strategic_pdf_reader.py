@@ -167,6 +167,35 @@ button[kind="primary"] {{
     margin-right:8px;
     font-weight:800;
 }}
+
+/* FIX: Streamlit file uploader icon appears as the word "upload" on some deployments */
+div[data-testid="stFileUploader"] button {
+    min-width: 145px !important;
+    width: 145px !important;
+    height: 42px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0 !important;
+    overflow: hidden !important;
+    white-space: nowrap !important;
+}
+div[data-testid="stFileUploader"] button svg,
+div[data-testid="stFileUploader"] button [data-testid="stIconMaterial"],
+div[data-testid="stFileUploader"] button span[aria-hidden="true"],
+div[data-testid="stFileUploader"] button i {
+    display: none !important;
+    visibility: hidden !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+div[data-testid="stFileUploader"] section {
+    background-color:#F1F4F8 !important;
+    border-radius:8px !important;
+}
+
 </style>
 """)
 
@@ -226,19 +255,250 @@ def init_db():
     conn.close()
 
 
-def extract_text_from_pdf(uploaded_pdf):
+
+def _words_to_lines(words):
+    """
+    Convert PyMuPDF word tuples into visual lines with coordinates.
+    This is used to preserve the two-column PDF table layout.
+    """
+    grouped = {}
+    for w in words:
+        x0, y0, x1, y1, text, block_no, line_no, word_no = w[:8]
+        key = (int(block_no), int(line_no), round(float(y0), 1))
+        grouped.setdefault(key, []).append(w)
+
+    lines = []
+    for key, group in grouped.items():
+        group = sorted(group, key=lambda t: (t[0], t[7]))
+        text = " ".join(str(t[4]) for t in group).strip()
+        if not text:
+            continue
+        lines.append({
+            "text": text,
+            "x0": min(float(t[0]) for t in group),
+            "y0": min(float(t[1]) for t in group),
+            "x1": max(float(t[2]) for t in group),
+            "y1": max(float(t[3]) for t in group),
+            "page": None,
+        })
+    return sorted(lines, key=lambda d: (d["y0"], d["x0"]))
+
+
+def _line_is_heading(line_text, heading_key):
+    n = normalize_for_match(line_text)
+    if heading_key == "I":
+        return ("forces et faiblesses" in n) or re.search(r"\bi\s*[-–—.]?\s*forces", n)
+    if heading_key == "II":
+        return ("opportunites et menaces" in n) or re.search(r"\bii\s*[-–—.]?\s*opportun", n)
+    if heading_key == "III":
+        return re.search(r"\biii\s*[-–—.]?\s*prior", n) or n.strip() == "priorites"
+    if heading_key == "IV":
+        return re.search(r"\biv\s*[-–—.]?\s*conclusion", n) or n.strip() == "conclusion"
+    return False
+
+
+def _is_exact_category(text, category):
+    n = normalize_for_match(text).strip(" :-–—").lower()
+    c = normalize_for_match(category).strip().lower()
+    aliases = {
+        "opportunités": ["opportunites", "opportunite"],
+        "priorités": ["priorites", "priorite"],
+    }
+    allowed = [c] + aliases.get(category, [])
+    return n in allowed
+
+
+def _clean_layout_item(text):
+    text = clean_text(text)
+    text = re.sub(r"^[\u2022\-*–—\d\.\)\s]+", "", text).strip()
+    return text
+
+
+def _group_lines_into_items(lines):
+    """
+    Group visual lines into answer boxes.
+    Wrapped lines inside one box have small vertical gaps.
+    Separate boxes have larger gaps.
+    """
+    if not lines:
+        return []
+
+    lines = sorted(lines, key=lambda d: (d["y0"], d["x0"]))
+    items = []
+    current = []
+    previous_y = None
+
+    for line in lines:
+        txt = _clean_layout_item(line["text"])
+        if not txt:
+            continue
+
+        n = normalize_for_match(txt)
+        if any(fragment in n for fragment in [
+            "maximum cinq", "merci de", "thematique", "quels sont",
+            "niveau usj", "plan strategique", "forces et faiblesses",
+            "opportunites et menaces"
+        ]):
+            continue
+        if _is_exact_category(txt, "Forces") or _is_exact_category(txt, "Faiblesses") or _is_exact_category(txt, "Opportunités") or _is_exact_category(txt, "Menaces"):
+            continue
+
+        if previous_y is not None and (line["y0"] - previous_y) > 18:
+            joined = _clean_layout_item(" ".join(current))
+            if joined:
+                items.append(joined)
+            current = []
+
+        current.append(txt)
+        previous_y = line["y0"]
+
+    joined = _clean_layout_item(" ".join(current))
+    if joined:
+        items.append(joined)
+
+    cleaned = []
+    seen = set()
+    for item in items:
+        key = normalize_for_match(item)
+        if key and key not in seen:
+            cleaned.append(item)
+            seen.add(key)
+    return cleaned
+
+
+def _extract_two_column_section_from_lines(lines, section_key, next_section_key, left_cat, right_cat):
+    section_indices = [i for i, line in enumerate(lines) if _line_is_heading(line["text"], section_key)]
+    if not section_indices:
+        return None
+
+    start_idx = section_indices[0]
+    end_idx = len(lines)
+    for i in range(start_idx + 1, len(lines)):
+        if _line_is_heading(lines[i]["text"], next_section_key):
+            end_idx = i
+            break
+
+    section_lines = lines[start_idx + 1:end_idx]
+    if not section_lines:
+        return None
+
+    left_headers = [l for l in section_lines if _is_exact_category(l["text"], left_cat)]
+    right_headers = [l for l in section_lines if _is_exact_category(l["text"], right_cat)]
+
+    if not left_headers or not right_headers:
+        return None
+
+    left_header = sorted(left_headers, key=lambda d: (d["y0"], d["x0"]))[0]
+    right_header = sorted(right_headers, key=lambda d: (d["y0"], d["x0"]))[0]
+    header_y = min(left_header["y0"], right_header["y0"])
+    split_x = (left_header["x1"] + right_header["x0"]) / 2
+
+    left_lines = []
+    right_lines = []
+
+    for line in section_lines:
+        if line["y0"] <= header_y + 4:
+            continue
+
+        txt = line["text"].strip()
+        if not txt:
+            continue
+        if _line_is_heading(txt, section_key) or _line_is_heading(txt, next_section_key):
+            continue
+
+        mid_x = (line["x0"] + line["x1"]) / 2
+        if mid_x < split_x:
+            left_lines.append(line)
+        else:
+            right_lines.append(line)
+
+    left_items = _group_lines_into_items(left_lines)
+    right_items = _group_lines_into_items(right_lines)
+
+    if not left_items and not right_items:
+        return None
+
+    return {left_cat: left_items, right_cat: right_items}
+
+
+def _extract_single_column_section_from_lines(lines, section_key, next_section_key, category):
+    section_indices = [i for i, line in enumerate(lines) if _line_is_heading(line["text"], section_key)]
+    if not section_indices:
+        return None
+
+    start_idx = section_indices[0]
+    end_idx = len(lines)
+    for i in range(start_idx + 1, len(lines)):
+        if next_section_key and _line_is_heading(lines[i]["text"], next_section_key):
+            end_idx = i
+            break
+
+    section_lines = []
+    for line in lines[start_idx + 1:end_idx]:
+        txt = line["text"].strip()
+        if not txt:
+            continue
+        if _line_is_heading(txt, section_key):
+            continue
+        if _is_exact_category(txt, category):
+            continue
+        section_lines.append(line)
+
+    items = _group_lines_into_items(section_lines)
+    return {category: items} if items else None
+
+
+def extract_pdf_content(uploaded_pdf):
+    """
+    Reads the PDF once and returns:
+    1) plain raw text for backup/debug
+    2) layout-based parsed answers that preserve columns and answer boxes when possible
+    """
     if fitz is None:
         raise ImportError("PyMuPDF is not installed. Add pymupdf to requirements.txt.")
 
     pdf_bytes = uploaded_pdf.read()
     doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-    pages_text = []
 
-    for page in doc:
+    pages_text = []
+    all_lines = []
+
+    for page_index, page in enumerate(doc):
         pages_text.append(page.get_text("text"))
 
-    return "\n".join(pages_text)
+        words = page.get_text("words")
+        page_lines = _words_to_lines(words)
+        for line in page_lines:
+            line["page"] = page_index
+            # Add a large page offset so sorting across pages is stable.
+            line["y0"] = float(line["y0"]) + page_index * 10000
+            line["y1"] = float(line["y1"]) + page_index * 10000
+        all_lines.extend(page_lines)
 
+    raw_text = "\n".join(pages_text)
+    all_lines = sorted(all_lines, key=lambda d: (d["y0"], d["x0"]))
+
+    layout_parsed = {
+        "I - Forces et Faiblesses": _extract_two_column_section_from_lines(
+            all_lines, "I", "II", "Forces", "Faiblesses"
+        ),
+        "II - Opportunités et Menaces": _extract_two_column_section_from_lines(
+            all_lines, "II", "III", "Opportunités", "Menaces"
+        ),
+        "III - Priorités": _extract_single_column_section_from_lines(
+            all_lines, "III", "IV", "Priorités"
+        ),
+        "IV - Conclusion": _extract_single_column_section_from_lines(
+            all_lines, "IV", None, "Conclusion"
+        ),
+    }
+
+    return raw_text, layout_parsed
+
+
+def extract_text_from_pdf(uploaded_pdf):
+    raw_text, _ = extract_pdf_content(uploaded_pdf)
+    return raw_text
 
 def clean_text(value):
     value = str(value or "")
@@ -322,32 +582,92 @@ def extract_section(raw_text, start_keywords, end_keywords):
     return clean_text(text[start_pos:end_pos])
 
 
-def extract_category_text(section_text, category_keywords, next_category_keywords):
-    section_text = clean_text(section_text)
-    norm = normalize_for_match(section_text)
 
-    start_pos = None
-    for keyword in category_keywords:
-        m = re.search(keyword, norm, flags=re.IGNORECASE)
-        if m:
-            start_pos = m.end()
+def _remove_section_title_lines(section_text):
+    lines = []
+    for raw in clean_text(section_text).splitlines():
+        n = normalize_for_match(raw).strip()
+        if not n:
+            continue
+        if "forces et faiblesses" in n:
+            continue
+        if "opportunites et menaces" in n:
+            continue
+        if re.search(r"\bi\s*[-–—.]?\s*forces", n):
+            continue
+        if re.search(r"\bii\s*[-–—.]?\s*opportun", n):
+            continue
+        if re.search(r"\biii\s*[-–—.]?\s*prior", n):
+            continue
+        if re.search(r"\biv\s*[-–—.]?\s*conclusion", n):
+            continue
+        lines.append(raw.strip())
+    return "\n".join(lines)
+
+
+def extract_category_text(section_text, category_keywords, next_category_keywords):
+    """
+    Fallback text parser.
+    Important fix: it removes section titles before looking for category titles.
+    This prevents 'Forces et Faiblesses' from being read as a Forces answer
+    and prevents the full section from being dumped into Faiblesses.
+    """
+    cleaned_section = _remove_section_title_lines(section_text)
+    lines = cleaned_section.splitlines()
+
+    start_index = None
+    for i, line in enumerate(lines):
+        line_norm = normalize_for_match(line).strip(" :-–—").lower()
+        for keyword in category_keywords:
+            # Match only category headers as full lines, not inside section titles.
+            if re.fullmatch(keyword.strip(".*?^$\\b") + r"s?", line_norm, flags=re.IGNORECASE):
+                start_index = i + 1
+                break
+            if re.fullmatch(keyword, line_norm, flags=re.IGNORECASE):
+                start_index = i + 1
+                break
+        if start_index is not None:
             break
 
-    if start_pos is None:
+    if start_index is None:
         return ""
 
-    end_pos = len(section_text)
-    after = norm[start_pos:]
-    for keyword in next_category_keywords:
-        m = re.search(keyword, after, flags=re.IGNORECASE)
-        if m:
-            end_pos = start_pos + m.start()
+    end_index = len(lines)
+    for i in range(start_index, len(lines)):
+        line_norm = normalize_for_match(lines[i]).strip(" :-–—").lower()
+        for keyword in next_category_keywords:
+            if re.fullmatch(keyword.strip(".*?^$\\b") + r"s?", line_norm, flags=re.IGNORECASE):
+                end_index = i
+                break
+            if re.fullmatch(keyword, line_norm, flags=re.IGNORECASE):
+                end_index = i
+                break
+        if end_index != len(lines):
             break
 
-    return clean_text(section_text[start_pos:end_pos])
+    return clean_text("\n".join(lines[start_index:end_index]))
 
 
-def parse_report_text(raw_text):
+def _merge_layout_with_text_parse(layout_parsed, text_parsed):
+    """
+    Prefer visual-layout parsing when available.
+    Fall back to text parsing for any missing section/category.
+    """
+    merged = {}
+    for section in SECTION_LABELS:
+        merged[section] = {}
+        for category in ADMIN_FIELDS[section]:
+            layout_values = []
+            if isinstance(layout_parsed, dict) and isinstance(layout_parsed.get(section), dict):
+                layout_values = layout_parsed.get(section, {}).get(category, []) or []
+            text_values = []
+            if isinstance(text_parsed, dict) and isinstance(text_parsed.get(section), dict):
+                text_values = text_parsed.get(section, {}).get(category, []) or []
+            merged[section][category] = layout_values if layout_values else text_values
+    return merged
+
+
+def parse_report_text(raw_text, layout_parsed=None):
     text = clean_text(raw_text)
 
     section_i = extract_section(
@@ -371,12 +691,12 @@ def parse_report_text(raw_text):
         []
     )
 
-    forces_text = extract_category_text(section_i, [r"forces?\s*:?"] , [r"faiblesses?\s*:?"])
-    faiblesses_text = extract_category_text(section_i, [r"faiblesses?\s*:?"] , [])
-    opportunites_text = extract_category_text(section_ii, [r"opportunites?\s*:?"] , [r"menaces?\s*:?"])
-    menaces_text = extract_category_text(section_ii, [r"menaces?\s*:?"] , [])
+    forces_text = extract_category_text(section_i, [r"forces?"] , [r"faiblesses?"])
+    faiblesses_text = extract_category_text(section_i, [r"faiblesses?"] , [])
+    opportunites_text = extract_category_text(section_ii, [r"opportunites?"] , [r"menaces?"])
+    menaces_text = extract_category_text(section_ii, [r"menaces?"] , [])
 
-    parsed = {
+    text_parsed = {
         "I - Forces et Faiblesses": {
             "Forces": split_items(forces_text) if forces_text else [],
             "Faiblesses": split_items(faiblesses_text) if faiblesses_text else [],
@@ -386,21 +706,23 @@ def parse_report_text(raw_text):
             "Menaces": split_items(menaces_text) if menaces_text else [],
         },
         "III - Priorités": {
-            "Priorités": split_items(section_iii),
+            "Priorités": split_items(_remove_section_title_lines(section_iii)),
         },
         "IV - Conclusion": {
-            "Conclusion": split_items(section_iv) if section_iv else [],
+            "Conclusion": split_items(_remove_section_title_lines(section_iv)) if section_iv else [],
         },
-        "_section_text": {
-            "I - Forces et Faiblesses": section_i,
-            "II - Opportunités et Menaces": section_ii,
-            "III - Priorités": section_iii,
-            "IV - Conclusion": section_iv,
-        }
+    }
+
+    parsed = _merge_layout_with_text_parse(layout_parsed or {}, text_parsed)
+
+    parsed["_section_text"] = {
+        "I - Forces et Faiblesses": section_i,
+        "II - Opportunités et Menaces": section_ii,
+        "III - Priorités": section_iii,
+        "IV - Conclusion": section_iv,
     }
 
     return parsed
-
 
 def json_to_text_lines(data, section, category):
     values = data.get(section, {}).get(category, []) if isinstance(data, dict) else []
@@ -505,29 +827,125 @@ def build_export_df():
     return df
 
 
+
+def _get_category_values(base_json, section, category):
+    if not isinstance(base_json, dict):
+        return []
+    values = base_json.get(section, {}).get(category, [])
+    if isinstance(values, list):
+        return [str(v or "").strip() for v in values]
+    if isinstance(values, str):
+        return text_lines_to_list(values)
+    return []
+
+
+def _clean_editor_key(value):
+    return re.sub(r"[^A-Za-z0-9_]+", "_", normalize_for_match(value)).strip("_")
+
+
 def render_admin_json_editor(base_json, key_prefix):
+    """
+    Admin correction screen in the same box-by-box format as the original PDF/report:
+    - Forces/Faiblesses are shown as two columns with aligned rows.
+    - Opportunités/Menaces are shown as two columns with aligned rows.
+    - Priorités and Conclusion are shown as stacked answer boxes.
+    """
     edited = {}
+
     for section in SECTION_LABELS:
         section_header(section)
         edited[section] = {}
         fields = ADMIN_FIELDS[section]
-        cols = st.columns(len(fields)) if len(fields) > 1 else [st.container()]
-        for col, category in zip(cols, fields):
-            with col:
-                st.markdown(f"### {category}")
-                text_value = json_to_text_lines(base_json, section, category)
-                session_key = f"{key_prefix}_{section}_{category}"
-                if session_key not in st.session_state:
-                    st.session_state[session_key] = text_value
-                st.text_area(
-                    "One answer per line",
-                    key=session_key,
-                    height=260,
+
+        if len(fields) == 2:
+            left_field, right_field = fields
+            left_values = _get_category_values(base_json, section, left_field)
+            right_values = _get_category_values(base_json, section, right_field)
+
+            rows_key = f"{key_prefix}_{_clean_editor_key(section)}_rows"
+            if rows_key not in st.session_state:
+                st.session_state[rows_key] = max(5, len(left_values), len(right_values))
+
+            col_left, col_right = st.columns(2)
+
+            with col_left:
+                st.markdown(f"### {left_field}")
+            with col_right:
+                st.markdown(f"### {right_field}")
+
+            left_edited = []
+            right_edited = []
+
+            for i in range(st.session_state[rows_key]):
+                col_left, col_right = st.columns(2)
+
+                with col_left:
+                    left_key = f"{key_prefix}_{_clean_editor_key(section)}_{_clean_editor_key(left_field)}_{i+1}"
+                    if left_key not in st.session_state:
+                        st.session_state[left_key] = left_values[i] if i < len(left_values) else ""
+                    value = st.text_area(
+                        f"{left_field} {i+1}",
+                        key=left_key,
+                        height=95,
+                        label_visibility="collapsed",
+                    )
+                    left_edited.append(value.strip())
+
+                with col_right:
+                    right_key = f"{key_prefix}_{_clean_editor_key(section)}_{_clean_editor_key(right_field)}_{i+1}"
+                    if right_key not in st.session_state:
+                        st.session_state[right_key] = right_values[i] if i < len(right_values) else ""
+                    value = st.text_area(
+                        f"{right_field} {i+1}",
+                        key=right_key,
+                        height=95,
+                        label_visibility="collapsed",
+                    )
+                    right_edited.append(value.strip())
+
+            col_add, col_spacer = st.columns([1, 5])
+            with col_add:
+                if st.button("+ Ajouter une ligne", key=f"{key_prefix}_{_clean_editor_key(section)}_add_row"):
+                    st.session_state[rows_key] += 1
+                    st.rerun()
+
+            edited[section][left_field] = [v for v in left_edited if v]
+            edited[section][right_field] = [v for v in right_edited if v]
+
+        else:
+            category = fields[0]
+            values = _get_category_values(base_json, section, category)
+
+            rows_key = f"{key_prefix}_{_clean_editor_key(section)}_{_clean_editor_key(category)}_rows"
+            default_rows = 5 if section == "III - Priorités" else 3
+            if rows_key not in st.session_state:
+                st.session_state[rows_key] = max(default_rows, len(values))
+
+            st.markdown(f"### {category}")
+
+            collected = []
+            for i in range(st.session_state[rows_key]):
+                answer_key = f"{key_prefix}_{_clean_editor_key(section)}_{_clean_editor_key(category)}_{i+1}"
+                if answer_key not in st.session_state:
+                    st.session_state[answer_key] = values[i] if i < len(values) else ""
+
+                value = st.text_area(
+                    f"{category} {i+1}",
+                    key=answer_key,
+                    height=95,
                     label_visibility="collapsed",
                 )
-                edited[section][category] = text_lines_to_list(st.session_state[session_key])
-    return edited
+                collected.append(value.strip())
 
+            col_add, col_spacer = st.columns([1, 5])
+            with col_add:
+                if st.button("+ Ajouter une ligne", key=f"{key_prefix}_{_clean_editor_key(section)}_{_clean_editor_key(category)}_add_row"):
+                    st.session_state[rows_key] += 1
+                    st.rerun()
+
+            edited[section][category] = [v for v in collected if v]
+
+    return edited
 
 def render_import_pdf_admin():
     section_header("1. Import des PDFs corrigés")
@@ -549,8 +967,8 @@ def render_import_pdf_admin():
     if uploaded_pdf is not None:
         if st.button("Extraire le texte du PDF", type="primary", key="extract_pdf_button"):
             try:
-                raw_text = extract_text_from_pdf(uploaded_pdf)
-                parsed = parse_report_text(raw_text)
+                raw_text, layout_parsed = extract_pdf_content(uploaded_pdf)
+                parsed = parse_report_text(raw_text, layout_parsed)
                 st.session_state["new_pdf_raw_text"] = raw_text
                 st.session_state["new_pdf_parsed"] = parsed
                 st.session_state["new_pdf_filename"] = uploaded_pdf.name
