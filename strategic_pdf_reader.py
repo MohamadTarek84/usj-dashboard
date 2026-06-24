@@ -169,13 +169,13 @@ button[kind="primary"] {{
 }}
 
 /* Clean file uploader. Hide Streamlit native duplicated text and draw one label. */
-div[data-testid="stFileUploader"] section {
+div[data-testid="stFileUploader"] section {{
     padding: 12px 14px !important;
     background-color: #F1F4F8 !important;
     border: none !important;
     border-radius: 8px !important;
-}
-div[data-testid="stFileUploader"] section button {
+}}
+div[data-testid="stFileUploader"] section button {{
     min-width: 150px !important;
     width: 150px !important;
     height: 42px !important;
@@ -187,14 +187,14 @@ div[data-testid="stFileUploader"] section button {
     background-color: #ffffff !important;
     border: 1px solid #D0D6E0 !important;
     border-radius: 8px !important;
-}
-div[data-testid="stFileUploader"] section button * {
+}}
+div[data-testid="stFileUploader"] section button * {{
     display: none !important;
     visibility: hidden !important;
     color: transparent !important;
     font-size: 0 !important;
-}
-div[data-testid="stFileUploader"] section button::after {
+}}
+div[data-testid="stFileUploader"] section button::after {{
     content: "Choisir un PDF";
     position: absolute;
     left: 0;
@@ -209,10 +209,10 @@ div[data-testid="stFileUploader"] section button::after {
     line-height: 1 !important;
     font-weight: 800 !important;
     font-family: Candara, Calibri, Arial, sans-serif !important;
-}
-div[data-testid="stFileUploader"] small {
+}}
+div[data-testid="stFileUploader"] small {{
     font-size: 14px !important;
-}
+}}
 
 </style>
 """)
