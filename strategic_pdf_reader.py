@@ -214,6 +214,63 @@ div[data-testid="stFileUploader"] small {{
     font-size: 14px !important;
 }}
 
+
+/* FINAL uploader override: remove Streamlit duplicated upload text completely. */
+div[data-testid="stFileUploader"] [data-testid="stFileUploaderDropzone"] button,
+div[data-testid="stFileUploader"] button,
+div[data-testid="stFileUploader"] button[kind],
+div[data-testid="stFileUploader"] button[data-testid] {{
+    width: 165px !important;
+    min-width: 165px !important;
+    max-width: 165px !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    max-height: 44px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    position: relative !important;
+    overflow: hidden !important;
+    text-indent: -9999px !important;
+    font-size: 0 !important;
+    line-height: 0 !important;
+    color: transparent !important;
+    -webkit-text-fill-color: transparent !important;
+    background: #ffffff !important;
+    border: 1px solid #D0D6E0 !important;
+    border-radius: 8px !important;
+}}
+
+div[data-testid="stFileUploader"] button *,
+div[data-testid="stFileUploader"] button p,
+div[data-testid="stFileUploader"] button span,
+div[data-testid="stFileUploader"] button svg {{
+    display: none !important;
+    visibility: hidden !important;
+    width: 0 !important;
+    height: 0 !important;
+    font-size: 0 !important;
+    line-height: 0 !important;
+    color: transparent !important;
+    -webkit-text-fill-color: transparent !important;
+}}
+
+div[data-testid="stFileUploader"] button::before {{
+    content: "Choisir un PDF" !important;
+    position: absolute !important;
+    inset: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-indent: 0 !important;
+    font-family: Candara, Calibri, Arial, sans-serif !important;
+    font-size: 15px !important;
+    line-height: 1 !important;
+    font-weight: 800 !important;
+    color: #001F5B !important;
+    -webkit-text-fill-color: #001F5B !important;
+    white-space: nowrap !important;
+}}
+
 </style>
 """)
 
@@ -287,53 +344,51 @@ def extract_text_from_pdf(uploaded_pdf):
     return "\n".join(pages_text)
 
 
-def _line_text_from_words(words):
-    return " ".join(w[4] for w in sorted(words, key=lambda w: w[0])).strip()
+
+def _block_text(value):
+    text = str(value or "")
+    text = text.replace("\r", "\n")
+    text = re.sub(r"[ \t]+", " ", text)
+    text = re.sub(r"\n{2,}", "\n", text)
+    return text.strip()
 
 
-def extract_pdf_lines_with_layout(uploaded_pdf):
-    """Return text lines with coordinates. This keeps the visual left/right columns."""
+def extract_pdf_blocks_with_layout(uploaded_pdf):
+    """Return PDF text blocks with coordinates. A filled answer box is usually one block."""
     if fitz is None:
         raise ImportError("PyMuPDF is not installed. Add pymupdf to requirements.txt.")
 
     pdf_bytes = uploaded_pdf.getvalue()
     doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-    all_lines = []
+    blocks = []
 
     for page_index, page in enumerate(doc):
         page_width = float(page.rect.width)
-        words = page.get_text("words")
-        grouped = {}
-
-        for w in words:
-            x0, y0, x1, y1, txt, block_no, line_no, word_no = w
-            key = (page_index, block_no, line_no)
-            grouped.setdefault(key, []).append(w)
-
-        for key, group in grouped.items():
-            text = _line_text_from_words(group)
+        raw_blocks = page.get_text("blocks")
+        for b in raw_blocks:
+            if len(b) < 5:
+                continue
+            x0, y0, x1, y1, text = b[:5]
+            text = _block_text(text)
             if not text:
                 continue
-            x0 = min(w[0] for w in group)
-            y0 = min(w[1] for w in group)
-            x1 = max(w[2] for w in group)
-            y1 = max(w[3] for w in group)
-            all_lines.append({
+            blocks.append({
                 "page": page_index,
                 "page_width": page_width,
-                "x0": x0,
-                "x1": x1,
-                "y0": y0,
-                "y1": y1,
+                "x0": float(x0),
+                "x1": float(x1),
+                "y0": float(y0),
+                "y1": float(y1),
                 "text": text,
                 "norm": normalize_for_match(text),
             })
 
-    all_lines.sort(key=lambda d: (d["page"], d["y0"], d["x0"]))
-    return all_lines
+    blocks.sort(key=lambda d: (d["page"], d["y0"], d["x0"]))
+    return blocks
 
 
 def _is_section_heading(norm_text, section_no=None):
+    norm_text = normalize_for_match(norm_text)
     if section_no == 1:
         return bool(re.search(r"\bi\s*[-–—.]?\s*forces\s+et\s+faiblesses", norm_text))
     if section_no == 2:
@@ -348,172 +403,169 @@ def _is_section_heading(norm_text, section_no=None):
 def _clean_answer_line_for_layout(text):
     line = clean_text(text)
     line = re.sub(r"^[\u2022\-*–—\d\.\)\s]+", "", line).strip()
+    line = re.sub(r"\s+", " ", line)
     norm = normalize_for_match(line)
 
     blocked_exact = {
         "", "et", "forces", "faiblesses", "opportunites", "menaces",
-        "priorites", "priorite", "conclusion"
+        "priorites", "priorite", "conclusion", "niveau usj"
     }
     if norm in blocked_exact:
         return ""
 
     blocked_fragments = [
-        "i - forces et faiblesses",
-        "ii - opportunites et menaces",
-        "iii - priorites",
-        "iv - conclusion",
-        "niveau usj",
-        "maximum cinq",
-        "merci de",
-        "quels sont",
-        "thematique",
-        "importer le rapport",
-        "plan strategique",
+        "i - forces et faiblesses", "ii - opportunites et menaces",
+        "iii - priorites", "iv - conclusion", "maximum cinq", "merci de",
+        "quels sont", "thematique", "importer le rapport", "plan strategique",
+        "verification et correction", "ajouter une ligne"
     ]
     if any(fragment in norm for fragment in blocked_fragments):
         return ""
-
     return line
 
 
-def _group_column_lines_into_items(lines):
-    """Group wrapped lines into answer boxes using vertical gaps."""
-    if not lines:
+def _split_possible_combined_answers(text):
+    """Split a PDF block when several answer boxes were merged by PDF extraction."""
+    text = _block_text(text)
+    if not text:
         return []
 
-    lines = sorted(lines, key=lambda d: (d["page"], d["y0"], d["x0"]))
-    items = []
-    current = []
-    last_page = None
-    last_y = None
+    # Remove category headings accidentally included inside the block.
+    text = re.sub(r"(?i)^\s*(forces|faiblesses|opportunit[eé]s|menaces|priorit[eé]s|conclusion)\s*[:：]?\s*", "", text).strip()
+    text = re.sub(r"(?i)\b(faiblesses|opportunit[eé]s|menaces|priorit[eé]s|conclusion)\s*[:：]?\s*", "\n", text)
 
-    for ln in lines:
-        text = _clean_answer_line_for_layout(ln["text"])
-        if not text:
+    raw_parts = []
+    for line in text.splitlines():
+        line = _clean_answer_line_for_layout(line)
+        if not line:
             continue
+        raw_parts.append(line)
 
-        gap = None
-        if last_y is not None and last_page == ln["page"]:
-            gap = ln["y0"] - last_y
+    if not raw_parts:
+        return []
 
-        if current and (last_page != ln["page"] or (gap is not None and gap > 18)):
-            items.append(" ".join(current).strip())
-            current = []
+    parts = []
+    starters = (
+        "Les ", "Le ", "La ", "L’", "L'", "Il ", "On ", "Manque ", "Trop ",
+        "Matériel ", "Materiel ", "Insuffisance ", "Formation ", "Corps ",
+        "Clarté ", "Clarte ", "Instabilité ", "Instabilite ", "Possibilités ",
+        "Possibilites ", "La vague ", "Au ouvre ", "Le marché ", "Les universités ",
+        "L’évolution ", "L'evolution "
+    )
 
-        current.append(text)
-        last_page = ln["page"]
-        last_y = ln["y0"]
-
-    if current:
-        items.append(" ".join(current).strip())
+    for part in raw_parts:
+        # Split only when a long paragraph clearly contains several short answers.
+        if len(part) > 130:
+            pattern = r"(?<=[\.?!])\s+(?=(?:" + "|".join(re.escape(x) for x in starters) + r"))"
+            subparts = re.split(pattern, part)
+        else:
+            subparts = [part]
+        for sp in subparts:
+            sp = _clean_answer_line_for_layout(sp)
+            if sp:
+                parts.append(sp)
 
     cleaned = []
     seen = set()
-    for item in items:
-        item = clean_text(item)
-        norm = normalize_for_match(item)
-        if item and norm not in seen:
-            cleaned.append(item)
-            seen.add(norm)
+    for part in parts:
+        key = normalize_for_match(part)
+        if key not in seen:
+            cleaned.append(part)
+            seen.add(key)
     return cleaned
 
 
-def _extract_two_column_section(lines, section_no, left_header, right_header, next_section_no):
+def _slice_section_blocks(blocks, section_no, next_section_no):
     start_idx = None
-    end_idx = len(lines)
-
-    for i, ln in enumerate(lines):
-        if _is_section_heading(ln["norm"], section_no):
+    end_idx = len(blocks)
+    for i, block in enumerate(blocks):
+        if _is_section_heading(block["norm"], section_no):
             start_idx = i
             break
-
     if start_idx is None:
-        return [], []
-
-    for j in range(start_idx + 1, len(lines)):
-        if _is_section_heading(lines[j]["norm"], next_section_no):
+        return []
+    for j in range(start_idx + 1, len(blocks)):
+        if next_section_no and _is_section_heading(blocks[j]["norm"], next_section_no):
             end_idx = j
             break
+    return blocks[start_idx:end_idx]
 
-    section_lines = lines[start_idx:end_idx]
+
+def _extract_two_column_section(blocks, section_no, left_header, right_header, next_section_no):
+    section_blocks = _slice_section_blocks(blocks, section_no, next_section_no)
+    if not section_blocks:
+        return [], []
 
     left_norm = normalize_for_match(left_header)
     right_norm = normalize_for_match(right_header)
 
     header_y = None
-    for ln in section_lines:
-        if normalize_for_match(ln["text"]) in [left_norm, right_norm]:
-            header_y = ln["y0"] if header_y is None else min(header_y, ln["y0"])
+    for block in section_blocks:
+        norm = normalize_for_match(block["text"])
+        if norm in {left_norm, right_norm}:
+            header_y = block["y0"] if header_y is None else min(header_y, block["y0"])
 
     if header_y is None:
-        for ln in section_lines:
-            if left_norm in ln["norm"] or right_norm in ln["norm"]:
-                header_y = ln["y0"]
+        # Use the first occurrence of either header as the table header line.
+        for block in section_blocks:
+            if left_norm in block["norm"] or right_norm in block["norm"]:
+                header_y = block["y0"]
                 break
 
-    body = []
-    for ln in section_lines:
-        if header_y is not None and ln["y0"] <= header_y + 6:
+    left_items, right_items = [], []
+    for block in section_blocks:
+        if header_y is not None and block["y0"] <= header_y + 8:
             continue
-        if _clean_answer_line_for_layout(ln["text"]):
-            body.append(ln)
 
-    if not body:
-        return [], []
+        # Skip any block that is basically a heading.
+        if not _clean_answer_line_for_layout(block["text"]):
+            continue
 
-    left_lines = []
-    right_lines = []
-    for ln in body:
-        page_mid = ln["page_width"] / 2.0
-        x_center = (ln["x0"] + ln["x1"]) / 2.0
-        if x_center < page_mid:
-            left_lines.append(ln)
-        else:
-            right_lines.append(ln)
+        x_center = (block["x0"] + block["x1"]) / 2.0
+        page_mid = block["page_width"] / 2.0
+        target = left_items if x_center < page_mid else right_items
+        target.extend(_split_possible_combined_answers(block["text"]))
 
-    return _group_column_lines_into_items(left_lines), _group_column_lines_into_items(right_lines)
+    return _dedupe_answers(left_items), _dedupe_answers(right_items)
 
 
-def _extract_single_column_section(lines, section_no, next_section_no):
-    start_idx = None
-    end_idx = len(lines)
-
-    for i, ln in enumerate(lines):
-        if _is_section_heading(ln["norm"], section_no):
-            start_idx = i
-            break
-
-    if start_idx is None:
+def _extract_single_column_section(blocks, section_no, next_section_no):
+    section_blocks = _slice_section_blocks(blocks, section_no, next_section_no)
+    if not section_blocks:
         return []
+    items = []
+    for block in section_blocks[1:]:
+        if _clean_answer_line_for_layout(block["text"]):
+            items.extend(_split_possible_combined_answers(block["text"]))
+    return _dedupe_answers(items)
 
-    for j in range(start_idx + 1, len(lines)):
-        if next_section_no and _is_section_heading(lines[j]["norm"], next_section_no):
-            end_idx = j
-            break
 
-    body = []
-    for ln in lines[start_idx + 1:end_idx]:
-        text = _clean_answer_line_for_layout(ln["text"])
-        if text:
-            item_ln = dict(ln)
-            item_ln["text"] = text
-            body.append(item_ln)
-
-    return _group_column_lines_into_items(body)
+def _dedupe_answers(items):
+    cleaned = []
+    seen = set()
+    for item in items:
+        item = _clean_answer_line_for_layout(item)
+        if not item:
+            continue
+        norm = normalize_for_match(item)
+        if norm not in seen:
+            cleaned.append(item)
+            seen.add(norm)
+    return cleaned
 
 
 def parse_report_pdf_layout(uploaded_pdf, raw_text=None):
-    """Primary parser. Uses PDF visual coordinates instead of plain text order."""
-    lines = extract_pdf_lines_with_layout(uploaded_pdf)
+    """Primary parser: reads visual PDF blocks, preserving left/right answer boxes."""
+    blocks = extract_pdf_blocks_with_layout(uploaded_pdf)
 
     forces, faiblesses = _extract_two_column_section(
-        lines, 1, "Forces", "Faiblesses", 2
+        blocks, 1, "Forces", "Faiblesses", 2
     )
     opportunites, menaces = _extract_two_column_section(
-        lines, 2, "Opportunités", "Menaces", 3
+        blocks, 2, "Opportunités", "Menaces", 3
     )
-    priorites = _extract_single_column_section(lines, 3, 4)
-    conclusion = _extract_single_column_section(lines, 4, None)
+    priorites = _extract_single_column_section(blocks, 3, 4)
+    conclusion = _extract_single_column_section(blocks, 4, None)
 
     parsed = {
         "I - Forces et Faiblesses": {
@@ -533,7 +585,8 @@ def parse_report_pdf_layout(uploaded_pdf, raw_text=None):
         "_section_text": {}
     }
 
-    if raw_text and not any(parsed[s][c] for s in ADMIN_FIELDS for c in ADMIN_FIELDS[s]):
+    has_values = any(parsed[s][c] for s in ADMIN_FIELDS for c in ADMIN_FIELDS[s])
+    if raw_text and not has_values:
         parsed = parse_report_text(raw_text)
 
     return parsed
@@ -932,7 +985,8 @@ def render_import_pdf_admin():
     with col_sg:
         subgroup = st.selectbox("Sous-groupe", SUBGROUPS, key="upload_subgroup")
 
-    uploaded_pdf = st.file_uploader("Importer le rapport PDF corrigé", type=["pdf"], key="pdf_upload")
+    st.markdown("**Importer le rapport PDF corrigé**")
+    uploaded_pdf = st.file_uploader("Choisir un PDF", type=["pdf"], key="pdf_upload", label_visibility="collapsed")
 
     if uploaded_pdf is not None:
         if st.button("Extraire le texte du PDF", type="primary", key="extract_pdf_button"):
