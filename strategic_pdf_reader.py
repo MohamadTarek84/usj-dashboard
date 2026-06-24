@@ -84,39 +84,39 @@ def image_to_base64(image_path):
 
 
 def apply_usj_style():
-    html_block(f"""
+    css = """
 <style>
-#MainMenu, header, footer, [data-testid="stToolbar"], [data-testid="stDecoration"], [data-testid="stStatusWidget"] {{
+#MainMenu, header, footer, [data-testid="stToolbar"], [data-testid="stDecoration"], [data-testid="stStatusWidget"] {
     display:none !important;
     visibility:hidden !important;
-}}
-html, body, [class*="css"], [class*="st-"], .stApp {{
+}
+html, body, [class*="css"], [class*="st-"], .stApp {
     font-family: Candara, Calibri, Arial, sans-serif !important;
-    color:{USJ_TEXT};
-}}
-.main .block-container, div[data-testid="stAppViewContainer"] .block-container {{
+    color:__USJ_TEXT__;
+}
+.main .block-container, div[data-testid="stAppViewContainer"] .block-container {
     padding-left:3rem !important;
     padding-right:3rem !important;
     max-width:100% !important;
-}}
-h1, h2, h3, h4, h5, h6 {{
-    color:{USJ_BLUE} !important;
+}
+h1, h2, h3, h4, h5, h6 {
+    color:__USJ_BLUE__ !important;
     font-family: Candara, Calibri, Arial, sans-serif !important;
     font-weight:800 !important;
-}}
+}
 div[data-testid="stTextInput"] input,
 div[data-testid="stTextArea"] textarea,
-div[data-testid="stSelectbox"] div[data-baseweb="select"] > div {{
+div[data-testid="stSelectbox"] div[data-baseweb="select"] > div {
     background-color:#E3DED9 !important;
     color:#000000 !important;
     border:none !important;
     border-radius:6px !important;
-}}
-div[data-testid="stTextArea"] textarea {{
+}
+div[data-testid="stTextArea"] textarea {
     border:1px solid #595959 !important;
     line-height:1.35 !important;
-}}
-.stButton button, .stDownloadButton button, div[data-testid="stFormSubmitButton"] button {{
+}
+.stButton button, .stDownloadButton button, div[data-testid="stFormSubmitButton"] button {
     background-color:#0070C0 !important;
     color:white !important;
     border-radius:8px !important;
@@ -124,52 +124,94 @@ div[data-testid="stTextArea"] textarea {{
     font-weight:800 !important;
     font-size:17px !important;
     padding:9px 18px !important;
-}}
-.stButton button p, .stDownloadButton button p, div[data-testid="stFormSubmitButton"] button p {{
+}
+.stButton button p, .stDownloadButton button p, div[data-testid="stFormSubmitButton"] button p {
     color:white !important;
-}}
-button[kind="primary"] {{
-    background-color:{USJ_RED} !important;
-    border-color:{USJ_RED} !important;
-}}
-.usj-card {{
+}
+button[kind="primary"] {
+    background-color:__USJ_RED__ !important;
+    border-color:__USJ_RED__ !important;
+}
+.usj-card {
     background:#ffffff;
     padding:20px 24px;
     border-radius:12px;
     border:1px solid #E2E8F0;
     box-shadow:0 2px 10px rgba(0,0,0,0.06);
     margin-bottom:18px;
-}}
-.usj-small-card {{
-    background:{USJ_LIGHT_BLUE};
+}
+.usj-small-card {
+    background:__USJ_LIGHT_BLUE__;
     padding:14px 18px;
     border-radius:10px;
-    border-left:7px solid {USJ_BLUE};
+    border-left:7px solid __USJ_BLUE__;
     margin-top:6px;
     margin-bottom:12px;
-}}
-.readonly-answer {{
+}
+.readonly-answer {
     background:#F7FAFD;
     border:1px solid #D6DEE8;
-    border-left:6px solid {USJ_BLUE};
+    border-left:6px solid __USJ_BLUE__;
     padding:12px 16px;
     border-radius:8px;
     margin:8px 0;
     font-size:17px;
     line-height:1.4;
-}}
-.meta-badge {{
+}
+.meta-badge {
     display:inline-block;
-    background:{USJ_BLUE};
+    background:__USJ_BLUE__;
     color:white;
     border-radius:999px;
     padding:6px 12px;
     margin-right:8px;
     font-weight:800;
-}}
-</style>
-""")
+}
 
+/* File uploader: make the native button large enough and remove icon/text overlap. */
+div[data-testid="stFileUploader"] section {
+    padding: 12px 14px !important;
+    background-color: #F1F4F8 !important;
+    border: none !important;
+    border-radius: 8px !important;
+}
+div[data-testid="stFileUploader"] button {
+    min-width: 230px !important;
+    width: 230px !important;
+    height: 46px !important;
+    padding: 0 !important;
+    position: relative !important;
+    overflow: hidden !important;
+    background: #ffffff !important;
+    border: 1px solid #D0D6E0 !important;
+    border-radius: 8px !important;
+}
+div[data-testid="stFileUploader"] button * {
+    opacity: 0 !important;
+}
+div[data-testid="stFileUploader"] button::after {
+    content: "Choisir un fichier PDF";
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #001F5B !important;
+    font-size: 15px !important;
+    font-weight: 800 !important;
+    font-family: Candara, Calibri, Arial, sans-serif !important;
+    white-space: nowrap !important;
+}
+div[data-testid="stFileUploader"] small {
+    font-size: 14px !important;
+}
+</style>
+"""
+    css = css.replace("__USJ_TEXT__", USJ_TEXT)
+    css = css.replace("__USJ_BLUE__", USJ_BLUE)
+    css = css.replace("__USJ_RED__", USJ_RED)
+    css = css.replace("__USJ_LIGHT_BLUE__", USJ_LIGHT_BLUE)
+    html_block(css)
 
 def render_header():
     logo_src = image_to_base64(LOGO_PATH)
@@ -230,7 +272,7 @@ def extract_text_from_pdf(uploaded_pdf):
     if fitz is None:
         raise ImportError("PyMuPDF is not installed. Add pymupdf to requirements.txt.")
 
-    pdf_bytes = uploaded_pdf.read()
+    pdf_bytes = uploaded_pdf.getvalue()
     doc = fitz.open(stream=pdf_bytes, filetype="pdf")
     pages_text = []
 
@@ -239,6 +281,402 @@ def extract_text_from_pdf(uploaded_pdf):
 
     return "\n".join(pages_text)
 
+
+
+def _block_text(value):
+    text = str(value or "")
+    text = text.replace("\r", "\n")
+    text = re.sub(r"[ \t]+", " ", text)
+    text = re.sub(r"\n{2,}", "\n", text)
+    return text.strip()
+
+
+def extract_pdf_blocks_with_layout(uploaded_pdf):
+    """Return PDF text blocks with coordinates. A filled answer box is usually one block."""
+    if fitz is None:
+        raise ImportError("PyMuPDF is not installed. Add pymupdf to requirements.txt.")
+
+    pdf_bytes = uploaded_pdf.getvalue()
+    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+    blocks = []
+
+    for page_index, page in enumerate(doc):
+        page_width = float(page.rect.width)
+        raw_blocks = page.get_text("blocks")
+        for b in raw_blocks:
+            if len(b) < 5:
+                continue
+            x0, y0, x1, y1, text = b[:5]
+            text = _block_text(text)
+            if not text:
+                continue
+            blocks.append({
+                "page": page_index,
+                "page_width": page_width,
+                "x0": float(x0),
+                "x1": float(x1),
+                "y0": float(y0),
+                "y1": float(y1),
+                "text": text,
+                "norm": normalize_for_match(text),
+            })
+
+    blocks.sort(key=lambda d: (d["page"], d["y0"], d["x0"]))
+    return blocks
+
+
+def _is_section_heading(norm_text, section_no=None):
+    norm_text = normalize_for_match(norm_text)
+    if section_no == 1:
+        return bool(re.search(r"\bi\s*[-–—.]?\s*forces\s+et\s+faiblesses", norm_text))
+    if section_no == 2:
+        return bool(re.search(r"\bii\s*[-–—.]?\s*opportunites\s+et\s+menaces", norm_text))
+    if section_no == 3:
+        return bool(re.search(r"\biii\s*[-–—.]?\s*prior", norm_text))
+    if section_no == 4:
+        return bool(re.search(r"\biv\s*[-–—.]?\s*conclusion", norm_text))
+    return bool(re.search(r"\b(i|ii|iii|iv)\s*[-–—.]?", norm_text))
+
+
+def _clean_answer_line_for_layout(text):
+    line = clean_text(text)
+    line = re.sub(r"^[\u2022\-*–—\d\.\)\s]+", "", line).strip()
+    line = re.sub(r"\s+", " ", line)
+    norm = normalize_for_match(line)
+
+    blocked_exact = {
+        "", "et", "forces", "faiblesses", "opportunites", "menaces",
+        "priorites", "priorite", "conclusion", "niveau usj"
+    }
+    if norm in blocked_exact:
+        return ""
+
+    blocked_fragments = [
+        "i - forces et faiblesses", "ii - opportunites et menaces",
+        "iii - priorites", "iv - conclusion", "maximum cinq", "merci de",
+        "quels sont", "thematique", "importer le rapport", "plan strategique",
+        "verification et correction", "ajouter une ligne"
+    ]
+    if any(fragment in norm for fragment in blocked_fragments):
+        return ""
+    return line
+
+
+def _merge_wrapped_pdf_lines(lines):
+    """Join text lines that belong to the same visual PDF answer box.
+
+    PyMuPDF can split one box into two text blocks/lines, for example:
+    "Manque de process pour la nomination de doyens, directeurs," + "etc."
+    This function keeps that as one answer instead of creating a separate box for "etc.".
+    """
+    merged = []
+
+    continuation_tokens = {"etc.", "etc", "et", "ou"}
+
+    for line in lines:
+        line = _clean_answer_line_for_layout(line)
+        if not line:
+            continue
+
+        norm = normalize_for_match(line).strip()
+        starts_lower = bool(line) and line[0].islower()
+        is_short_continuation = norm in continuation_tokens or len(line.split()) <= 2
+
+        if merged and (
+            merged[-1].rstrip().endswith((",", ";", ":", "("))
+            or starts_lower
+            or is_short_continuation
+        ):
+            merged[-1] = (merged[-1].rstrip() + " " + line.lstrip()).strip()
+        else:
+            merged.append(line)
+
+    return merged
+
+
+def _split_possible_combined_answers(text):
+    """Split a PDF block when several answer boxes were merged, but keep wrapped lines together."""
+    text = _block_text(text)
+    if not text:
+        return []
+
+    # Remove category headings accidentally included inside the block.
+    text = re.sub(r"(?i)^\s*(forces|faiblesses|opportunit[eé]s|menaces|priorit[eé]s|conclusion)\s*[:：]?\s*", "", text).strip()
+    text = re.sub(r"(?i)\b(faiblesses|opportunit[eé]s|menaces|priorit[eé]s|conclusion)\s*[:：]?\s*", "\n", text)
+
+    raw_lines = [_clean_answer_line_for_layout(line) for line in text.splitlines()]
+    raw_lines = [line for line in raw_lines if line]
+
+    if not raw_lines:
+        return []
+
+    # First join wrapped lines from the same PDF box.
+    raw_parts = _merge_wrapped_pdf_lines(raw_lines)
+
+    parts = []
+    starters = (
+        "Les ", "Le ", "La ", "L’", "L'", "Il ", "On ", "Manque ", "Trop ",
+        "Matériel ", "Materiel ", "Insuffisance ", "Formation ", "Corps ",
+        "Clarté ", "Clarte ", "Instabilité ", "Instabilite ", "Possibilités ",
+        "Possibilites ", "La vague ", "Au ouvre ", "Le marché ", "Les universités ",
+        "L’évolution ", "L'evolution "
+    )
+
+    for part in raw_parts:
+        # Split only when one extracted block clearly contains several answer boxes.
+        if len(part) > 130:
+            pattern = r"(?<=[\.?!])\s+(?=(?:" + "|".join(re.escape(x) for x in starters) + r"))"
+            subparts = re.split(pattern, part)
+        else:
+            subparts = [part]
+
+        for sp in subparts:
+            sp = _clean_answer_line_for_layout(sp)
+            if sp:
+                parts.append(sp)
+
+    cleaned = []
+    seen = set()
+    for part in parts:
+        key = normalize_for_match(part)
+        if key not in seen:
+            cleaned.append(part)
+            seen.add(key)
+    return cleaned
+
+
+def _slice_section_blocks(blocks, section_no, next_section_no):
+    start_idx = None
+    end_idx = len(blocks)
+    for i, block in enumerate(blocks):
+        if _is_section_heading(block["norm"], section_no):
+            start_idx = i
+            break
+    if start_idx is None:
+        return []
+    for j in range(start_idx + 1, len(blocks)):
+        if next_section_no and _is_section_heading(blocks[j]["norm"], next_section_no):
+            end_idx = j
+            break
+    return blocks[start_idx:end_idx]
+
+
+def _extract_two_column_section(blocks, section_no, left_header, right_header, next_section_no):
+    section_blocks = _slice_section_blocks(blocks, section_no, next_section_no)
+    if not section_blocks:
+        return [], []
+
+    left_norm = normalize_for_match(left_header)
+    right_norm = normalize_for_match(right_header)
+
+    header_y = None
+    for block in section_blocks:
+        norm = normalize_for_match(block["text"])
+        if norm in {left_norm, right_norm}:
+            header_y = block["y0"] if header_y is None else min(header_y, block["y0"])
+
+    if header_y is None:
+        # Use the first occurrence of either header as the table header line.
+        for block in section_blocks:
+            if left_norm in block["norm"] or right_norm in block["norm"]:
+                header_y = block["y0"]
+                break
+
+    left_items, right_items = [], []
+    for block in section_blocks:
+        if header_y is not None and block["y0"] <= header_y + 8:
+            continue
+
+        # Skip any block that is basically a heading.
+        if not _clean_answer_line_for_layout(block["text"]):
+            continue
+
+        x_center = (block["x0"] + block["x1"]) / 2.0
+        page_mid = block["page_width"] / 2.0
+        target = left_items if x_center < page_mid else right_items
+        target.extend(_split_possible_combined_answers(block["text"]))
+
+    return _dedupe_answers(left_items), _dedupe_answers(right_items)
+
+
+def _extract_single_column_section(blocks, section_no, next_section_no):
+    section_blocks = _slice_section_blocks(blocks, section_no, next_section_no)
+    if not section_blocks:
+        return []
+    items = []
+    for block in section_blocks[1:]:
+        if _clean_answer_line_for_layout(block["text"]):
+            items.extend(_split_possible_combined_answers(block["text"]))
+    return _dedupe_answers(items)
+
+
+def _dedupe_answers(items):
+    cleaned = []
+    seen = set()
+    for item in items:
+        item = _clean_answer_line_for_layout(item)
+        if not item:
+            continue
+        norm = normalize_for_match(item)
+        if norm not in seen:
+            cleaned.append(item)
+            seen.add(norm)
+    return cleaned
+
+
+def _text_inside_rect(page, rect):
+    # A small inset avoids reading text from bordering titles outside the answer box.
+    try:
+        r = fitz.Rect(rect)
+        r.x0 += 2
+        r.y0 += 2
+        r.x1 -= 2
+        r.y1 -= 2
+        return _block_text(page.get_textbox(r))
+    except Exception:
+        return ""
+
+
+def _get_heading_positions(doc):
+    headings = []
+    patterns = [
+        (1, r"\bi\s*[-–—.]?\s*forces\s+et\s+faiblesses"),
+        (2, r"\bii\s*[-–—.]?\s*opportunites\s+et\s+menaces"),
+        (3, r"\biii\s*[-–—.]?\s*prior"),
+        (4, r"\biv\s*[-–—.]?\s*conclusion"),
+    ]
+    for page_index, page in enumerate(doc):
+        for b in page.get_text("blocks"):
+            if len(b) < 5:
+                continue
+            x0, y0, x1, y1, txt = b[:5]
+            norm = normalize_for_match(txt)
+            for number, pattern in patterns:
+                if re.search(pattern, norm):
+                    headings.append({"section": number, "page": page_index, "y": float(y0)})
+                    break
+    headings.sort(key=lambda d: (d["page"], d["y"]))
+    return headings
+
+
+def _section_for_position(page_index, y0, headings):
+    section = None
+    for h in headings:
+        if (h["page"] < page_index) or (h["page"] == page_index and h["y"] <= y0):
+            section = h["section"]
+        else:
+            break
+    return section
+
+
+def _extract_answer_rectangles(uploaded_pdf):
+    """Extract answers by reading text inside visible PDF boxes.
+
+    This avoids the old error where PyMuPDF merged the right and left columns into one
+    long text block. Each visible answer rectangle becomes one editable platform box.
+    """
+    if fitz is None:
+        raise ImportError("PyMuPDF is not installed. Add pymupdf to requirements.txt.")
+
+    pdf_bytes = uploaded_pdf.getvalue()
+    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+    headings = _get_heading_positions(doc)
+
+    result = {
+        "I - Forces et Faiblesses": {"Forces": [], "Faiblesses": []},
+        "II - Opportunités et Menaces": {"Opportunités": [], "Menaces": []},
+        "III - Priorités": {"Priorités": []},
+        "IV - Conclusion": {"Conclusion": []},
+        "_section_text": {},
+    }
+
+    seen_rects = set()
+    for page_index, page in enumerate(doc):
+        page_w = float(page.rect.width)
+        drawings = page.get_drawings()
+        rects = []
+
+        for d in drawings:
+            r = d.get("rect")
+            if not r:
+                continue
+            rect = fitz.Rect(r)
+            w = rect.width
+            h = rect.height
+
+            # Text answer boxes are wide rectangles. This excludes separators, titles, and small decorative lines.
+            if w < page_w * 0.25 or h < 18 or h > 180:
+                continue
+            if rect.y0 < 35:
+                continue
+
+            key = (page_index, round(rect.x0, 1), round(rect.y0, 1), round(rect.x1, 1), round(rect.y1, 1))
+            if key in seen_rects:
+                continue
+            seen_rects.add(key)
+            rects.append(rect)
+
+        rects.sort(key=lambda r: (round(r.y0, 1), r.x0))
+
+        for rect in rects:
+            section_no = _section_for_position(page_index, rect.y0, headings)
+            if section_no not in {1, 2, 3, 4}:
+                continue
+
+            text = _text_inside_rect(page, rect)
+            item = _clean_answer_line_for_layout(text)
+            if not item:
+                continue
+
+            # Keep wrapped text in one box. Do not split by sentence here because the visual PDF box is the source of truth.
+            item = " ".join([line.strip() for line in item.splitlines() if line.strip()])
+            item = re.sub(r"\s+", " ", item).strip()
+            if not item:
+                continue
+
+            center_x = (rect.x0 + rect.x1) / 2.0
+            if section_no == 1:
+                target = "Forces" if center_x < page_w / 2 else "Faiblesses"
+                result["I - Forces et Faiblesses"][target].append(item)
+            elif section_no == 2:
+                target = "Opportunités" if center_x < page_w / 2 else "Menaces"
+                result["II - Opportunités et Menaces"][target].append(item)
+            elif section_no == 3:
+                result["III - Priorités"]["Priorités"].append(item)
+            elif section_no == 4:
+                result["IV - Conclusion"]["Conclusion"].append(item)
+
+    for section, fields in ADMIN_FIELDS.items():
+        for category in fields:
+            result[section][category] = _dedupe_answers(result[section][category])
+
+    return result
+
+
+def parse_report_pdf_layout(uploaded_pdf, raw_text=None):
+    """Primary parser: one visible PDF answer box becomes one editable platform box."""
+    parsed = _extract_answer_rectangles(uploaded_pdf)
+
+    # If the PDF has no drawable rectangles, use block layout, but never use the old raw-text
+    # parser for SWOT tables because it creates the merged-column errors shown in the screenshots.
+    has_values = any(parsed[s][c] for s in ADMIN_FIELDS for c in ADMIN_FIELDS[s])
+    if has_values:
+        return parsed
+
+    blocks = extract_pdf_blocks_with_layout(uploaded_pdf)
+    forces, faiblesses = _extract_two_column_section(blocks, 1, "Forces", "Faiblesses", 2)
+    opportunites, menaces = _extract_two_column_section(blocks, 2, "Opportunités", "Menaces", 3)
+    priorites = _extract_single_column_section(blocks, 3, 4)
+    conclusion = _extract_single_column_section(blocks, 4, None)
+
+    parsed = {
+        "I - Forces et Faiblesses": {"Forces": forces, "Faiblesses": faiblesses},
+        "II - Opportunités et Menaces": {"Opportunités": opportunites, "Menaces": menaces},
+        "III - Priorités": {"Priorités": priorites},
+        "IV - Conclusion": {"Conclusion": conclusion},
+        "_section_text": {},
+    }
+    return parsed
 
 def clean_text(value):
     value = str(value or "")
@@ -505,27 +943,116 @@ def build_export_df():
     return df
 
 
+def _get_base_list(base_json, section, category):
+    if not isinstance(base_json, dict):
+        return []
+    values = base_json.get(section, {}).get(category, [])
+    if isinstance(values, list):
+        return [str(v).strip() for v in values if str(v).strip()]
+    if isinstance(values, str):
+        return text_lines_to_list(values)
+    return []
+
+
 def render_admin_json_editor(base_json, key_prefix):
     edited = {}
+
     for section in SECTION_LABELS:
         section_header(section)
         edited[section] = {}
         fields = ADMIN_FIELDS[section]
-        cols = st.columns(len(fields)) if len(fields) > 1 else [st.container()]
-        for col, category in zip(cols, fields):
-            with col:
-                st.markdown(f"### {category}")
-                text_value = json_to_text_lines(base_json, section, category)
-                session_key = f"{key_prefix}_{section}_{category}"
+
+        if len(fields) == 2:
+            left_field, right_field = fields
+            left_values = _get_base_list(base_json, section, left_field)
+            right_values = _get_base_list(base_json, section, right_field)
+
+            rows_key = f"{key_prefix}_{section}_rows"
+            if rows_key not in st.session_state:
+                st.session_state[rows_key] = max(5, len(left_values), len(right_values))
+
+            col_left, col_right = st.columns(2)
+
+            with col_left:
+                st.markdown(f"### {left_field}")
+            with col_right:
+                st.markdown(f"### {right_field}")
+
+            left_result = []
+            right_result = []
+
+            for i in range(st.session_state[rows_key]):
+                col_left, col_right = st.columns(2)
+
+                with col_left:
+                    default = left_values[i] if i < len(left_values) else ""
+                    session_key = f"{key_prefix}_{section}_{left_field}_{i}"
+                    if session_key not in st.session_state:
+                        st.session_state[session_key] = default
+                    st.text_area(
+                        f"{left_field} {i + 1}",
+                        key=session_key,
+                        height=92,
+                        label_visibility="collapsed",
+                    )
+                    value = str(st.session_state.get(session_key, "")).strip()
+                    if value:
+                        left_result.append(value)
+
+                with col_right:
+                    default = right_values[i] if i < len(right_values) else ""
+                    session_key = f"{key_prefix}_{section}_{right_field}_{i}"
+                    if session_key not in st.session_state:
+                        st.session_state[session_key] = default
+                    st.text_area(
+                        f"{right_field} {i + 1}",
+                        key=session_key,
+                        height=92,
+                        label_visibility="collapsed",
+                    )
+                    value = str(st.session_state.get(session_key, "")).strip()
+                    if value:
+                        right_result.append(value)
+
+            if st.button("+ Ajouter une ligne", key=f"{key_prefix}_{section}_add_row"):
+                st.session_state[rows_key] += 1
+                st.rerun()
+
+            edited[section][left_field] = left_result
+            edited[section][right_field] = right_result
+
+        else:
+            category = fields[0]
+            values = _get_base_list(base_json, section, category)
+
+            rows_key = f"{key_prefix}_{section}_{category}_rows"
+            if rows_key not in st.session_state:
+                st.session_state[rows_key] = max(3, len(values))
+
+            st.markdown(f"### {category}")
+            result = []
+
+            for i in range(st.session_state[rows_key]):
+                default = values[i] if i < len(values) else ""
+                session_key = f"{key_prefix}_{section}_{category}_{i}"
                 if session_key not in st.session_state:
-                    st.session_state[session_key] = text_value
+                    st.session_state[session_key] = default
                 st.text_area(
-                    "One answer per line",
+                    f"{category} {i + 1}",
                     key=session_key,
-                    height=260,
+                    height=92,
                     label_visibility="collapsed",
                 )
-                edited[section][category] = text_lines_to_list(st.session_state[session_key])
+                value = str(st.session_state.get(session_key, "")).strip()
+                if value:
+                    result.append(value)
+
+            if st.button("+ Ajouter une ligne", key=f"{key_prefix}_{section}_{category}_add_row"):
+                st.session_state[rows_key] += 1
+                st.rerun()
+
+            edited[section][category] = result
+
     return edited
 
 
@@ -544,13 +1071,19 @@ def render_import_pdf_admin():
     with col_sg:
         subgroup = st.selectbox("Sous-groupe", SUBGROUPS, key="upload_subgroup")
 
-    uploaded_pdf = st.file_uploader("Importer le rapport PDF corrigé", type=["pdf"], key="pdf_upload")
+    st.markdown("**Importer le rapport PDF corrigé**")
+    uploaded_pdf = st.file_uploader("Choisir un PDF", type=["pdf"], key="pdf_upload", label_visibility="collapsed")
 
     if uploaded_pdf is not None:
         if st.button("Extraire le texte du PDF", type="primary", key="extract_pdf_button"):
             try:
+                for key in list(st.session_state.keys()):
+                    if key.startswith("new_import_admin") or key.startswith("new_pdf_"):
+                        del st.session_state[key]
+
                 raw_text = extract_text_from_pdf(uploaded_pdf)
-                parsed = parse_report_text(raw_text)
+                parsed = parse_report_pdf_layout(uploaded_pdf, raw_text=raw_text)
+
                 st.session_state["new_pdf_raw_text"] = raw_text
                 st.session_state["new_pdf_parsed"] = parsed
                 st.session_state["new_pdf_filename"] = uploaded_pdf.name
