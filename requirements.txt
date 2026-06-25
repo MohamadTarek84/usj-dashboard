@@ -11,3 +11,4 @@ psycopg2-binary
 xlsxwriter
 python-docx
 PyMuPDF
+language-tool-python
