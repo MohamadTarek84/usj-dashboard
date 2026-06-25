@@ -1,13 +1,13 @@
 import time
+import re
 from io import BytesIO
 import html
+from copy import copy
 
 import pandas as pd
 import streamlit as st
 import language_tool_python
-
 from openpyxl import load_workbook
-from copy import copy
 from openpyxl.styles import PatternFill
 
 
@@ -15,12 +15,26 @@ SHEET_NAME = "All Answers"
 LANGUAGE = "fr-FR"
 ANSWER_COL_INDEX = 5  # Column F
 
-SUGGESTED_COL = "Suggested_Correction"   # G
-ERROR_COL = "Detected_Error"             # H
-ACCEPT_COL = "Accept_Correction"         # I
-FINAL_COL = "Final_Answer"               # J
+SUGGESTED_COL = "Suggested_Correction"
+ERROR_COL = "Detected_Error"
+ACCEPT_COL = "Accept_Correction"
+FINAL_COL = "Final_Answer"
 
-PROTECTED_WORDS = ["USJ"]
+PROTECTED_WORDS = [
+    "USJ",
+    "A",
+    "B",
+    "C",
+    "flows"
+]
+
+PROTECTED_PATTERNS = [
+    r"\bUSJ\b",
+    r"\bClasse\s+[A-Z]\b",
+    r"\b[A-Z]\s+et\s+[A-Z]\b",
+    r"\b[A-Z],\s*[A-Z]\s+et\s+[A-Z]\b",
+    r"^[IVXLCDM]+[-–]\s*",
+]
 
 
 st.set_page_config(page_title="French Correction Admin", layout="wide")
@@ -58,10 +72,66 @@ def get_error_length(match):
     return getattr(match, "errorLength", getattr(match, "error_length", 0))
 
 
+def get_error_text(text, match):
+    return text[match.offset:match.offset + get_error_length(match)]
+
+
+def overlaps(start1, end1, start2, end2):
+    return start1 < end2 and end1 > start2
+
+
 def is_protected_error(text, match):
     error_length = get_error_length(match)
-    error_text = text[match.offset:match.offset + error_length]
-    return error_text.strip() in PROTECTED_WORDS
+    start = match.offset
+    end = match.offset + error_length
+    error_text = text[start:end].strip()
+
+    protected_lower = [w.lower() for w in PROTECTED_WORDS]
+
+    if error_text.lower() in protected_lower:
+        return True
+
+    for pattern in PROTECTED_PATTERNS:
+        for found in re.finditer(pattern, text, flags=re.IGNORECASE):
+            p_start, p_end = found.span()
+
+            if overlaps(start, end, p_start, p_end):
+                return True
+
+    return False
+
+
+def is_bad_replacement(match):
+    replacements = match.replacements or []
+
+    for replacement in replacements:
+        rep = str(replacement).strip()
+
+        if "(" in rep or ")" in rep:
+            return True
+
+        if "?" in rep:
+            return True
+
+        if rep == "":
+            return True
+
+    return False
+
+
+def is_safe_match(text, match):
+    if is_protected_error(text, match):
+        return False
+
+    if is_bad_replacement(match):
+        return False
+
+    error_text = get_error_text(text, match).strip()
+
+    if len(error_text) == 1 and error_text.upper() == error_text:
+        return False
+
+    return True
 
 
 def highlight_original(text, matches):
@@ -88,14 +158,15 @@ def highlight_original(text, matches):
 
 def correct_text(text, tool):
     if pd.isna(text) or str(text).strip() == "":
-        return "", "", "", []
+        return "", "", ""
 
     text = str(text)
-    matches = tool.check(text)
+
+    raw_matches = tool.check(text)
 
     matches = [
-        m for m in matches
-        if not is_protected_error(text, m)
+        m for m in raw_matches
+        if is_safe_match(text, m)
     ]
 
     corrected = language_tool_python.utils.correct(text, matches)
@@ -104,13 +175,13 @@ def correct_text(text, tool):
 
     for m in matches:
         if m.replacements:
-            wrong = text[m.offset:m.offset + get_error_length(m)]
+            wrong = get_error_text(text, m)
             suggestion = ", ".join(m.replacements[:3])
             errors.append(f"{wrong} → {suggestion}")
 
     highlighted = highlight_original(text, matches)
 
-    return corrected, " | ".join(errors), highlighted, matches
+    return corrected, " | ".join(errors), highlighted
 
 
 def prepare_df(df):
@@ -137,11 +208,6 @@ def prepare_df(df):
 
 def save_with_original_format(original_file_bytes, df):
     wb = load_workbook(BytesIO(original_file_bytes))
-
-    if SHEET_NAME not in wb.sheetnames:
-        st.error(f'Sheet "{SHEET_NAME}" was not found.')
-        st.stop()
-
     ws = wb[SHEET_NAME]
 
     headers = list(df.columns)
@@ -159,8 +225,8 @@ def save_with_original_format(original_file_bytes, df):
             cell.number_format = source.number_format
 
     yellow_fill = PatternFill("solid", fgColor="FFF2CC")
-    green_fill = PatternFill("solid", fgColor="D9EAD3")
     red_fill = PatternFill("solid", fgColor="F4CCCC")
+    green_fill = PatternFill("solid", fgColor="D9EAD3")
 
     for row_idx in range(len(df)):
         excel_row = row_idx + 2
@@ -189,8 +255,8 @@ def save_with_original_format(original_file_bytes, df):
             ws.cell(excel_row, 10).fill = green_fill
 
     ws.column_dimensions["G"].width = 70
-    ws.column_dimensions["H"].width = 50
-    ws.column_dimensions["I"].width = 20
+    ws.column_dimensions["H"].width = 55
+    ws.column_dimensions["I"].width = 22
     ws.column_dimensions["J"].width = 70
 
     output = BytesIO()
@@ -252,7 +318,7 @@ if st.button("Check all rows", type="primary"):
             )
 
             original = str(df.loc[i, answer_col])
-            corrected, errors, highlighted, matches = correct_text(original, tool)
+            corrected, errors, highlighted = correct_text(original, tool)
 
             df.loc[i, SUGGESTED_COL] = corrected
             df.loc[i, ERROR_COL] = errors
@@ -263,7 +329,7 @@ if st.button("Check all rows", type="primary"):
             st.session_state["processed"].add(i)
 
             progress.progress(n / len(rows_to_check))
-            time.sleep(0.02)
+            time.sleep(0.01)
 
         st.session_state["df"] = df
         st.rerun()
