@@ -31,7 +31,8 @@ def correct_french_text(text, tool):
     notes = []
     for match in matches:
         if match.replacements:
-            error_text = text[match.offset:match.offset + match.errorLength]
+            error_length = getattr(match, "errorLength", getattr(match, "error_length", 0))
+            error_text = text[match.offset:match.offset + error_length]
             suggestions = ", ".join(match.replacements[:5])
 
             notes.append({
