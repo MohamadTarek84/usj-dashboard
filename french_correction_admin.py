@@ -18,7 +18,7 @@ st.caption("Upload the Excel file manually. Column F contains the original answe
 
 @st.cache_resource
 def load_tool():
-    return language_tool_python.LanguageTool(LANGUAGE)
+    return language_tool_python.LanguageToolPublicAPI(LANGUAGE)
 
 def correct_french_text(text, tool):
     if pd.isna(text) or str(text).strip() == "":
