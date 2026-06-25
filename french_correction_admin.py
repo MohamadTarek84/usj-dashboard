@@ -20,20 +20,118 @@ ERROR_COL = "Detected_Error"
 ACCEPT_COL = "Accept_Correction"
 FINAL_COL = "Final_Answer"
 
+
 PROTECTED_WORDS = [
     "USJ",
+    "Université Saint-Joseph",
+    "Université Saint Joseph",
+    "Saint-Joseph",
+    "Saint Joseph",
+    "PSG",
+    "SciVal",
+    "Scival",
+    "QS",
+    "THE",
+    "WASC",
+    "SWOT",
+    "TNA",
+    "CFP",
+    "SRH",
+    "CCAD",
+    "FG",
+    "FGs",
+    "KPI",
+    "KPIs",
+    "PDF",
+    "Excel",
+    "Word",
+    "Streamlit",
+    "Azure",
+    "GitHub",
+    "Git",
+    "Python",
+    "OpenAI",
+    "AI",
+    "IA",
+    "ChatGPT",
+    "API",
+    "Power BI",
+    "PowerBI",
+    "SPSS",
+    "Atlas.ti",
+    "KoboToolbox",
+    "Navicat",
+    "Scopus",
+    "Scimago",
+    "H-index",
+    "h-index",
+    "dashboard",
+    "dashboards",
+    "workflow",
+    "workflows",
+    "mapping",
+    "coding",
+    "flows",
+    "flow",
+    "benchmark",
+    "benchmarking",
+    "ranking",
+    "rankings",
+    "data",
+    "database",
+    "dataset",
+    "datasets",
+    "feedback",
+    "focus group",
+    "focus groups",
     "A",
     "B",
     "C",
-    "flows"
+    "D",
+    "I",
+    "II",
+    "III",
+    "IV",
+    "V",
+    "VI",
+    "VII",
+    "VIII",
+    "IX",
+    "X"
 ]
+
 
 PROTECTED_PATTERNS = [
     r"\bUSJ\b",
+    r"\bPSG\b",
+    r"\bSciVal\b",
+    r"\bQS\b",
+    r"\bTHE\b",
+    r"\bSWOT\b",
+    r"\bKPI[s]?\b",
+    r"\bPDF\b",
+    r"\bAI\b",
+    r"\bIA\b",
+    r"\b[A-Z]{2,}\b",
     r"\bClasse\s+[A-Z]\b",
     r"\b[A-Z]\s+et\s+[A-Z]\b",
     r"\b[A-Z],\s*[A-Z]\s+et\s+[A-Z]\b",
+    r"\b[A-Z]\s*/\s*[A-Z]\b",
+    r"\b[IVXLCDM]+[-–]\s*",
     r"^[IVXLCDM]+[-–]\s*",
+    r"\bSection\s+[IVXLCDM]+\b",
+    r"\bSection\s+\d+\b",
+    r"\bColumn\s+[A-Z]\b",
+    r"\bColonne\s+[A-Z]\b",
+    r"\b[A-Z]\d+\b",
+    r"\b\d+[A-Z]\b",
+    r"\b\d+[-–]\d+\b",
+    r"\b\d+%\b",
+    r"\b\d+\.\d+\b",
+    r"\b\d+,\d+\b",
+    r"\bfr-FR\b",
+    r"\ben-US\b",
+    r"\bpython-\d+\.\d+\b",
 ]
 
 
@@ -107,14 +205,78 @@ def is_bad_replacement(match):
     for replacement in replacements:
         rep = str(replacement).strip()
 
+        if rep == "":
+            return True
+
         if "(" in rep or ")" in rep:
             return True
 
-        if "?" in rep:
+        if "?" in rep or "!" in rep:
             return True
 
-        if rep == "":
+        if "[" in rep or "]" in rep:
             return True
+
+        if "{" in rep or "}" in rep:
+            return True
+
+        if rep.startswith("-") or rep.startswith("–"):
+            return True
+
+    return False
+
+
+def changes_protected_word(text, match):
+    wrong = get_error_text(text, match).strip()
+    replacements = match.replacements or []
+
+    protected_lower = [w.lower() for w in PROTECTED_WORDS]
+
+    if wrong.lower() in protected_lower:
+        return True
+
+    for rep in replacements:
+        if str(rep).strip().lower() in protected_lower:
+            return True
+
+    return False
+
+
+def is_single_capital_letter(text, match):
+    wrong = get_error_text(text, match).strip()
+    return len(wrong) == 1 and wrong.upper() == wrong and wrong.isalpha()
+
+
+def is_acronym_or_code(text, match):
+    wrong = get_error_text(text, match).strip()
+
+    if re.fullmatch(r"[A-Z]{2,}", wrong):
+        return True
+
+    if re.fullmatch(r"[A-Z]\d+", wrong):
+        return True
+
+    if re.fullmatch(r"\d+[A-Z]", wrong):
+        return True
+
+    if re.fullmatch(r"[IVXLCDM]+", wrong):
+        return True
+
+    return False
+
+
+def is_unsafe_punctuation_addition(text, match):
+    wrong = get_error_text(text, match).strip()
+    replacements = match.replacements or []
+
+    for rep in replacements:
+        rep = str(rep).strip()
+
+        if rep.startswith(wrong) and len(rep) > len(wrong):
+            added = rep.replace(wrong, "", 1).strip()
+
+            if added in ["?", "!", ".", ":", ";", ","]:
+                return True
 
     return False
 
@@ -126,9 +288,16 @@ def is_safe_match(text, match):
     if is_bad_replacement(match):
         return False
 
-    error_text = get_error_text(text, match).strip()
+    if changes_protected_word(text, match):
+        return False
 
-    if len(error_text) == 1 and error_text.upper() == error_text:
+    if is_single_capital_letter(text, match):
+        return False
+
+    if is_acronym_or_code(text, match):
+        return False
+
+    if is_unsafe_punctuation_addition(text, match):
         return False
 
     return True
