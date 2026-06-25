@@ -205,11 +205,11 @@ c1.metric("Total rows", len(df))
 c2.metric("Answers", len(answer_rows))
 c3.metric("Checked", len(st.session_state["processed"]))
 
-if st.button("Check next 10 rows", type="primary"):
+if st.button("Check all rows", type="primary"):
     rows_to_check = [
         i for i in answer_rows
         if i not in st.session_state["processed"]
-    ][:10]
+    ]
 
     progress = st.progress(0)
     status = st.empty()
