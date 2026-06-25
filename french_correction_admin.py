@@ -1,28 +1,29 @@
 import time
 from io import BytesIO
+import html
 
 import pandas as pd
 import streamlit as st
 import language_tool_python
+
+from openpyxl import load_workbook
+from copy import copy
+from openpyxl.styles import PatternFill
 
 
 SHEET_NAME = "All Answers"
 LANGUAGE = "fr-FR"
 ANSWER_COL_INDEX = 5  # Column F
 
-SUGGESTED_COL = "Suggested_Correction"
-ERROR_COL = "Detected_Error"
-ACCEPT_COL = "Accept"
-FINAL_COL = "Final_Answer"
+SUGGESTED_COL = "Suggested_Correction"   # G
+ERROR_COL = "Detected_Error"             # H
+ACCEPT_COL = "Accept_Correction"         # I
+FINAL_COL = "Final_Answer"               # J
 
 PROTECTED_WORDS = ["USJ"]
 
 
-st.set_page_config(
-    page_title="French Correction Admin",
-    layout="wide"
-)
-
+st.set_page_config(page_title="French Correction Admin", layout="wide")
 st.title("French Orthographic Correction")
 
 
@@ -41,12 +42,33 @@ def is_protected_error(text, match):
     return error_text.strip() in PROTECTED_WORDS
 
 
+def highlight_original(text, matches):
+    if not matches:
+        return html.escape(text)
+
+    parts = []
+    last = 0
+
+    for m in sorted(matches, key=lambda x: x.offset):
+        start = m.offset
+        end = m.offset + get_error_length(m)
+
+        parts.append(html.escape(text[last:start]))
+        parts.append(
+            f"<mark style='background:#ffcccc; padding:2px; border-radius:4px;'>"
+            f"{html.escape(text[start:end])}</mark>"
+        )
+        last = end
+
+    parts.append(html.escape(text[last:]))
+    return "".join(parts)
+
+
 def correct_text(text, tool):
     if pd.isna(text) or str(text).strip() == "":
-        return "", ""
+        return "", "", "", []
 
     text = str(text)
-
     matches = tool.check(text)
 
     matches = [
@@ -60,12 +82,13 @@ def correct_text(text, tool):
 
     for m in matches:
         if m.replacements:
-            error_length = get_error_length(m)
-            wrong = text[m.offset:m.offset + error_length]
-            suggestions = ", ".join(m.replacements[:3])
-            errors.append(f"{wrong} → {suggestions}")
+            wrong = text[m.offset:m.offset + get_error_length(m)]
+            suggestion = ", ".join(m.replacements[:3])
+            errors.append(f"{wrong} → {suggestion}")
 
-    return corrected, " | ".join(errors)
+    highlighted = highlight_original(text, matches)
+
+    return corrected, " | ".join(errors), highlighted, matches
 
 
 def prepare_df(df):
@@ -90,19 +113,65 @@ def prepare_df(df):
     return df, answer_col
 
 
-def to_excel(df):
+def save_with_original_format(original_file, df):
+    original_file.seek(0)
+    wb = load_workbook(original_file)
+
+    ws = wb[SHEET_NAME]
+
+    headers = list(df.columns)
+
+    for col_idx, header in enumerate(headers, start=1):
+        cell = ws.cell(row=1, column=col_idx)
+        cell.value = header
+
+        if col_idx > 6:
+            source = ws.cell(row=1, column=6)
+            cell.font = copy(source.font)
+            cell.fill = copy(source.fill)
+            cell.border = copy(source.border)
+            cell.alignment = copy(source.alignment)
+
+    yellow_fill = PatternFill("solid", fgColor="FFF2CC")
+    green_fill = PatternFill("solid", fgColor="D9EAD3")
+    red_fill = PatternFill("solid", fgColor="F4CCCC")
+
+    for row_idx in range(len(df)):
+        excel_row = row_idx + 2
+
+        for col_idx, col_name in enumerate(headers, start=1):
+            value = df.iloc[row_idx][col_name]
+
+            if pd.isna(value):
+                value = ""
+
+            cell = ws.cell(row=excel_row, column=col_idx)
+            cell.value = value
+
+            if col_idx > 6:
+                source = ws.cell(row=excel_row, column=6)
+                cell.font = copy(source.font)
+                cell.border = copy(source.border)
+                cell.alignment = copy(source.alignment)
+
+        if str(df.iloc[row_idx][ERROR_COL]).strip():
+            ws.cell(excel_row, 7).fill = yellow_fill
+            ws.cell(excel_row, 8).fill = red_fill
+
+        if df.iloc[row_idx][ACCEPT_COL] is True:
+            ws.cell(excel_row, 10).fill = green_fill
+
+    ws.column_dimensions["G"].width = 70
+    ws.column_dimensions["H"].width = 50
+    ws.column_dimensions["I"].width = 20
+    ws.column_dimensions["J"].width = 70
+
     output = BytesIO()
-
-    with pd.ExcelWriter(output, engine="openpyxl") as writer:
-        df.to_excel(writer, sheet_name=SHEET_NAME, index=False)
-
+    wb.save(output)
     return output.getvalue()
 
 
-uploaded_file = st.file_uploader(
-    "Upload Excel file",
-    type=["xlsx"]
-)
+uploaded_file = st.file_uploader("Upload Excel file", type=["xlsx"])
 
 if uploaded_file is None:
     st.info("Upload the Excel file to start.")
@@ -117,7 +186,7 @@ if "file_name" not in st.session_state or st.session_state["file_name"] != uploa
     st.session_state["df"] = df
     st.session_state["answer_col"] = answer_col
     st.session_state["processed"] = set()
-
+    st.session_state["highlighted"] = {}
 
 df = st.session_state["df"]
 answer_col = st.session_state["answer_col"]
@@ -129,7 +198,6 @@ answer_rows = [
     if str(df.loc[i, answer_col]).strip() not in ["", "nan", "None"]
 ]
 
-
 st.markdown("## Correction")
 
 c1, c2, c3 = st.columns(3)
@@ -137,30 +205,27 @@ c1.metric("Total rows", len(df))
 c2.metric("Answers", len(answer_rows))
 c3.metric("Checked", len(st.session_state["processed"]))
 
-batch_size = 10
-
 if st.button("Check next 10 rows", type="primary"):
     rows_to_check = [
         i for i in answer_rows
         if i not in st.session_state["processed"]
-    ][:batch_size]
+    ][:10]
 
     progress = st.progress(0)
     status = st.empty()
 
     for n, i in enumerate(rows_to_check, start=1):
-        status.write(
-            f"Checking answer {len(st.session_state['processed']) + 1} of {len(answer_rows)}"
-        )
+        status.write(f"Checking answer {len(st.session_state['processed']) + 1} of {len(answer_rows)}")
 
         original = str(df.loc[i, answer_col])
-        corrected, errors = correct_text(original, tool)
+        corrected, errors, highlighted, matches = correct_text(original, tool)
 
         df.loc[i, SUGGESTED_COL] = corrected
         df.loc[i, ERROR_COL] = errors
-        df.loc[i, FINAL_COL] = original
         df.loc[i, ACCEPT_COL] = False
+        df.loc[i, FINAL_COL] = original
 
+        st.session_state["highlighted"][i] = highlighted
         st.session_state["processed"].add(i)
 
         progress.progress(n / len(rows_to_check))
@@ -170,56 +235,79 @@ if st.button("Check next 10 rows", type="primary"):
     st.rerun()
 
 
-st.markdown("## Excel table with suggested corrections")
+st.markdown("## Review corrections")
 
-edited_df = st.data_editor(
+pending_rows = [
+    i for i in sorted(st.session_state["processed"])
+    if str(df.loc[i, ERROR_COL]).strip()
+]
+
+if not pending_rows:
+    st.info("No detected errors yet.")
+else:
+    for i in pending_rows:
+        st.markdown("---")
+        st.markdown(f"### Excel row {i + 2}")
+
+        original = str(df.loc[i, answer_col])
+        suggested = str(df.loc[i, SUGGESTED_COL])
+        errors = str(df.loc[i, ERROR_COL])
+
+        left, right = st.columns(2)
+
+        with left:
+            st.markdown("**Original answer with highlighted error**")
+            st.markdown(
+                f"""
+                <div style="border:1px solid #ddd; padding:15px; border-radius:8px; line-height:1.7;">
+                    {st.session_state["highlighted"].get(i, html.escape(original))}
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+        with right:
+            st.markdown("**Suggested correction**")
+            edited = st.text_area(
+                "Suggested correction",
+                value=suggested,
+                height=180,
+                key=f"suggested_{i}",
+                label_visibility="collapsed"
+            )
+
+        st.markdown(f"**Detected error:** {errors}")
+
+        accept = st.checkbox(
+            "Accept this correction",
+            value=bool(df.loc[i, ACCEPT_COL]),
+            key=f"accept_{i}"
+        )
+
+        df.loc[i, SUGGESTED_COL] = edited
+        df.loc[i, ACCEPT_COL] = accept
+
+        if accept:
+            df.loc[i, FINAL_COL] = edited
+        else:
+            df.loc[i, FINAL_COL] = original
+
+        st.session_state["df"] = df
+
+
+st.markdown("## Final Excel preview")
+
+st.dataframe(
     df,
     use_container_width=True,
-    height=650,
-    num_rows="fixed",
-    column_config={
-        ACCEPT_COL: st.column_config.CheckboxColumn(
-            "Accept correction",
-            help="Check this box to accept the suggested correction.",
-            default=False
-        ),
-        SUGGESTED_COL: st.column_config.TextColumn(
-            "Suggested correction",
-            width="large"
-        ),
-        ERROR_COL: st.column_config.TextColumn(
-            "Detected error",
-            width="large",
-            disabled=True
-        ),
-        FINAL_COL: st.column_config.TextColumn(
-            "Final answer",
-            width="large"
-        )
-    },
-    disabled=[
-        col for col in df.columns
-        if col not in [SUGGESTED_COL, ACCEPT_COL, FINAL_COL]
-    ]
+    height=450
 )
 
-for i in range(len(edited_df)):
-    original = str(edited_df.loc[i, answer_col])
-    suggested = str(edited_df.loc[i, SUGGESTED_COL])
-
-    if edited_df.loc[i, ACCEPT_COL] is True:
-        edited_df.loc[i, FINAL_COL] = suggested
-    else:
-        edited_df.loc[i, FINAL_COL] = original
-
-st.session_state["df"] = edited_df
-
-
-excel_file = to_excel(st.session_state["df"])
+excel_file = save_with_original_format(uploaded_file, st.session_state["df"])
 
 st.download_button(
-    "Download corrected Excel",
+    "Download corrected Excel with original format",
     data=excel_file,
-    file_name="corrected_answers.xlsx",
+    file_name="corrected_answers_with_format.xlsx",
     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 )
