@@ -24,6 +24,28 @@ PROTECTED_WORDS = ["USJ"]
 
 
 st.set_page_config(page_title="French Correction Admin", layout="wide")
+
+st.markdown(
+    """
+    <style>
+        [data-testid="stSidebar"] {
+            display: none;
+        }
+
+        [data-testid="collapsedControl"] {
+            display: none;
+        }
+
+        .main .block-container {
+            padding-left: 3rem;
+            padding-right: 3rem;
+            max-width: 100%;
+        }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 st.title("French Orthographic Correction")
 
 
@@ -113,9 +135,12 @@ def prepare_df(df):
     return df, answer_col
 
 
-def save_with_original_format(original_file, df):
-    original_file.seek(0)
-    wb = load_workbook(original_file)
+def save_with_original_format(original_file_bytes, df):
+    wb = load_workbook(BytesIO(original_file_bytes))
+
+    if SHEET_NAME not in wb.sheetnames:
+        st.error(f'Sheet "{SHEET_NAME}" was not found.')
+        st.stop()
 
     ws = wb[SHEET_NAME]
 
@@ -131,6 +156,7 @@ def save_with_original_format(original_file, df):
             cell.fill = copy(source.fill)
             cell.border = copy(source.border)
             cell.alignment = copy(source.alignment)
+            cell.number_format = source.number_format
 
     yellow_fill = PatternFill("solid", fgColor="FFF2CC")
     green_fill = PatternFill("solid", fgColor="D9EAD3")
@@ -153,12 +179,13 @@ def save_with_original_format(original_file, df):
                 cell.font = copy(source.font)
                 cell.border = copy(source.border)
                 cell.alignment = copy(source.alignment)
+                cell.number_format = source.number_format
 
         if str(df.iloc[row_idx][ERROR_COL]).strip():
             ws.cell(excel_row, 7).fill = yellow_fill
             ws.cell(excel_row, 8).fill = red_fill
 
-        if df.iloc[row_idx][ACCEPT_COL] is True:
+        if bool(df.iloc[row_idx][ACCEPT_COL]):
             ws.cell(excel_row, 10).fill = green_fill
 
     ws.column_dimensions["G"].width = 70
@@ -177,12 +204,14 @@ if uploaded_file is None:
     st.info("Upload the Excel file to start.")
     st.stop()
 
+original_file_bytes = uploaded_file.getvalue()
 
 if "file_name" not in st.session_state or st.session_state["file_name"] != uploaded_file.name:
-    df_raw = pd.read_excel(uploaded_file, sheet_name=SHEET_NAME)
+    df_raw = pd.read_excel(BytesIO(original_file_bytes), sheet_name=SHEET_NAME)
     df, answer_col = prepare_df(df_raw.copy())
 
     st.session_state["file_name"] = uploaded_file.name
+    st.session_state["original_file_bytes"] = original_file_bytes
     st.session_state["df"] = df
     st.session_state["answer_col"] = answer_col
     st.session_state["processed"] = set()
@@ -211,28 +240,33 @@ if st.button("Check all rows", type="primary"):
         if i not in st.session_state["processed"]
     ]
 
-    progress = st.progress(0)
-    status = st.empty()
+    if not rows_to_check:
+        st.success("All rows are already checked.")
+    else:
+        progress = st.progress(0)
+        status = st.empty()
 
-    for n, i in enumerate(rows_to_check, start=1):
-        status.write(f"Checking answer {len(st.session_state['processed']) + 1} of {len(answer_rows)}")
+        for n, i in enumerate(rows_to_check, start=1):
+            status.write(
+                f"Checking answer {len(st.session_state['processed']) + 1} of {len(answer_rows)}"
+            )
 
-        original = str(df.loc[i, answer_col])
-        corrected, errors, highlighted, matches = correct_text(original, tool)
+            original = str(df.loc[i, answer_col])
+            corrected, errors, highlighted, matches = correct_text(original, tool)
 
-        df.loc[i, SUGGESTED_COL] = corrected
-        df.loc[i, ERROR_COL] = errors
-        df.loc[i, ACCEPT_COL] = False
-        df.loc[i, FINAL_COL] = original
+            df.loc[i, SUGGESTED_COL] = corrected
+            df.loc[i, ERROR_COL] = errors
+            df.loc[i, ACCEPT_COL] = False
+            df.loc[i, FINAL_COL] = original
 
-        st.session_state["highlighted"][i] = highlighted
-        st.session_state["processed"].add(i)
+            st.session_state["highlighted"][i] = highlighted
+            st.session_state["processed"].add(i)
 
-        progress.progress(n / len(rows_to_check))
-        time.sleep(0.05)
+            progress.progress(n / len(rows_to_check))
+            time.sleep(0.02)
 
-    st.session_state["df"] = df
-    st.rerun()
+        st.session_state["df"] = df
+        st.rerun()
 
 
 st.markdown("## Review corrections")
@@ -303,7 +337,10 @@ st.dataframe(
     height=450
 )
 
-excel_file = save_with_original_format(uploaded_file, st.session_state["df"])
+excel_file = save_with_original_format(
+    st.session_state["original_file_bytes"],
+    st.session_state["df"]
+)
 
 st.download_button(
     "Download corrected Excel with original format",
