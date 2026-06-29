@@ -10370,6 +10370,32 @@ def validate_employee_response(employee_code):
     conn.close()
 
 
+def allow_employee_resubmission(employee_code):
+    """Allow an employee to submit again by clearing the existing submitted answer."""
+    clean_code = str(employee_code).strip().upper()
+
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+
+    c.execute(
+        "DELETE FROM responses WHERE respondent_code = ? AND role = ?",
+        (clean_code, "psg")
+    )
+
+    c.execute(
+        "DELETE FROM employee_validations WHERE employee_code = ?",
+        (clean_code,)
+    )
+
+    c.execute(
+        "DELETE FROM admin_theme_overrides WHERE employee_code = ?",
+        (clean_code,)
+    )
+
+    conn.commit()
+    conn.close()
+
+
 def is_director_validated(director_code):
     conn = sqlite3.connect(DB_NAME)
     row = conn.execute(
@@ -10403,12 +10429,22 @@ def render_psg_form(user):
         "Ce court questionnaire nous aide à comprendre vos besoins en formation. Les résultats seront utilisés pour concevoir des programmes de formation qui soutiennent votre travail, améliorent vos compétences et favorisent votre développement professionnel.<br><br><b>Il vous faudra environ 5 à 10 minutes pour le compléter. Vos réponses resteront confidentielles.</b>"
     )
 
+    saved_data = load_latest_response_for_code(st.session_state["code"])
+
+    # Once the employee has submitted, the page is intentionally kept blank.
+    # The employee cannot view or modify answers unless the director authorizes a new submission.
+    if saved_data or is_employee_validated(st.session_state["code"]):
+        st.markdown("<br><br>", unsafe_allow_html=True)
+        st.success(
+            "Vos réponses ont été soumises. Vous ne pouvez plus les modifier. "
+            "Votre Doyen / Directeur peut vous autoriser à remplir à nouveau le questionnaire si nécessaire."
+        )
+        return
+
     render_identity_cards(user)
 
-    saved_data = load_latest_response_for_code(st.session_state["code"])
-    saved_ranked = saved_data.get("ranked_themes", [])
-    saved_other = saved_data.get("other_themes", "")
-    read_only = bool(saved_data) or is_employee_validated(st.session_state["code"])
+    saved_ranked = []
+    saved_other = ""
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -10423,7 +10459,7 @@ def render_psg_form(user):
         PSG_THEMES,
         "psg_ranked",
         saved_ranked,
-        disabled=read_only
+        disabled=False
     )
 
     other_themes = st.text_area(
@@ -10431,32 +10467,26 @@ def render_psg_form(user):
         value=saved_other,
         key="psg_other",
         placeholder="Indiquez ici un thème non présent dans la liste, si nécessaire.",
-        disabled=read_only
+        disabled=False
     )
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    if read_only:
-        if is_employee_validated(st.session_state["code"]):
-            st.info("Vos réponses ont été validées par votre directeur. Vous pouvez les consulter en lecture seule.")
-        else:
-            st.info("Vos réponses ont déjà été soumises. Vous pouvez les consulter en lecture seule.")
-    else:
-        if st.button("Soumettre mes réponses", use_container_width=True):
-            if len(ranked_themes) != 3:
-                st.warning("Veuillez sélectionner exactement 3 thèmes classés par ordre de priorité.")
-                return
+    if st.button("Soumettre mes réponses", use_container_width=True):
+        if len(ranked_themes) != 3:
+            st.warning("Veuillez sélectionner exactement 3 thèmes classés par ordre de priorité.")
+            return
 
-            data = {
-                "ranked_themes": ranked_themes,
-                "selected_themes": ranked_themes,
-                "other_themes": other_themes,
-                "director_code": user.get("director_code", "")
-            }
+        data = {
+            "ranked_themes": ranked_themes,
+            "selected_themes": ranked_themes,
+            "other_themes": other_themes,
+            "director_code": user.get("director_code", "")
+        }
 
-            save_response(user, data)
-            st.success("Vos réponses ont été enregistrées avec succès.")
-
+        save_response(user, data)
+        st.success("Vos réponses ont été enregistrées avec succès.")
+        st.rerun()
 
 def render_director_form(user):
     render_form_hero(
@@ -10559,6 +10589,16 @@ def render_director_form(user):
                     """, unsafe_allow_html=True)
             else:
                 st.info("Cet employé n’a pas encore soumis ses réponses.")
+
+            if emp_response and not director_read_only:
+                if st.button(
+                    "Autoriser une nouvelle soumission",
+                    key=f"allow_resubmission_{emp['code']}",
+                    use_container_width=True
+                ):
+                    allow_employee_resubmission(emp["code"])
+                    st.success(f"{emp['name']} peut maintenant remplir à nouveau le questionnaire.")
+                    st.rerun()
 
             saved_emp_item = saved_employees_map.get(emp["code"], {})
             saved_emp_ranked = saved_emp_item.get("ranked_themes_by_director", [])
