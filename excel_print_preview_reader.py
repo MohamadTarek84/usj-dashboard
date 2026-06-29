@@ -666,13 +666,31 @@ def build_one_report_html(df_group, participant_type, title_label, hide_names):
 """
 
 
-def build_full_html(html_report, selected_type, selected_label, docx_base64="", docx_filename="rapport.docx"):
+def build_word_export_html(html_report, selected_type, selected_label):
+    return f"""
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>{esc(selected_type)} - {esc(selected_label)}</title>
+<style>
+{PRINT_CSS}
+</style>
+</head>
+<body>
+{html_report}
+</body>
+</html>
+"""
+
+
+def build_full_html(html_report, selected_type, selected_label, word_base64="", word_filename="rapport.doc"):
     word_button = ""
-    if docx_base64:
+    if word_base64:
         word_button = f"""
 <a class="print-button"
-   href="data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,{docx_base64}"
-   download="{esc(docx_filename)}">
+   href="data:application/msword;base64,{word_base64}"
+   download="{esc(word_filename)}">
    Télécharger Word
 </a>
 """
@@ -696,7 +714,6 @@ def build_full_html(html_report, selected_type, selected_label, docx_base64="", 
 </body>
 </html>
 """
-
 
 def add_docx_heading(document, text, level=1):
     p = document.add_paragraph()
@@ -977,20 +994,19 @@ def main():
         f"{datetime.now().strftime('%Y%m%d_%H%M')}"
     )
 
-    docx_bytes = build_word_docx(
-        df_group=df_report,
-        participant_type=selected_type,
-        title_label=title_label,
-        hide_names=hide_names
+    word_html = build_word_export_html(
+        html_report=html_report,
+        selected_type=selected_type,
+        selected_label=title_label
     )
-    docx_base64 = base64.b64encode(docx_bytes).decode("utf-8")
+    word_base64 = base64.b64encode(word_html.encode("utf-8")).decode("utf-8")
 
     full_html = build_full_html(
         html_report=html_report,
         selected_type=selected_type,
         selected_label=title_label,
-        docx_base64=docx_base64,
-        docx_filename=f"{file_base}.docx"
+        word_base64=word_base64,
+        word_filename=f"{file_base}.doc"
     )
 
     components.html(
