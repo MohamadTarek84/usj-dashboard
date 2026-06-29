@@ -439,36 +439,36 @@ def swot_matrix_html(forces, faiblesses, opportunites, menaces):
 
 
 def conclusion_html(df_group):
-    phrases = [
-        ("Nous souhaitons que l’USJ soit reconnue pour …", "reconnue"),
-        ("Nous souhaitons que nos étudiants disent que l’USJ …", "etudiants"),
-        ("L’USJ serait un meilleur lieu de travail si …", "travail"),
-    ]
-
     conclusion_rows = df_group[
         df_group["section_norm"].str.contains("conclusion", na=False)
     ].copy()
 
+    if conclusion_rows.empty:
+        return '<div class="conclusion-box">Aucune réponse disponible.</div>'
+
     blocks = ""
 
-    for phrase, key in phrases:
-        temp = conclusion_rows[
-            conclusion_rows["category_norm"].str.contains(key, na=False)
-        ]
+    question_order = []
+    for question in conclusion_rows["question"].tolist():
+        question = clean(question)
+        if question and question not in question_order:
+            question_order.append(question)
 
+    for question in question_order:
+        temp = conclusion_rows[conclusion_rows["question"] == question]
         answers = [clean(x) for x in temp["Final_Answer"].tolist() if clean(x)]
 
-        if not answers:
-            answers = [""]
-
         blocks += f"""
-        <div class="conclusion-label">• {esc(phrase)}</div>
+        <div class="conclusion-label">• {esc(question)}</div>
         """
 
-        for answer in answers:
-            blocks += f"""
-            <div class="conclusion-box">{esc(answer)}</div>
-            """
+        if not answers:
+            blocks += '<div class="conclusion-box"></div>'
+        else:
+            for answer in answers:
+                blocks += f"""
+                <div class="conclusion-box">{esc(answer)}</div>
+                """
 
     return blocks
 
@@ -616,6 +616,7 @@ def main():
     group_col = get_col(df, ["groupe", "Sous groupe", "Subgroup"])
     names_col = get_col(df, ["participants", "Participants", "Nom participants"])
     section_col = get_col(df, ["section"])
+    question_col = get_col(df, ["question", "Question"])
     category_col = get_col(df, ["category", "catégorie", "categorie"])
     answer_col = get_col(df, ["Final_Answer", "Final Answer", "Réponse finale", "Reponse finale"])
 
@@ -628,6 +629,8 @@ def main():
         missing.append("participants")
     if not section_col:
         missing.append("section")
+    if not question_col:
+        missing.append("question")
     if not category_col:
         missing.append("category")
     if not answer_col:
@@ -642,15 +645,17 @@ def main():
         group_col: "groupe",
         names_col: "participants",
         section_col: "section",
+        question_col: "question",
         category_col: "category",
         answer_col: "Final_Answer"
     })
 
-    for col in ["Respondent_Type", "groupe", "participants", "section", "category", "Final_Answer"]:
+    for col in ["Respondent_Type", "groupe", "participants", "section", "question", "category", "Final_Answer"]:
         df[col] = df[col].apply(clean)
 
     df = df[(df["Respondent_Type"] != "") & (df["groupe"] != "")]
     df["section_norm"] = df["section"].apply(normalize)
+    df["question_norm"] = df["question"].apply(normalize)
     df["category_norm"] = df["category"].apply(normalize)
 
     participant_types = sorted(df["Respondent_Type"].dropna().unique().tolist())
