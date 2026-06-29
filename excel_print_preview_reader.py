@@ -1,7 +1,5 @@
 import re
 import html
-import base64
-from pathlib import Path
 from datetime import datetime
 
 import pandas as pd
@@ -16,7 +14,6 @@ USJ_BLUE_2 = "#1F3C88"
 USJ_RED = "#8B1538"
 USJ_LIGHT_BLUE = "#EAF2F8"
 USJ_TEXT = "#1B2A41"
-LOGO_PATH = "LogoUAQ.png"
 
 
 def clean(value):
@@ -54,17 +51,6 @@ def html_block(content):
     st.markdown(content, unsafe_allow_html=True)
 
 
-def image_to_base64(image_path):
-    image_path = Path(image_path)
-    if not image_path.exists():
-        return ""
-    suffix = image_path.suffix.lower().replace(".", "")
-    mime_type = "png" if suffix == "png" else suffix
-    with open(image_path, "rb") as img_file:
-        encoded = base64.b64encode(img_file.read()).decode()
-    return f"data:image/{mime_type};base64,{encoded}"
-
-
 PRINT_CSS = f"""
 body {{
     font-family: Candara, Calibri, Arial, sans-serif;
@@ -92,32 +78,22 @@ body {{
 
 .usj-main-header h1 {{
     font-size:42px;
-    margin:0 0 6px 0;
+    margin:0 0 16px 0;
     color:{USJ_BLUE};
     font-weight:800;
 }}
 
 .usj-main-header p {{
-    font-size:18px;
+    font-size:26px;
     font-weight:700;
     color:{USJ_BLUE_2};
     margin:0;
 }}
 
-.usj-logo-box {{
-    display:flex;
-    justify-content:flex-end;
-    align-items:flex-start;
-}}
-
-.usj-logo {{
-    width:170px;
-    height:auto;
-    object-fit:contain;
-}}
-
 .participant-type {{
-    display:none;
+    font-size:22px;
+    font-weight:800;
+    color:{USJ_BLUE};
 }}
 
 .group-title {{
@@ -151,6 +127,16 @@ body {{
     font-size:28px;
     margin:0;
     color:{USJ_BLUE};
+}}
+
+.swot-section-wrapper {{
+    break-inside:auto;
+    page-break-inside:auto;
+}}
+
+.swot-section-header {{
+    page-break-after:avoid;
+    break-after:avoid;
 }}
 
 .two-cols {{
@@ -213,7 +199,6 @@ body {{
     grid-template-columns:1fr 1fr;
     gap:18px;
     margin-top:14px;
-    page-break-inside:avoid;
 }}
 
 .swot-card {{
@@ -284,17 +269,15 @@ body {{
     .usj-main-header h1 {{
         font-size:22px;
         line-height:1.05;
-        margin-bottom:1mm;
+        margin-bottom:2mm;
     }}
 
     .usj-main-header p {{
-        font-size:10px;
+        font-size:13px;
     }}
 
-    .usj-logo {{
-        width:36mm;
-        max-width:36mm;
-        height:auto;
+    .participant-type {{
+        font-size:12px;
     }}
 
     .group-title {{
@@ -316,6 +299,18 @@ body {{
 
     .section-header h2 {{
         font-size:16px;
+    }}
+
+    .swot-section-wrapper {{
+        break-inside:auto;
+        page-break-inside:auto;
+    }}
+
+    .swot-section-header {{
+        page-break-before:auto !important;
+        break-before:auto !important;
+        page-break-after:avoid !important;
+        break-after:avoid !important;
     }}
 
     .col-title {{
@@ -441,15 +436,17 @@ def swot_card(title, answers, accent, bg):
 
 def swot_matrix_html(forces, faiblesses, opportunites, menaces):
     return f"""
-    <div class="section-header print-page-break">
-        <h2>Matrice SWOT - Niveau USJ</h2>
-    </div>
+    <div class="swot-section-wrapper">
+        <div class="section-header swot-section-header">
+            <h2>Matrice SWOT - Niveau USJ</h2>
+        </div>
 
-    <div class="swot-grid">
-        {swot_card("FORCES", forces, USJ_BLUE, "#DDEFF7")}
-        {swot_card("FAIBLESSES", faiblesses, USJ_RED, "#FBE3C3")}
-        {swot_card("OPPORTUNITÉS", opportunites, "#2F6B2F", "#E2F2D3")}
-        {swot_card("MENACES", menaces, USJ_RED, "#F4C6C4")}
+        <div class="swot-grid">
+            {swot_card("FORCES", forces, USJ_BLUE, "#DDEFF7")}
+            {swot_card("FAIBLESSES", faiblesses, USJ_RED, "#FBE3C3")}
+            {swot_card("OPPORTUNITÉS", opportunites, "#2F6B2F", "#E2F2D3")}
+            {swot_card("MENACES", menaces, USJ_RED, "#F4C6C4")}
+        </div>
     </div>
     """
 
@@ -500,9 +497,6 @@ def build_one_report_html(df_group, participant_type, title_label, hide_names):
         </div>
         """
 
-    logo_src = image_to_base64(LOGO_PATH)
-    logo_html = f'<img src="{logo_src}" class="usj-logo">' if logo_src else ""
-
     forces = get_answers(df_group, section_contains="forces", category_contains="force")
     faiblesses = get_answers(df_group, section_contains="forces", category_contains="faiblesse")
     opportunites = get_answers(df_group, section_contains="opportunites", category_contains="opportun")
@@ -515,12 +509,9 @@ def build_one_report_html(df_group, participant_type, title_label, hide_names):
     <div class="usj-main-header">
         <div>
             <h1>PLAN STRATÉGIQUE USJ 2032</h1>
-            <p>Focus groupe</p>
+            <p>Focus groupe - Aperçu des réponses corrigées</p>
         </div>
-
-        <div class="usj-logo-box">
-            {logo_html}
-        </div>
+        <div class="participant-type">{esc(participant_type)}</div>
     </div>
 
     <div class="group-title">{esc(title_label)}</div>
