@@ -81,28 +81,25 @@ body {{
 }}
 
 .print-report {{
-    background:#E6E6E6;
-    border:none;
-    border-radius:0;
-    padding:0;
+    background:white;
+    border:1px solid #D0D6E0;
+    border-radius:12px;
+    padding:28px 34px;
 }}
 
 .report-page {{
     background:white;
-    border:1px solid #D0D6E0;
+    border:none;
     border-radius:0;
-    padding:28px 34px;
-    margin:0 auto 28px auto;
-    width:210mm;
-    min-height:297mm;
+    padding:0;
+    margin:0;
+    width:auto;
+    min-height:auto;
     box-sizing:border-box;
-    page-break-after:always;
-    break-after:page;
 }}
 
-.report-page:last-child {{
-    page-break-after:auto;
-    break-after:auto;
+.report-page + .report-page {{
+    margin-top:28px;
 }}
 
 .usj-main-header {{
