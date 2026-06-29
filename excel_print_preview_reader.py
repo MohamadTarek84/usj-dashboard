@@ -162,12 +162,12 @@ body {{
 }}
 
 .col-title {{
-    background:{USJ_BLUE};
-    color:white;
+    background:white;
+    color:{USJ_BLUE};
     padding:10px 14px;
     text-align:center;
-    font-size:20px;
-    font-weight:800;
+    font-size:21px;
+    font-weight:900;
     border-radius:6px;
     margin-bottom:10px;
 }}
@@ -268,6 +268,15 @@ body {{
 }}
 
 .print-page-break {{
+    display:block;
+    break-before:page;
+    page-break-before:always;
+    -webkit-column-break-before:always;
+}}
+
+.new-print-page {{
+    display:block;
+    break-before:page;
     page-break-before:always;
 }}
 
@@ -292,6 +301,14 @@ body {{
 
     body {{
         margin:0;
+    }}
+
+    .print-page-break,
+    .new-print-page {{
+        display:block !important;
+        break-before:page !important;
+        page-break-before:always !important;
+        -webkit-column-break-before:always !important;
     }}
 
     .print-button {{
@@ -355,12 +372,15 @@ body {{
     }}
 
     .col-title {{
-        font-size:12px;
-        padding:6px;
-        color:{USJ_BLUE} !important;
+        font-size:13.5px !important;
+        padding:6px !important;
+        color:#001F5B !important;
         background:white !important;
-        border:1.5px solid {USJ_BLUE};
-        font-weight:900;
+        border:none !important;
+        font-weight:900 !important;
+        opacity:1 !important;
+        -webkit-print-color-adjust:exact;
+        print-color-adjust:exact;
     }}
 
     .answer-box,
@@ -584,18 +604,20 @@ def build_one_report_html(df_group, participant_type, title_label, hide_names):
         </div>
     </div>
 
-    <div class="section-header print-page-break">
-        <h2>II - Opportunités et menaces</h2>
-    </div>
-
-    <div class="two-cols">
-        <div>
-            <div class="col-title">Opportunités</div>
-            {answer_boxes(opportunites)}
+    <div class="new-print-page section-two-page">
+        <div class="section-header">
+            <h2>II - Opportunités et menaces</h2>
         </div>
-        <div>
-            <div class="col-title">Menaces</div>
-            {answer_boxes(menaces)}
+
+        <div class="two-cols">
+            <div>
+                <div class="col-title">Opportunités</div>
+                {answer_boxes(opportunites)}
+            </div>
+            <div>
+                <div class="col-title">Menaces</div>
+                {answer_boxes(menaces)}
+            </div>
         </div>
     </div>
 
