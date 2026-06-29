@@ -617,7 +617,17 @@ def build_one_report_html(df_group, participant_type, title_label, hide_names):
 """
 
 
-def build_full_html(html_report, selected_type, selected_label):
+def build_full_html(html_report, selected_type, selected_label, docx_base64="", docx_filename="rapport.docx"):
+    word_button = ""
+    if docx_base64:
+        word_button = f"""
+<a class="print-button"
+   href="data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,{docx_base64}"
+   download="{esc(docx_filename)}">
+   Télécharger Word
+</a>
+"""
+
     return f"""
 <!DOCTYPE html>
 <html>
@@ -626,10 +636,31 @@ def build_full_html(html_report, selected_type, selected_label):
 <title>{esc(selected_type)} - {esc(selected_label)}</title>
 <style>
 {PRINT_CSS}
+
+.print-actions {{
+    display:flex;
+    gap:14px;
+    align-items:center;
+    margin-bottom:20px;
+}}
+
+.print-actions .print-button {{
+    display:inline-block;
+    text-decoration:none;
+}}
+
+@media print {{
+    .print-actions {{
+        display:none !important;
+    }}
+}}
 </style>
 </head>
 <body>
-<button class="print-button" onclick="window.print()">Imprimer / Enregistrer en PDF</button>
+<div class="print-actions">
+    <button class="print-button" onclick="window.print()">Imprimer / Enregistrer en PDF</button>
+    {word_button}
+</div>
 {html_report}
 </body>
 </html>
@@ -909,10 +940,27 @@ def main():
         hide_names=hide_names
     )
 
+    file_base = (
+        f"USJ2032_{safe_filename(selected_type)}_"
+        f"{safe_filename(title_label)}_"
+        f"{datetime.now().strftime('%Y%m%d_%H%M')}"
+    )
+
+    docx_bytes = build_word_docx(
+        df_group=df_report,
+        participant_type=selected_type,
+        title_label=title_label,
+        hide_names=hide_names
+    )
+
+    docx_base64 = base64.b64encode(docx_bytes).decode("utf-8")
+
     full_html = build_full_html(
         html_report=html_report,
         selected_type=selected_type,
-        selected_label=title_label
+        selected_label=title_label,
+        docx_base64=docx_base64,
+        docx_filename=f"{file_base}.docx"
     )
 
     components.html(
@@ -920,37 +968,6 @@ def main():
         height=1300,
         scrolling=True
     )
-
-    file_base = (
-        f"USJ2032_{safe_filename(selected_type)}_"
-        f"{safe_filename(title_label)}_"
-        f"{datetime.now().strftime('%Y%m%d_%H%M')}"
-    )
-
-    col_html, col_word = st.columns([1, 1])
-
-    with col_html:
-        st.download_button(
-            "Télécharger HTML",
-            data=full_html.encode("utf-8"),
-            file_name=f"{file_base}.html",
-            mime="text/html"
-        )
-
-    with col_word:
-        docx_bytes = build_word_docx(
-            df_group=df_report,
-            participant_type=selected_type,
-            title_label=title_label,
-            hide_names=hide_names
-        )
-
-        st.download_button(
-            "Télécharger Word",
-            data=docx_bytes,
-            file_name=f"{file_base}.docx",
-            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        )
 
 
 if __name__ == "__main__":
