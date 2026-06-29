@@ -81,10 +81,28 @@ body {{
 }}
 
 .print-report {{
+    background:#E6E6E6;
+    border:none;
+    border-radius:0;
+    padding:0;
+}}
+
+.report-page {{
     background:white;
     border:1px solid #D0D6E0;
-    border-radius:12px;
+    border-radius:0;
     padding:28px 34px;
+    margin:0 auto 28px auto;
+    width:210mm;
+    min-height:297mm;
+    box-sizing:border-box;
+    page-break-after:always;
+    break-after:page;
+}}
+
+.report-page:last-child {{
+    page-break-after:auto;
+    break-after:auto;
 }}
 
 .usj-main-header {{
@@ -162,17 +180,14 @@ body {{
 }}
 
 .col-title {{
-    background:white !important;
-    color:#001F5B !important;
+    background:white;
+    color:{USJ_BLUE};
     padding:10px 14px;
     text-align:center;
     font-size:21px;
     font-weight:900;
     border-radius:6px;
     margin-bottom:10px;
-    opacity:1 !important;
-    text-shadow:none !important;
-    -webkit-font-smoothing:antialiased;
 }}
 
 .answer-box {{
@@ -271,35 +286,11 @@ body {{
 }}
 
 .print-page-break {{
-    display:block;
-    break-before:page;
     page-break-before:always;
-    -webkit-column-break-before:always;
-}}
-
-.new-print-page {{
-    display:block;
-    break-before:page;
-    page-break-before:always;
-}}
-
-.hard-page-break {{
-    display:block;
-    height:0;
-    margin:0;
-    padding:0;
-    line-height:0;
-    font-size:0;
-    clear:both;
-    break-before:page;
-    page-break-before:always;
-}}
-
-.section-page {{
-    display:block;
 }}
 
 .print-button {{
+    display:inline-block;
     background:#8B1538;
     color:white;
     border:1px solid #8B1538;
@@ -309,6 +300,11 @@ body {{
     font-size:18px;
     font-weight:800;
     cursor:pointer;
+    margin:0 12px 20px 0;
+    text-decoration:none;
+}}
+
+.print-actions {{
     margin-bottom:20px;
 }}
 
@@ -322,21 +318,6 @@ body {{
         margin:0;
     }}
 
-    .print-page-break,
-    .new-print-page,
-    .hard-page-break {{
-        display:block !important;
-        height:0 !important;
-        margin:0 !important;
-        padding:0 !important;
-        line-height:0 !important;
-        font-size:0 !important;
-        clear:both !important;
-        break-before:page !important;
-        page-break-before:always !important;
-        -webkit-column-break-before:always !important;
-    }}
-
     .print-button {{
         display:none;
     }}
@@ -344,6 +325,23 @@ body {{
     .print-report {{
         border:none;
         padding:0;
+        background:white;
+    }}
+
+    .report-page {{
+        border:none;
+        border-radius:0;
+        padding:0;
+        margin:0;
+        width:auto;
+        min-height:auto;
+        page-break-after:always;
+        break-after:page;
+    }}
+
+    .report-page:last-child {{
+        page-break-after:auto;
+        break-after:auto;
     }}
 
     .usj-main-header h1 {{
@@ -398,21 +396,17 @@ body {{
     }}
 
     .col-title {{
-        font-size:13.5px !important;
-        padding:6px !important;
-        color:#001F5B !important;
-        background:white !important;
-        border:none !important;
-        font-weight:900 !important;
-        opacity:1 !important;
-        -webkit-print-color-adjust:exact;
-        print-color-adjust:exact;
+        font-size:13px;
+        padding:6px;
+        color:{USJ_BLUE};
+        background:white;
+        font-weight:900;
     }}
 
     .answer-box,
     .conclusion-box {{
-        font-size:11px;
-        line-height:1.25;
+        font-size:10.5px;
+        line-height:1.2;
         padding:6px;
         margin-bottom:2mm;
         page-break-inside:avoid;
@@ -600,22 +594,22 @@ def build_one_report_html(df_group, participant_type, title_label, hide_names):
     return f"""
 <div class="print-report">
 
-    <div class="usj-main-header">
-        <div>
-            <h1>PLAN STRATÉGIQUE USJ 2032</h1>
-            <p>Focus groupe</p>
+    <div class="report-page">
+        <div class="usj-main-header">
+            <div>
+                <h1>PLAN STRATÉGIQUE USJ 2032</h1>
+                <p>Focus groupe</p>
+            </div>
+
+            <div class="usj-logo-box">
+                {logo_html}
+            </div>
         </div>
 
-        <div class="usj-logo-box">
-            {logo_html}
-        </div>
-    </div>
+        <div class="group-title">{esc(title_label)}</div>
 
-    <div class="group-title">{esc(title_label)}</div>
+        {names_html}
 
-    {names_html}
-
-    <div class="section-page section-one-page">
         <div class="section-header">
             <h2>I - Forces et faiblesses</h2>
         </div>
@@ -632,9 +626,7 @@ def build_one_report_html(df_group, participant_type, title_label, hide_names):
         </div>
     </div>
 
-    <div class="hard-page-break"></div>
-
-    <div class="section-page section-two-page">
+    <div class="report-page">
         <div class="section-header">
             <h2>II - Opportunités et menaces</h2>
         </div>
@@ -649,13 +641,11 @@ def build_one_report_html(df_group, participant_type, title_label, hide_names):
                 {answer_boxes(menaces)}
             </div>
         </div>
+
+        {swot_matrix_html(forces, faiblesses, opportunites, menaces)}
     </div>
 
-    {swot_matrix_html(forces, faiblesses, opportunites, menaces)}
-
-    <div class="hard-page-break"></div>
-
-    <div class="section-page section-three-page">
+    <div class="report-page">
         <div class="section-header">
             <h2>III - Priorités</h2>
         </div>
@@ -665,9 +655,7 @@ def build_one_report_html(df_group, participant_type, title_label, hide_names):
         </div>
     </div>
 
-    <div class="hard-page-break"></div>
-
-    <div class="section-page section-four-page">
+    <div class="report-page">
         <div class="section-header">
             <h2>IV - Conclusion</h2>
         </div>
@@ -700,24 +688,6 @@ def build_full_html(html_report, selected_type, selected_label, docx_base64="", 
 <title>{esc(selected_type)} - {esc(selected_label)}</title>
 <style>
 {PRINT_CSS}
-
-.print-actions {{
-    display:flex;
-    gap:14px;
-    align-items:center;
-    margin-bottom:20px;
-}}
-
-.print-actions .print-button {{
-    display:inline-block;
-    text-decoration:none;
-}}
-
-@media print {{
-    .print-actions {{
-        display:none !important;
-    }}
-}}
 </style>
 </head>
 <body>
@@ -751,7 +721,7 @@ def add_docx_answers(document, answers):
         r1.bold = True
         r1.font.color.rgb = RGBColor(139, 21, 56)
         r2 = p.add_run(answer)
-        r2.font.size = Pt(10.5)
+        r2.font.size = Pt(10)
 
 
 def add_docx_two_column_section(document, left_title, left_answers, right_title, right_answers):
@@ -835,7 +805,6 @@ def build_word_docx(df_group, participant_type, title_label, hide_names):
     add_docx_heading(document, "I - Forces et faiblesses", level=1)
     add_docx_two_column_section(document, "Forces", forces, "Faiblesses", faiblesses)
 
-    document.add_page_break()
     add_docx_heading(document, "II - Opportunités et menaces", level=1)
     add_docx_two_column_section(document, "Opportunités", opportunites, "Menaces", menaces)
 
@@ -874,7 +843,7 @@ def build_word_docx(df_group, participant_type, title_label, hide_names):
             p_a = document.add_paragraph()
             p_a.paragraph_format.left_indent = Inches(0.2)
             r_a = p_a.add_run(answer)
-            r_a.font.size = Pt(10.5)
+            r_a.font.size = Pt(10)
 
     buffer = BytesIO()
     document.save(buffer)
@@ -1017,7 +986,6 @@ def main():
         title_label=title_label,
         hide_names=hide_names
     )
-
     docx_base64 = base64.b64encode(docx_bytes).decode("utf-8")
 
     full_html = build_full_html(
