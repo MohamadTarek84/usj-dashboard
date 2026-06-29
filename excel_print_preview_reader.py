@@ -667,18 +667,135 @@ def build_one_report_html(df_group, participant_type, title_label, hide_names):
 
 
 def build_word_export_html(html_report, selected_type, selected_label):
+    # Word opens this HTML as a .doc file.
+    # These overrides are applied outside @media print because Microsoft Word
+    # does not reliably apply browser print CSS.
+    word_html_report = html_report.replace(
+        'class="usj-logo"',
+        'class="usj-logo" style="width:36mm;max-width:36mm;height:auto;"'
+    )
+
+    word_css = f"""
+{PRINT_CSS}
+
+@page Section1 {{
+    size: A4 portrait;
+    margin: 8mm 9mm 8mm 9mm;
+}}
+
+body {{
+    margin: 0;
+    background: white;
+}}
+
+.print-report {{
+    border: none;
+    padding: 0;
+    background: white;
+}}
+
+.report-page {{
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    margin: 0;
+    width: auto;
+    min-height: auto;
+    page-break-after: always;
+    mso-page-break-after: always;
+}}
+
+.report-page:last-child {{
+    page-break-after: auto;
+    mso-page-break-after: auto;
+}}
+
+.usj-main-header h1 {{
+    font-size: 22px;
+    line-height: 1.05;
+    margin-bottom: 1mm;
+}}
+
+.usj-main-header p {{
+    font-size: 10px;
+}}
+
+.usj-logo {{
+    width: 36mm !important;
+    max-width: 36mm !important;
+    height: auto !important;
+}}
+
+.group-title {{
+    font-size: 18px;
+    margin: 8mm 0 4mm 0;
+}}
+
+.names {{
+    font-size: 12px;
+    margin-bottom: 8mm;
+}}
+
+.section-header {{
+    margin-top: 5mm;
+    margin-bottom: 3mm;
+    padding: 7px 11px;
+    box-shadow: none;
+}}
+
+.section-header h2 {{
+    font-size: 16px;
+}}
+
+.col-title {{
+    font-size: 12px;
+    padding: 6px;
+    color: {USJ_BLUE};
+    font-weight: 900;
+}}
+
+.answer-box,
+.conclusion-box {{
+    font-size: 10.5px;
+    line-height: 1.2;
+    padding: 6px;
+    margin-bottom: 2mm;
+    page-break-inside: avoid;
+}}
+
+.conclusion-label {{
+    font-size: 11px;
+    margin: 4mm 0 2mm 0;
+}}
+
+.swot-card h3 {{
+    font-size: 13px;
+}}
+
+.swot-card li {{
+    font-size: 9.5px;
+    line-height: 1.15;
+}}
+"""
+
     return f"""
 <!DOCTYPE html>
-<html>
+<html xmlns:o="urn:schemas-microsoft-com:office:office"
+      xmlns:w="urn:schemas-microsoft-com:office:word"
+      xmlns="http://www.w3.org/TR/REC-html40">
 <head>
 <meta charset="UTF-8">
+<meta name="ProgId" content="Word.Document">
+<meta name="Generator" content="Microsoft Word">
 <title>{esc(selected_type)} - {esc(selected_label)}</title>
 <style>
-{PRINT_CSS}
+{word_css}
 </style>
 </head>
 <body>
-{html_report}
+<div class="Section1">
+{word_html_report}
+</div>
 </body>
 </html>
 """
