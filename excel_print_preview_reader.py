@@ -357,12 +357,16 @@ body {{
     .col-title {{
         font-size:12px;
         padding:6px;
+        color:{USJ_BLUE} !important;
+        background:white !important;
+        border:1.5px solid {USJ_BLUE};
+        font-weight:900;
     }}
 
     .answer-box,
     .conclusion-box {{
-        font-size:10.5px;
-        line-height:1.2;
+        font-size:11px;
+        line-height:1.25;
         padding:6px;
         margin-bottom:2mm;
         page-break-inside:avoid;
@@ -580,7 +584,7 @@ def build_one_report_html(df_group, participant_type, title_label, hide_names):
         </div>
     </div>
 
-    <div class="section-header">
+    <div class="section-header print-page-break">
         <h2>II - Opportunités et menaces</h2>
     </div>
 
@@ -687,7 +691,7 @@ def add_docx_answers(document, answers):
         r1.bold = True
         r1.font.color.rgb = RGBColor(139, 21, 56)
         r2 = p.add_run(answer)
-        r2.font.size = Pt(10)
+        r2.font.size = Pt(10.5)
 
 
 def add_docx_two_column_section(document, left_title, left_answers, right_title, right_answers):
@@ -771,6 +775,7 @@ def build_word_docx(df_group, participant_type, title_label, hide_names):
     add_docx_heading(document, "I - Forces et faiblesses", level=1)
     add_docx_two_column_section(document, "Forces", forces, "Faiblesses", faiblesses)
 
+    document.add_page_break()
     add_docx_heading(document, "II - Opportunités et menaces", level=1)
     add_docx_two_column_section(document, "Opportunités", opportunites, "Menaces", menaces)
 
@@ -809,7 +814,7 @@ def build_word_docx(df_group, participant_type, title_label, hide_names):
             p_a = document.add_paragraph()
             p_a.paragraph_format.left_indent = Inches(0.2)
             r_a = p_a.add_run(answer)
-            r_a.font.size = Pt(10)
+            r_a.font.size = Pt(10.5)
 
     buffer = BytesIO()
     document.save(buffer)
