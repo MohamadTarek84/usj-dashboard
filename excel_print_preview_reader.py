@@ -1,7 +1,5 @@
 import re
 import html
-import base64
-from pathlib import Path
 from datetime import datetime
 
 import pandas as pd
@@ -18,10 +16,6 @@ USJ_LIGHT_BLUE = "#EAF2F8"
 USJ_TEXT = "#1B2A41"
 
 
-def html_block(content):
-    st.markdown(content, unsafe_allow_html=True)
-
-
 def clean(value):
     if pd.isna(value):
         return ""
@@ -30,16 +24,16 @@ def clean(value):
 
 def normalize(value):
     value = clean(value).lower()
-    value = (
-        value.replace("é", "e")
-        .replace("è", "e")
-        .replace("ê", "e")
-        .replace("à", "a")
-        .replace("ù", "u")
-        .replace("ç", "c")
-        .replace("î", "i")
-        .replace("ï", "i")
-    )
+    replacements = {
+        "é": "e", "è": "e", "ê": "e", "ë": "e",
+        "à": "a", "â": "a",
+        "ù": "u", "û": "u",
+        "ç": "c",
+        "î": "i", "ï": "i",
+        "ô": "o",
+    }
+    for old, new in replacements.items():
+        value = value.replace(old, new)
     return value
 
 
@@ -53,42 +47,17 @@ def safe_filename(value):
     return value.strip("_") or "rapport"
 
 
-def apply_usj_style():
-    html_block(f"""
-<style>
-html, body, .stApp {{
-    font-family: Candara, Calibri, Arial, sans-serif !important;
-    color: {USJ_TEXT};
-}}
+def html_block(content):
+    st.markdown(content, unsafe_allow_html=True)
 
-header, footer, #MainMenu {{
-    display:none !important;
-}}
 
-.block-container {{
-    max-width: 100% !important;
-    padding-left: 3rem !important;
-    padding-right: 3rem !important;
-}}
-
-h1, h2, h3 {{
-    color:{USJ_BLUE} !important;
-    font-weight:800 !important;
-}}
-
-.stButton button,
-.stDownloadButton button {{
-    background-color:#0070C0 !important;
-    color:white !important;
-    border-radius:8px !important;
-    border:1px solid #0070C0 !important;
-    font-weight:800 !important;
-    font-size:18px !important;
-}}
-
-.stButton button p,
-.stDownloadButton button p {{
-    color:white !important;
+PRINT_CSS = f"""
+body {{
+    font-family: Candara, Calibri, Arial, sans-serif;
+    background:white;
+    color:{USJ_TEXT};
+    margin:0;
+    padding:0;
 }}
 
 .print-report {{
@@ -111,6 +80,7 @@ h1, h2, h3 {{
     font-size:42px;
     margin:0 0 16px 0;
     color:{USJ_BLUE};
+    font-weight:800;
 }}
 
 .usj-main-header p {{
@@ -201,7 +171,16 @@ h1, h2, h3 {{
     page-break-before:always;
 }}
 
-.print-button-wrapper {{
+.print-button {{
+    background:#8B1538;
+    color:white;
+    border:1px solid #8B1538;
+    border-radius:8px;
+    padding:10px 22px;
+    font-family:Candara,Calibri,Arial,sans-serif;
+    font-size:18px;
+    font-weight:800;
+    cursor:pointer;
     margin-bottom:20px;
 }}
 
@@ -211,82 +190,109 @@ h1, h2, h3 {{
         margin:8mm 9mm;
     }}
 
-    header, footer, #MainMenu,
-    div[data-testid="stToolbar"],
-    div[data-testid="stDecoration"],
-    div[data-testid="stStatusWidget"],
-    div[data-testid="stButton"],
-    div[data-testid="stDownloadButton"],
-    div[data-testid="stFileUploader"],
-    div[data-testid="stSelectbox"],
-    div[data-testid="stCheckbox"],
-    .screen-only {{
-        display:none !important;
+    body {{
+        margin:0;
     }}
 
-    .block-container {{
-        max-width:190mm !important;
-        width:190mm !important;
-        padding:0 !important;
-        margin:0 auto !important;
+    .print-button {{
+        display:none;
     }}
 
     .print-report {{
-        border:none !important;
-        padding:0 !important;
+        border:none;
+        padding:0;
     }}
 
     .usj-main-header h1 {{
-        font-size:22px !important;
-        line-height:1.05 !important;
-        margin-bottom:2mm !important;
+        font-size:22px;
+        line-height:1.05;
+        margin-bottom:2mm;
     }}
 
     .usj-main-header p {{
-        font-size:13px !important;
+        font-size:13px;
     }}
 
     .participant-type {{
-        font-size:12px !important;
+        font-size:12px;
     }}
 
     .group-title {{
-        font-size:18px !important;
-        margin:8mm 0 4mm 0 !important;
+        font-size:18px;
+        margin:8mm 0 4mm 0;
     }}
 
     .names {{
-        font-size:12px !important;
-        margin-bottom:8mm !important;
+        font-size:12px;
+        margin-bottom:8mm;
     }}
 
     .section-header {{
-        margin-top:5mm !important;
-        margin-bottom:3mm !important;
-        padding:7px 11px !important;
-        box-shadow:none !important;
+        margin-top:5mm;
+        margin-bottom:3mm;
+        padding:7px 11px;
+        box-shadow:none;
     }}
 
     .section-header h2 {{
-        font-size:16px !important;
+        font-size:16px;
     }}
 
     .col-title {{
-        font-size:12px !important;
-        padding:6px !important;
+        font-size:12px;
+        padding:6px;
     }}
 
     .answer-box {{
-        font-size:10.5px !important;
-        line-height:1.2 !important;
-        padding:6px !important;
-        margin-bottom:2mm !important;
-        page-break-inside:avoid !important;
-        break-inside:avoid !important;
+        font-size:10.5px;
+        line-height:1.2;
+        padding:6px;
+        margin-bottom:2mm;
+        page-break-inside:avoid;
+        break-inside:avoid;
     }}
 }}
+"""
+
+
+APP_CSS = f"""
+<style>
+html, body, .stApp {{
+    font-family: Candara, Calibri, Arial, sans-serif !important;
+    color:{USJ_TEXT};
+}}
+
+header, footer, #MainMenu {{
+    display:none !important;
+}}
+
+.block-container {{
+    max-width:100% !important;
+    padding-left:3rem !important;
+    padding-right:3rem !important;
+}}
+
+h1, h2, h3 {{
+    color:{USJ_BLUE} !important;
+    font-weight:800 !important;
+}}
+
+.stButton button,
+.stDownloadButton button {{
+    background-color:#0070C0 !important;
+    color:white !important;
+    border-radius:8px !important;
+    border:1px solid #0070C0 !important;
+    font-weight:800 !important;
+    font-size:18px !important;
+}}
+
+.stButton button p,
+.stDownloadButton button p {{
+    color:white !important;
+}}
 </style>
-""")
+"""
 
 
 def get_col(df, possible_names):
@@ -300,6 +306,7 @@ def get_col(df, possible_names):
 
 def build_report_html(df_group, participant_type, subgroup, hide_names):
     names = sorted(set(clean(x) for x in df_group["participants"].dropna() if clean(x)))
+
     names_html = ""
     if not hide_names and names:
         names_html = f"""
@@ -331,7 +338,7 @@ def build_report_html(df_group, participant_type, subgroup, hide_names):
             for i, answer in enumerate(answers, start=1)
         )
 
-    html_report = f"""
+    return f"""
 <div class="print-report">
 
     <div class="usj-main-header">
@@ -396,31 +403,25 @@ def build_report_html(df_group, participant_type, subgroup, hide_names):
 
 </div>
 """
-    return html_report
 
 
-def print_button():
-    components.html(
-        """
-        <div class="print-button-wrapper">
-            <button onclick="window.parent.print()" style="
-                background:#8B1538;
-                color:white;
-                border:1px solid #8B1538;
-                border-radius:8px;
-                padding:10px 22px;
-                font-family:Candara,Calibri,Arial,sans-serif;
-                font-size:18px;
-                font-weight:800;
-                cursor:pointer;
-            ">
-                Imprimer / Enregistrer en PDF
-            </button>
-        </div>
-        """,
-        height=65,
-        scrolling=False
-    )
+def build_full_html(html_report, selected_type, selected_subgroup):
+    return f"""
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>{esc(selected_type)} - {esc(selected_subgroup)}</title>
+<style>
+{PRINT_CSS}
+</style>
+</head>
+<body>
+<button class="print-button" onclick="window.print()">Imprimer / Enregistrer en PDF</button>
+{html_report}
+</body>
+</html>
+"""
 
 
 def main():
@@ -430,7 +431,7 @@ def main():
         initial_sidebar_state="collapsed"
     )
 
-    apply_usj_style()
+    html_block(APP_CSS)
 
     html_block(f"""
     <div class="screen-only">
@@ -526,28 +527,23 @@ def main():
         hide_names=hide_names
     )
 
-    print_button()
+    full_html = build_full_html(
+        html_report=html_report,
+        selected_type=selected_type,
+        selected_subgroup=selected_subgroup
+    )
 
-    html_block(html_report)
+    components.html(
+        full_html,
+        height=1200,
+        scrolling=True
+    )
 
     file_name = (
         f"USJ2032_{safe_filename(selected_type)}_"
         f"{safe_filename(selected_subgroup)}_"
         f"{datetime.now().strftime('%Y%m%d_%H%M')}.html"
     )
-
-    full_html = f"""
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>{esc(selected_type)} - {esc(selected_subgroup)}</title>
-</head>
-<body>
-{html_report}
-</body>
-</html>
-"""
 
     st.download_button(
         "Télécharger HTML",
