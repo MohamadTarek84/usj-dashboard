@@ -162,14 +162,17 @@ body {{
 }}
 
 .col-title {{
-    background:white;
-    color:{USJ_BLUE};
+    background:white !important;
+    color:#001F5B !important;
     padding:10px 14px;
     text-align:center;
     font-size:21px;
     font-weight:900;
     border-radius:6px;
     margin-bottom:10px;
+    opacity:1 !important;
+    text-shadow:none !important;
+    -webkit-font-smoothing:antialiased;
 }}
 
 .answer-box {{
@@ -280,6 +283,22 @@ body {{
     page-break-before:always;
 }}
 
+.hard-page-break {{
+    display:block;
+    height:0;
+    margin:0;
+    padding:0;
+    line-height:0;
+    font-size:0;
+    clear:both;
+    break-before:page;
+    page-break-before:always;
+}}
+
+.section-page {{
+    display:block;
+}}
+
 .print-button {{
     background:#8B1538;
     color:white;
@@ -304,8 +323,15 @@ body {{
     }}
 
     .print-page-break,
-    .new-print-page {{
+    .new-print-page,
+    .hard-page-break {{
         display:block !important;
+        height:0 !important;
+        margin:0 !important;
+        padding:0 !important;
+        line-height:0 !important;
+        font-size:0 !important;
+        clear:both !important;
         break-before:page !important;
         page-break-before:always !important;
         -webkit-column-break-before:always !important;
@@ -589,22 +615,26 @@ def build_one_report_html(df_group, participant_type, title_label, hide_names):
 
     {names_html}
 
-    <div class="section-header">
-        <h2>I - Forces et faiblesses</h2>
+    <div class="section-page section-one-page">
+        <div class="section-header">
+            <h2>I - Forces et faiblesses</h2>
+        </div>
+
+        <div class="two-cols">
+            <div>
+                <div class="col-title">Forces</div>
+                {answer_boxes(forces)}
+            </div>
+            <div>
+                <div class="col-title">Faiblesses</div>
+                {answer_boxes(faiblesses)}
+            </div>
+        </div>
     </div>
 
-    <div class="two-cols">
-        <div>
-            <div class="col-title">Forces</div>
-            {answer_boxes(forces)}
-        </div>
-        <div>
-            <div class="col-title">Faiblesses</div>
-            {answer_boxes(faiblesses)}
-        </div>
-    </div>
+    <div class="hard-page-break"></div>
 
-    <div class="new-print-page section-two-page">
+    <div class="section-page section-two-page">
         <div class="section-header">
             <h2>II - Opportunités et menaces</h2>
         </div>
@@ -623,20 +653,28 @@ def build_one_report_html(df_group, participant_type, title_label, hide_names):
 
     {swot_matrix_html(forces, faiblesses, opportunites, menaces)}
 
-    <div class="section-header print-page-break">
-        <h2>III - Priorités</h2>
+    <div class="hard-page-break"></div>
+
+    <div class="section-page section-three-page">
+        <div class="section-header">
+            <h2>III - Priorités</h2>
+        </div>
+
+        <div>
+            {answer_boxes(priorites)}
+        </div>
     </div>
 
-    <div>
-        {answer_boxes(priorites)}
-    </div>
+    <div class="hard-page-break"></div>
 
-    <div class="section-header print-page-break">
-        <h2>IV - Conclusion</h2>
-    </div>
+    <div class="section-page section-four-page">
+        <div class="section-header">
+            <h2>IV - Conclusion</h2>
+        </div>
 
-    <div>
-        {conclusion_html(df_group)}
+        <div>
+            {conclusion_html(df_group)}
+        </div>
     </div>
 
 </div>
