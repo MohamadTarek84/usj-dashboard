@@ -120,6 +120,7 @@ body {{
     margin-top:24px;
     margin-bottom:16px;
     page-break-inside:avoid;
+    box-shadow:0 2px 10px rgba(0,0,0,0.06);
 }}
 
 .section-header h2 {{
@@ -163,8 +164,61 @@ body {{
     margin-right:6px;
 }}
 
-.single-section .answer-box {{
-    min-height:50px;
+.conclusion-label {{
+    color:{USJ_BLUE};
+    font-size:19px;
+    font-weight:800;
+    margin:28px 0 10px 4px;
+}}
+
+.conclusion-box {{
+    background:#E3DED9;
+    border:1.5px solid #595959;
+    padding:14px 18px;
+    margin-bottom:18px;
+    min-height:72px;
+    font-size:20px;
+    line-height:1.35;
+    color:#000;
+    page-break-inside:avoid;
+    break-inside:avoid;
+}}
+
+.swot-grid {{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:18px;
+    margin-top:14px;
+    page-break-inside:avoid;
+}}
+
+.swot-card {{
+    border-radius:14px;
+    padding:16px;
+    border:2px solid var(--accent);
+    background:var(--bg);
+    page-break-inside:avoid;
+    break-inside:avoid;
+}}
+
+.swot-card h3 {{
+    margin:0 0 10px 0;
+    color:var(--accent);
+    font-size:24px;
+    font-weight:900;
+    border-bottom:2px solid var(--accent);
+    padding-bottom:8px;
+}}
+
+.swot-card ul {{
+    margin:0;
+    padding-left:22px;
+}}
+
+.swot-card li {{
+    margin-bottom:8px;
+    font-size:16px;
+    line-height:1.3;
 }}
 
 .print-page-break {{
@@ -184,6 +238,11 @@ body {{
     margin-bottom:20px;
 }}
 
+.report-separator {{
+    page-break-before:always;
+    margin-top:30px;
+}}
+
 @media print {{
     @page {{
         size:A4 portrait;
@@ -201,6 +260,11 @@ body {{
     .print-report {{
         border:none;
         padding:0;
+    }}
+
+    .report-separator {{
+        page-break-before:always;
+        margin-top:0;
     }}
 
     .usj-main-header h1 {{
@@ -243,13 +307,28 @@ body {{
         padding:6px;
     }}
 
-    .answer-box {{
+    .answer-box,
+    .conclusion-box {{
         font-size:10.5px;
         line-height:1.2;
         padding:6px;
         margin-bottom:2mm;
         page-break-inside:avoid;
         break-inside:avoid;
+    }}
+
+    .conclusion-label {{
+        font-size:11px;
+        margin:4mm 0 2mm 0;
+    }}
+
+    .swot-card h3 {{
+        font-size:13px;
+    }}
+
+    .swot-card li {{
+        font-size:9.5px;
+        line-height:1.15;
     }}
 }}
 """
@@ -304,7 +383,97 @@ def get_col(df, possible_names):
     return None
 
 
-def build_report_html(df_group, participant_type, subgroup, hide_names):
+def get_answers(df_group, section_contains=None, category_contains=None):
+    temp = df_group.copy()
+
+    if section_contains:
+        temp = temp[temp["section_norm"].str.contains(section_contains, na=False)]
+
+    if category_contains:
+        temp = temp[temp["category_norm"].str.contains(category_contains, na=False)]
+
+    return [clean(x) for x in temp["Final_Answer"].tolist() if clean(x)]
+
+
+def answer_boxes(answers):
+    if not answers:
+        return '<div class="answer-box">Aucune réponse disponible.</div>'
+
+    return "".join(
+        f"""
+        <div class="answer-box">
+            <span class="answer-number">{i}.</span>{esc(answer)}
+        </div>
+        """
+        for i, answer in enumerate(answers, start=1)
+    )
+
+
+def swot_card(title, answers, accent, bg):
+    if not answers:
+        li = "<li>Aucune réponse disponible.</li>"
+    else:
+        li = "".join(f"<li>{esc(x)}</li>" for x in answers)
+
+    return f"""
+    <div class="swot-card" style="--accent:{accent}; --bg:{bg};">
+        <h3>{title}</h3>
+        <ul>{li}</ul>
+    </div>
+    """
+
+
+def swot_matrix_html(forces, faiblesses, opportunites, menaces):
+    return f"""
+    <div class="section-header print-page-break">
+        <h2>Matrice SWOT - Niveau USJ</h2>
+    </div>
+
+    <div class="swot-grid">
+        {swot_card("FORCES", forces, USJ_BLUE, "#DDEFF7")}
+        {swot_card("FAIBLESSES", faiblesses, USJ_RED, "#FBE3C3")}
+        {swot_card("OPPORTUNITÉS", opportunites, "#2F6B2F", "#E2F2D3")}
+        {swot_card("MENACES", menaces, USJ_RED, "#F4C6C4")}
+    </div>
+    """
+
+
+def conclusion_html(df_group):
+    phrases = [
+        ("Nous souhaitons que l’USJ soit reconnue pour …", "reconnue"),
+        ("Nous souhaitons que nos étudiants disent que l’USJ …", "etudiants"),
+        ("L’USJ serait un meilleur lieu de travail si …", "travail"),
+    ]
+
+    conclusion_rows = df_group[
+        df_group["section_norm"].str.contains("conclusion", na=False)
+    ].copy()
+
+    blocks = ""
+
+    for phrase, key in phrases:
+        temp = conclusion_rows[
+            conclusion_rows["category_norm"].str.contains(key, na=False)
+        ]
+
+        answers = [clean(x) for x in temp["Final_Answer"].tolist() if clean(x)]
+
+        if not answers:
+            answers = [""]
+
+        blocks += f"""
+        <div class="conclusion-label">• {esc(phrase)}</div>
+        """
+
+        for answer in answers:
+            blocks += f"""
+            <div class="conclusion-box">{esc(answer)}</div>
+            """
+
+    return blocks
+
+
+def build_one_report_html(df_group, participant_type, title_label, hide_names):
     names = sorted(set(clean(x) for x in df_group["participants"].dropna() if clean(x)))
 
     names_html = ""
@@ -315,28 +484,11 @@ def build_report_html(df_group, participant_type, subgroup, hide_names):
         </div>
         """
 
-    def answers_for(section_contains=None, category_contains=None):
-        temp = df_group.copy()
-
-        if section_contains:
-            temp = temp[temp["section_norm"].str.contains(section_contains, na=False)]
-
-        if category_contains:
-            temp = temp[temp["category_norm"].str.contains(category_contains, na=False)]
-
-        answers = [clean(x) for x in temp["Final_Answer"].tolist() if clean(x)]
-
-        if not answers:
-            return '<div class="answer-box">Aucune réponse disponible.</div>'
-
-        return "".join(
-            f"""
-            <div class="answer-box">
-                <span class="answer-number">{i}.</span>{esc(answer)}
-            </div>
-            """
-            for i, answer in enumerate(answers, start=1)
-        )
+    forces = get_answers(df_group, section_contains="forces", category_contains="force")
+    faiblesses = get_answers(df_group, section_contains="forces", category_contains="faiblesse")
+    opportunites = get_answers(df_group, section_contains="opportunites", category_contains="opportun")
+    menaces = get_answers(df_group, section_contains="opportunites", category_contains="menace")
+    priorites = get_answers(df_group, section_contains="prior")
 
     return f"""
 <div class="print-report">
@@ -349,7 +501,7 @@ def build_report_html(df_group, participant_type, subgroup, hide_names):
         <div class="participant-type">{esc(participant_type)}</div>
     </div>
 
-    <div class="group-title">{esc(subgroup)}</div>
+    <div class="group-title">{esc(title_label)}</div>
 
     {names_html}
 
@@ -360,11 +512,11 @@ def build_report_html(df_group, participant_type, subgroup, hide_names):
     <div class="two-cols">
         <div>
             <div class="col-title">Forces</div>
-            {answers_for(section_contains="forces", category_contains="force")}
+            {answer_boxes(forces)}
         </div>
         <div>
             <div class="col-title">Faiblesses</div>
-            {answers_for(section_contains="forces", category_contains="faiblesse")}
+            {answer_boxes(faiblesses)}
         </div>
     </div>
 
@@ -375,43 +527,43 @@ def build_report_html(df_group, participant_type, subgroup, hide_names):
     <div class="two-cols">
         <div>
             <div class="col-title">Opportunités</div>
-            {answers_for(section_contains="opportunites", category_contains="opportun")}
+            {answer_boxes(opportunites)}
         </div>
         <div>
             <div class="col-title">Menaces</div>
-            {answers_for(section_contains="opportunites", category_contains="menace")}
+            {answer_boxes(menaces)}
         </div>
     </div>
 
-    <div class="print-page-break"></div>
+    {swot_matrix_html(forces, faiblesses, opportunites, menaces)}
 
-    <div class="section-header">
+    <div class="section-header print-page-break">
         <h2>III - Priorités</h2>
     </div>
 
-    <div class="single-section">
-        {answers_for(section_contains="prior")}
+    <div>
+        {answer_boxes(priorites)}
     </div>
 
     <div class="section-header">
         <h2>IV - Conclusion</h2>
     </div>
 
-    <div class="single-section">
-        {answers_for(section_contains="conclusion")}
+    <div>
+        {conclusion_html(df_group)}
     </div>
 
 </div>
 """
 
 
-def build_full_html(html_report, selected_type, selected_subgroup):
+def build_full_html(html_report, selected_type, selected_label):
     return f"""
 <!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
-<title>{esc(selected_type)} - {esc(selected_subgroup)}</title>
+<title>{esc(selected_type)} - {esc(selected_label)}</title>
 <style>
 {PRINT_CSS}
 </style>
@@ -498,50 +650,72 @@ def main():
         df[col] = df[col].apply(clean)
 
     df = df[(df["Respondent_Type"] != "") & (df["groupe"] != "")]
-
     df["section_norm"] = df["section"].apply(normalize)
     df["category_norm"] = df["category"].apply(normalize)
 
     participant_types = sorted(df["Respondent_Type"].dropna().unique().tolist())
 
-    col1, col2, col3 = st.columns([1.2, 1.2, 1])
+    c1, c2, c3, c4 = st.columns([1.2, 1.3, 1.2, 1])
 
-    with col1:
+    with c1:
         selected_type = st.selectbox("Type de participants", participant_types)
 
-    df_type = df[df["Respondent_Type"] == selected_type]
+    df_type = df[df["Respondent_Type"] == selected_type].copy()
+
+    with c2:
+        report_mode = st.selectbox(
+            "Mode d'affichage",
+            [
+                "Tous les sous-groupes du type sélectionné",
+                "Un sous-groupe spécifique"
+            ]
+        )
+
     subgroups = sorted(df_type["groupe"].dropna().unique().tolist())
 
-    with col2:
-        selected_subgroup = st.selectbox("Sous-groupe", subgroups)
+    with c3:
+        if report_mode == "Un sous-groupe spécifique":
+            selected_subgroup = st.selectbox("Sous-groupe", subgroups)
+        else:
+            selected_subgroup = "Tous les sous-groupes"
 
-    with col3:
+    with c4:
         hide_names = st.checkbox("Hide participants names", value=False)
 
-    df_group = df_type[df_type["groupe"] == selected_subgroup].copy()
-
-    html_report = build_report_html(
-        df_group=df_group,
-        participant_type=selected_type,
-        subgroup=selected_subgroup,
-        hide_names=hide_names
-    )
+    if report_mode == "Un sous-groupe spécifique":
+        df_report = df_type[df_type["groupe"] == selected_subgroup].copy()
+        title_label = selected_subgroup
+        html_report = build_one_report_html(
+            df_group=df_report,
+            participant_type=selected_type,
+            title_label=title_label,
+            hide_names=hide_names
+        )
+    else:
+        df_report = df_type.copy()
+        title_label = f"{selected_type} - Tous les sous-groupes"
+        html_report = build_one_report_html(
+            df_group=df_report,
+            participant_type=selected_type,
+            title_label=title_label,
+            hide_names=hide_names
+        )
 
     full_html = build_full_html(
         html_report=html_report,
         selected_type=selected_type,
-        selected_subgroup=selected_subgroup
+        selected_label=title_label
     )
 
     components.html(
         full_html,
-        height=1200,
+        height=1300,
         scrolling=True
     )
 
     file_name = (
         f"USJ2032_{safe_filename(selected_type)}_"
-        f"{safe_filename(selected_subgroup)}_"
+        f"{safe_filename(title_label)}_"
         f"{datetime.now().strftime('%Y%m%d_%H%M')}.html"
     )
 
