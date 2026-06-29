@@ -1,18 +1,14 @@
-#!/usr/bin/env python
-# coding: utf-8
-
 import re
-import html as html_lib
-from io import BytesIO
+import html
+import base64
 from pathlib import Path
+from datetime import datetime
 
 import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
 
-
-APP_TITLE = "PLAN STRATÉGIQUE USJ 2032 - Aperçu par groupe"
-
+APP_TITLE = "PLAN STRATÉGIQUE USJ 2032"
 SHEET_NAME = "All answers 29-6-2026"
 
 USJ_BLUE = "#001F5B"
@@ -21,96 +17,61 @@ USJ_RED = "#8B1538"
 USJ_LIGHT_BLUE = "#EAF2F8"
 USJ_TEXT = "#1B2A41"
 
-LOGO_PATH = Path("LogoUAQ.png")
-
-
-# =====================================================
-# BASIC HELPERS
-# =====================================================
 
 def html_block(content):
-    if hasattr(st, "html"):
-        st.html(content)
-    else:
-        st.markdown(content, unsafe_allow_html=True)
+    st.markdown(content, unsafe_allow_html=True)
 
 
-def normalize_col(col):
-    return str(col).strip().lower().replace("\n", " ")
-
-
-def clean_text(value):
+def clean(value):
     if pd.isna(value):
         return ""
-    value = str(value).strip()
-    value = re.sub(r"\s+", " ", value)
+    return str(value).strip()
+
+
+def normalize(value):
+    value = clean(value).lower()
+    value = (
+        value.replace("é", "e")
+        .replace("è", "e")
+        .replace("ê", "e")
+        .replace("à", "a")
+        .replace("ù", "u")
+        .replace("ç", "c")
+        .replace("î", "i")
+        .replace("ï", "i")
+    )
     return value
 
 
-def find_column(df, possible_names, fallback_index=None):
-    normalized = {normalize_col(c): c for c in df.columns}
-
-    for name in possible_names:
-        key = normalize_col(name)
-        if key in normalized:
-            return normalized[key]
-
-    if fallback_index is not None and fallback_index < len(df.columns):
-        return df.columns[fallback_index]
-
-    return None
+def esc(value):
+    return html.escape(clean(value)).replace("\n", "<br>")
 
 
-def extract_answer_columns(df):
-    excluded_keywords = [
-        "type",
-        "participant",
-        "participants",
-        "groupe",
-        "group",
-        "sous groupe",
-        "subgroup",
-        "nom",
-        "name",
-        "date",
-        "id",
-        "code",
-    ]
+def safe_filename(value):
+    value = clean(value)
+    value = re.sub(r"[^A-Za-z0-9À-ÿ._-]+", "_", value)
+    return value.strip("_") or "rapport"
 
-    answer_cols = []
-    for col in df.columns:
-        col_norm = normalize_col(col)
-        if not any(k in col_norm for k in excluded_keywords):
-            answer_cols.append(col)
-
-    return answer_cols
-
-
-# =====================================================
-# STYLE
-# =====================================================
 
 def apply_usj_style():
     html_block(f"""
 <style>
-#MainMenu, header, footer, [data-testid="stToolbar"], [data-testid="stDecoration"], [data-testid="stStatusWidget"] {{
-    display:none !important;
-    visibility:hidden !important;
-}}
-
-html, body, [class*="css"], [class*="st-"], .stApp {{
+html, body, .stApp {{
     font-family: Candara, Calibri, Arial, sans-serif !important;
-    color:{USJ_TEXT};
+    color: {USJ_TEXT};
 }}
 
-.main .block-container,
-div[data-testid="stAppViewContainer"] .block-container {{
-    padding-left:3rem !important;
-    padding-right:3rem !important;
-    max-width:100% !important;
+header, footer, #MainMenu {{
+    display:none !important;
 }}
 
-h1, h2, h3, h4 {{
+.block-container {{
+    max-width: 100% !important;
+    padding-left: 3rem !important;
+    padding-right: 3rem !important;
+}}
+
+h1, h2, h3 {{
     color:{USJ_BLUE} !important;
     font-weight:800 !important;
 }}
@@ -122,124 +83,145 @@ h1, h2, h3, h4 {{
     border-radius:8px !important;
     border:1px solid #0070C0 !important;
     font-weight:800 !important;
+    font-size:18px !important;
 }}
 
-button[kind="primary"] {{
-    background-color:{USJ_RED} !important;
-    border-color:{USJ_RED} !important;
+.stButton button p,
+.stDownloadButton button p {{
     color:white !important;
 }}
 
-.print-wrapper {{
+.print-report {{
     background:white;
-    padding:20px 26px;
     border:1px solid #D0D6E0;
     border-radius:12px;
-    margin-top:16px;
+    padding:28px 34px;
 }}
 
-.print-header {{
+.usj-main-header {{
     display:flex;
     justify-content:space-between;
     align-items:flex-start;
     border-bottom:2px solid #D0D6E0;
-    padding-bottom:10px;
-    margin-bottom:18px;
+    padding-bottom:18px;
+    margin-bottom:28px;
 }}
 
-.print-title {{
-    font-size:34px;
-    font-weight:900;
+.usj-main-header h1 {{
+    font-size:42px;
+    margin:0 0 16px 0;
     color:{USJ_BLUE};
-    margin:0;
-    line-height:1.1;
 }}
 
-.print-subtitle {{
+.usj-main-header p {{
+    font-size:26px;
+    font-weight:700;
+    color:{USJ_BLUE_2};
+    margin:0;
+}}
+
+.participant-type {{
     font-size:22px;
     font-weight:800;
-    color:{USJ_BLUE_2};
-    margin-top:8px;
-}}
-
-.print-group {{
-    text-align:center;
-    font-size:24px;
-    font-weight:900;
-    color:{USJ_RED};
-    margin:18px 0 8px 0;
-}}
-
-.print-participants {{
-    text-align:center;
-    font-size:18px;
-    font-weight:700;
-    color:#333;
-    margin-bottom:22px;
-}}
-
-.section-title {{
-    background:{USJ_LIGHT_BLUE};
-    border-left:7px solid {USJ_BLUE};
     color:{USJ_BLUE};
-    font-size:24px;
-    font-weight:900;
-    padding:12px 18px;
-    border-radius:8px;
-    margin-top:24px;
-    margin-bottom:14px;
 }}
 
-.answer-block {{
-    border:1.5px solid #595959;
-    background:#E3DED9;
-    padding:12px 14px;
-    margin-bottom:12px;
-    min-height:48px;
-    font-size:17px;
-    line-height:1.35;
-    color:#000;
-    white-space:pre-wrap;
-    break-inside:avoid;
+.group-title {{
+    text-align:center;
+    font-size:28px;
+    font-weight:800;
+    color:{USJ_RED};
+    margin:24px 0;
+}}
+
+.names {{
+    text-align:center;
+    font-size:21px;
+    font-weight:700;
+    color:#111;
+    margin-bottom:32px;
+}}
+
+.section-header {{
+    background-color:{USJ_LIGHT_BLUE};
+    padding:12px 18px;
+    border-radius:10px;
+    border-left:7px solid {USJ_BLUE};
+    margin-top:24px;
+    margin-bottom:16px;
     page-break-inside:avoid;
 }}
 
-.answer-label {{
-    font-size:17px;
-    font-weight:900;
-    color:{USJ_RED};
-    margin-bottom:5px;
+.section-header h2 {{
+    font-size:28px;
+    margin:0;
+    color:{USJ_BLUE};
 }}
 
-.two-col {{
+.two-cols {{
     display:grid;
     grid-template-columns:1fr 1fr;
-    gap:16px;
+    gap:20px;
 }}
 
 .col-title {{
     background:{USJ_BLUE};
     color:white;
+    padding:10px 14px;
     text-align:center;
-    font-size:18px;
-    font-weight:900;
-    padding:10px;
+    font-size:20px;
+    font-weight:800;
     border-radius:6px;
-    margin-bottom:8px;
+    margin-bottom:10px;
+}}
+
+.answer-box {{
+    background:#E3DED9;
+    border:1.5px solid #595959;
+    padding:12px 16px;
+    margin-bottom:10px;
+    font-size:18px;
+    line-height:1.35;
+    color:#000;
+    page-break-inside:avoid;
+    break-inside:avoid;
+}}
+
+.answer-number {{
+    color:{USJ_RED};
+    font-weight:800;
+    margin-right:6px;
+}}
+
+.single-section .answer-box {{
+    min-height:50px;
+}}
+
+.print-page-break {{
+    page-break-before:always;
+}}
+
+.print-button-wrapper {{
+    margin-bottom:20px;
 }}
 
 @media print {{
     @page {{
         size:A4 portrait;
-        margin:10mm 9mm 10mm 9mm;
+        margin:8mm 9mm;
     }}
 
-    header, footer, #MainMenu, .stButton, .stDownloadButton,
-    div[data-testid="stToolbar"], div[data-testid="stDecoration"],
-    div[data-testid="stStatusWidget"], .screen-only {{
+    header, footer, #MainMenu,
+    div[data-testid="stToolbar"],
+    div[data-testid="stDecoration"],
+    div[data-testid="stStatusWidget"],
+    div[data-testid="stButton"],
+    div[data-testid="stDownloadButton"],
+    div[data-testid="stFileUploader"],
+    div[data-testid="stSelectbox"],
+    div[data-testid="stCheckbox"],
+    .screen-only {{
         display:none !important;
-        height:0 !important;
-        visibility:hidden !important;
     }}
 
     .block-container {{
@@ -249,45 +231,44 @@ button[kind="primary"] {{
         margin:0 auto !important;
     }}
 
-    .print-wrapper {{
+    .print-report {{
         border:none !important;
         padding:0 !important;
-        margin:0 !important;
     }}
 
-    .print-title {{
-        font-size:24px !important;
+    .usj-main-header h1 {{
+        font-size:22px !important;
+        line-height:1.05 !important;
+        margin-bottom:2mm !important;
     }}
 
-    .print-subtitle {{
-        font-size:14px !important;
+    .usj-main-header p {{
+        font-size:13px !important;
     }}
 
-    .print-group {{
-        font-size:20px !important;
-        margin-top:8px !important;
+    .participant-type {{
+        font-size:12px !important;
     }}
 
-    .section-title {{
-        font-size:17px !important;
-        padding:8px 12px !important;
-        margin-top:12px !important;
-        margin-bottom:8px !important;
-        break-after:avoid !important;
-        page-break-after:avoid !important;
+    .group-title {{
+        font-size:18px !important;
+        margin:8mm 0 4mm 0 !important;
     }}
 
-    .answer-block {{
-        font-size:10.5px !important;
-        line-height:1.2 !important;
-        padding:6px !important;
-        margin-bottom:5px !important;
-        break-inside:avoid !important;
-        page-break-inside:avoid !important;
+    .names {{
+        font-size:12px !important;
+        margin-bottom:8mm !important;
     }}
 
-    .answer-label {{
-        font-size:11px !important;
+    .section-header {{
+        margin-top:5mm !important;
+        margin-bottom:3mm !important;
+        padding:7px 11px !important;
+        box-shadow:none !important;
+    }}
+
+    .section-header h2 {{
+        font-size:16px !important;
     }}
 
     .col-title {{
@@ -295,352 +276,283 @@ button[kind="primary"] {{
         padding:6px !important;
     }}
 
-    .two-col {{
-        gap:8px !important;
+    .answer-box {{
+        font-size:10.5px !important;
+        line-height:1.2 !important;
+        padding:6px !important;
+        margin-bottom:2mm !important;
+        page-break-inside:avoid !important;
+        break-inside:avoid !important;
     }}
 }}
 </style>
 """)
 
 
-# =====================================================
-# DATA PROCESSING
-# =====================================================
-
-def load_excel(uploaded_file):
-    return pd.read_excel(uploaded_file, sheet_name=SHEET_NAME)
-
-
-def prepare_dataframe(df):
-    type_col = find_column(
-        df,
-        ["Type", "Type de participant", "Respondent type", "Participant type"],
-        fallback_index=0
-    )
-
-    subgroup_col = find_column(
-        df,
-        ["Sous groupe", "Subgroup", "Groupe", "Group", "Numéro du groupe"],
-        fallback_index=1
-    )
-
-    name_col = find_column(
-        df,
-        ["Nom des participants", "Participants", "Nom", "Name", "Responsable"],
-        fallback_index=2
-    )
-
-    answer_cols = extract_answer_columns(df)
-
-    if type_col in answer_cols:
-        answer_cols.remove(type_col)
-    if subgroup_col in answer_cols:
-        answer_cols.remove(subgroup_col)
-    if name_col in answer_cols:
-        answer_cols.remove(name_col)
-
-    return type_col, subgroup_col, name_col, answer_cols
+def get_col(df, possible_names):
+    cols = {normalize(c): c for c in df.columns}
+    for name in possible_names:
+        n = normalize(name)
+        if n in cols:
+            return cols[n]
+    return None
 
 
-def group_answers(df, type_col, subgroup_col, name_col, answer_cols):
-    rows = []
-
-    for _, row in df.iterrows():
-        respondent_type = clean_text(row.get(type_col, ""))
-        subgroup = clean_text(row.get(subgroup_col, ""))
-        participants = clean_text(row.get(name_col, "")) if name_col else ""
-
-        answers = {}
-        for col in answer_cols:
-            value = clean_text(row.get(col, ""))
-            if value:
-                answers[str(col)] = value
-
-        if respondent_type and subgroup:
-            rows.append({
-                "respondent_type": respondent_type,
-                "subgroup": subgroup,
-                "participants": participants,
-                "answers": answers
-            })
-
-    return rows
-
-
-# =====================================================
-# PRINT PREVIEW
-# =====================================================
-
-def classify_section(question):
-    q = normalize_col(question)
-
-    if "force" in q:
-        return "I - Forces et faiblesses", "Forces"
-    if "faiblesse" in q:
-        return "I - Forces et faiblesses", "Faiblesses"
-    if "opportun" in q:
-        return "II - Opportunités et menaces", "Opportunités"
-    if "menace" in q:
-        return "II - Opportunités et menaces", "Menaces"
-    if "prior" in q:
-        return "III - Priorités", "Priorités"
-    if "conclusion" in q or "pour finir" in q or "souhaitons" in q:
-        return "IV - Conclusion", "Conclusion"
-
-    return "Autres réponses", "Autres"
-
-
-def build_print_html(record, hide_participants=False):
-    respondent_type = html_lib.escape(record["respondent_type"])
-    subgroup = html_lib.escape(record["subgroup"])
-    participants = html_lib.escape(record["participants"])
-
-    sections = {}
-
-    for question, answer in record["answers"].items():
-        section, family = classify_section(question)
-        sections.setdefault(section, {})
-        sections[section].setdefault(family, [])
-        sections[section][family].append((question, answer))
-
-    participants_html = ""
-    if not hide_participants and participants:
-        participants_html = f"""
-        <div class="print-participants">
-            Nom des participants : {participants}
+def build_report_html(df_group, participant_type, subgroup, hide_names):
+    names = sorted(set(clean(x) for x in df_group["participants"].dropna() if clean(x)))
+    names_html = ""
+    if not hide_names and names:
+        names_html = f"""
+        <div class="names">
+            Nom des participants : {esc("; ".join(names))}
         </div>
         """
 
-    html = f"""
-<div class="print-wrapper">
+    def answers_for(section_contains=None, category_contains=None):
+        temp = df_group.copy()
 
-    <div class="print-header">
+        if section_contains:
+            temp = temp[temp["section_norm"].str.contains(section_contains, na=False)]
+
+        if category_contains:
+            temp = temp[temp["category_norm"].str.contains(category_contains, na=False)]
+
+        answers = [clean(x) for x in temp["Final_Answer"].tolist() if clean(x)]
+
+        if not answers:
+            return '<div class="answer-box">Aucune réponse disponible.</div>'
+
+        return "".join(
+            f"""
+            <div class="answer-box">
+                <span class="answer-number">{i}.</span>{esc(answer)}
+            </div>
+            """
+            for i, answer in enumerate(answers, start=1)
+        )
+
+    html_report = f"""
+<div class="print-report">
+
+    <div class="usj-main-header">
         <div>
-            <div class="print-title">PLAN STRATÉGIQUE USJ 2032</div>
-            <div class="print-subtitle">Focus groupe - Aperçu des réponses corrigées</div>
+            <h1>PLAN STRATÉGIQUE USJ 2032</h1>
+            <p>Focus groupe - Aperçu des réponses corrigées</p>
         </div>
-        <div style="font-weight:900; color:{USJ_BLUE}; font-size:18px;">
-            {respondent_type}
+        <div class="participant-type">{esc(participant_type)}</div>
+    </div>
+
+    <div class="group-title">{esc(subgroup)}</div>
+
+    {names_html}
+
+    <div class="section-header">
+        <h2>I - Forces et faiblesses</h2>
+    </div>
+
+    <div class="two-cols">
+        <div>
+            <div class="col-title">Forces</div>
+            {answers_for(section_contains="forces", category_contains="force")}
+        </div>
+        <div>
+            <div class="col-title">Faiblesses</div>
+            {answers_for(section_contains="forces", category_contains="faiblesse")}
         </div>
     </div>
 
-    <div class="print-group">{subgroup}</div>
-    {participants_html}
-"""
+    <div class="section-header">
+        <h2>II - Opportunités et menaces</h2>
+    </div>
 
-    # SWOT two-column format
-    swot_1 = sections.get("I - Forces et faiblesses", {})
-    if swot_1:
-        html += """
-        <div class="section-title">I - Forces et faiblesses</div>
-        <div class="two-col">
-            <div>
-                <div class="col-title">Forces</div>
-        """
-        for question, answer in swot_1.get("Forces", []):
-            html += answer_html(question, answer)
-
-        html += """
-            </div>
-            <div>
-                <div class="col-title">Faiblesses</div>
-        """
-        for question, answer in swot_1.get("Faiblesses", []):
-            html += answer_html(question, answer)
-
-        html += """
-            </div>
+    <div class="two-cols">
+        <div>
+            <div class="col-title">Opportunités</div>
+            {answers_for(section_contains="opportunites", category_contains="opportun")}
         </div>
-        """
-
-    swot_2 = sections.get("II - Opportunités et menaces", {})
-    if swot_2:
-        html += """
-        <div class="section-title">II - Opportunités et menaces</div>
-        <div class="two-col">
-            <div>
-                <div class="col-title">Opportunités</div>
-        """
-        for question, answer in swot_2.get("Opportunités", []):
-            html += answer_html(question, answer)
-
-        html += """
-            </div>
-            <div>
-                <div class="col-title">Menaces</div>
-        """
-        for question, answer in swot_2.get("Menaces", []):
-            html += answer_html(question, answer)
-
-        html += """
-            </div>
+        <div>
+            <div class="col-title">Menaces</div>
+            {answers_for(section_contains="opportunites", category_contains="menace")}
         </div>
-        """
+    </div>
 
-    # Other sections
-    for section_name in ["III - Priorités", "IV - Conclusion", "Autres réponses"]:
-        if section_name in sections:
-            html += f'<div class="section-title">{html_lib.escape(section_name)}</div>'
+    <div class="print-page-break"></div>
 
-            for family, items in sections[section_name].items():
-                for question, answer in items:
-                    html += answer_html(question, answer)
+    <div class="section-header">
+        <h2>III - Priorités</h2>
+    </div>
 
-    html += "</div>"
-    return html
+    <div class="single-section">
+        {answers_for(section_contains="prior")}
+    </div>
 
+    <div class="section-header">
+        <h2>IV - Conclusion</h2>
+    </div>
 
-def answer_html(question, answer):
-    safe_q = html_lib.escape(str(question))
-    safe_a = html_lib.escape(str(answer)).replace("\n", "<br>")
+    <div class="single-section">
+        {answers_for(section_contains="conclusion")}
+    </div>
 
-    return f"""
-<div>
-    <div class="answer-label">{safe_q}</div>
-    <div class="answer-block">{safe_a}</div>
 </div>
 """
+    return html_report
 
 
-def render_print_button():
+def print_button():
     components.html(
         """
-        <button onclick="window.parent.print()" style="
-            background-color:#8B1538;
-            color:white;
-            border:1px solid #8B1538;
-            border-radius:8px;
-            padding:10px 22px;
-            font-family:Candara, Calibri, Arial, sans-serif;
-            font-size:18px;
-            font-weight:800;
-            cursor:pointer;
-            width:260px;
-        ">
-            Imprimer / Enregistrer en PDF
-        </button>
+        <div class="print-button-wrapper">
+            <button onclick="window.parent.print()" style="
+                background:#8B1538;
+                color:white;
+                border:1px solid #8B1538;
+                border-radius:8px;
+                padding:10px 22px;
+                font-family:Candara,Calibri,Arial,sans-serif;
+                font-size:18px;
+                font-weight:800;
+                cursor:pointer;
+            ">
+                Imprimer / Enregistrer en PDF
+            </button>
+        </div>
         """,
-        height=55
+        height=65,
+        scrolling=False
     )
 
-
-# =====================================================
-# MAIN
-# =====================================================
 
 def main():
     st.set_page_config(
         page_title=APP_TITLE,
-        page_icon="📄",
         layout="wide",
         initial_sidebar_state="collapsed"
     )
 
     apply_usj_style()
 
-    st.title("PLAN STRATÉGIQUE USJ 2032")
-    st.markdown("### Aperçu imprimable des réponses corrigées depuis Excel")
+    html_block(f"""
+    <div class="screen-only">
+        <h1 style="margin-bottom:0;">{APP_TITLE}</h1>
+        <h3 style="color:{USJ_RED} !important; margin-top:4px;">
+            Lecture Excel - Print Preview des réponses corrigées
+        </h3>
+    </div>
+    """)
 
     uploaded_file = st.file_uploader(
         "Uploader le fichier Excel corrigé",
-        type=["xlsx"]
+        type=["xlsx", "xls"]
     )
 
-    if not uploaded_file:
-        st.info("Veuillez uploader le fichier Excel contenant la feuille : All answers 29-6-2026.")
+    if uploaded_file is None:
+        st.info(f"Veuillez uploader le fichier Excel contenant la feuille : {SHEET_NAME}")
         st.stop()
 
     try:
-        df = load_excel(uploaded_file)
+        df = pd.read_excel(uploaded_file, sheet_name=SHEET_NAME, engine="openpyxl")
     except Exception as e:
-        st.error(f"Impossible de lire la feuille '{SHEET_NAME}'. Détail : {e}")
+        st.error(f"Impossible de lire la feuille : {SHEET_NAME}")
+        st.exception(e)
         st.stop()
 
-    type_col, subgroup_col, name_col, answer_cols = prepare_dataframe(df)
+    df = df.dropna(how="all")
 
-    if not type_col or not subgroup_col:
-        st.error("Impossible d’identifier la colonne Type de participant ou Sous groupe.")
+    type_col = get_col(df, ["Respondent_Type", "Type participant", "Type de participants"])
+    group_col = get_col(df, ["groupe", "Sous groupe", "Subgroup"])
+    names_col = get_col(df, ["participants", "Participants", "Nom participants"])
+    section_col = get_col(df, ["section"])
+    category_col = get_col(df, ["category", "catégorie", "categorie"])
+    answer_col = get_col(df, ["Final_Answer", "Final Answer", "Réponse finale", "Reponse finale"])
+
+    missing = []
+    if not type_col:
+        missing.append("Respondent_Type")
+    if not group_col:
+        missing.append("groupe")
+    if not names_col:
+        missing.append("participants")
+    if not section_col:
+        missing.append("section")
+    if not category_col:
+        missing.append("category")
+    if not answer_col:
+        missing.append("Final_Answer")
+
+    if missing:
+        st.error("Colonnes manquantes : " + ", ".join(missing))
         st.stop()
 
-    records = group_answers(df, type_col, subgroup_col, name_col, answer_cols)
-
-    if not records:
-        st.warning("Aucune réponse exploitable trouvée.")
-        st.stop()
-
-    st.markdown("### Colonnes détectées")
-    st.write({
-        "Type participant": type_col,
-        "Sous groupe": subgroup_col,
-        "Nom participants": name_col,
-        "Colonnes réponses": len(answer_cols)
+    df = df.rename(columns={
+        type_col: "Respondent_Type",
+        group_col: "groupe",
+        names_col: "participants",
+        section_col: "section",
+        category_col: "category",
+        answer_col: "Final_Answer"
     })
 
-    respondent_types = sorted(set(r["respondent_type"] for r in records))
-    selected_type = st.selectbox(
-        "Type de participants",
-        respondent_types
+    for col in ["Respondent_Type", "groupe", "participants", "section", "category", "Final_Answer"]:
+        df[col] = df[col].apply(clean)
+
+    df = df[(df["Respondent_Type"] != "") & (df["groupe"] != "")]
+
+    df["section_norm"] = df["section"].apply(normalize)
+    df["category_norm"] = df["category"].apply(normalize)
+
+    participant_types = sorted(df["Respondent_Type"].dropna().unique().tolist())
+
+    col1, col2, col3 = st.columns([1.2, 1.2, 1])
+
+    with col1:
+        selected_type = st.selectbox("Type de participants", participant_types)
+
+    df_type = df[df["Respondent_Type"] == selected_type]
+    subgroups = sorted(df_type["groupe"].dropna().unique().tolist())
+
+    with col2:
+        selected_subgroup = st.selectbox("Sous-groupe", subgroups)
+
+    with col3:
+        hide_names = st.checkbox("Hide participants names", value=False)
+
+    df_group = df_type[df_type["groupe"] == selected_subgroup].copy()
+
+    html_report = build_report_html(
+        df_group=df_group,
+        participant_type=selected_type,
+        subgroup=selected_subgroup,
+        hide_names=hide_names
     )
 
-    subgroups = sorted(
-        set(r["subgroup"] for r in records if r["respondent_type"] == selected_type)
+    print_button()
+
+    html_block(html_report)
+
+    file_name = (
+        f"USJ2032_{safe_filename(selected_type)}_"
+        f"{safe_filename(selected_subgroup)}_"
+        f"{datetime.now().strftime('%Y%m%d_%H%M')}.html"
     )
 
-    selected_subgroup = st.selectbox(
-        "Sous groupe",
-        subgroups
-    )
-
-    matching = [
-        r for r in records
-        if r["respondent_type"] == selected_type
-        and r["subgroup"] == selected_subgroup
-    ]
-
-    if not matching:
-        st.warning("Aucune donnée pour cette sélection.")
-        st.stop()
-
-    record = matching[0]
-
-    hide_participants = st.checkbox(
-        "Masquer le nom des participants",
-        value=False
-    )
-
-    st.markdown("---")
-
-    col_print, col_info = st.columns([1, 3])
-    with col_print:
-        render_print_button()
-
-    with col_info:
-        st.info("L’aperçu ci-dessous reprend le format imprimable utilisé dans la plateforme Focus Group.")
-
-    print_html = build_print_html(
-        record,
-        hide_participants=hide_participants
-    )
-
-    html_block(print_html)
-
-    export_html = f"""
+    full_html = f"""
 <!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
-<title>{selected_type} - {selected_subgroup}</title>
+<title>{esc(selected_type)} - {esc(selected_subgroup)}</title>
 </head>
 <body>
-{print_html}
+{html_report}
 </body>
 </html>
 """
 
     st.download_button(
-        "Télécharger cet aperçu en HTML",
-        data=export_html.encode("utf-8"),
-        file_name=f"print_preview_{selected_type}_{selected_subgroup}.html".replace(" ", "_"),
+        "Télécharger HTML",
+        data=full_html.encode("utf-8"),
+        file_name=file_name,
         mime="text/html"
     )
 
