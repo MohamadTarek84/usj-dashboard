@@ -616,7 +616,7 @@ def main():
     group_col = get_col(df, ["groupe", "Sous groupe", "Subgroup"])
     names_col = get_col(df, ["participants", "Participants", "Nom participants"])
     section_col = get_col(df, ["section"])
-    question_col = get_col(df, ["question", "Question"])
+    question_col = get_col(df, ["category", "catégorie", "categorie"])
     category_col = get_col(df, ["category", "catégorie", "categorie"])
     answer_col = get_col(df, ["Final_Answer", "Final Answer", "Réponse finale", "Reponse finale"])
 
@@ -629,8 +629,6 @@ def main():
         missing.append("participants")
     if not section_col:
         missing.append("section")
-    if not question_col:
-        missing.append("question")
     if not category_col:
         missing.append("category")
     if not answer_col:
