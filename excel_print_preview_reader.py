@@ -1,5 +1,7 @@
 import re
 import html
+import base64
+from pathlib import Path
 from datetime import datetime
 
 import pandas as pd
@@ -14,6 +16,7 @@ USJ_BLUE_2 = "#1F3C88"
 USJ_RED = "#8B1538"
 USJ_LIGHT_BLUE = "#EAF2F8"
 USJ_TEXT = "#1B2A41"
+LOGO_PATH = "LogoUAQ.png"
 
 
 def clean(value):
@@ -51,6 +54,17 @@ def html_block(content):
     st.markdown(content, unsafe_allow_html=True)
 
 
+def image_to_base64(image_path):
+    image_path = Path(image_path)
+    if not image_path.exists():
+        return ""
+    suffix = image_path.suffix.lower().replace(".", "")
+    mime_type = "png" if suffix == "png" else suffix
+    with open(image_path, "rb") as img_file:
+        encoded = base64.b64encode(img_file.read()).decode()
+    return f"data:image/{mime_type};base64,{encoded}"
+
+
 PRINT_CSS = f"""
 body {{
     font-family: Candara, Calibri, Arial, sans-serif;
@@ -78,22 +92,32 @@ body {{
 
 .usj-main-header h1 {{
     font-size:42px;
-    margin:0 0 16px 0;
+    margin:0 0 6px 0;
     color:{USJ_BLUE};
     font-weight:800;
 }}
 
 .usj-main-header p {{
-    font-size:26px;
+    font-size:18px;
     font-weight:700;
     color:{USJ_BLUE_2};
     margin:0;
 }}
 
+.usj-logo-box {{
+    display:flex;
+    justify-content:flex-end;
+    align-items:flex-start;
+}}
+
+.usj-logo {{
+    width:170px;
+    height:auto;
+    object-fit:contain;
+}}
+
 .participant-type {{
-    font-size:22px;
-    font-weight:800;
-    color:{USJ_BLUE};
+    display:none;
 }}
 
 .group-title {{
@@ -260,15 +284,17 @@ body {{
     .usj-main-header h1 {{
         font-size:22px;
         line-height:1.05;
-        margin-bottom:2mm;
+        margin-bottom:1mm;
     }}
 
     .usj-main-header p {{
-        font-size:13px;
+        font-size:10px;
     }}
 
-    .participant-type {{
-        font-size:12px;
+    .usj-logo {{
+        width:36mm;
+        max-width:36mm;
+        height:auto;
     }}
 
     .group-title {{
@@ -474,6 +500,9 @@ def build_one_report_html(df_group, participant_type, title_label, hide_names):
         </div>
         """
 
+    logo_src = image_to_base64(LOGO_PATH)
+    logo_html = f'<img src="{logo_src}" class="usj-logo">' if logo_src else ""
+
     forces = get_answers(df_group, section_contains="forces", category_contains="force")
     faiblesses = get_answers(df_group, section_contains="forces", category_contains="faiblesse")
     opportunites = get_answers(df_group, section_contains="opportunites", category_contains="opportun")
@@ -486,9 +515,12 @@ def build_one_report_html(df_group, participant_type, title_label, hide_names):
     <div class="usj-main-header">
         <div>
             <h1>PLAN STRATÉGIQUE USJ 2032</h1>
-            <p>Focus groupe - Aperçu des réponses corrigées</p>
+            <p>Focus groupe</p>
         </div>
-        <div class="participant-type">{esc(participant_type)}</div>
+
+        <div class="usj-logo-box">
+            {logo_html}
+        </div>
     </div>
 
     <div class="group-title">{esc(title_label)}</div>
