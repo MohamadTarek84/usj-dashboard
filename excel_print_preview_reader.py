@@ -238,11 +238,6 @@ body {{
     margin-bottom:20px;
 }}
 
-.report-separator {{
-    page-break-before:always;
-    margin-top:30px;
-}}
-
 @media print {{
     @page {{
         size:A4 portrait;
@@ -260,11 +255,6 @@ body {{
     .print-report {{
         border:none;
         padding:0;
-    }}
-
-    .report-separator {{
-        page-break-before:always;
-        margin-top:0;
     }}
 
     .usj-main-header h1 {{
@@ -616,7 +606,6 @@ def main():
     group_col = get_col(df, ["groupe", "Sous groupe", "Subgroup"])
     names_col = get_col(df, ["participants", "Participants", "Nom participants"])
     section_col = get_col(df, ["section"])
-    question_col = get_col(df, ["category", "catégorie", "categorie"])
     category_col = get_col(df, ["category", "catégorie", "categorie"])
     answer_col = get_col(df, ["Final_Answer", "Final Answer", "Réponse finale", "Reponse finale"])
 
@@ -643,12 +632,13 @@ def main():
         group_col: "groupe",
         names_col: "participants",
         section_col: "section",
-        question_col: "question",
         category_col: "category",
         answer_col: "Final_Answer"
     })
 
-    for col in ["Respondent_Type", "groupe", "participants", "section", "question", "category", "Final_Answer"]:
+    df["question"] = df["category"]
+
+    for col in ["Respondent_Type", "groupe", "participants", "section", "category", "question", "Final_Answer"]:
         df[col] = df[col].apply(clean)
 
     df = df[(df["Respondent_Type"] != "") & (df["groupe"] != "")]
@@ -688,21 +678,16 @@ def main():
     if report_mode == "Un sous-groupe spécifique":
         df_report = df_type[df_type["groupe"] == selected_subgroup].copy()
         title_label = selected_subgroup
-        html_report = build_one_report_html(
-            df_group=df_report,
-            participant_type=selected_type,
-            title_label=title_label,
-            hide_names=hide_names
-        )
     else:
         df_report = df_type.copy()
         title_label = f"{selected_type} - Tous les sous-groupes"
-        html_report = build_one_report_html(
-            df_group=df_report,
-            participant_type=selected_type,
-            title_label=title_label,
-            hide_names=hide_names
-        )
+
+    html_report = build_one_report_html(
+        df_group=df_report,
+        participant_type=selected_type,
+        title_label=title_label,
+        hide_names=hide_names
+    )
 
     full_html = build_full_html(
         html_report=html_report,
