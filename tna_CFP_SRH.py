@@ -9874,6 +9874,87 @@ def load_responses():
     return pd.DataFrame(records)
 
 
+def load_submitted_answers_for_admin():
+    conn = sqlite3.connect(DB_NAME)
+    rows = conn.execute("""
+        SELECT id, respondent_code, role, name, faculty, institution, submitted_at
+        FROM responses
+        WHERE role IN ('psg', 'director')
+        ORDER BY submitted_at DESC
+    """).fetchall()
+    conn.close()
+
+    current_codes = {
+        str(code).strip().upper()
+        for code, user in get_all_users().items()
+        if user.get("role") in ["psg", "director"]
+    }
+
+    records = []
+
+    for response_id, code, role, name, faculty, institution, submitted_at in rows:
+        clean_code = str(code).strip().upper()
+
+        if clean_code not in current_codes:
+            continue
+
+        records.append({
+            "id": response_id,
+            "code": clean_code,
+            "role": role,
+            "name": name or "",
+            "faculty": faculty or "",
+            "institution": institution or "",
+            "submitted_at": submitted_at or ""
+        })
+
+    return records
+
+
+def delete_submitted_answer(response_id, respondent_code, role, delete_all_for_user=False):
+    respondent_code = str(respondent_code).strip().upper()
+    role = str(role).strip()
+
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+
+    if delete_all_for_user:
+        c.execute(
+            "DELETE FROM responses WHERE respondent_code = ?",
+            (respondent_code,)
+        )
+    else:
+        c.execute(
+            "DELETE FROM responses WHERE id = ?",
+            (response_id,)
+        )
+
+    remaining = c.execute(
+        "SELECT COUNT(*) FROM responses WHERE respondent_code = ?",
+        (respondent_code,)
+    ).fetchone()[0]
+
+    if remaining == 0:
+        if role == "psg":
+            c.execute(
+                "DELETE FROM employee_validations WHERE employee_code = ?",
+                (respondent_code,)
+            )
+            c.execute(
+                "DELETE FROM admin_theme_overrides WHERE employee_code = ?",
+                (respondent_code,)
+            )
+
+        elif role == "director":
+            c.execute(
+                "DELETE FROM director_validations WHERE director_code = ?",
+                (respondent_code,)
+            )
+
+    conn.commit()
+    conn.close()
+
+
 
 def save_admin_theme_override(employee_code, employee_ranked, director_ranked):
     conn = sqlite3.connect(DB_NAME)
@@ -11709,6 +11790,58 @@ def render_admin_dashboard():
         conn.close()
         st.success("Les réponses ont été réinitialisées.")
         st.rerun()
+
+    with st.expander("Supprimer une réponse soumise", expanded=False):
+        submitted_answers = load_submitted_answers_for_admin()
+
+        if not submitted_answers:
+            st.info("Aucune réponse soumise à supprimer.")
+        else:
+            selected_answer = st.selectbox(
+                "Sélectionner la réponse à supprimer",
+                submitted_answers,
+                format_func=lambda x: (
+                    f"{x['submitted_at']} | "
+                    f"{'PSG' if x['role'] == 'psg' else 'Doyen / Directeur'} | "
+                    f"{x['name']} | {x['code']}"
+                ),
+                key="admin_delete_submitted_answer_selector"
+            )
+
+            delete_all_for_user = st.checkbox(
+                "Supprimer toutes les réponses de ce répondant",
+                value=False,
+                key="admin_delete_all_answers_for_user"
+            )
+
+            st.warning(
+                "Cette action supprimera la réponse sélectionnée de la base. "
+                "Si aucune autre réponse ne reste pour ce répondant, sa validation sera aussi retirée "
+                "afin qu’il puisse soumettre à nouveau."
+            )
+
+            confirm_delete = st.text_input(
+                "Pour confirmer, écrivez SUPPRIMER",
+                key="admin_confirm_delete_submitted_answer"
+            )
+
+            if st.button(
+                "Supprimer la réponse sélectionnée",
+                use_container_width=True,
+                key="admin_delete_submitted_answer_button"
+            ):
+                if confirm_delete.strip().upper() != "SUPPRIMER":
+                    st.warning("Veuillez écrire SUPPRIMER pour confirmer.")
+                else:
+                    delete_submitted_answer(
+                        response_id=selected_answer["id"],
+                        respondent_code=selected_answer["code"],
+                        role=selected_answer["role"],
+                        delete_all_for_user=delete_all_for_user
+                    )
+
+                    st.success("La réponse sélectionnée a été supprimée.")
+                    st.rerun()
 
     view = "Synthèse directeur-employés"
 
