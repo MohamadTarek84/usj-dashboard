@@ -781,7 +781,8 @@ def add_word_header(document, participant_type):
     if Path(LOGO_PATH).exists():
         p_logo.add_run().add_picture(
             LOGO_PATH,
-            width=Inches(1.55)
+            width=Inches(1.73)
+            height=Inches(0.74)
         )
 
     line = document.add_paragraph()
