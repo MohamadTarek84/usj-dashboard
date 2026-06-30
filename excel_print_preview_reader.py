@@ -1012,6 +1012,26 @@ def get_focus_group_date(participant_type):
     }
     return dates.get(participant_type, "")
 
+def add_field(paragraph, field_code):
+    run = paragraph.add_run()
+    fld_char_begin = OxmlElement("w:fldChar")
+    fld_char_begin.set(qn("w:fldCharType"), "begin")
+
+    instr_text = OxmlElement("w:instrText")
+    instr_text.set(qn("xml:space"), "preserve")
+    instr_text.text = field_code
+
+    fld_char_separate = OxmlElement("w:fldChar")
+    fld_char_separate.set(qn("w:fldCharType"), "separate")
+
+    fld_char_end = OxmlElement("w:fldChar")
+    fld_char_end.set(qn("w:fldCharType"), "end")
+
+    run._r.append(fld_char_begin)
+    run._r.append(instr_text)
+    run._r.append(fld_char_separate)
+    run._r.append(fld_char_end)
+
 def build_word_docx(df_group, participant_type, title_label, hide_names):
     document = Document()
 
@@ -1041,7 +1061,9 @@ def build_word_docx(df_group, participant_type, title_label, hide_names):
     
     p_page = footer_table.cell(0, 2).paragraphs[0]
     p_page.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-    p_page.add_run("PAGE/NUMPAGES")
+    add_field(p_page, "PAGE")
+    p_page.add_run("/")
+    add_field(p_page, "NUMPAGES")
     
     for i, cell in enumerate(footer_table.rows[0].cells):
         set_cell_border(cell, "FFFFFF", "0")
