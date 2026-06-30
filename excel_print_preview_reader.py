@@ -905,15 +905,31 @@ def add_swot_cell(cell, title, answers, accent_hex, bg_hex):
     r._element.rPr.rFonts.set(qn("w:eastAsia"), "Candara")
     r.font.size = Pt(12)
     r.font.color.rgb = RGBColor.from_string(accent_hex.replace("#", ""))
+    
     for answer in answers or ["Aucune réponse disponible."]:
         p_item = cell.add_paragraph(style=None)
         p_item.paragraph_format.left_indent = Inches(0.12)
         p_item.paragraph_format.space_after = Pt(2)
-        run = p_item.add_run("• " + answer)
-        run.font.name = "Candara"
-        run._element.rPr.rFonts.set(qn("w:eastAsia"), "Candara")
-        run.font.size = Pt(9.2)
-        run.font.color.rgb = RGBColor(0, 0, 0)
+    
+        parts = [x.strip() for x in answer.split("\n") if x.strip()]
+    
+        if parts:
+            run = p_item.add_run("• " + parts[0])
+            run.font.name = "Candara"
+            run._element.rPr.rFonts.set(qn("w:eastAsia"), "Candara")
+            run.font.size = Pt(9.2)
+            run.font.color.rgb = RGBColor(0, 0, 0)
+    
+            for extra_part in parts[1:]:
+                run_break = p_item.add_run()
+                run_break.add_break()
+    
+                run_extra = p_item.add_run(extra_part)
+                run_extra.font.name = "Candara"
+                run_extra._element.rPr.rFonts.set(qn("w:eastAsia"), "Candara")
+                run_extra.font.size = Pt(9.2)
+                run_extra.font.color.rgb = RGBColor(0, 0, 0)
+    
 
 
 def add_swot_matrix_word(document, forces, faiblesses, opportunites, menaces):
