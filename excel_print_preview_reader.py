@@ -744,7 +744,7 @@ def set_paragraph_font(paragraph, size=10.5, bold=False, color="000000"):
         run.font.color.rgb = RGBColor.from_string(color.replace("#", ""))
 
 
-def add_word_header(document):
+def add_word_header(document, participant_type):
     table = document.add_table(rows=1, cols=2)
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
     table.autofit = False
@@ -985,7 +985,7 @@ def build_word_docx(df_group, participant_type, title_label, hide_names):
     menaces = get_answers(df_group, section_contains="opportunites", category_contains="menace")
     priorites = get_answers(df_group, section_contains="prior")
 
-    add_word_header(document)
+    add_word_header(document, participant_type)
 
     title = document.add_paragraph()
     title.alignment = WD_ALIGN_PARAGRAPH.CENTER
