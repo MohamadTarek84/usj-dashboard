@@ -1158,8 +1158,7 @@ def build_word_docx(df_group, participant_type, title_label, hide_names):
         run._element.rPr.rFonts.set(qn("w:eastAsia"), "Candara")
         run.font.size = Pt(10.5)
         run.font.color.rgb = RGBColor(0, 0, 0)
-    else:
-        add_single_answer_box(document, 1, "Aucune réponse disponible.", font_size=10.5)
+    
 
     document.add_page_break()
     add_section_header(document, "IV - Conclusion")
