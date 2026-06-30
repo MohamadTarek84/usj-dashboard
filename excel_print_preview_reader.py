@@ -761,19 +761,12 @@ def add_word_header(document):
 
     p = clear_cell(left)
 
-    r = p.add_run("PLAN STRATÉGIQUE USJ ")
+    r = p.add_run("PLAN STRATÉGIQUE USJ 2032")
     r.bold = True
     r.font.name = "Candara"
     r._element.rPr.rFonts.set(qn("w:eastAsia"), "Candara")
     r.font.size = Pt(22)
     r.font.color.rgb = RGBColor(0, 31, 91)
-    
-    r_year = p.add_run("2032")
-    r_year.bold = True
-    r_year.font.name = "Candara"
-    r_year._element.rPr.rFonts.set(qn("w:eastAsia"), "Candara")
-    r_year.font.size = Pt(22)
-    r_year.font.color.rgb = RGBColor(0, 31, 91)
     
     p2 = left.add_paragraph()
     r2 = p2.add_run("Focus groupe")
