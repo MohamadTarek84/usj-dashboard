@@ -999,6 +999,18 @@ def add_conclusion_word(document, df_group):
             r_a.font.color.rgb = RGBColor(0, 0, 0)
             document.add_paragraph().paragraph_format.space_after = Pt(1)
 
+def get_focus_group_date(participant_type):
+    dates = {
+        "Teachers": "4 juin 2026",
+        "Enseignants": "4 juin 2026",
+        "Students": "5 juin 2026",
+        "Étudiants": "5 juin 2026",
+        "Directors": "10 juin 2026",
+        "Directeurs": "10 juin 2026",
+        "PSG": "12 juin 2026",
+        "Anciens": "15 juin 2026",
+    }
+    return dates.get(participant_type, "")
 
 def build_word_docx(df_group, participant_type, title_label, hide_names):
     document = Document()
@@ -1028,7 +1040,7 @@ def build_word_docx(df_group, participant_type, title_label, hide_names):
     
     p_page = footer_table.cell(0, 2).paragraphs[0]
     p_page.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-    p_page.add_run("PAGE/NUMPAGES")
+    p_page.add_run("1/1")
     
     for row in footer_table.rows:
         for cell in row.cells:
