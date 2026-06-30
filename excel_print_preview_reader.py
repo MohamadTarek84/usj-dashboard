@@ -840,16 +840,29 @@ def add_single_answer_box(document, number, answer, font_size=10.5, min_height=N
 
 
 def add_two_column_answers(document, left_title, left_answers, right_title, right_answers):
-    title_table = document.add_table(rows=1, cols=2)
-    title_table.alignment = WD_TABLE_ALIGNMENT.CENTER
-    title_table.autofit = False
-    title_table.columns[0].width = Inches(3.15)
-    title_table.columns[1].width = Inches(3.15)
+    max_len = max(len(left_answers), len(right_answers), 1)
+
+    table = document.add_table(rows=max_len + 1, cols=2)
+    table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    table.autofit = False
+    table.style = "Table Grid"
+    table.columns[0].width = Inches(3.15)
+    table.columns[1].width = Inches(3.15)
+
+    # Repeat the header row if the table continues on another page.
+    header_tr_pr = table.rows[0]._tr.get_or_add_trPr()
+    tbl_header = OxmlElement("w:tblHeader")
+    tbl_header.set(qn("w:val"), "true")
+    header_tr_pr.append(tbl_header)
+
     for i, title in enumerate([left_title, right_title]):
-        cell = title_table.cell(0, i)
-        set_cell_border(cell, "FFFFFF", "0")
+        cell = table.cell(0, i)
+        set_cell_border(cell, "595959", "8")
+        cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
         p = clear_cell(cell)
         p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p.paragraph_format.space_before = Pt(0)
+        p.paragraph_format.space_after = Pt(0)
         r = p.add_run(title)
         r.bold = True
         r.font.name = "Candara"
@@ -857,24 +870,26 @@ def add_two_column_answers(document, left_title, left_answers, right_title, righ
         r.font.size = Pt(13)
         r.font.color.rgb = RGBColor(0, 31, 91)
 
-    max_len = max(len(left_answers), len(right_answers), 1)
-    body = document.add_table(rows=max_len, cols=2)
-    body.alignment = WD_TABLE_ALIGNMENT.CENTER
-    body.autofit = False
-    body.columns[0].width = Inches(3.15)
-    body.columns[1].width = Inches(3.15)
-
     for i in range(max_len):
         left_text = left_answers[i] if i < len(left_answers) else ""
         right_text = right_answers[i] if i < len(right_answers) else ""
-        if left_text:
-            add_answer_to_cell(body.cell(i, 0), i + 1, left_text, font_size=10.2)
-        else:
-            set_cell_border(body.cell(i, 0), "FFFFFF", "0")
-        if right_text:
-            add_answer_to_cell(body.cell(i, 1), i + 1, right_text, font_size=10.2)
-        else:
-            set_cell_border(body.cell(i, 1), "FFFFFF", "0")
+
+        for col_idx, text in enumerate([left_text, right_text]):
+            cell = table.cell(i + 1, col_idx)
+            set_cell_border(cell, "595959", "8")
+            cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.TOP
+            p = clear_cell(cell)
+            p.paragraph_format.space_after = Pt(0)
+            p.paragraph_format.space_before = Pt(0)
+            p.paragraph_format.left_indent = Inches(0.02)
+
+            if text:
+                r = p.add_run(text)
+                r.font.name = "Candara"
+                r._element.rPr.rFonts.set(qn("w:eastAsia"), "Candara")
+                r.font.size = Pt(10.2)
+                r.font.color.rgb = RGBColor(0, 0, 0)
+
     document.add_paragraph().paragraph_format.space_after = Pt(2)
 
 
@@ -1148,7 +1163,7 @@ def main():
         title_label = selected_subgroup
     else:
         df_report = df_type.copy()
-        title_label = "Tous les sous-groupes"
+        title_label = f"{selected_type} - Tous les sous-groupes"
 
     html_report = build_one_report_html(
         df_group=df_report,
