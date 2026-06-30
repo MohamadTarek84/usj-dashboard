@@ -1023,35 +1023,22 @@ def build_word_docx(df_group, participant_type, title_label, hide_names):
     section.left_margin = Inches(0.35)
     section.right_margin = Inches(0.35)
 
-    footer = section.footer
+    section.footer_distance = Inches(0.15)
 
-    footer_table = footer.add_table(rows=1, cols=3, width=Inches(7.57))
-    footer_table.alignment = WD_TABLE_ALIGNMENT.CENTER
-    footer_table.autofit = False
-    
-    footer_table.columns[0].width = Inches(2.4)
-    footer_table.columns[1].width = Inches(2.7)
-    footer_table.columns[2].width = Inches(2.4)
+    footer = section.footer
+    p_footer = footer.paragraphs[0]
+    p_footer.alignment = WD_ALIGN_PARAGRAPH.CENTER
     
     date_text = get_focus_group_date(participant_type)
     
-    footer_table.cell(0, 0).text = date_text
-    footer_table.cell(0, 1).text = f"Focus groupe - {participant_type}"
-    
-    p_page = footer_table.cell(0, 2).paragraphs[0]
-    p_page.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-    p_page.add_run("1/1")
-    
-    for row in footer_table.rows:
-        for cell in row.cells:
-            set_cell_shading(cell, "66E6E6")
-            set_cell_border(cell, "66E6E6", "0")
-            for p in cell.paragraphs:
-                for r in p.runs:
-                    r.font.name = "Candara"
-                    r._element.rPr.rFonts.set(qn("w:eastAsia"), "Candara")
-                    r.font.size = Pt(9)
-                    r.font.color.rgb = RGBColor(0, 31, 91)
+    run = p_footer.add_run(
+        f"{date_text}        Focus groupe - {participant_type}        1/1"
+    )
+    run.font.name = "Candara"
+    run._element.rPr.rFonts.set(qn("w:eastAsia"), "Candara")
+    run.font.size = Pt(9)
+    run.font.bold = True
+    run.font.color.rgb = RGBColor(0, 31, 91)
 
     styles = document.styles
     styles["Normal"].font.name = "Candara"
