@@ -765,7 +765,7 @@ def add_word_header(document):
     r.bold = True
     r.font.name = "Candara"
     r._element.rPr.rFonts.set(qn("w:eastAsia"), "Candara")
-    r.font.size = Pt(22)
+    r.font.size = Pt(20)
     r.font.color.rgb = RGBColor(0, 31, 91)
     
     p2 = left.add_paragraph()
