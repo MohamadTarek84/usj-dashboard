@@ -779,7 +779,10 @@ def add_word_header(document, participant_type):
     p_logo = clear_cell(right)
     p_logo.alignment = WD_ALIGN_PARAGRAPH.RIGHT
     if Path(LOGO_PATH).exists():
-        p_logo.add_run().add_picture(LOGO_PATH, width=Inches(1.42))
+        p_logo.add_run().add_picture(
+            LOGO_PATH,
+            width=Inches(1.55)
+        )
 
     line = document.add_paragraph()
     line.paragraph_format.space_after = Pt(10)
