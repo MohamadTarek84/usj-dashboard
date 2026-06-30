@@ -911,7 +911,13 @@ def add_swot_cell(cell, title, answers, accent_hex, bg_hex):
         p_item.paragraph_format.left_indent = Inches(0.12)
         p_item.paragraph_format.space_after = Pt(2)
     
-        parts = [x.strip() for x in answer.replace("\r\n", "\n").replace("\r", "\n").split("\n") if x.strip()]
+        answer_clean = answer.replace("\r\n", "\n").replace("\r", "\n").strip()
+
+        if "\n" in answer_clean:
+            parts = [x.strip() for x in answer_clean.split("\n") if x.strip()]
+        else:
+            parts = re.split(r"(?<=[.!?])\s+(?=[A-ZÉÈÊÀÂÎÏÔÙÛÇ])", answer_clean)
+            parts = [x.strip() for x in parts if x.strip()]
     
         if parts:
             run = p_item.add_run("• " + parts[0])
