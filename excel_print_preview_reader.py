@@ -1319,10 +1319,12 @@ def main():
         hide_names=hide_names
     )
 
+    names_suffix = "no names" if hide_names else "with names"
+
     file_base = (
-        f"USJ2032_{safe_filename(selected_type)}_"
-        f"{safe_filename(title_label)}_"
-        f"{datetime.now().strftime('%Y%m%d_%H%M')}"
+        f"{safe_filename(selected_type)}-"
+        f"{safe_filename(title_label)}-"
+        f"{safe_filename(names_suffix)}"
     )
 
     docx_bytes = build_word_docx(
