@@ -897,6 +897,8 @@ def add_swot_cell(cell, title, answers, accent_hex, bg_hex):
     set_cell_shading(cell, bg_hex)
     set_cell_border(cell, accent_hex, "12")
     p = clear_cell(cell)
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    
     r = p.add_run(title)
     r.bold = True
     r.font.name = "Candara"
@@ -1030,6 +1032,8 @@ def build_word_docx(df_group, participant_type, title_label, hide_names):
     document.add_page_break()
     add_section_header(document, "II - Opportunités et menaces")
     add_two_column_answers(document, "Opportunités", opportunites, "Menaces", menaces)
+    
+    document.add_page_break()
     add_swot_matrix_word(document, forces, faiblesses, opportunites, menaces)
 
     document.add_page_break()
