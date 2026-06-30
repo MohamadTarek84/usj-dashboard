@@ -952,10 +952,27 @@ def add_swot_matrix_word(document, forces, faiblesses, opportunites, menaces):
     document.add_paragraph().paragraph_format.space_after = Pt(2)
 
 
+def lowercase_first_letter(text):
+    text = clean(text)
+    if not text:
+        return text
+    return text[0].lower() + text[1:]
+
+
 def add_conclusion_word(document, df_group):
     conclusion_rows = df_group[df_group["section_norm"].str.contains("conclusion", na=False)].copy()
+
     if conclusion_rows.empty:
-        add_single_answer_box(document, 1, "Aucune réponse disponible.", font_size=10.5, min_height=Inches(0.65))
+        table = document.add_table(rows=1, cols=1)
+        table.alignment = WD_TABLE_ALIGNMENT.CENTER
+        cell = table.cell(0, 0)
+        set_cell_border(cell, "595959", "8")
+        p = clear_cell(cell)
+        r = p.add_run("Aucune réponse disponible.")
+        r.font.name = "Candara"
+        r._element.rPr.rFonts.set(qn("w:eastAsia"), "Candara")
+        r.font.size = Pt(10.5)
+        r.font.color.rgb = RGBColor(0, 0, 0)
         return
 
     question_order = []
@@ -968,6 +985,7 @@ def add_conclusion_word(document, df_group):
         p_q = document.add_paragraph()
         p_q.paragraph_format.space_before = Pt(4)
         p_q.paragraph_format.space_after = Pt(3)
+
         r_q = p_q.add_run("• " + question)
         r_q.bold = True
         r_q.font.name = "Candara"
@@ -976,28 +994,33 @@ def add_conclusion_word(document, df_group):
         r_q.font.color.rgb = RGBColor(0, 31, 91)
 
         answers = [
-            clean(x)
+            lowercase_first_letter(x)
             for x in conclusion_rows[conclusion_rows["question"] == question]["Final_Answer"].tolist()
             if clean(x)
         ]
 
         if not answers:
             answers = [""]
-        for answer in answers:
-            table = document.add_table(rows=1, cols=1)
-            table.alignment = WD_TABLE_ALIGNMENT.CENTER
-            table.rows[0].height = Inches(0.72)
-            cell = table.cell(0, 0)
-            set_cell_shading(cell, "#E3DED9")
+
+        table = document.add_table(rows=len(answers), cols=1)
+        table.alignment = WD_TABLE_ALIGNMENT.CENTER
+        table.autofit = True
+
+        for i, answer in enumerate(answers):
+            cell = table.cell(i, 0)
             set_cell_border(cell, "595959", "8")
+
             p_a = clear_cell(cell)
             p_a.paragraph_format.space_after = Pt(0)
+            p_a.paragraph_format.space_before = Pt(0)
+
             r_a = p_a.add_run(answer)
             r_a.font.name = "Candara"
             r_a._element.rPr.rFonts.set(qn("w:eastAsia"), "Candara")
             r_a.font.size = Pt(10.5)
             r_a.font.color.rgb = RGBColor(0, 0, 0)
-            document.add_paragraph().paragraph_format.space_after = Pt(1)
+
+        document.add_paragraph().paragraph_format.space_after = Pt(4)
 
 def get_focus_group_date(participant_type):
     dates = {
