@@ -1148,7 +1148,7 @@ def main():
         title_label = selected_subgroup
     else:
         df_report = df_type.copy()
-        title_label = f"{selected_type} - Tous les sous-groupes"
+        title_label = "Tous les sous-groupes"
 
     html_report = build_one_report_html(
         df_group=df_report,
