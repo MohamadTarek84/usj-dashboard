@@ -24,7 +24,7 @@ USJ_BLUE_2 = "#1F3C88"
 USJ_RED = "#8B1538"
 USJ_LIGHT_BLUE = "#EAF2F8"
 USJ_TEXT = "#1B2A41"
-LOGO_PATH = "LogoUAQ.png"
+LOGO_PATH = "LOGO NEW UAQ.png"
 
 
 def clean(value):
