@@ -769,7 +769,7 @@ def add_word_header(document):
     r.font.color.rgb = RGBColor(0, 31, 91)
     
     p2 = left.add_paragraph()
-    r2 = p2.add_run("Focus groupe")
+    r2 = p2.add_run(f"Focus groupe - {participant_type}")
     r2.bold = True
     r2.font.name = "Candara"
     r2._element.rPr.rFonts.set(qn("w:eastAsia"), "Candara")
