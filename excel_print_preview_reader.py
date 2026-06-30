@@ -1132,9 +1132,32 @@ def build_word_docx(df_group, participant_type, title_label, hide_names):
 
     document.add_page_break()
     add_section_header(document, "III - Priorités")
+    priority_table = document.add_table(rows=max(len(priorites), 1), cols=1)
+    priority_table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    priority_table.autofit = False
+    priority_table.columns[0].width = Inches(7.2)
+    
     if priorites:
-        for i, answer in enumerate(priorites, start=1):
-            add_single_answer_box(document, i, answer, font_size=10.5)
+        for i, answer in enumerate(priorites):
+            cell = priority_table.cell(i, 0)
+            set_cell_border(cell, "595959", "8")
+            p = clear_cell(cell)
+            p.paragraph_format.space_after = Pt(0)
+    
+            run = p.add_run(answer)
+            run.font.name = "Candara"
+            run._element.rPr.rFonts.set(qn("w:eastAsia"), "Candara")
+            run.font.size = Pt(10.5)
+            run.font.color.rgb = RGBColor(0, 0, 0)
+    else:
+        cell = priority_table.cell(0, 0)
+        set_cell_border(cell, "595959", "8")
+        p = clear_cell(cell)
+        run = p.add_run("Aucune réponse disponible.")
+        run.font.name = "Candara"
+        run._element.rPr.rFonts.set(qn("w:eastAsia"), "Candara")
+        run.font.size = Pt(10.5)
+        run.font.color.rgb = RGBColor(0, 0, 0)
     else:
         add_single_answer_box(document, 1, "Aucune réponse disponible.", font_size=10.5)
 
