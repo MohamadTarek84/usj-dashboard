@@ -773,7 +773,7 @@ def add_word_header(document, participant_type):
     r2.bold = True
     r2.font.name = "Candara"
     r2._element.rPr.rFonts.set(qn("w:eastAsia"), "Candara")
-    r2.font.size = Pt(10)
+    r2.font.size = Pt(16)
     r2.font.color.rgb = RGBColor(31, 60, 136)
 
     p_logo = clear_cell(right)
@@ -1133,7 +1133,7 @@ def build_word_docx(df_group, participant_type, title_label, hide_names):
     run.bold = True
     run.font.name = "Candara"
     run._element.rPr.rFonts.set(qn("w:eastAsia"), "Candara")
-    run.font.size = Pt(18)
+    run.font.size = Pt(16)
     run.font.color.rgb = RGBColor(139, 21, 56)
 
     if names and not hide_names:
