@@ -1391,6 +1391,120 @@ def tokenize_for_similarity(text):
     return [t for t in tokens if t not in STOPWORDS_FR]
 
 
+THEME_KEYWORD_RULES = {
+    "soutenabilite financiere": [
+        "budget", "financement", "financier", "financiere", "finance", "frais", "scolarite", "bourse", "cout", "couts", "ressources financieres", "modele economique", "soutenabilite", "viabilite"
+    ],
+    "gouvernance et leadership": [
+        "gouvernance", "leadership", "direction", "doyen", "doyens", "directeur", "directeurs", "decision", "decisions", "pilotage", "procedure", "procedures", "administration", "centralisation", "decentralisation", "strategie", "representation", "responsabilisation", "accountability", "transparence", "autonomie"
+    ],
+    "strategie academique et qualite d enseignement": [
+        "programme", "programmes", "formation", "formations", "enseignement", "academique", "pedagogie", "pedagogique", "curriculum", "cours", "accreditation", "accreditations", "diplome", "diplomes", "qualite", "evaluation", "apprentissage", "langue", "anglais", "francais", "trilinguisme"
+    ],
+    "qualite de l enseignement": [
+        "enseignement", "cours", "enseignant", "enseignants", "pedagogie", "pedagogique", "qualite", "accompagnement", "orientation", "tutorat", "apprentissage", "evaluation", "formation", "langue", "anglais", "francais"
+    ],
+    "recherche et innovation": [
+        "recherche", "innovation", "innovant", "publications", "publication", "scopus", "laboratoire", "laboratoires", "projet scientifique", "projets scientifiques", "these", "doctorat", "brevet", "brevets", "valorisation"
+    ],
+    "ressources documentaires et environnement digital": [
+        "bibliotheque", "documentaire", "documentaires", "ressources numeriques", "digital", "digitale", "numerique", "numeriques", "plateforme", "plateformes", "informatique", "informatiques", "technologie", "technologique", "systeme", "systemes", "outils", "logiciel", "logiciels", "data", "donnees"
+    ],
+    "ressources documentaires numeriques et informatiques": [
+        "bibliotheque", "documentaire", "documentaires", "ressources numeriques", "digital", "digitale", "numerique", "numeriques", "plateforme", "plateformes", "informatique", "informatiques", "technologie", "technologique", "systeme", "systemes", "outils", "logiciel", "logiciels", "data", "donnees"
+    ],
+    "succes des etudiants": [
+        "etudiant", "etudiants", "recrutement", "inscription", "inscriptions", "accompagnement", "orientation", "support", "service", "services", "employabilite", "insertion", "stage", "stages", "reussite", "parcours", "diplomes", "alumni"
+    ],
+    "ressources humaines": [
+        "personnel", "personnels", "enseignant", "enseignants", "administratif", "administratifs", "rh", "recrutement", "charge", "charges", "competence", "competences", "formation du personnel", "evaluation", "modernisation du personnel", "ressources humaines"
+    ],
+    "strategie et mobilite internationales": [
+        "international", "internationale", "internationales", "mobilite", "echange", "echanges", "partenariat", "partenariats", "etranger", "etrangers", "diaspora", "francophone", "francophonie", "anglais", "langues"
+    ],
+    "mission societale": [
+        "societe", "societal", "societale", "communautaire", "communaute", "social", "sociale", "service", "citoyen", "citoyenne", "engagement", "impact", "liban", "reconstruction", "responsabilite sociale"
+    ],
+    "espace et infrastructures": [
+        "campus", "batiment", "batiments", "salle", "salles", "locaux", "infrastructure", "infrastructures", "espace", "espaces", "equipement", "equipements", "laboratoire", "laboratoires", "maintenance", "beyrouth"
+    ],
+    "espace et infrastructure": [
+        "campus", "batiment", "batiments", "salle", "salles", "locaux", "infrastructure", "infrastructures", "espace", "espaces", "equipement", "equipements", "laboratoire", "laboratoires", "maintenance", "beyrouth"
+    ],
+    "environnement de travail": [
+        "environnement de travail", "conditions de travail", "climat", "bien etre", "collaboration", "communication interne", "charge de travail", "horaires", "processus administratif", "processus administratifs"
+    ],
+    "diversite et inclusion": [
+        "diversite", "inclusion", "inclusive", "egalite", "equite", "handicap", "genre", "discrimination", "accessibilite", "individualiste", "individualistes"
+    ],
+    "developpement durable": [
+        "developpement durable", "odd", "durable", "durabilite", "environnement", "ecologie", "transition energetique", "energie", "responsabilite environnementale"
+    ],
+    "relation avec l administration et les enseignants": [
+        "administration", "enseignants", "enseignant", "relation", "communication", "disponibilite", "ecoute", "procedures", "bureau", "service administratif"
+    ],
+    "representation des etudiants": [
+        "representation", "representants", "delegue", "delegues", "voix etudiante", "participation", "consultation", "conseil etudiant"
+    ],
+    "vie universitaire": [
+        "vie universitaire", "vie etudiante", "sport", "activites", "clubs", "campus", "aide psychologique", "psychologique", "animation", "experience etudiante"
+    ],
+    "mobilite internationale": [
+        "mobilite", "international", "internationale", "echange", "echanges", "erasmus", "partenariat", "partenariats", "etranger", "voyage"
+    ],
+    "aide financiere": [
+        "aide financiere", "bourse", "bourses", "frais", "scolarite", "paiement", "soutien financier", "financement"
+    ],
+    "insertion professionnelle": [
+        "insertion", "professionnelle", "emploi", "employabilite", "stage", "stages", "carriere", "entreprise", "entreprises", "marche du travail", "metier", "metiers"
+    ],
+    "marche du travail et associations professionnelles": [
+        "marche du travail", "emploi", "employeur", "employeurs", "entreprise", "entreprises", "association", "associations", "professionnel", "professionnelle", "professionnelles", "metier", "metiers", "competences", "stage", "stages"
+    ],
+    "marche du travail et relations avec les employeurs": [
+        "marche du travail", "emploi", "employeur", "employeurs", "entreprise", "entreprises", "relation employeurs", "professionnel", "professionnelle", "competences", "stage", "stages", "carriere"
+    ],
+    "concurrence avec les autres universites": [
+        "concurrence", "concurrent", "concurrentes", "universites", "autres universites", "competition", "competitive", "attractivite", "frais", "scolarite", "programmes flexibles", "facilites financieres", "classe a", "americaines"
+    ],
+    "intelligence artificielle": [
+        "intelligence artificielle", "ia", "ai", "chatgpt", "automatisation", "technologie generative", "generative", "data science", "analyse", "digitalisation", "transformation numerique"
+    ],
+    "reputation et image": [
+        "reputation", "image", "classement", "classements", "visibilite", "notoriete", "communication", "attractivite", "perception", "rayonnement", "jeunes", "ecoles", "recteurs", "recruteurs"
+    ],
+    "environnement politique et economique emigration": [
+        "politique", "economique", "economie", "crise", "emigration", "emigrer", "instabilite", "instabilites", "liban", "inflation", "securite", "guerre", "familles", "parents", "banque", "bancaire", "immobilier", "financiere"
+    ],
+}
+
+
+def strong_keyword_score(answer, theme):
+    answer_norm = normalize(answer)
+    theme_norm = normalize(theme)
+    tokens = set(tokenize_for_similarity(answer))
+    best_words = []
+    for key, words in THEME_KEYWORD_RULES.items():
+        if key in theme_norm or theme_norm in key:
+            best_words = words
+            break
+    if not best_words:
+        return 0.0
+    hits = 0
+    strong_hits = 0
+    for w in best_words:
+        nw = normalize(w)
+        if " " in nw:
+            if nw in answer_norm:
+                hits += 2
+                strong_hits += 1
+        else:
+            if nw in tokens or nw in answer_norm:
+                hits += 1
+    # A single clear domain keyword should matter, but multiple hits should dominate.
+    return min(1.0, (hits / 5.0) + (0.12 * strong_hits))
+
+
 def simple_similarity_score(answer, theme):
     answer_tokens = set(tokenize_for_similarity(answer))
     theme_tokens = set(tokenize_for_similarity(theme))
@@ -1403,29 +1517,12 @@ def simple_similarity_score(answer, theme):
 
     answer_norm = normalize(answer)
     theme_norm = normalize(theme)
-    phrase_bonus = 0.25 if theme_norm in answer_norm else 0.0
+    phrase_bonus = 0.30 if theme_norm in answer_norm else 0.0
+    keyword_score = strong_keyword_score(answer, theme)
 
-    keyword_bonus = 0.0
-    keyword_groups = {
-        "Intelligence artificielle": ["ia", "ai", "intelligence", "artificielle", "chatgpt"],
-        "Recherche et Innovation": ["recherche", "innovation", "publication", "scopus", "laboratoire"],
-        "Ressources humaines": ["rh", "personnel", "enseignant", "administratif", "recrutement"],
-        "Espace et infrastructures": ["campus", "batiment", "salle", "espace", "infrastructure"],
-        "Espace et infrastructure": ["campus", "batiment", "salle", "espace", "infrastructure"],
-        "Réputation et image": ["reputation", "image", "classement", "visibilite"],
-        "Concurrence avec les autres universités": ["concurrence", "universite", "universites", "competitive"],
-        "Soutenabilité financière": ["finance", "financier", "budget", "cout", "frais", "bourse"],
-        "Aide financière": ["aide", "financiere", "bourse", "frais"],
-        "Insertion professionnelle": ["emploi", "employabilite", "insertion", "stage", "travail"],
-    }
-
-    for key, words in keyword_groups.items():
-        if normalize(key) in theme_norm:
-            if any(w in answer_tokens or w in answer_norm for w in words):
-                keyword_bonus = 0.20
-                break
-
-    return min(1.0, (0.45 * overlap) + (0.35 * jaccard) + phrase_bonus + keyword_bonus)
+    # Conservative but stronger institutional classifier:
+    # keyword/domain evidence is prioritized over generic sentence similarity.
+    return min(1.0, (0.55 * keyword_score) + (0.20 * overlap) + (0.15 * jaccard) + phrase_bonus)
 
 
 def classify_theme(answer, participant_type, swot_element):
@@ -2024,7 +2121,8 @@ def semantic_theme_scores(answer, participant_type, swot_element, engine_name):
         matrix = features.fit_transform(corpus)
         sims = cosine_similarity(matrix[0:1], matrix[1:]).flatten().tolist()
         keyword_scores = [simple_similarity_score(answer_text, t) for t in themes]
-        scores = [(0.70 * sims[i]) + (0.30 * keyword_scores[i]) for i in range(len(themes))]
+        # Use lexical/domain evidence as the anchor; semantic similarity is only supportive.
+        scores = [(0.45 * keyword_scores[i]) + (0.35 * sims[i]) + (0.20 * strong_keyword_score(answer_text, themes[i])) for i in range(len(themes))]
         return sorted(zip(themes, scores), key=lambda x: x[1], reverse=True)
     except Exception:
         scores = [simple_similarity_score(answer_text, t) for t in themes]
@@ -2040,8 +2138,12 @@ def classify_theme_with_engine(answer, participant_type, swot_element, engine_na
     second_score = scores[1][1] if len(scores) > 1 else 0
     margin = max(best_score - second_score, 0)
 
-    # Confidence combines absolute score and separation from the second-best theme.
-    confidence = min(99.0, max(1.0, (best_score * 75) + (margin * 45)))
+    # Calibrated confidence: high only when the best theme is clearly separated.
+    confidence = min(99.0, max(5.0, 35 + (best_score * 55) + (margin * 65)))
+    if margin < 0.025:
+        confidence = min(confidence, 58.0)
+    elif margin < 0.06:
+        confidence = min(confidence, 72.0)
     top3 = " | ".join([f"{t} ({round(s * 100, 1)})" for t, s in scores[:3]])
     return best_theme, round(confidence, 1), top3
 
@@ -2081,7 +2183,7 @@ def build_classification_with_engine(df_scope, engine_name):
     return pd.DataFrame(rows)
 
 
-def render_model_management(df_scope, selected_type):
+def render_model_management(df_scope, selected_type="Tous"):
     st.markdown("""
     <div class="ai-card pro-card">
         <h3>1. Sélection du moteur IA</h3>
@@ -2106,8 +2208,9 @@ def render_model_management(df_scope, selected_type):
 
     swot_rows = df_scope[df_scope["swot_element"].isin(["Forces", "Faiblesses", "Opportunités", "Menaces"])]
     available_theme_count = 0
-    for el in ["Forces", "Faiblesses", "Opportunités", "Menaces"]:
-        available_theme_count += len(official_themes_for(selected_type, el, include_autre=False))
+    for ptype in sorted(df_scope["Respondent_Type"].dropna().unique().tolist()):
+        for el in ["Forces", "Faiblesses", "Opportunités", "Menaces"]:
+            available_theme_count += len(official_themes_for(ptype, el, include_autre=False))
 
     k1, k2, k3 = st.columns(3)
     k1.metric("Réponses SWOT", len(swot_rows))
@@ -2225,32 +2328,16 @@ def ai_platform_page(show_header=True, df_preloaded=None):
     else:
         df = df_preloaded.copy()
 
-    participant_types = sorted(df["Respondent_Type"].dropna().unique().tolist())
+    # IA module works on the full uploaded dataset, not on a selected subset.
+    selected_type = "Tous les types de participants"
+    selected_subgroup = "Tous les sous-groupes"
+    df_scope = df.copy()
 
-    c1, c2, c3 = st.columns([1.2, 1.4, 1.2])
-    with c1:
-        selected_type = st.selectbox("Type de participants", participant_types, key="ai_selected_type")
-
-    df_type = df[df["Respondent_Type"] == selected_type].copy()
-
-    with c2:
-        report_mode = st.selectbox(
-            "Périmètre d'analyse",
-            ["Tous les sous-groupes du type sélectionné", "Un sous-groupe spécifique"],
-            key="ai_report_mode"
-        )
-
-    subgroups = sorted(df_type["groupe"].dropna().unique().tolist())
-    with c3:
-        if report_mode == "Un sous-groupe spécifique":
-            selected_subgroup = st.selectbox("Sous-groupe", subgroups, key="ai_selected_subgroup")
-        else:
-            selected_subgroup = "Tous les sous-groupes"
-
-    if report_mode == "Un sous-groupe spécifique":
-        df_scope = df_type[df_type["groupe"] == selected_subgroup].copy()
-    else:
-        df_scope = df_type.copy()
+    st.markdown("""
+    <div class="ai-info-box">
+        <b>Périmètre IA :</b> l'analyse IA est appliquée à toutes les réponses importées, tous types de participants et tous sous-groupes confondus. La taxonomie officielle reste adaptée ligne par ligne selon le type de participant et l'élément SWOT.
+    </div>
+    """, unsafe_allow_html=True)
 
     swot_count = len(df_scope[df_scope["swot_element"].isin(["Forces", "Faiblesses", "Opportunités", "Menaces"])])
     k1, k2, k3 = st.columns(3)
@@ -2263,14 +2350,14 @@ def ai_platform_page(show_header=True, df_preloaded=None):
         st.markdown(f'<div class="ai-kpi"><div class="ai-kpi-number">{"Oui" if active_engine != "Non" else "Non"}</div><div class="ai-kpi-label">Moteur IA actif</div></div>', unsafe_allow_html=True)
 
     tab_model, tab_mapping, tab_duplicates, tab_synthesis = st.tabs(
-        ["1. Moteur IA", "2. Mapping SWOT", "3. Doublons", "4. Synthèse"]
+        ["1. Moteur IA global", "2. Mapping SWOT global", "3. Doublons globaux", "4. Synthèse globale"]
     )
 
     with tab_model:
         render_model_management(df_scope, selected_type)
 
     with tab_mapping:
-        st.subheader("2. Mapping SWOT supervisé")
+        st.subheader("2. Mapping SWOT supervisé - toutes les données")
         engine = st.session_state.get("active_ai_engine", "")
         if not engine:
             st.markdown('<div class="ai-warning">Activez d’abord un moteur IA dans l’onglet 1.</div>', unsafe_allow_html=True)
@@ -2308,7 +2395,7 @@ def ai_platform_page(show_header=True, df_preloaded=None):
                 st.caption("Cliquez sur « Classifier les réponses SWOT » pour lancer le mapping.")
 
     with tab_duplicates:
-        st.subheader("3. Détection stricte des doublons")
+        st.subheader("3. Détection stricte des doublons - toutes les données")
         engine = st.session_state.get("active_ai_engine", "")
         if not engine:
             st.markdown('<div class="ai-warning">Activez d’abord un moteur IA dans l’onglet 1.</div>', unsafe_allow_html=True)
