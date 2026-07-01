@@ -2183,6 +2183,128 @@ def build_classification_with_engine(df_scope, engine_name):
     return pd.DataFrame(rows)
 
 
+
+
+def available_ai_engines():
+    engines = []
+    if load_multilingual_sentence_model() is not None:
+        engines.append("Sentence Transformer multilingue pré-entraîné - recommandé")
+    engines.extend([
+        "Hybrid semantic TF-IDF offline - fallback robuste",
+        "Keyword-assisted TF-IDF - contrôle lexical",
+    ])
+    return engines
+
+
+def compare_ai_engines(df_scope):
+    engines = available_ai_engines()
+    engine_outputs = []
+
+    for engine in engines:
+        temp = build_classification_with_engine(df_scope, engine)
+        if temp.empty:
+            continue
+        temp = temp[[
+            "row_id", "Respondent_Type", "groupe", "participants", "swot_element",
+            "question", "Final_Answer", "AI_Suggested_Theme", "Confidence", "Top_3_Themes"
+        ]].copy()
+        temp = temp.rename(columns={
+            "AI_Suggested_Theme": f"Theme_{safe_filename(engine)}",
+            "Confidence": f"Confidence_{safe_filename(engine)}",
+            "Top_3_Themes": f"Top3_{safe_filename(engine)}",
+        })
+        engine_outputs.append((engine, temp))
+
+    if not engine_outputs:
+        return pd.DataFrame(), pd.DataFrame(), []
+
+    comparison = engine_outputs[0][1]
+    for _, temp in engine_outputs[1:]:
+        comparison = comparison.merge(
+            temp.drop(columns=["Respondent_Type", "groupe", "participants", "swot_element", "question", "Final_Answer"]),
+            on="row_id",
+            how="outer"
+        )
+
+    summary_rows = []
+    for engine, _ in engine_outputs:
+        theme_col = f"Theme_{safe_filename(engine)}"
+        conf_col = f"Confidence_{safe_filename(engine)}"
+        summary_rows.append({
+            "Moteur": engine,
+            "Réponses classifiées": comparison[theme_col].notna().sum() if theme_col in comparison else 0,
+            "Confiance moyenne": round(pd.to_numeric(comparison[conf_col], errors="coerce").mean(), 1) if conf_col in comparison else None,
+            "Confiance médiane": round(pd.to_numeric(comparison[conf_col], errors="coerce").median(), 1) if conf_col in comparison else None,
+            "Faible confiance (<60%)": int((pd.to_numeric(comparison[conf_col], errors="coerce") < 60).sum()) if conf_col in comparison else 0,
+        })
+
+    theme_cols = [f"Theme_{safe_filename(engine)}" for engine, _ in engine_outputs]
+    if len(theme_cols) >= 2:
+        def agreement(row):
+            vals = [clean(row.get(c, "")) for c in theme_cols if clean(row.get(c, ""))]
+            return "Accord" if vals and len(set(vals)) == 1 else "Désaccord"
+        comparison["Accord_entre_moteurs"] = comparison.apply(agreement, axis=1)
+    else:
+        comparison["Accord_entre_moteurs"] = "Un seul moteur"
+
+    summary = pd.DataFrame(summary_rows)
+    if len(theme_cols) >= 2:
+        agreement_rate = round((comparison["Accord_entre_moteurs"] == "Accord").mean() * 100, 1) if len(comparison) else 0
+        summary.loc[len(summary)] = {
+            "Moteur": "Accord global entre moteurs",
+            "Réponses classifiées": len(comparison),
+            "Confiance moyenne": agreement_rate,
+            "Confiance médiane": None,
+            "Faible confiance (<60%)": None,
+        }
+    return comparison, summary, engines
+
+
+def evaluate_engines_against_validated(comparison_df, validated_file):
+    if validated_file is None or comparison_df.empty:
+        return pd.DataFrame()
+    try:
+        if validated_file.name.lower().endswith(".csv"):
+            valid = pd.read_csv(validated_file)
+        else:
+            valid = pd.read_excel(validated_file)
+    except Exception as e:
+        st.error("Impossible de lire le fichier validé.")
+        st.exception(e)
+        return pd.DataFrame()
+
+    possible_label_cols = ["Validated_Theme", "Theme_validé", "Theme valide", "Thème validé", "Final_Theme", "theme"]
+    label_col = None
+    for c in possible_label_cols:
+        if c in valid.columns:
+            label_col = c
+            break
+    if label_col is None:
+        st.error("Le fichier validé doit contenir une colonne Validated_Theme ou Thème validé.")
+        return pd.DataFrame()
+
+    if "row_id" in valid.columns:
+        merged = comparison_df.merge(valid[["row_id", label_col]], on="row_id", how="inner")
+    else:
+        key_cols = [c for c in ["Respondent_Type", "groupe", "swot_element", "Final_Answer"] if c in valid.columns and c in comparison_df.columns]
+        if not key_cols:
+            st.error("Le fichier validé doit contenir row_id, ou les colonnes Respondent_Type, groupe, swot_element et Final_Answer.")
+            return pd.DataFrame()
+        merged = comparison_df.merge(valid[key_cols + [label_col]], on=key_cols, how="inner")
+
+    results = []
+    true_labels = merged[label_col].apply(clean)
+    for col in [c for c in merged.columns if c.startswith("Theme_")]:
+        pred = merged[col].apply(clean)
+        ok = pred == true_labels
+        results.append({
+            "Moteur": col.replace("Theme_", "").replace("_", " "),
+            "N validé": len(merged),
+            "Accuracy": round(ok.mean() * 100, 1) if len(merged) else 0,
+            "Erreurs": int((~ok).sum()),
+        })
+    return pd.DataFrame(results)
+
 def render_model_management(df_scope, selected_type="Tous"):
     st.markdown("""
     <div class="ai-card pro-card">
@@ -2192,13 +2314,7 @@ def render_model_management(df_scope, selected_type="Tous"):
     """, unsafe_allow_html=True)
 
     transformer_available = load_multilingual_sentence_model() is not None
-    engine_options = []
-    if transformer_available:
-        engine_options.append("Sentence Transformer multilingue pré-entraîné - recommandé")
-    engine_options.extend([
-        "Hybrid semantic TF-IDF offline - fallback robuste",
-        "Keyword-assisted TF-IDF - contrôle lexical",
-    ])
+    engine_options = available_ai_engines()
 
     c1, c2 = st.columns([1.4, 1])
     with c1:
@@ -2349,15 +2465,61 @@ def ai_platform_page(show_header=True, df_preloaded=None):
         active_engine = st.session_state.get("active_ai_engine", "Non")
         st.markdown(f'<div class="ai-kpi"><div class="ai-kpi-number">{"Oui" if active_engine != "Non" else "Non"}</div><div class="ai-kpi-label">Moteur IA actif</div></div>', unsafe_allow_html=True)
 
-    tab_model, tab_mapping, tab_duplicates, tab_synthesis = st.tabs(
-        ["1. Moteur IA global", "2. Mapping SWOT global", "3. Doublons globaux", "4. Synthèse globale"]
+    tab_model, tab_compare, tab_mapping, tab_duplicates, tab_synthesis = st.tabs(
+        ["1. Moteur IA global", "2. Comparaison moteurs", "3. Mapping SWOT global", "4. Doublons globaux", "5. Synthèse globale"]
     )
 
     with tab_model:
         render_model_management(df_scope, selected_type)
 
+    with tab_compare:
+        st.subheader("2. Comparaison des moteurs IA sur toutes les réponses")
+        st.caption("Cette étape applique tous les moteurs disponibles au même fichier Excel. Sans fichier validé par expert, elle mesure l'accord entre moteurs et les niveaux de confiance. Avec un fichier validé, elle calcule l'accuracy réelle.")
+
+        if st.button("Comparer les moteurs IA", key="compare_ai_engines"):
+            comparison_df, summary_df, engines = compare_ai_engines(df_scope)
+            st.session_state["engine_comparison_df"] = comparison_df
+            st.session_state["engine_summary_df"] = summary_df
+
+        summary_df = st.session_state.get("engine_summary_df", pd.DataFrame())
+        comparison_df = st.session_state.get("engine_comparison_df", pd.DataFrame())
+
+        if not summary_df.empty:
+            st.markdown("#### Synthèse comparative")
+            st.dataframe(summary_df, use_container_width=True)
+
+        if not comparison_df.empty:
+            st.markdown("#### Détail des prédictions par moteur")
+            display_cols = [c for c in comparison_df.columns if c in ["Respondent_Type", "groupe", "swot_element", "Final_Answer", "Accord_entre_moteurs"] or c.startswith("Theme_") or c.startswith("Confidence_")]
+            st.dataframe(comparison_df[display_cols], use_container_width=True)
+
+            output = BytesIO()
+            with pd.ExcelWriter(output, engine="openpyxl") as writer:
+                comparison_df.to_excel(writer, index=False, sheet_name="Comparaison moteurs")
+                summary_df.to_excel(writer, index=False, sheet_name="Synthese")
+            output.seek(0)
+            st.download_button(
+                "Télécharger la comparaison des moteurs",
+                data=output.getvalue(),
+                file_name="comparaison_moteurs_IA.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+
+            st.markdown("#### Évaluation avec un fichier validé par expert")
+            validated_file = st.file_uploader(
+                "Uploader un fichier validé contenant row_id et Validated_Theme",
+                type=["xlsx", "csv"],
+                key="validated_engine_eval_upload"
+            )
+            if validated_file is not None:
+                eval_df = evaluate_engines_against_validated(comparison_df, validated_file)
+                if not eval_df.empty:
+                    st.dataframe(eval_df, use_container_width=True)
+        else:
+            st.caption("Cliquez sur « Comparer les moteurs IA » pour produire la comparaison.")
+
     with tab_mapping:
-        st.subheader("2. Mapping SWOT supervisé - toutes les données")
+        st.subheader("3. Mapping SWOT supervisé - toutes les données")
         engine = st.session_state.get("active_ai_engine", "")
         if not engine:
             st.markdown('<div class="ai-warning">Activez d’abord un moteur IA dans l’onglet 1.</div>', unsafe_allow_html=True)
@@ -2395,7 +2557,7 @@ def ai_platform_page(show_header=True, df_preloaded=None):
                 st.caption("Cliquez sur « Classifier les réponses SWOT » pour lancer le mapping.")
 
     with tab_duplicates:
-        st.subheader("3. Détection stricte des doublons - toutes les données")
+        st.subheader("4. Détection stricte des doublons - toutes les données")
         engine = st.session_state.get("active_ai_engine", "")
         if not engine:
             st.markdown('<div class="ai-warning">Activez d’abord un moteur IA dans l’onglet 1.</div>', unsafe_allow_html=True)
@@ -2418,7 +2580,7 @@ def ai_platform_page(show_header=True, df_preloaded=None):
                 st.caption("Aucun doublon affiché pour le moment.")
 
     with tab_synthesis:
-        st.subheader("4. Synthèse automatique par thème validé")
+        st.subheader("5. Synthèse automatique par thème validé")
         validated_df = st.session_state.get("validated_mapping_df", pd.DataFrame())
         if validated_df.empty:
             st.warning("Veuillez d'abord produire/valider le mapping SWOT dans l'onglet 2.")
