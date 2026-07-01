@@ -1923,69 +1923,293 @@ def train_final_theme_model(train_df, algorithm_name="TF-IDF + Linear SVM", rand
     return model, ""
 
 
+
+# ============================================================
+# PROFESSIONAL AI ENGINE - PRETRAINED / NO EXPERT TRAINING REQUIRED
+# ============================================================
+
+THEME_CONTEXT = {
+    "Soutenabilité financière": "budget financement frais scolarité ressources financières modèle économique bourses coûts viabilité financière",
+    "Gouvernance et Leadership": "gouvernance leadership management décision direction pilotage organisation représentation relation procédures transparence responsabilité",
+    "Stratégie académique et qualité d’enseignement": "programmes formation pédagogie qualité enseignement curriculum accréditation excellence académique méthodes cours apprentissage",
+    "Recherche et Innovation": "recherche innovation publications laboratoires projets scientifiques valorisation créativité transfert technologie",
+    "Ressources documentaires et Environnement digital": "bibliothèque ressources numériques plateformes digitales systèmes informatiques documentation accès digitalisation outils technologiques",
+    "Ressources documentaires, numériques et informatiques": "bibliothèque ressources numériques informatique plateformes documentation accès digital technologies outils numériques",
+    "Succès des étudiants": "étudiants recrutement accompagnement orientation soutien services employabilité insertion suivi réussite parcours étudiant",
+    "Ressources humaines": "personnel enseignants administratifs recrutement compétences charge travail formation évaluation ressources humaines",
+    "Stratégie et mobilité internationales": "international mobilité partenariats étrangers échanges coopération internationale rayonnement international",
+    "Mission sociétale": "société engagement service communauté responsabilité sociale impact social mission citoyenne territoire",
+    "Espace et infrastructures": "campus bâtiments salles laboratoires espaces équipements infrastructures locaux maintenance accessibilité",
+    "Espace et infrastructure": "campus bâtiments salles laboratoires espaces équipements infrastructures locaux maintenance accessibilité",
+    "Environnement de travail": "conditions travail climat organisation charge bien-être collaboration communication interne environnement professionnel",
+    "Diversité et inclusion": "diversité inclusion égalité accessibilité handicap genre équité discrimination intégration",
+    "Développement Durable": "développement durable ODD environnement écologie transition énergétique durabilité responsabilité environnementale",
+    "Qualité de l’enseignement": "qualité enseignement accompagnement orientation tutorat pédagogie cours enseignants apprentissage évaluation suivi académique",
+    "Relation avec l’administration et les enseignants": "administration enseignants relation communication disponibilité écoute procédures services étudiants",
+    "Représentation des étudiants": "représentation étudiants délégués participation gouvernance voix étudiante consultation implication",
+    "Vie universitaire": "vie étudiante sport activités campus aide psychologique animation clubs expérience étudiante",
+    "Mobilité internationale": "mobilité internationale échanges Erasmus partenariats étudiants étrangers voyage coopération",
+    "Aide financière": "aide financière bourses frais scolarité soutien social paiement financement étudiants",
+    "Insertion professionnelle": "emploi stage employabilité marché travail carrière entreprises compétences professionnelles insertion",
+    "Marché du travail et Associations professionnelles": "marché travail employeurs entreprises associations professionnelles métiers compétences emploi stages secteur professionnel",
+    "Marché du travail et relations avec les employeurs": "marché travail employeurs entreprises emploi stages insertion besoins compétences relation professionnelle",
+    "Concurrence avec les autres universités": "concurrence universités compétition établissements attractivité inscriptions frais programmes alternatives",
+    "Intelligence artificielle": "intelligence artificielle IA AI ChatGPT automatisation technologie transformation numérique outils génératifs",
+    "Réputation et image": "réputation image visibilité marque notoriété classement communication attractivité perception rayonnement",
+    "Environnement politique et économique, émigration": "politique économie crise émigration instabilité contexte pays inflation sécurité situation nationale",
+}
+
+
+def enrich_theme_text(theme):
+    theme_clean = clean(theme)
+    norm_theme = normalize(theme_clean)
+    context = ""
+    for key, value in THEME_CONTEXT.items():
+        if normalize(key) in norm_theme or norm_theme in normalize(key):
+            context = value
+            break
+    return f"{theme_clean}. {context}".strip()
+
+
+@st.cache_resource(show_spinner=False)
+def load_multilingual_sentence_model():
+    try:
+        from sentence_transformers import SentenceTransformer
+        return SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
+    except Exception:
+        return None
+
+
+def cosine_from_vectors(a, b):
+    import numpy as np
+    a = np.asarray(a)
+    b = np.asarray(b)
+    denom = (np.linalg.norm(a) * np.linalg.norm(b))
+    if denom == 0:
+        return 0.0
+    return float(np.dot(a, b) / denom)
+
+
+def semantic_theme_scores(answer, participant_type, swot_element, engine_name):
+    themes = official_themes_for(participant_type, swot_element, include_autre=False)
+    if not themes:
+        return []
+
+    answer_text = clean(answer)
+    theme_texts = [enrich_theme_text(t) for t in themes]
+
+    if "Sentence Transformer" in engine_name:
+        model = load_multilingual_sentence_model()
+        if model is not None:
+            try:
+                embeddings = model.encode([answer_text] + theme_texts, normalize_embeddings=True)
+                answer_vec = embeddings[0]
+                theme_vecs = embeddings[1:]
+                scores = [cosine_from_vectors(answer_vec, v) for v in theme_vecs]
+                return sorted(zip(themes, scores), key=lambda x: x[1], reverse=True)
+            except Exception:
+                pass
+
+    # Offline professional fallback: hybrid word + char TF-IDF + theme context.
+    try:
+        from sklearn.feature_extraction.text import TfidfVectorizer
+        from sklearn.metrics.pairwise import cosine_similarity
+        from sklearn.pipeline import FeatureUnion
+
+        corpus = [answer_text] + theme_texts
+        features = FeatureUnion([
+            ("word", TfidfVectorizer(ngram_range=(1, 2), min_df=1, strip_accents="unicode")),
+            ("char", TfidfVectorizer(analyzer="char_wb", ngram_range=(3, 5), min_df=1, strip_accents="unicode")),
+        ])
+        matrix = features.fit_transform(corpus)
+        sims = cosine_similarity(matrix[0:1], matrix[1:]).flatten().tolist()
+        keyword_scores = [simple_similarity_score(answer_text, t) for t in themes]
+        scores = [(0.70 * sims[i]) + (0.30 * keyword_scores[i]) for i in range(len(themes))]
+        return sorted(zip(themes, scores), key=lambda x: x[1], reverse=True)
+    except Exception:
+        scores = [simple_similarity_score(answer_text, t) for t in themes]
+        return sorted(zip(themes, scores), key=lambda x: x[1], reverse=True)
+
+
+def classify_theme_with_engine(answer, participant_type, swot_element, engine_name):
+    scores = semantic_theme_scores(answer, participant_type, swot_element, engine_name)
+    if not scores:
+        return "", 0.0, ""
+
+    best_theme, best_score = scores[0]
+    second_score = scores[1][1] if len(scores) > 1 else 0
+    margin = max(best_score - second_score, 0)
+
+    # Confidence combines absolute score and separation from the second-best theme.
+    confidence = min(99.0, max(1.0, (best_score * 75) + (margin * 45)))
+    top3 = " | ".join([f"{t} ({round(s * 100, 1)})" for t, s in scores[:3]])
+    return best_theme, round(confidence, 1), top3
+
+
+def build_classification_with_engine(df_scope, engine_name):
+    rows = []
+    for idx, row in df_scope.iterrows():
+        swot_element = row["swot_element"]
+        if swot_element not in ["Forces", "Faiblesses", "Opportunités", "Menaces"]:
+            continue
+
+        answer = clean(row["Final_Answer"])
+        if not answer:
+            continue
+
+        suggested_theme, confidence, top3 = classify_theme_with_engine(
+            answer=answer,
+            participant_type=row["Respondent_Type"],
+            swot_element=swot_element,
+            engine_name=engine_name,
+        )
+
+        rows.append({
+            "row_id": idx,
+            "Respondent_Type": row["Respondent_Type"],
+            "groupe": row["groupe"],
+            "participants": row["participants"],
+            "swot_element": swot_element,
+            "question": row["question"],
+            "Final_Answer": answer,
+            "AI_Suggested_Theme": suggested_theme,
+            "Confidence": confidence,
+            "Top_3_Themes": top3,
+            "Validated_Theme": suggested_theme,
+            "New_Theme": "",
+        })
+    return pd.DataFrame(rows)
+
+
+def render_model_management(df_scope, selected_type):
+    st.markdown("""
+    <div class="ai-card pro-card">
+        <h3>1. Sélection du moteur IA</h3>
+        <p>Le système utilise un moteur linguistique pré-entraîné. L'expert ne doit pas entraîner le modèle manuellement. Les thèmes officiels restent inchangés; le modèle compare chaque réponse aux thèmes autorisés pour le type de participants et l'élément SWOT.</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    transformer_available = load_multilingual_sentence_model() is not None
+    engine_options = []
+    if transformer_available:
+        engine_options.append("Sentence Transformer multilingue pré-entraîné - recommandé")
+    engine_options.extend([
+        "Hybrid semantic TF-IDF offline - fallback robuste",
+        "Keyword-assisted TF-IDF - contrôle lexical",
+    ])
+
+    c1, c2 = st.columns([1.4, 1])
+    with c1:
+        engine_name = st.selectbox("Moteur de classification", engine_options, key="ai_engine_name")
+    with c2:
+        st.metric("Moteur transformer disponible", "Oui" if transformer_available else "Non")
+
+    swot_rows = df_scope[df_scope["swot_element"].isin(["Forces", "Faiblesses", "Opportunités", "Menaces"])]
+    available_theme_count = 0
+    for el in ["Forces", "Faiblesses", "Opportunités", "Menaces"]:
+        available_theme_count += len(official_themes_for(selected_type, el, include_autre=False))
+
+    k1, k2, k3 = st.columns(3)
+    k1.metric("Réponses SWOT", len(swot_rows))
+    k2.metric("Thèmes officiels disponibles", available_theme_count)
+    k3.metric("Mode", "Pré-entraîné")
+
+    st.markdown("""
+    <div class="ai-info-box">
+        <b>Important :</b> ce module ne prétend pas créer un modèle supervisé à partir de zéro. Il exploite un modèle linguistique pré-entraîné sur de grands corpus multilingues, puis l'adapte à votre taxonomie officielle par similarité sémantique contrôlée. La validation humaine reste disponible pour corriger les cas ambigus et ajouter un nouveau thème lorsque nécessaire.
+    </div>
+    """, unsafe_allow_html=True)
+
+    if st.button("Activer ce moteur IA", key="activate_ai_engine"):
+        st.session_state["active_ai_engine"] = engine_name
+        st.success(f"Moteur IA actif : {engine_name}")
+
+    active = st.session_state.get("active_ai_engine", "")
+    if active:
+        st.success(f"Moteur actuellement utilisé : {active}")
+    else:
+        st.warning("Veuillez activer un moteur IA avant de lancer le mapping, les doublons ou la synthèse.")
+
+
 def ai_platform_page(show_header=True, df_preloaded=None):
     html_block(APP_CSS)
 
     html_block(f"""
     <style>
     .ai-hero {{
-        background: linear-gradient(135deg, #001F5B 0%, #1F3C88 65%, #8B1538 100%);
+        background: linear-gradient(135deg, #001F5B 0%, #123C7C 55%, #8B1538 100%);
         color: white;
-        border-radius: 20px;
-        padding: 28px 32px;
-        margin: 8px 0 22px 0;
-        box-shadow: 0 12px 30px rgba(0,31,91,0.18);
+        border-radius: 22px;
+        padding: 30px 34px;
+        margin: 8px 0 24px 0;
+        box-shadow: 0 16px 38px rgba(0,31,91,0.22);
     }}
     .ai-hero h2 {{
         color: white !important;
         margin: 0 0 8px 0;
-        font-size: 30px;
+        font-size: 32px;
         font-weight: 900;
+        letter-spacing: 0.2px;
     }}
     .ai-hero p {{
+        color: #EAF2F8;
         margin: 0;
-        font-size: 15px;
-        opacity: 0.95;
+        font-size: 16px;
+        line-height: 1.5;
     }}
     .ai-card {{
         background: white;
         border: 1px solid #D0D6E0;
-        border-radius: 16px;
-        padding: 18px 20px;
+        border-radius: 18px;
+        padding: 18px 22px;
+        margin: 14px 0 18px 0;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.055);
+    }}
+    .pro-card h3 {{
+        color: {USJ_BLUE} !important;
+        font-size: 24px;
+        margin: 0 0 8px 0;
+    }}
+    .ai-info-box {{
+        background: #EAF2F8;
+        color: #003B7A;
+        border-left: 6px solid {USJ_BLUE};
+        border-radius: 12px;
+        padding: 14px 18px;
         margin: 14px 0;
-        box-shadow: 0 6px 18px rgba(0,0,0,0.045);
-    }}
-    .ai-kpi {{
-        background: #F8FAFC;
-        border: 1px solid #E1E7EF;
-        border-radius: 14px;
-        padding: 14px 16px;
-        text-align: center;
-    }}
-    .ai-kpi-number {{
-        color: {USJ_BLUE};
-        font-size: 26px;
-        font-weight: 900;
-        line-height: 1;
-    }}
-    .ai-kpi-label {{
-        color: #667085;
-        font-size: 13px;
-        margin-top: 6px;
+        font-size: 15px;
     }}
     .ai-warning {{
         background: #FFF7E6;
-        border-left: 6px solid #F59E0B;
+        border-left: 6px solid #F59F00;
         border-radius: 12px;
         padding: 14px 18px;
         color: #7A4B00;
         font-weight: 700;
         margin: 12px 0;
     }}
+    .ai-kpi {{
+        background: white;
+        border: 1px solid #D0D6E0;
+        border-radius: 16px;
+        padding: 16px 18px;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.045);
+    }}
+    .ai-kpi-number {{
+        color: {USJ_RED};
+        font-size: 28px;
+        font-weight: 900;
+    }}
+    .ai-kpi-label {{
+        color: #64748B;
+        font-size: 13px;
+        font-weight: 700;
+        margin-top: 3px;
+    }}
     </style>
     <div class="ai-hero">
-        <h2>Plateforme IA supervisée</h2>
-        <p>Workflow professionnel: entraîner et tester le modèle sur un mapping validé, puis utiliser le meilleur modèle pour le mapping SWOT, les doublons et la synthèse.</p>
+        <h2>Plateforme IA supervisée - Analyse thématique stratégique</h2>
+        <p>Workflow institutionnel : moteur IA pré-entraîné, mapping contrôlé sur les thèmes officiels, validation humaine, détection stricte des doublons et synthèse par thème.</p>
     </div>
     """)
 
@@ -1995,10 +2219,8 @@ def ai_platform_page(show_header=True, df_preloaded=None):
             type=["xlsx", "xls"],
             key="ai_excel_upload"
         )
-
         if uploaded_file is None:
             st.stop()
-
         df = read_corrected_excel(uploaded_file)
     else:
         df = df_preloaded.copy()
@@ -2006,7 +2228,6 @@ def ai_platform_page(show_header=True, df_preloaded=None):
     participant_types = sorted(df["Respondent_Type"].dropna().unique().tolist())
 
     c1, c2, c3 = st.columns([1.2, 1.4, 1.2])
-
     with c1:
         selected_type = st.selectbox("Type de participants", participant_types, key="ai_selected_type")
 
@@ -2014,16 +2235,12 @@ def ai_platform_page(show_header=True, df_preloaded=None):
 
     with c2:
         report_mode = st.selectbox(
-            "Mode d'analyse",
-            [
-                "Tous les sous-groupes du type sélectionné",
-                "Un sous-groupe spécifique"
-            ],
+            "Périmètre d'analyse",
+            ["Tous les sous-groupes du type sélectionné", "Un sous-groupe spécifique"],
             key="ai_report_mode"
         )
 
     subgroups = sorted(df_type["groupe"].dropna().unique().tolist())
-
     with c3:
         if report_mode == "Un sous-groupe spécifique":
             selected_subgroup = st.selectbox("Sous-groupe", subgroups, key="ai_selected_subgroup")
@@ -2042,139 +2259,45 @@ def ai_platform_page(show_header=True, df_preloaded=None):
     with k2:
         st.markdown(f'<div class="ai-kpi"><div class="ai-kpi-number">{swot_count}</div><div class="ai-kpi-label">Réponses SWOT analysables</div></div>', unsafe_allow_html=True)
     with k3:
-        trained_status = "Oui" if st.session_state.get("best_theme_model") is not None else "Non"
-        st.markdown(f'<div class="ai-kpi"><div class="ai-kpi-number">{trained_status}</div><div class="ai-kpi-label">Modèle entraîné disponible</div></div>', unsafe_allow_html=True)
+        active_engine = st.session_state.get("active_ai_engine", "Non")
+        st.markdown(f'<div class="ai-kpi"><div class="ai-kpi-number">{"Oui" if active_engine != "Non" else "Non"}</div><div class="ai-kpi-label">Moteur IA actif</div></div>', unsafe_allow_html=True)
 
-    tab_training, tab_mapping, tab_duplicates, tab_synthesis = st.tabs(
-        ["1. Train/Test modèles", "2. Mapping SWOT supervisé", "3. Doublons", "4. Synthèse"]
+    tab_model, tab_mapping, tab_duplicates, tab_synthesis = st.tabs(
+        ["1. Moteur IA", "2. Mapping SWOT", "3. Doublons", "4. Synthèse"]
     )
 
-    with tab_training:
-        st.subheader("1. Train/Test des algorithmes de classification")
-        st.markdown("""
-        <div class="ai-card">
-        <b>Logique obligatoire :</b> le modèle doit être entraîné et testé sur des données déjà validées par l'expert avant d'être utilisé pour classifier automatiquement les réponses.
-        </div>
-        """, unsafe_allow_html=True)
-
-        source_choice = st.radio(
-            "Source des données validées",
-            ["Uploader un fichier de mapping validé", "Mapping validé dans cette session"],
-            horizontal=True,
-            key="training_source_choice"
-        )
-
-        if source_choice == "Uploader un fichier de mapping validé":
-            uploaded_mapping = st.file_uploader(
-                "Uploader le fichier Excel/CSV du mapping validé",
-                type=["xlsx", "csv"],
-                key="validated_mapping_upload"
-            )
-            raw_train_df = load_validated_mapping_file(uploaded_mapping)
-        else:
-            raw_train_df = st.session_state.get("validated_mapping_df", pd.DataFrame())
-
-        train_df = prepare_training_dataset(raw_train_df)
-
-        if train_df.empty:
-            st.markdown('<div class="ai-warning">Aucune donnée validée disponible. Pour un travail professionnel, commencez par uploader un fichier de mapping déjà validé par expert.</div>', unsafe_allow_html=True)
-        else:
-            c_a, c_b, c_c = st.columns(3)
-            with c_a:
-                st.metric("Réponses validées", len(train_df))
-            with c_b:
-                st.metric("Thèmes validés", train_df["label"].nunique())
-            with c_c:
-                st.metric("Éléments SWOT", train_df["swot_element"].nunique())
-
-            with st.expander("Voir les données d'apprentissage", expanded=False):
-                st.dataframe(train_df, use_container_width=True)
-                st.write("Distribution des thèmes validés")
-                st.dataframe(train_df["label"].value_counts().reset_index().rename(columns={"index": "Thème", "label": "Nombre"}), use_container_width=True)
-
-            c_train_1, c_train_2 = st.columns([1, 1])
-            with c_train_1:
-                test_size = st.selectbox("Taille du test", [0.20, 0.25, 0.30, 0.35], index=1)
-            with c_train_2:
-                random_state = st.number_input("Random state", min_value=1, max_value=9999, value=42, step=1)
-
-            if st.button("Lancer Train/Test et sélectionner le meilleur modèle", key="run_train_test_models"):
-                results_df, predictions_df, error_msg = train_test_theme_algorithms(
-                    train_df,
-                    test_size=float(test_size),
-                    random_state=int(random_state)
-                )
-                st.session_state["training_results_df"] = results_df
-                st.session_state["training_predictions_df"] = predictions_df
-                st.session_state["training_error_msg"] = error_msg
-
-                if not error_msg and not results_df.empty:
-                    best_algo = results_df.iloc[0]["Algorithme"]
-                    model, model_error = train_final_theme_model(train_df, best_algo, random_state=int(random_state))
-                    st.session_state["best_theme_model"] = model
-                    st.session_state["best_theme_algorithm"] = best_algo
-                    st.session_state["best_theme_model_error"] = model_error
-
-            error_msg = st.session_state.get("training_error_msg", "")
-            model_error = st.session_state.get("best_theme_model_error", "")
-            results_df = st.session_state.get("training_results_df", pd.DataFrame())
-            predictions_df = st.session_state.get("training_predictions_df", pd.DataFrame())
-
-            if error_msg:
-                st.error(error_msg)
-            elif model_error:
-                st.error(model_error)
-            elif not results_df.empty:
-                st.markdown("### Résultats comparatifs")
-                st.dataframe(results_df, use_container_width=True)
-                best_algo = st.session_state.get("best_theme_algorithm", results_df.iloc[0]["Algorithme"])
-                st.success(f"Modèle sélectionné pour le mapping : {best_algo}")
-
-                if not predictions_df.empty:
-                    with st.expander("Détail des prédictions sur le test", expanded=False):
-                        st.dataframe(predictions_df, use_container_width=True)
-
-                output = BytesIO()
-                with pd.ExcelWriter(output, engine="openpyxl") as writer:
-                    results_df.to_excel(writer, index=False, sheet_name="Scores")
-                    predictions_df.to_excel(writer, index=False, sheet_name="Predictions test")
-                output.seek(0)
-                st.download_button(
-                    "Télécharger les résultats Train/Test",
-                    data=output.getvalue(),
-                    file_name=f"train_test_algorithmes_{safe_filename(selected_type)}.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                )
+    with tab_model:
+        render_model_management(df_scope, selected_type)
 
     with tab_mapping:
-        st.subheader("2. Mapping SWOT supervisé avec le modèle entraîné")
-        model = st.session_state.get("best_theme_model")
-        if model is None:
-            st.markdown('<div class="ai-warning">Veuillez d’abord entraîner/tester un modèle dans l’onglet 1. Le mapping automatique est bloqué tant qu’aucun modèle validé n’est disponible.</div>', unsafe_allow_html=True)
+        st.subheader("2. Mapping SWOT supervisé")
+        engine = st.session_state.get("active_ai_engine", "")
+        if not engine:
+            st.markdown('<div class="ai-warning">Activez d’abord un moteur IA dans l’onglet 1.</div>', unsafe_allow_html=True)
         else:
-            st.caption(f"Modèle actif : {st.session_state.get('best_theme_algorithm', 'Modèle entraîné')}")
-            if st.button("Classifier avec le modèle entraîné", key="run_ai_mapping_trained"):
-                st.session_state["classified_df"] = build_classification_with_trained_model(df_scope, model)
+            st.caption(f"Moteur actif : {engine}")
+            if st.button("Classifier les réponses SWOT", key="run_ai_mapping_engine"):
+                st.session_state["classified_df"] = build_classification_with_engine(df_scope, engine)
 
             classified_df = st.session_state.get("classified_df", pd.DataFrame())
-
             if not classified_df.empty:
+                preview_cols = ["groupe", "swot_element", "Final_Answer", "AI_Suggested_Theme", "Confidence", "Top_3_Themes"]
+                st.dataframe(classified_df[preview_cols], use_container_width=True)
+
                 validated_df = render_mapping_validation(classified_df)
                 st.session_state["validated_mapping_df"] = validated_df
 
                 if not validated_df.empty:
                     export_cols = [
                         "Respondent_Type", "groupe", "participants", "swot_element", "question",
-                        "Final_Answer", "AI_Suggested_Theme", "Confidence",
+                        "Final_Answer", "AI_Suggested_Theme", "Confidence", "Top_3_Themes",
                         "Validated_Theme", "New_Theme"
                     ]
                     export_df = validated_df[export_cols].copy()
-
                     output = BytesIO()
                     with pd.ExcelWriter(output, engine="openpyxl") as writer:
                         export_df.to_excel(writer, index=False, sheet_name="Validated Mapping")
                     output.seek(0)
-
                     st.download_button(
                         "Télécharger le mapping validé",
                         data=output.getvalue(),
@@ -2182,18 +2305,15 @@ def ai_platform_page(show_header=True, df_preloaded=None):
                         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                     )
             else:
-                st.caption("Cliquez sur « Classifier avec le modèle entraîné » pour commencer.")
+                st.caption("Cliquez sur « Classifier les réponses SWOT » pour lancer le mapping.")
 
     with tab_duplicates:
         st.subheader("3. Détection stricte des doublons")
-        if st.session_state.get("best_theme_model") is None:
-            st.markdown('<div class="ai-warning">Veuillez d’abord effectuer le Train/Test. Le module de doublons reste disponible ensuite dans le workflow validé.</div>', unsafe_allow_html=True)
+        engine = st.session_state.get("active_ai_engine", "")
+        if not engine:
+            st.markdown('<div class="ai-warning">Activez d’abord un moteur IA dans l’onglet 1.</div>', unsafe_allow_html=True)
         else:
-            st.caption(
-                "Le module compare seulement les réponses du même élément SWOT et exige le même sujet central. "
-                "Même structure grammaticale avec sujet différent n'est pas un doublon."
-            )
-
+            st.caption("Règle stricte : même élément SWOT + même sujet central. Une structure grammaticale similaire avec sujet différent n’est pas retenue.")
             if st.button("Détecter les doublons", key="detect_duplicates"):
                 dup_df = detect_duplicate_pairs(df_scope)
                 st.session_state["duplicates_df"] = dup_df
@@ -2213,18 +2333,15 @@ def ai_platform_page(show_header=True, df_preloaded=None):
     with tab_synthesis:
         st.subheader("4. Synthèse automatique par thème validé")
         validated_df = st.session_state.get("validated_mapping_df", pd.DataFrame())
-
         if validated_df.empty:
-            st.warning("Veuillez d'abord produire et valider le mapping SWOT dans l'onglet 2.")
+            st.warning("Veuillez d'abord produire/valider le mapping SWOT dans l'onglet 2.")
         else:
             synthesis_df = build_theme_synthesis(validated_df)
             st.dataframe(synthesis_df, use_container_width=True)
-
             output = BytesIO()
             with pd.ExcelWriter(output, engine="openpyxl") as writer:
                 synthesis_df.to_excel(writer, index=False, sheet_name="Synthese")
             output.seek(0)
-
             st.download_button(
                 "Télécharger la synthèse",
                 data=output.getvalue(),
