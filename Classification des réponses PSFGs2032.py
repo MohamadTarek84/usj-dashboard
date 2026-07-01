@@ -3269,6 +3269,441 @@ def print_preview_page(show_header=True, df_preloaded=None):
 
 
 
+# ============================================================
+# ROBUST AI PIPELINE OVERRIDE V2
+# ============================================================
+# This block replaces the previous weak scoring pipeline with a stricter
+# domain-aware candidate ranking pipeline. It does not change the print preview,
+# Word export, or PDF print preview functions.
+
+ENGINE_DOMAIN = "Domain-aware semantic guardrails - recommandé"
+ENGINE_KEYWORD_STRICT = "Strict expert ontology rules"
+ENGINE_TFIDF_RERANK = "TF-IDF reranking with domain constraints"
+ENGINE_TRANSFORMER_GUARDED = "Sentence Transformer guarded - si disponible"
+ENGINE_HYBRID = ENGINE_DOMAIN
+
+DOMAIN_RULES = {
+    "academic_teaching": {
+        "terms": [
+            "cours", "programme", "programmes", "formation", "formations", "enseignement", "pedagogie", "pedagogique",
+            "curriculum", "credit", "credits", "ects", "diplome", "diplomes", "classe", "classes", "evaluation",
+            "apprentissage", "matiere", "matieres", "langue", "langues", "anglais", "francais", "trilinguisme",
+            "accreditation", "accreditations", "academique"
+        ],
+        "themes": [
+            "strategie academique et qualite d enseignement",
+            "qualite de l enseignement"
+        ],
+        "negative_themes": ["mission societale", "developpement durable odd", "ressources humaines", "gouvernance et leadership"]
+    },
+    "student_success": {
+        "terms": [
+            "etudiant", "etudiants", "recrutement", "inscription", "inscriptions", "accompagnement", "orientation",
+            "support", "service", "services", "reussite", "parcours", "diplome", "diplomes", "employabilite"
+        ],
+        "themes": ["succes des etudiants", "qualite de l enseignement"],
+        "negative_themes": ["mission societale", "ressources humaines"]
+    },
+    "research": {
+        "terms": [
+            "recherche", "innovation", "publication", "publications", "laboratoire", "laboratoires", "doctorat",
+            "these", "scientifique", "scientifiques", "brevet", "brevets", "valorisation", "scopus", "citation", "citations"
+        ],
+        "themes": ["recherche et innovation"],
+        "negative_themes": ["mission societale", "vie universitaire", "relation avec l administration et les enseignants"]
+    },
+    "digital_resources": {
+        "terms": [
+            "bibliotheque", "documentaire", "documentaires", "numerique", "numeriques", "digital", "digitale", "informatique",
+            "informatiques", "technologie", "technologique", "systeme", "systemes", "plateforme", "plateformes",
+            "logiciel", "logiciels", "outils", "donnees", "data", "mise a jour", "a jour"
+        ],
+        "themes": ["ressources documentaires et environnement digital", "ressources documentaires numeriques et informatiques"],
+        "negative_themes": ["mission societale", "soutenabilite financiere"]
+    },
+    "hr": {
+        "terms": [
+            "personnel", "personnels", "enseignant", "enseignants", "professeur", "professeurs", "administratif",
+            "administratifs", "rh", "ressources humaines", "recrutement", "charge", "charges", "competence", "competences",
+            "formation du personnel", "evaluation du personnel"
+        ],
+        "themes": ["ressources humaines"],
+        "negative_themes": ["mission societale", "strategie academique et qualite d enseignement"]
+    },
+    "governance": {
+        "terms": [
+            "gouvernance", "leadership", "direction", "doyen", "doyens", "directeur", "directeurs", "decision",
+            "decisions", "procedure", "procedures", "transparence", "responsabilisation", "accountability", "autonomie",
+            "centralisation", "decentralisation", "pilotage", "strategie", "administration"
+        ],
+        "themes": ["gouvernance et leadership", "relation avec l administration et les enseignants"],
+        "negative_themes": ["mission societale", "recherche et innovation"]
+    },
+    "finance": {
+        "terms": [
+            "budget", "financement", "financier", "financiere", "finance", "frais", "scolarite", "bourse", "bourses",
+            "cout", "couts", "paiement", "soutenabilite", "viabilite", "ressources financieres", "modele economique"
+        ],
+        "themes": ["soutenabilite financiere", "aide financiere"],
+        "negative_themes": ["mission societale", "qualite de l enseignement"]
+    },
+    "infrastructure": {
+        "terms": [
+            "campus", "batiment", "batiments", "salle", "salles", "locaux", "infrastructure", "infrastructures", "espace",
+            "espaces", "equipement", "equipements", "laboratoire", "laboratoires", "maintenance", "hotel-dieu", "beyrouth"
+        ],
+        "themes": ["espace et infrastructures", "espace et infrastructure"],
+        "negative_themes": ["mission societale", "strategie academique et qualite d enseignement"]
+    },
+    "international": {
+        "terms": [
+            "international", "internationale", "internationales", "mobilite", "echange", "echanges", "partenariat", "partenariats",
+            "etranger", "etrangers", "diaspora", "francophonie", "francophone"
+        ],
+        "themes": ["strategie et mobilite internationales", "mobilite internationale"],
+        "negative_themes": ["mission societale", "environnement politique et economique emigration"]
+    },
+    "social_mission": {
+        "terms": [
+            "mission societale", "mission sociale", "engagement social", "responsabilite sociale", "societe", "societal",
+            "societale", "communautaire", "communaute", "citoyen", "citoyenne", "impact social", "service a la societe",
+            "reconstruction", "liban", "territoire"
+        ],
+        "themes": ["mission societale"],
+        "negative_themes": ["strategie academique et qualite d enseignement", "ressources documentaires et environnement digital"]
+    },
+    "work_environment": {
+        "terms": [
+            "environnement de travail", "conditions de travail", "climat", "bien etre", "collaboration", "communication interne",
+            "charge de travail", "horaires", "processus administratif", "processus administratifs"
+        ],
+        "themes": ["environnement de travail"],
+        "negative_themes": ["mission societale", "reputation et image"]
+    },
+    "student_life": {
+        "terms": [
+            "vie universitaire", "vie etudiante", "sport", "activites", "clubs", "animation", "aide psychologique", "psychologique", "experience etudiante"
+        ],
+        "themes": ["vie universitaire"],
+        "negative_themes": ["mission societale", "ressources humaines"]
+    },
+    "diversity": {
+        "terms": ["diversite", "inclusion", "inclusive", "egalite", "equite", "handicap", "genre", "discrimination", "accessibilite"],
+        "themes": ["diversite et inclusion"],
+        "negative_themes": ["mission societale"]
+    },
+    "sustainability": {
+        "terms": ["developpement durable", "odd", "durable", "durabilite", "environnement", "ecologie", "energie", "transition energetique"],
+        "themes": ["developpement durable odd"],
+        "negative_themes": ["mission societale", "soutenabilite financiere"]
+    },
+    "employment_market": {
+        "terms": [
+            "marche du travail", "emploi", "employeur", "employeurs", "entreprise", "entreprises", "association professionnelle",
+            "associations professionnelles", "metier", "metiers", "competence", "competences", "stage", "stages", "carriere", "professionnel"
+        ],
+        "themes": ["marche du travail et associations professionnelles", "marche du travail et relations avec les employeurs", "insertion professionnelle"],
+        "negative_themes": ["mission societale", "soutenabilite financiere"]
+    },
+    "competition": {
+        "terms": [
+            "concurrence", "concurrent", "concurrentes", "competition", "autres universites", "universites americaines",
+            "universites", "classe a", "programmes flexibles", "facilites financieres", "frais des autres"
+        ],
+        "themes": ["concurrence avec les autres universites"],
+        "negative_themes": ["mission societale", "strategie academique et qualite d enseignement"]
+    },
+    "ai": {
+        "terms": ["intelligence artificielle", "ia", "ai", "chatgpt", "automatisation", "generative", "data science", "analyse", "machine learning"],
+        "themes": ["intelligence artificielle"],
+        "negative_themes": ["ressources documentaires et environnement digital", "mission societale"]
+    },
+    "reputation": {
+        "terms": [
+            "reputation", "image", "classement", "classements", "visibilite", "notoriete", "communication", "attractivite",
+            "perception", "rayonnement", "jeunes", "ecoles", "recruteurs"
+        ],
+        "themes": ["reputation et image"],
+        "negative_themes": ["mission societale", "gouvernance et leadership"]
+    },
+    "political_economic": {
+        "terms": [
+            "politique", "economique", "economie", "crise", "emigration", "emigrer", "instabilite", "instabilites",
+            "liban", "inflation", "securite", "guerre", "familles", "parents", "banque", "bancaire", "immobilier"
+        ],
+        "themes": ["environnement politique et economique emigration"],
+        "negative_themes": ["mission societale", "reputation et image"]
+    },
+}
+
+
+def _contains_term(text_norm, term):
+    term_norm = normalize(term)
+    if not term_norm:
+        return False
+    if " " in term_norm:
+        return term_norm in text_norm
+    return re.search(r"(^|[^a-z0-9])" + re.escape(term_norm) + r"([^a-z0-9]|$)", text_norm) is not None
+
+
+def detected_answer_domains(answer):
+    answer_norm = normalize(answer)
+    domains = {}
+    for domain, profile in DOMAIN_RULES.items():
+        hits = []
+        for term in profile["terms"]:
+            if _contains_term(answer_norm, term):
+                hits.append(term)
+        if hits:
+            # More hits = stronger domain. Cap to avoid one long answer dominating everything.
+            domains[domain] = min(1.0, 0.35 + 0.18 * len(hits))
+    return domains
+
+
+def _theme_in_list(theme_norm, theme_patterns):
+    return any((pat in theme_norm or theme_norm in pat) for pat in theme_patterns)
+
+
+def domain_guardrail_score(answer, theme):
+    theme_norm = normalize(theme)
+    domains = detected_answer_domains(answer)
+    positive = 0.0
+    negative = 0.0
+    matched_domains = []
+
+    for domain, strength in domains.items():
+        profile = DOMAIN_RULES[domain]
+        if _theme_in_list(theme_norm, profile["themes"]):
+            positive += strength
+            matched_domains.append(domain)
+        if _theme_in_list(theme_norm, profile.get("negative_themes", [])):
+            negative += strength
+
+    positive = min(1.0, positive)
+    negative = min(1.0, negative)
+    return positive, negative, matched_domains
+
+
+def candidate_explanation(theme, kw, tfidf, lex, domain_pos, domain_neg, matched_domains):
+    parts = []
+    if domain_pos > 0:
+        parts.append("domaine détecté: " + ", ".join(matched_domains))
+    if domain_neg > 0:
+        parts.append("pénalité anti-confusion")
+    if kw > 0:
+        parts.append("mots-clés")
+    if tfidf > 0:
+        parts.append("similarité textuelle")
+    if lex > 0:
+        parts.append("recouvrement lexical")
+    return "; ".join(parts) if parts else "évidence faible"
+
+
+def score_theme_candidates(answer, participant_type, swot_element, engine_name=ENGINE_DOMAIN):
+    themes = official_themes_for(participant_type, swot_element, include_autre=False)
+    if not themes:
+        return []
+
+    kw = keyword_rule_scores(answer, themes)
+    tfidf = tfidf_scores_against_themes(answer, themes)
+    lex = lexical_overlap_scores(answer, themes)
+    tr = transformer_scores(answer, themes) if engine_name == ENGINE_TRANSFORMER_GUARDED else None
+
+    ranked = []
+    for i, theme in enumerate(themes):
+        domain_pos, domain_neg, matched_domains = domain_guardrail_score(answer, theme)
+
+        if engine_name == ENGINE_KEYWORD_STRICT:
+            raw_score = (0.72 * domain_pos) + (0.20 * kw[i]) + (0.08 * lex[i]) - (0.65 * domain_neg)
+        elif engine_name == ENGINE_TFIDF_RERANK:
+            raw_score = (0.45 * domain_pos) + (0.35 * tfidf[i]) + (0.12 * kw[i]) + (0.08 * lex[i]) - (0.55 * domain_neg)
+        elif engine_name == ENGINE_TRANSFORMER_GUARDED and tr is not None:
+            raw_score = (0.48 * domain_pos) + (0.34 * tr[i]) + (0.12 * kw[i]) + (0.06 * lex[i]) - (0.55 * domain_neg)
+        else:
+            # Recommended professional mode: domain guardrails first, text similarity second.
+            raw_score = (0.55 * domain_pos) + (0.20 * kw[i]) + (0.15 * tfidf[i]) + (0.10 * lex[i]) - (0.65 * domain_neg)
+
+        # If a clear domain is detected and a theme is outside that domain, do not let generic words win.
+        detected = detected_answer_domains(answer)
+        if detected and domain_pos == 0:
+            raw_score *= 0.55
+
+        raw_score = max(0.0, min(1.0, raw_score))
+        ranked.append((theme, raw_score, kw[i], tfidf[i], lex[i], domain_pos, domain_neg, matched_domains))
+
+    ranked = sorted(ranked, key=lambda x: x[1], reverse=True)
+    return ranked
+
+
+def calibrated_confidence(ranked):
+    if not ranked:
+        return 0.0
+    best = ranked[0][1]
+    second = ranked[1][1] if len(ranked) > 1 else 0
+    margin = max(best - second, 0)
+
+    conf = 30 + best * 55 + margin * 95
+    if best < 0.22:
+        conf = min(conf, 42)
+    if margin < 0.035:
+        conf = min(conf, 54)
+    elif margin < 0.08:
+        conf = min(conf, 68)
+    if ranked[0][5] <= 0 and best < 0.40:
+        conf = min(conf, 58)
+    if ranked[0][6] > 0:
+        conf = min(conf, 50)
+    return round(max(5, min(conf, 97)), 1)
+
+
+def classify_theme_with_engine(answer, participant_type, swot_element, engine_name=ENGINE_DOMAIN):
+    ranked = score_theme_candidates(answer, participant_type, swot_element, engine_name)
+    if not ranked:
+        return "", 0.0, "", "Aucun thème officiel disponible"
+
+    best = ranked[0]
+    best_theme = best[0]
+    conf = calibrated_confidence(ranked)
+    top3 = " | ".join([f"{t} ({round(s * 100, 1)})" for t, s, *_ in ranked[:3]])
+    evidence_txt = candidate_explanation(
+        best_theme,
+        kw=best[2],
+        tfidf=best[3],
+        lex=best[4],
+        domain_pos=best[5],
+        domain_neg=best[6],
+        matched_domains=best[7],
+    )
+    return best_theme, conf, top3, evidence_txt
+
+
+def available_ai_engines():
+    engines = [ENGINE_DOMAIN, ENGINE_KEYWORD_STRICT, ENGINE_TFIDF_RERANK]
+    if load_multilingual_sentence_model() is not None:
+        engines.append(ENGINE_TRANSFORMER_GUARDED)
+    return engines
+
+
+def compare_ai_engines(df_scope):
+    engines = available_ai_engines()
+    outputs = []
+    for engine in engines:
+        pred = build_classification_with_engine(df_scope, engine)
+        if pred.empty:
+            continue
+        small = pred[[
+            "row_id", "Respondent_Type", "groupe", "participants", "swot_element", "question", "Final_Answer",
+            "AI_Suggested_Theme", "Confidence", "Top_3_Themes", "Evidence", "Validation_Status"
+        ]].copy()
+        suffix = safe_filename(engine)
+        small = small.rename(columns={
+            "AI_Suggested_Theme": f"Theme_{suffix}",
+            "Confidence": f"Confidence_{suffix}",
+            "Top_3_Themes": f"Top3_{suffix}",
+            "Evidence": f"Evidence_{suffix}",
+            "Validation_Status": f"Status_{suffix}",
+        })
+        outputs.append((engine, small))
+
+    if not outputs:
+        return pd.DataFrame(), pd.DataFrame(), engines
+
+    comparison = outputs[0][1]
+    base_cols = ["Respondent_Type", "groupe", "participants", "swot_element", "question", "Final_Answer"]
+    for _, small in outputs[1:]:
+        comparison = comparison.merge(small.drop(columns=base_cols), on="row_id", how="outer")
+
+    theme_cols = [f"Theme_{safe_filename(engine)}" for engine, _ in outputs]
+    conf_cols = [f"Confidence_{safe_filename(engine)}" for engine, _ in outputs]
+    recommended_col = f"Theme_{safe_filename(ENGINE_DOMAIN)}"
+    recommended_conf = f"Confidence_{safe_filename(ENGINE_DOMAIN)}"
+
+    def agreement_count(row):
+        vals = [clean(row.get(c, "")) for c in theme_cols if clean(row.get(c, ""))]
+        if not vals:
+            return 0
+        return max(vals.count(v) for v in set(vals))
+
+    def consensus_theme(row):
+        if recommended_col in row and clean(row.get(recommended_col, "")):
+            return clean(row.get(recommended_col, ""))
+        vals = [clean(row.get(c, "")) for c in theme_cols if clean(row.get(c, ""))]
+        if not vals:
+            return ""
+        return max(set(vals), key=vals.count)
+
+    comparison["Consensus_Theme"] = comparison.apply(consensus_theme, axis=1)
+    comparison["Agreement_Count"] = comparison.apply(agreement_count, axis=1)
+    comparison["Agreement_Rate"] = round(comparison["Agreement_Count"] / max(len(theme_cols), 1) * 100, 1)
+    comparison["Max_Confidence"] = comparison[conf_cols].apply(lambda row: pd.to_numeric(row, errors="coerce").max(), axis=1)
+    if recommended_conf in comparison.columns:
+        comparison["Recommended_Confidence"] = pd.to_numeric(comparison[recommended_conf], errors="coerce")
+    else:
+        comparison["Recommended_Confidence"] = comparison["Max_Confidence"]
+
+    comparison["Consensus_Status"] = comparison.apply(
+        lambda r: "Validation prioritaire" if (r.get("Agreement_Rate", 0) < 67 or r.get("Recommended_Confidence", 0) < 70) else "Accord fort",
+        axis=1,
+    )
+
+    summary_rows = []
+    for engine, _ in outputs:
+        suffix = safe_filename(engine)
+        tcol = f"Theme_{suffix}"
+        ccol = f"Confidence_{suffix}"
+        summary_rows.append({
+            "Moteur": engine,
+            "Réponses classifiées": int(comparison[tcol].notna().sum()),
+            "Confiance moyenne": round(pd.to_numeric(comparison[ccol], errors="coerce").mean(), 1),
+            "Confiance médiane": round(pd.to_numeric(comparison[ccol], errors="coerce").median(), 1),
+            "Faible confiance (<70%)": int((pd.to_numeric(comparison[ccol], errors="coerce") < 70).sum()),
+        })
+    summary_rows.append({
+        "Moteur": "Consensus / validation prioritaire",
+        "Réponses classifiées": len(comparison),
+        "Confiance moyenne": round(comparison["Agreement_Rate"].mean(), 1),
+        "Confiance médiane": round(comparison["Agreement_Rate"].median(), 1),
+        "Faible confiance (<70%)": int((comparison["Consensus_Status"] == "Validation prioritaire").sum()),
+    })
+    return comparison, pd.DataFrame(summary_rows), engines
+
+
+def build_consensus_classification(df_scope, selected_engine=ENGINE_DOMAIN):
+    comparison, _, _ = compare_ai_engines(df_scope)
+    if comparison.empty:
+        return pd.DataFrame()
+    preferred_col = f"Theme_{safe_filename(selected_engine)}"
+    preferred_conf = f"Confidence_{safe_filename(selected_engine)}"
+    preferred_top3 = f"Top3_{safe_filename(selected_engine)}"
+    preferred_evidence = f"Evidence_{safe_filename(selected_engine)}"
+    if preferred_col not in comparison.columns:
+        preferred_col = "Consensus_Theme"
+        preferred_conf = "Recommended_Confidence"
+        preferred_top3 = ""
+        preferred_evidence = ""
+    rows = []
+    for _, row in comparison.iterrows():
+        rows.append({
+            "row_id": row["row_id"],
+            "Respondent_Type": row.get("Respondent_Type", ""),
+            "groupe": row.get("groupe", ""),
+            "participants": row.get("participants", ""),
+            "swot_element": row.get("swot_element", ""),
+            "question": row.get("question", ""),
+            "Final_Answer": row.get("Final_Answer", ""),
+            "AI_Suggested_Theme": row.get(preferred_col, ""),
+            "Confidence": row.get(preferred_conf, ""),
+            "Consensus_Theme": row.get("Consensus_Theme", ""),
+            "Agreement_Rate": row.get("Agreement_Rate", ""),
+            "Consensus_Status": row.get("Consensus_Status", ""),
+            "Top_3_Themes": row.get(preferred_top3, "") if preferred_top3 else "",
+            "Evidence": row.get(preferred_evidence, "") if preferred_evidence else "Consensus / guardrails",
+            "Validated_Theme": row.get(preferred_col, ""),
+            "New_Theme": "",
+        })
+    return pd.DataFrame(rows)
+
+
 def main():
     st.set_page_config(
         page_title=APP_TITLE,
