@@ -1846,23 +1846,148 @@ def train_test_theme_algorithms(train_df, test_size=0.25, random_state=42):
     return results, predictions, ""
 
 
+
+def build_classification_with_trained_model(df_scope, model):
+    rows = []
+    for idx, row in df_scope.iterrows():
+        swot_element = row["swot_element"]
+        if swot_element not in ["Forces", "Faiblesses", "Opportunités", "Menaces"]:
+            continue
+
+        answer = clean(row["Final_Answer"])
+        if not answer:
+            continue
+
+        suggested_theme = model.predict([answer])[0]
+        confidence = ""
+
+        try:
+            if hasattr(model.named_steps.get("clf"), "predict_proba"):
+                proba = model.predict_proba([answer])[0]
+                confidence = round(float(max(proba)) * 100, 1)
+            elif hasattr(model.named_steps.get("clf"), "decision_function"):
+                scores = model.decision_function([answer])
+                import numpy as np
+                scores = np.array(scores).reshape(-1)
+                if len(scores) > 0:
+                    exp_scores = np.exp(scores - scores.max())
+                    confidence = round(float(exp_scores.max() / exp_scores.sum()) * 100, 1)
+        except Exception:
+            confidence = ""
+
+        rows.append({
+            "row_id": idx,
+            "Respondent_Type": row["Respondent_Type"],
+            "groupe": row["groupe"],
+            "participants": row["participants"],
+            "swot_element": swot_element,
+            "question": row["question"],
+            "Final_Answer": answer,
+            "AI_Suggested_Theme": suggested_theme,
+            "Confidence": confidence,
+            "Validated_Theme": suggested_theme,
+            "New_Theme": "",
+        })
+
+    return pd.DataFrame(rows)
+
+
+def train_final_theme_model(train_df, algorithm_name="TF-IDF + Linear SVM", random_state=42):
+    try:
+        from sklearn.pipeline import Pipeline, FeatureUnion
+        from sklearn.feature_extraction.text import TfidfVectorizer
+        from sklearn.linear_model import LogisticRegression, SGDClassifier
+        from sklearn.naive_bayes import MultinomialNB
+        from sklearn.svm import LinearSVC
+    except Exception as e:
+        return None, f"scikit-learn n'est pas installé. Ajoutez scikit-learn dans requirements.txt. Détail: {e}"
+
+    if train_df.empty or train_df["label"].nunique() < 2:
+        return None, "Il faut au moins deux thèmes validés différents pour entraîner le modèle final."
+
+    features = FeatureUnion([
+        ("word", TfidfVectorizer(ngram_range=(1, 2), min_df=1, max_df=0.95)),
+        ("char", TfidfVectorizer(analyzer="char_wb", ngram_range=(3, 5), min_df=1)),
+    ])
+
+    algorithms = {
+        "TF-IDF + Logistic Regression": LogisticRegression(max_iter=2000, class_weight="balanced"),
+        "TF-IDF + Linear SVM": LinearSVC(class_weight="balanced"),
+        "TF-IDF + SGD Linear SVM": SGDClassifier(loss="hinge", class_weight="balanced", random_state=random_state),
+        "TF-IDF + Naive Bayes": MultinomialNB(),
+    }
+
+    clf = algorithms.get(algorithm_name, LinearSVC(class_weight="balanced"))
+    model = Pipeline([("features", features), ("clf", clf)])
+    model.fit(train_df["text"].astype(str), train_df["label"].astype(str))
+    return model, ""
+
+
 def ai_platform_page(show_header=True, df_preloaded=None):
     html_block(APP_CSS)
 
     html_block(f"""
-    <div class="screen-only">
-        <h1 style="margin-bottom:0;">{APP_TITLE}</h1>
-        <h3 style="color:{USJ_RED} !important; margin-top:4px;">
-            Plateforme IA supervisée - Doublons, mapping SWOT et synthèse
-        </h3>
+    <style>
+    .ai-hero {{
+        background: linear-gradient(135deg, #001F5B 0%, #1F3C88 65%, #8B1538 100%);
+        color: white;
+        border-radius: 20px;
+        padding: 28px 32px;
+        margin: 8px 0 22px 0;
+        box-shadow: 0 12px 30px rgba(0,31,91,0.18);
+    }}
+    .ai-hero h2 {{
+        color: white !important;
+        margin: 0 0 8px 0;
+        font-size: 30px;
+        font-weight: 900;
+    }}
+    .ai-hero p {{
+        margin: 0;
+        font-size: 15px;
+        opacity: 0.95;
+    }}
+    .ai-card {{
+        background: white;
+        border: 1px solid #D0D6E0;
+        border-radius: 16px;
+        padding: 18px 20px;
+        margin: 14px 0;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.045);
+    }}
+    .ai-kpi {{
+        background: #F8FAFC;
+        border: 1px solid #E1E7EF;
+        border-radius: 14px;
+        padding: 14px 16px;
+        text-align: center;
+    }}
+    .ai-kpi-number {{
+        color: {USJ_BLUE};
+        font-size: 26px;
+        font-weight: 900;
+        line-height: 1;
+    }}
+    .ai-kpi-label {{
+        color: #667085;
+        font-size: 13px;
+        margin-top: 6px;
+    }}
+    .ai-warning {{
+        background: #FFF7E6;
+        border-left: 6px solid #F59E0B;
+        border-radius: 12px;
+        padding: 14px 18px;
+        color: #7A4B00;
+        font-weight: 700;
+        margin: 12px 0;
+    }}
+    </style>
+    <div class="ai-hero">
+        <h2>Plateforme IA supervisée</h2>
+        <p>Workflow professionnel: entraîner et tester le modèle sur un mapping validé, puis utiliser le meilleur modèle pour le mapping SWOT, les doublons et la synthèse.</p>
     </div>
     """)
-
-    st.info(
-        "Cette section utilise les thèmes officiels tels quels. "
-        "L'IA propose une classification, puis l'expert peut accepter, changer le thème, "
-        "ou ajouter un nouveau thème."
-    )
 
     if df_preloaded is None:
         uploaded_file = st.file_uploader(
@@ -1910,77 +2035,31 @@ def ai_platform_page(show_header=True, df_preloaded=None):
     else:
         df_scope = df_type.copy()
 
-    tab_duplicates, tab_mapping, tab_training, tab_synthesis = st.tabs(
-        ["1. Doublons", "2. Mapping SWOT supervisé", "3. Train/Test modèles", "4. Synthèse"]
+    swot_count = len(df_scope[df_scope["swot_element"].isin(["Forces", "Faiblesses", "Opportunités", "Menaces"])])
+    k1, k2, k3 = st.columns(3)
+    with k1:
+        st.markdown(f'<div class="ai-kpi"><div class="ai-kpi-number">{len(df_scope)}</div><div class="ai-kpi-label">Réponses dans le périmètre</div></div>', unsafe_allow_html=True)
+    with k2:
+        st.markdown(f'<div class="ai-kpi"><div class="ai-kpi-number">{swot_count}</div><div class="ai-kpi-label">Réponses SWOT analysables</div></div>', unsafe_allow_html=True)
+    with k3:
+        trained_status = "Oui" if st.session_state.get("best_theme_model") is not None else "Non"
+        st.markdown(f'<div class="ai-kpi"><div class="ai-kpi-number">{trained_status}</div><div class="ai-kpi-label">Modèle entraîné disponible</div></div>', unsafe_allow_html=True)
+
+    tab_training, tab_mapping, tab_duplicates, tab_synthesis = st.tabs(
+        ["1. Train/Test modèles", "2. Mapping SWOT supervisé", "3. Doublons", "4. Synthèse"]
     )
 
-    with tab_duplicates:
-        st.subheader("Détection stricte des doublons")
-        st.caption(
-            "Aucun seuil manuel: le module compare seulement les réponses du même élément SWOT "
-            "et exige le même sujet central. Même structure grammaticale avec sujet différent n'est pas un doublon."
-        )
-
-        if st.button("Détecter les doublons", key="detect_duplicates"):
-            dup_df = detect_duplicate_pairs(df_scope)
-            st.session_state["duplicates_df"] = dup_df
-
-        dup_df = st.session_state.get("duplicates_df", pd.DataFrame())
-        if not dup_df.empty:
-            st.dataframe(dup_df, use_container_width=True)
-            st.download_button(
-                "Télécharger les doublons détectés",
-                data=dup_df.to_csv(index=False).encode("utf-8-sig"),
-                file_name=f"doublons_{safe_filename(selected_type)}.csv",
-                mime="text/csv"
-            )
-        else:
-            st.caption("Aucun doublon affiché pour le moment.")
-
-    with tab_mapping:
-        st.subheader("Mapping automatique des réponses SWOT vers les thèmes officiels")
-
-        if st.button("Lancer la classification IA", key="run_ai_mapping"):
-            st.session_state["classified_df"] = build_ai_classification_dataframe(df_scope)
-
-        classified_df = st.session_state.get("classified_df", pd.DataFrame())
-
-        if not classified_df.empty:
-            validated_df = render_mapping_validation(classified_df)
-            st.session_state["validated_mapping_df"] = validated_df
-
-            if not validated_df.empty:
-                export_cols = [
-                    "Respondent_Type", "groupe", "participants", "swot_element", "question",
-                    "Final_Answer", "AI_Suggested_Theme", "Confidence",
-                    "Validated_Theme", "New_Theme"
-                ]
-                export_df = validated_df[export_cols].copy()
-
-                output = BytesIO()
-                with pd.ExcelWriter(output, engine="openpyxl") as writer:
-                    export_df.to_excel(writer, index=False, sheet_name="Validated Mapping")
-                output.seek(0)
-
-                st.download_button(
-                    "Télécharger le mapping validé",
-                    data=output.getvalue(),
-                    file_name=f"mapping_valide_{safe_filename(selected_type)}_{safe_filename(selected_subgroup)}.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                )
-        else:
-            st.caption("Cliquez sur « Lancer la classification IA » pour commencer.")
-
     with tab_training:
-        st.subheader("Train/Test des algorithmes de classification")
-        st.caption(
-            "Utilisez le mapping validé par l'expert comme base d'apprentissage. "
-            "Le test compare plusieurs algorithmes et indique lequel fonctionne le mieux sur vos données validées."
-        )
+        st.subheader("1. Train/Test des algorithmes de classification")
+        st.markdown("""
+        <div class="ai-card">
+        <b>Logique obligatoire :</b> le modèle doit être entraîné et testé sur des données déjà validées par l'expert avant d'être utilisé pour classifier automatiquement les réponses.
+        </div>
+        """, unsafe_allow_html=True)
 
         source_choice = st.radio(
             "Source des données validées",
-            ["Mapping validé dans cette session", "Uploader un fichier de mapping validé"],
+            ["Uploader un fichier de mapping validé", "Mapping validé dans cette session"],
             horizontal=True,
             key="training_source_choice"
         )
@@ -1998,12 +2077,20 @@ def ai_platform_page(show_header=True, df_preloaded=None):
         train_df = prepare_training_dataset(raw_train_df)
 
         if train_df.empty:
-            st.warning("Aucune donnée validée disponible pour entraîner/tester les modèles.")
+            st.markdown('<div class="ai-warning">Aucune donnée validée disponible. Pour un travail professionnel, commencez par uploader un fichier de mapping déjà validé par expert.</div>', unsafe_allow_html=True)
         else:
-            st.write("Aperçu des données d'apprentissage")
-            st.dataframe(train_df, use_container_width=True)
-            st.write("Distribution des thèmes validés")
-            st.dataframe(train_df["label"].value_counts().reset_index().rename(columns={"index": "Thème", "label": "Nombre"}), use_container_width=True)
+            c_a, c_b, c_c = st.columns(3)
+            with c_a:
+                st.metric("Réponses validées", len(train_df))
+            with c_b:
+                st.metric("Thèmes validés", train_df["label"].nunique())
+            with c_c:
+                st.metric("Éléments SWOT", train_df["swot_element"].nunique())
+
+            with st.expander("Voir les données d'apprentissage", expanded=False):
+                st.dataframe(train_df, use_container_width=True)
+                st.write("Distribution des thèmes validés")
+                st.dataframe(train_df["label"].value_counts().reset_index().rename(columns={"index": "Thème", "label": "Nombre"}), use_container_width=True)
 
             c_train_1, c_train_2 = st.columns([1, 1])
             with c_train_1:
@@ -2011,7 +2098,7 @@ def ai_platform_page(show_header=True, df_preloaded=None):
             with c_train_2:
                 random_state = st.number_input("Random state", min_value=1, max_value=9999, value=42, step=1)
 
-            if st.button("Lancer Train/Test", key="run_train_test_models"):
+            if st.button("Lancer Train/Test et sélectionner le meilleur modèle", key="run_train_test_models"):
                 results_df, predictions_df, error_msg = train_test_theme_algorithms(
                     train_df,
                     test_size=float(test_size),
@@ -2021,21 +2108,31 @@ def ai_platform_page(show_header=True, df_preloaded=None):
                 st.session_state["training_predictions_df"] = predictions_df
                 st.session_state["training_error_msg"] = error_msg
 
+                if not error_msg and not results_df.empty:
+                    best_algo = results_df.iloc[0]["Algorithme"]
+                    model, model_error = train_final_theme_model(train_df, best_algo, random_state=int(random_state))
+                    st.session_state["best_theme_model"] = model
+                    st.session_state["best_theme_algorithm"] = best_algo
+                    st.session_state["best_theme_model_error"] = model_error
+
             error_msg = st.session_state.get("training_error_msg", "")
+            model_error = st.session_state.get("best_theme_model_error", "")
             results_df = st.session_state.get("training_results_df", pd.DataFrame())
             predictions_df = st.session_state.get("training_predictions_df", pd.DataFrame())
 
             if error_msg:
                 st.error(error_msg)
+            elif model_error:
+                st.error(model_error)
             elif not results_df.empty:
-                st.write("Résultats comparatifs")
+                st.markdown("### Résultats comparatifs")
                 st.dataframe(results_df, use_container_width=True)
-                best_algo = results_df.iloc[0]["Algorithme"]
-                st.success(f"Meilleur algorithme selon Macro F1: {best_algo}")
+                best_algo = st.session_state.get("best_theme_algorithm", results_df.iloc[0]["Algorithme"])
+                st.success(f"Modèle sélectionné pour le mapping : {best_algo}")
 
                 if not predictions_df.empty:
-                    st.write("Détail des prédictions sur le test")
-                    st.dataframe(predictions_df, use_container_width=True)
+                    with st.expander("Détail des prédictions sur le test", expanded=False):
+                        st.dataframe(predictions_df, use_container_width=True)
 
                 output = BytesIO()
                 with pd.ExcelWriter(output, engine="openpyxl") as writer:
@@ -2049,13 +2146,76 @@ def ai_platform_page(show_header=True, df_preloaded=None):
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 )
 
-    with tab_synthesis:
-        st.subheader("Synthèse automatique par thème validé")
+    with tab_mapping:
+        st.subheader("2. Mapping SWOT supervisé avec le modèle entraîné")
+        model = st.session_state.get("best_theme_model")
+        if model is None:
+            st.markdown('<div class="ai-warning">Veuillez d’abord entraîner/tester un modèle dans l’onglet 1. Le mapping automatique est bloqué tant qu’aucun modèle validé n’est disponible.</div>', unsafe_allow_html=True)
+        else:
+            st.caption(f"Modèle actif : {st.session_state.get('best_theme_algorithm', 'Modèle entraîné')}")
+            if st.button("Classifier avec le modèle entraîné", key="run_ai_mapping_trained"):
+                st.session_state["classified_df"] = build_classification_with_trained_model(df_scope, model)
 
+            classified_df = st.session_state.get("classified_df", pd.DataFrame())
+
+            if not classified_df.empty:
+                validated_df = render_mapping_validation(classified_df)
+                st.session_state["validated_mapping_df"] = validated_df
+
+                if not validated_df.empty:
+                    export_cols = [
+                        "Respondent_Type", "groupe", "participants", "swot_element", "question",
+                        "Final_Answer", "AI_Suggested_Theme", "Confidence",
+                        "Validated_Theme", "New_Theme"
+                    ]
+                    export_df = validated_df[export_cols].copy()
+
+                    output = BytesIO()
+                    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+                        export_df.to_excel(writer, index=False, sheet_name="Validated Mapping")
+                    output.seek(0)
+
+                    st.download_button(
+                        "Télécharger le mapping validé",
+                        data=output.getvalue(),
+                        file_name=f"mapping_valide_{safe_filename(selected_type)}_{safe_filename(selected_subgroup)}.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    )
+            else:
+                st.caption("Cliquez sur « Classifier avec le modèle entraîné » pour commencer.")
+
+    with tab_duplicates:
+        st.subheader("3. Détection stricte des doublons")
+        if st.session_state.get("best_theme_model") is None:
+            st.markdown('<div class="ai-warning">Veuillez d’abord effectuer le Train/Test. Le module de doublons reste disponible ensuite dans le workflow validé.</div>', unsafe_allow_html=True)
+        else:
+            st.caption(
+                "Le module compare seulement les réponses du même élément SWOT et exige le même sujet central. "
+                "Même structure grammaticale avec sujet différent n'est pas un doublon."
+            )
+
+            if st.button("Détecter les doublons", key="detect_duplicates"):
+                dup_df = detect_duplicate_pairs(df_scope)
+                st.session_state["duplicates_df"] = dup_df
+
+            dup_df = st.session_state.get("duplicates_df", pd.DataFrame())
+            if not dup_df.empty:
+                st.dataframe(dup_df, use_container_width=True)
+                st.download_button(
+                    "Télécharger les doublons détectés",
+                    data=dup_df.to_csv(index=False).encode("utf-8-sig"),
+                    file_name=f"doublons_{safe_filename(selected_type)}.csv",
+                    mime="text/csv"
+                )
+            else:
+                st.caption("Aucun doublon affiché pour le moment.")
+
+    with tab_synthesis:
+        st.subheader("4. Synthèse automatique par thème validé")
         validated_df = st.session_state.get("validated_mapping_df", pd.DataFrame())
 
         if validated_df.empty:
-            st.warning("Veuillez d'abord lancer et valider le mapping SWOT.")
+            st.warning("Veuillez d'abord produire et valider le mapping SWOT dans l'onglet 2.")
         else:
             synthesis_df = build_theme_synthesis(validated_df)
             st.dataframe(synthesis_df, use_container_width=True)
@@ -2071,7 +2231,6 @@ def ai_platform_page(show_header=True, df_preloaded=None):
                 file_name=f"synthese_{safe_filename(selected_type)}_{safe_filename(selected_subgroup)}.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
-
 
 def print_preview_page(show_header=True, df_preloaded=None):
     if show_header:
@@ -2187,59 +2346,61 @@ def main():
     html_block(f"""
     <style>
     .usj-dashboard-header {{
-        background: linear-gradient(135deg, #ffffff 0%, #F4F8FC 100%);
-        border: 1px solid #D0D6E0;
-        border-radius: 18px;
-        padding: 26px 30px;
-        margin-bottom: 22px;
-        box-shadow: 0 8px 28px rgba(0,31,91,0.08);
+        background: linear-gradient(135deg, #001F5B 0%, #1F3C88 70%, #8B1538 100%);
+        border-radius: 22px;
+        padding: 28px 34px;
+        margin-bottom: 24px;
+        box-shadow: 0 14px 34px rgba(0,31,91,0.20);
     }}
     .usj-dashboard-header h1 {{
         margin: 0;
-        color: {USJ_BLUE};
-        font-size: 38px;
+        color: white !important;
+        font-size: 36px;
         font-weight: 900;
+        letter-spacing: 0.2px;
     }}
     .usj-dashboard-header h3 {{
-        margin-top: 8px;
-        color: {USJ_RED};
+        margin: 8px 0 0 0;
+        color: #EAF2F8 !important;
         font-weight: 800;
+        font-size: 20px;
     }}
     .usj-step-card {{
         background: #ffffff;
         border: 1px solid #D0D6E0;
-        border-radius: 14px;
+        border-radius: 16px;
         padding: 18px 20px;
-        margin: 14px 0 20px 0;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+        margin: 14px 0 18px 0;
+        box-shadow: 0 8px 22px rgba(0,0,0,0.045);
     }}
     .usj-step-title {{
         color: {USJ_BLUE};
-        font-size: 20px;
+        font-size: 19px;
         font-weight: 900;
-        margin-bottom: 6px;
+        margin-bottom: 5px;
     }}
     .usj-step-subtitle {{
         color: #667085;
         font-size: 14px;
-        margin-bottom: 8px;
+        margin-bottom: 0;
     }}
     .usj-status-box {{
-        background: #EAF2F8;
+        background: #F0F7FF;
+        border: 1px solid #CFE4FF;
         border-left: 6px solid {USJ_BLUE};
-        border-radius: 12px;
+        border-radius: 14px;
         padding: 14px 18px;
         margin: 10px 0 18px 0;
         color: {USJ_TEXT};
-        font-weight: 700;
+        font-weight: 800;
     }}
     div[role="radiogroup"] label {{
         background: #ffffff;
         border: 1px solid #D0D6E0;
-        border-radius: 12px;
-        padding: 10px 16px;
+        border-radius: 14px;
+        padding: 11px 18px;
         margin-right: 10px;
-        box-shadow: 0 3px 12px rgba(0,0,0,0.04);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.045);
     }}
     </style>
     <div class="usj-dashboard-header">
