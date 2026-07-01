@@ -1348,7 +1348,10 @@ STOPWORDS_FR = {
     "ces", "qui", "que", "quoi", "dont", "est", "sont", "être", "avoir", "plus",
     "moins", "très", "tres", "comme", "nous", "vous", "ils", "elles", "il", "elle",
     "ne", "pas", "se", "sa", "son", "ses", "leur", "leurs", "a", "à", "of", "the",
-    "and", "or", "to", "in", "for", "with", "by", "on"
+    "and", "or", "to", "in", "for", "with", "by", "on",
+    # Generic words that must not make two answers look like duplicates
+    "renforce", "renforcee", "renforcer", "davantage", "ameliorer", "meilleur",
+    "meilleure", "systeme", "niveau", "mise", "jour", "usj", "universite"
 }
 
 
@@ -1498,31 +1501,121 @@ def read_corrected_excel(uploaded_file):
     return df
 
 
-def detect_duplicate_pairs(df, threshold=0.82):
+def canonical_duplicate_tokens(text):
+    """Tokens for duplicate detection.
+    This is intentionally stricter than general semantic similarity:
+    two answers are duplicates only when they share the same core topic/object,
+    not only the same sentence structure.
+    """
+    tokens = tokenize_for_similarity(text)
+    canonical = []
+    synonym_map = {
+        "alumni": "anciens",
+        "ancien": "anciens",
+        "anciens": "anciens",
+        "diplome": "diplomes",
+        "diplomes": "diplomes",
+        "diplômé": "diplomes",
+        "diplômés": "diplomes",
+        "enseignant": "enseignants",
+        "enseignants": "enseignants",
+        "professeur": "enseignants",
+        "professeurs": "enseignants",
+        "personnel": "personnel",
+        "personnels": "personnel",
+        "administratif": "administratifs",
+        "administratifs": "administratifs",
+        "gouvernance": "gouvernance",
+        "integration": "integration",
+        "intégration": "integration",
+        "ia": "intelligence_artificielle",
+        "ai": "intelligence_artificielle",
+        "intelligence": "intelligence_artificielle",
+        "artificielle": "intelligence_artificielle",
+        "technologie": "technologie",
+        "technologies": "technologie",
+        "anglais": "anglais",
+        "emploi": "emploi",
+        "employabilite": "emploi",
+        "employabilité": "emploi",
+        "stage": "stage",
+        "stages": "stage",
+    }
+    for t in tokens:
+        canonical.append(synonym_map.get(t, t))
+    return [t for t in canonical if t not in STOPWORDS_FR]
+
+
+def strict_duplicate_score(answer_a, answer_b):
+    a_norm = normalize(answer_a)
+    b_norm = normalize(answer_b)
+
+    if not a_norm or not b_norm:
+        return 0.0, "Vide"
+
+    if a_norm == b_norm:
+        return 1.0, "Doublon exact"
+
+    seq_ratio = difflib.SequenceMatcher(None, a_norm, b_norm).ratio()
+
+    tokens_a = set(canonical_duplicate_tokens(answer_a))
+    tokens_b = set(canonical_duplicate_tokens(answer_b))
+
+    if not tokens_a or not tokens_b:
+        return seq_ratio, "Texte trop court"
+
+    shared = tokens_a & tokens_b
+    union = tokens_a | tokens_b
+    jaccard = len(shared) / max(len(union), 1)
+    containment = len(shared) / max(min(len(tokens_a), len(tokens_b)), 1)
+
+    # Require a common core topic/object. This prevents false positives such as:
+    # "anglais renforcé" vs "technologie renforcée".
+    has_core_overlap = len(shared) >= 2 or (len(shared) == 1 and min(len(tokens_a), len(tokens_b)) <= 3)
+
+    if not has_core_overlap:
+        return max(seq_ratio * 0.35, jaccard), "Même structure possible, mais sujet différent"
+
+    if containment >= 0.80 and seq_ratio >= 0.55:
+        return max(containment, seq_ratio), "Même idée avec formulation différente"
+
+    if jaccard >= 0.62 and seq_ratio >= 0.50:
+        return max(jaccard, seq_ratio), "Doublon probable"
+
+    if seq_ratio >= 0.88 and containment >= 0.55:
+        return seq_ratio, "Très proche lexicalement"
+
+    return max(jaccard, containment * 0.75, seq_ratio * 0.50), "Non retenu"
+
+
+def detect_duplicate_pairs(df):
     rows = df[df["Final_Answer"].apply(clean) != ""].copy().reset_index(drop=True)
+    rows = rows[rows["swot_element"].isin(["Forces", "Faiblesses", "Opportunités", "Menaces"])]
+    rows = rows.reset_index(drop=True)
     pairs = []
 
     for i in range(len(rows)):
         for j in range(i + 1, len(rows)):
-            a = normalize(rows.loc[i, "Final_Answer"])
-            b = normalize(rows.loc[j, "Final_Answer"])
-
-            if not a or not b:
+            # Compare only inside the same SWOT element. A Force and a Priority/Threat are not duplicates.
+            if rows.loc[i, "swot_element"] != rows.loc[j, "swot_element"]:
                 continue
 
-            ratio = difflib.SequenceMatcher(None, a, b).ratio()
-            token_a = set(tokenize_for_similarity(a))
-            token_b = set(tokenize_for_similarity(b))
-            token_ratio = len(token_a & token_b) / max(len(token_a | token_b), 1) if token_a or token_b else 0
-            score = max(ratio, token_ratio)
+            score, reason = strict_duplicate_score(
+                rows.loc[i, "Final_Answer"],
+                rows.loc[j, "Final_Answer"]
+            )
 
-            if score >= threshold:
+            # Fixed strict rule. No slider.
+            if score >= 0.80:
                 pairs.append({
+                    "Élément SWOT": rows.loc[i, "swot_element"],
                     "Sous-groupe 1": rows.loc[i, "groupe"],
                     "Réponse 1": rows.loc[i, "Final_Answer"],
                     "Sous-groupe 2": rows.loc[j, "groupe"],
                     "Réponse 2": rows.loc[j, "Final_Answer"],
-                    "Similarité": round(score * 100, 1),
+                    "Score doublon": round(score * 100, 1),
+                    "Raison": reason,
+                    "Validation expert": "À vérifier",
                 })
 
     return pd.DataFrame(pairs)
@@ -1636,6 +1729,123 @@ def build_theme_synthesis(validated_df):
     )
 
 
+def load_validated_mapping_file(uploaded_mapping):
+    if uploaded_mapping is None:
+        return pd.DataFrame()
+    try:
+        df_map = pd.read_excel(uploaded_mapping, engine="openpyxl")
+    except Exception:
+        uploaded_mapping.seek(0)
+        df_map = pd.read_csv(uploaded_mapping)
+    return df_map
+
+
+def prepare_training_dataset(validated_df):
+    if validated_df is None or validated_df.empty:
+        return pd.DataFrame()
+
+    text_col = get_col(validated_df, ["Final_Answer", "answer", "Réponse", "Reponse", "text"])
+    label_col = get_col(validated_df, ["Validated_Theme", "Thème validé", "Theme valide", "theme", "label"])
+    swot_col = get_col(validated_df, ["swot_element", "Élément SWOT", "Element SWOT", "SWOT"])
+    type_col = get_col(validated_df, ["Respondent_Type", "Type de participants", "Type participant"])
+
+    if not text_col or not label_col:
+        return pd.DataFrame()
+
+    out = pd.DataFrame({
+        "text": validated_df[text_col].apply(clean),
+        "label": validated_df[label_col].apply(clean),
+    })
+    out["swot_element"] = validated_df[swot_col].apply(clean) if swot_col else ""
+    out["Respondent_Type"] = validated_df[type_col].apply(clean) if type_col else ""
+    out = out[(out["text"] != "") & (out["label"] != "")]
+    return out.reset_index(drop=True)
+
+
+def train_test_theme_algorithms(train_df, test_size=0.25, random_state=42):
+    try:
+        from sklearn.model_selection import train_test_split
+        from sklearn.pipeline import Pipeline, FeatureUnion
+        from sklearn.feature_extraction.text import TfidfVectorizer
+        from sklearn.linear_model import LogisticRegression, SGDClassifier
+        from sklearn.naive_bayes import MultinomialNB
+        from sklearn.svm import LinearSVC
+        from sklearn.metrics import accuracy_score, f1_score, classification_report
+    except Exception as e:
+        return pd.DataFrame(), pd.DataFrame(), f"scikit-learn n'est pas installé. Ajoutez scikit-learn dans requirements.txt. Détail: {e}"
+
+    if train_df.empty or train_df["label"].nunique() < 2:
+        return pd.DataFrame(), pd.DataFrame(), "Il faut au moins deux thèmes validés différents pour entraîner/tester un modèle."
+
+    counts = train_df["label"].value_counts()
+    if len(train_df) < 8 or counts.min() < 2:
+        return pd.DataFrame(), pd.DataFrame(), "Données insuffisantes: il faut idéalement au moins 2 réponses validées par thème et au moins 8 réponses au total."
+
+    X = train_df["text"].astype(str)
+    y = train_df["label"].astype(str)
+    stratify = y if counts.min() >= 2 else None
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=test_size, random_state=random_state, stratify=stratify
+    )
+
+    features = FeatureUnion([
+        ("word", TfidfVectorizer(ngram_range=(1, 2), min_df=1, max_df=0.95)),
+        ("char", TfidfVectorizer(analyzer="char_wb", ngram_range=(3, 5), min_df=1)),
+    ])
+
+    algorithms = {
+        "TF-IDF + Logistic Regression": LogisticRegression(max_iter=2000, class_weight="balanced"),
+        "TF-IDF + Linear SVM": LinearSVC(class_weight="balanced"),
+        "TF-IDF + SGD Linear SVM": SGDClassifier(loss="hinge", class_weight="balanced", random_state=random_state),
+        "TF-IDF + Naive Bayes": MultinomialNB(),
+    }
+
+    rows = []
+    pred_rows = []
+
+    for name, clf in algorithms.items():
+        try:
+            model = Pipeline([
+                ("features", features),
+                ("clf", clf),
+            ])
+            model.fit(X_train, y_train)
+            pred = model.predict(X_test)
+            acc = accuracy_score(y_test, pred)
+            f1 = f1_score(y_test, pred, average="macro", zero_division=0)
+            rows.append({
+                "Algorithme": name,
+                "Accuracy test": round(acc, 3),
+                "Macro F1 test": round(f1, 3),
+                "Train n": len(X_train),
+                "Test n": len(X_test),
+                "Nombre de thèmes": y.nunique(),
+            })
+            for true_label, pred_label, txt in zip(y_test, pred, X_test):
+                pred_rows.append({
+                    "Algorithme": name,
+                    "Réponse test": txt,
+                    "Thème réel": true_label,
+                    "Thème prédit": pred_label,
+                    "Correct": true_label == pred_label,
+                })
+        except Exception as e:
+            rows.append({
+                "Algorithme": name,
+                "Accuracy test": None,
+                "Macro F1 test": None,
+                "Train n": len(X_train),
+                "Test n": len(X_test),
+                "Nombre de thèmes": y.nunique(),
+                "Erreur": str(e),
+            })
+
+    results = pd.DataFrame(rows).sort_values(["Macro F1 test", "Accuracy test"], ascending=False, na_position="last")
+    predictions = pd.DataFrame(pred_rows)
+    return results, predictions, ""
+
+
 def ai_platform_page(show_header=True):
     html_block(APP_CSS)
 
@@ -1697,16 +1907,19 @@ def ai_platform_page(show_header=True):
     else:
         df_scope = df_type.copy()
 
-    tab_duplicates, tab_mapping, tab_synthesis = st.tabs(
-        ["1. Doublons", "2. Mapping SWOT supervisé", "3. Synthèse"]
+    tab_duplicates, tab_mapping, tab_training, tab_synthesis = st.tabs(
+        ["1. Doublons", "2. Mapping SWOT supervisé", "3. Train/Test modèles", "4. Synthèse"]
     )
 
     with tab_duplicates:
-        st.subheader("Détection des doublons sémantiques")
-        threshold = st.slider("Seuil de similarité", 0.60, 0.98, 0.82, 0.01)
+        st.subheader("Détection stricte des doublons")
+        st.caption(
+            "Aucun seuil manuel: le module compare seulement les réponses du même élément SWOT "
+            "et exige le même sujet central. Même structure grammaticale avec sujet différent n'est pas un doublon."
+        )
 
         if st.button("Détecter les doublons", key="detect_duplicates"):
-            dup_df = detect_duplicate_pairs(df_scope, threshold=threshold)
+            dup_df = detect_duplicate_pairs(df_scope)
             st.session_state["duplicates_df"] = dup_df
 
         dup_df = st.session_state.get("duplicates_df", pd.DataFrame())
@@ -1754,6 +1967,84 @@ def ai_platform_page(show_header=True):
                 )
         else:
             st.caption("Cliquez sur « Lancer la classification IA » pour commencer.")
+
+    with tab_training:
+        st.subheader("Train/Test des algorithmes de classification")
+        st.caption(
+            "Utilisez le mapping validé par l'expert comme base d'apprentissage. "
+            "Le test compare plusieurs algorithmes et indique lequel fonctionne le mieux sur vos données validées."
+        )
+
+        source_choice = st.radio(
+            "Source des données validées",
+            ["Mapping validé dans cette session", "Uploader un fichier de mapping validé"],
+            horizontal=True,
+            key="training_source_choice"
+        )
+
+        if source_choice == "Uploader un fichier de mapping validé":
+            uploaded_mapping = st.file_uploader(
+                "Uploader le fichier Excel/CSV du mapping validé",
+                type=["xlsx", "csv"],
+                key="validated_mapping_upload"
+            )
+            raw_train_df = load_validated_mapping_file(uploaded_mapping)
+        else:
+            raw_train_df = st.session_state.get("validated_mapping_df", pd.DataFrame())
+
+        train_df = prepare_training_dataset(raw_train_df)
+
+        if train_df.empty:
+            st.warning("Aucune donnée validée disponible pour entraîner/tester les modèles.")
+        else:
+            st.write("Aperçu des données d'apprentissage")
+            st.dataframe(train_df, use_container_width=True)
+            st.write("Distribution des thèmes validés")
+            st.dataframe(train_df["label"].value_counts().reset_index().rename(columns={"index": "Thème", "label": "Nombre"}), use_container_width=True)
+
+            c_train_1, c_train_2 = st.columns([1, 1])
+            with c_train_1:
+                test_size = st.selectbox("Taille du test", [0.20, 0.25, 0.30, 0.35], index=1)
+            with c_train_2:
+                random_state = st.number_input("Random state", min_value=1, max_value=9999, value=42, step=1)
+
+            if st.button("Lancer Train/Test", key="run_train_test_models"):
+                results_df, predictions_df, error_msg = train_test_theme_algorithms(
+                    train_df,
+                    test_size=float(test_size),
+                    random_state=int(random_state)
+                )
+                st.session_state["training_results_df"] = results_df
+                st.session_state["training_predictions_df"] = predictions_df
+                st.session_state["training_error_msg"] = error_msg
+
+            error_msg = st.session_state.get("training_error_msg", "")
+            results_df = st.session_state.get("training_results_df", pd.DataFrame())
+            predictions_df = st.session_state.get("training_predictions_df", pd.DataFrame())
+
+            if error_msg:
+                st.error(error_msg)
+            elif not results_df.empty:
+                st.write("Résultats comparatifs")
+                st.dataframe(results_df, use_container_width=True)
+                best_algo = results_df.iloc[0]["Algorithme"]
+                st.success(f"Meilleur algorithme selon Macro F1: {best_algo}")
+
+                if not predictions_df.empty:
+                    st.write("Détail des prédictions sur le test")
+                    st.dataframe(predictions_df, use_container_width=True)
+
+                output = BytesIO()
+                with pd.ExcelWriter(output, engine="openpyxl") as writer:
+                    results_df.to_excel(writer, index=False, sheet_name="Scores")
+                    predictions_df.to_excel(writer, index=False, sheet_name="Predictions test")
+                output.seek(0)
+                st.download_button(
+                    "Télécharger les résultats Train/Test",
+                    data=output.getvalue(),
+                    file_name=f"train_test_algorithmes_{safe_filename(selected_type)}.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
 
     with tab_synthesis:
         st.subheader("Synthèse automatique par thème validé")
