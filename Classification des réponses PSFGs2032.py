@@ -1846,7 +1846,7 @@ def train_test_theme_algorithms(train_df, test_size=0.25, random_state=42):
     return results, predictions, ""
 
 
-def ai_platform_page(show_header=True):
+def ai_platform_page(show_header=True, df_preloaded=None):
     html_block(APP_CSS)
 
     html_block(f"""
@@ -1864,16 +1864,19 @@ def ai_platform_page(show_header=True):
         "ou ajouter un nouveau thème."
     )
 
-    uploaded_file = st.file_uploader(
-        "Uploader le fichier Excel corrigé pour l'analyse IA",
-        type=["xlsx", "xls"],
-        key="ai_excel_upload"
-    )
+    if df_preloaded is None:
+        uploaded_file = st.file_uploader(
+            "Uploader le fichier Excel corrigé pour l'analyse IA",
+            type=["xlsx", "xls"],
+            key="ai_excel_upload"
+        )
 
-    if uploaded_file is None:
-        st.stop()
+        if uploaded_file is None:
+            st.stop()
 
-    df = read_corrected_excel(uploaded_file)
+        df = read_corrected_excel(uploaded_file)
+    else:
+        df = df_preloaded.copy()
 
     participant_types = sorted(df["Respondent_Type"].dropna().unique().tolist())
 
@@ -2070,7 +2073,7 @@ def ai_platform_page(show_header=True):
             )
 
 
-def print_preview_page(show_header=True):
+def print_preview_page(show_header=True, df_preloaded=None):
     if show_header:
         html_block(APP_CSS)
 
@@ -2083,67 +2086,19 @@ def print_preview_page(show_header=True):
         </div>
         """)
 
-    uploaded_file = st.file_uploader(
-        "Uploader le fichier Excel corrigé",
-        type=["xlsx", "xls"]
-    )
+    if df_preloaded is None:
+        uploaded_file = st.file_uploader(
+            "Uploader le fichier Excel corrigé",
+            type=["xlsx", "xls"]
+        )
 
-    if uploaded_file is None:
-        st.info(f"Veuillez uploader le fichier Excel contenant la feuille : {SHEET_NAME}")
-        st.stop()
+        if uploaded_file is None:
+            st.info(f"Veuillez uploader le fichier Excel contenant la feuille : {SHEET_NAME}")
+            st.stop()
 
-    try:
-        df = pd.read_excel(uploaded_file, sheet_name=SHEET_NAME, engine="openpyxl")
-    except Exception as e:
-        st.error(f"Impossible de lire la feuille : {SHEET_NAME}")
-        st.exception(e)
-        st.stop()
-
-    df = df.dropna(how="all")
-
-    type_col = get_col(df, ["Respondent_Type", "Type participant", "Type de participants"])
-    group_col = get_col(df, ["groupe", "Sous groupe", "Subgroup"])
-    names_col = get_col(df, ["participants", "Participants", "Nom participants"])
-    section_col = get_col(df, ["section"])
-    category_col = get_col(df, ["category", "catégorie", "categorie"])
-    answer_col = get_col(df, ["Final_Answer", "Final Answer", "Réponse finale", "Reponse finale"])
-
-    missing = []
-    if not type_col:
-        missing.append("Respondent_Type")
-    if not group_col:
-        missing.append("groupe")
-    if not names_col:
-        missing.append("participants")
-    if not section_col:
-        missing.append("section")
-    if not category_col:
-        missing.append("category")
-    if not answer_col:
-        missing.append("Final_Answer")
-
-    if missing:
-        st.error("Colonnes manquantes : " + ", ".join(missing))
-        st.stop()
-
-    df = df.rename(columns={
-        type_col: "Respondent_Type",
-        group_col: "groupe",
-        names_col: "participants",
-        section_col: "section",
-        category_col: "category",
-        answer_col: "Final_Answer"
-    })
-
-    df["question"] = df["category"]
-
-    for col in ["Respondent_Type", "groupe", "participants", "section", "category", "question", "Final_Answer"]:
-        df[col] = df[col].apply(clean)
-
-    df = df[(df["Respondent_Type"] != "") & (df["groupe"] != "")]
-    df["section_norm"] = df["section"].apply(normalize)
-    df["question_norm"] = df["question"].apply(normalize)
-    df["category_norm"] = df["category"].apply(normalize)
+        df = read_corrected_excel(uploaded_file)
+    else:
+        df = df_preloaded.copy()
 
     participant_types = sorted(df["Respondent_Type"].dropna().unique().tolist())
 
@@ -2230,11 +2185,102 @@ def main():
     html_block(APP_CSS)
 
     html_block(f"""
-    <div class="screen-only">
-        <h1 style="margin-bottom:0;">{APP_TITLE}</h1>
-        <h3 style="color:{USJ_RED} !important; margin-top:4px;">
-            Plateforme Focus Groups USJ 2032
-        </h3>
+    <style>
+    .usj-dashboard-header {{
+        background: linear-gradient(135deg, #ffffff 0%, #F4F8FC 100%);
+        border: 1px solid #D0D6E0;
+        border-radius: 18px;
+        padding: 26px 30px;
+        margin-bottom: 22px;
+        box-shadow: 0 8px 28px rgba(0,31,91,0.08);
+    }}
+    .usj-dashboard-header h1 {{
+        margin: 0;
+        color: {USJ_BLUE};
+        font-size: 38px;
+        font-weight: 900;
+    }}
+    .usj-dashboard-header h3 {{
+        margin-top: 8px;
+        color: {USJ_RED};
+        font-weight: 800;
+    }}
+    .usj-step-card {{
+        background: #ffffff;
+        border: 1px solid #D0D6E0;
+        border-radius: 14px;
+        padding: 18px 20px;
+        margin: 14px 0 20px 0;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+    }}
+    .usj-step-title {{
+        color: {USJ_BLUE};
+        font-size: 20px;
+        font-weight: 900;
+        margin-bottom: 6px;
+    }}
+    .usj-step-subtitle {{
+        color: #667085;
+        font-size: 14px;
+        margin-bottom: 8px;
+    }}
+    .usj-status-box {{
+        background: #EAF2F8;
+        border-left: 6px solid {USJ_BLUE};
+        border-radius: 12px;
+        padding: 14px 18px;
+        margin: 10px 0 18px 0;
+        color: {USJ_TEXT};
+        font-weight: 700;
+    }}
+    div[role="radiogroup"] label {{
+        background: #ffffff;
+        border: 1px solid #D0D6E0;
+        border-radius: 12px;
+        padding: 10px 16px;
+        margin-right: 10px;
+        box-shadow: 0 3px 12px rgba(0,0,0,0.04);
+    }}
+    </style>
+    <div class="usj-dashboard-header">
+        <h1>{APP_TITLE}</h1>
+        <h3>Plateforme Focus Groups USJ 2032</h3>
+    </div>
+    """)
+
+    html_block("""
+    <div class="usj-step-card">
+        <div class="usj-step-title">1. Uploader le fichier Excel corrigé</div>
+        <div class="usj-step-subtitle">Le même fichier sera utilisé ensuite pour le print preview / rapports Word ou pour la plateforme IA supervisée.</div>
+    </div>
+    """)
+
+    uploaded_file = st.file_uploader(
+        "Uploader le fichier Excel corrigé",
+        type=["xlsx", "xls"],
+        key="main_excel_upload"
+    )
+
+    if uploaded_file is None:
+        st.info(f"Veuillez uploader le fichier Excel contenant la feuille : {SHEET_NAME}")
+        st.stop()
+
+    df = read_corrected_excel(uploaded_file)
+
+    nb_rows = len(df)
+    nb_types = df["Respondent_Type"].nunique()
+    nb_groups = df["groupe"].nunique()
+
+    html_block(f"""
+    <div class="usj-status-box">
+        Fichier chargé avec succès : {nb_rows} réponses, {nb_types} types de participants, {nb_groups} sous-groupes.
+    </div>
+    """)
+
+    html_block("""
+    <div class="usj-step-card">
+        <div class="usj-step-title">2. Choisir le module à utiliser</div>
+        <div class="usj-step-subtitle">Vous pouvez changer de module sans uploader à nouveau le fichier.</div>
     </div>
     """)
 
@@ -2245,15 +2291,16 @@ def main():
             "Plateforme IA supervisée"
         ],
         horizontal=True,
-        label_visibility="collapsed"
+        label_visibility="collapsed",
+        key="main_module_choice"
     )
 
     st.markdown("---")
 
     if page == "Print preview / rapports Word":
-        print_preview_page(show_header=False)
+        print_preview_page(show_header=False, df_preloaded=df)
     else:
-        ai_platform_page(show_header=False)
+        ai_platform_page(show_header=False, df_preloaded=df)
 
 
 if __name__ == "__main__":
