@@ -26,6 +26,7 @@ USJ_RED = "#8B1538"
 USJ_LIGHT_BLUE = "#EAF2F8"
 USJ_TEXT = "#1B2A41"
 LOGO_PATH = "LOGO NEW UAQ.png"
+ENGINE_LLM_STRICT = "LLM strict classifier - classification raisonnée"
 
 
 def clean(value):
@@ -3119,9 +3120,33 @@ def ai_platform_page(show_header=True, df_preloaded=None):
 
     st.markdown("""
     <div class="ai-info-box">
-        <b>Logique professionnelle :</b> l'IA est appliquée à toute la base. Les moteurs sont réellement différents : règles expertes, TF-IDF lexical/sémantique, modèle hybride par consensus et, si installé, Sentence Transformer multilingue. Les classifications faibles ou contradictoires sont marquées pour validation humaine.
+        <b>Logique professionnelle :</b> l'IA est appliquée à toute la base. Le moteur recommandé est maintenant un classificateur LLM strict : il reçoit la réponse, le type de participant, l'élément SWOT et uniquement les thèmes officiels autorisés. Les anciens moteurs locaux restent disponibles comme comparaison/fallback, mais ne sont plus recommandés pour la décision finale.
     </div>
     """, unsafe_allow_html=True)
+
+    with st.expander("Configuration du moteur LLM strict", expanded=True):
+        c_api1, c_api2 = st.columns([1.4, 1])
+        with c_api1:
+            api_key_input = st.text_input(
+                "Clé API OpenAI",
+                value="",
+                type="password",
+                help="La clé n'est pas affichée. Vous pouvez aussi la définir dans Streamlit secrets ou variable d'environnement OPENAI_API_KEY.",
+                key="llm_api_key_input",
+            )
+            if api_key_input:
+                st.session_state["llm_api_key"] = api_key_input
+        with c_api2:
+            st.session_state["llm_model_name"] = st.text_input(
+                "Modèle LLM",
+                value=st.session_state.get("llm_model_name", "gpt-4o-mini"),
+                key="llm_model_name_input",
+            )
+        if get_llm_api_key():
+            st.success("Moteur LLM prêt. Le mapping utilisera la classification raisonnée stricte.")
+            st.session_state.setdefault("active_ai_engine", ENGINE_LLM_STRICT)
+        else:
+            st.warning("Aucune clé API détectée. Le moteur LLM retournera un fallback conservateur tant que la clé n'est pas fournie.")
 
     tab_benchmark, tab_mapping, tab_duplicates, tab_synthesis = st.tabs([
         "1. Benchmark IA global", "2. Mapping SWOT supervisé", "3. Doublons", "4. Synthèse"
@@ -3136,7 +3161,7 @@ def ai_platform_page(show_header=True, df_preloaded=None):
             st.session_state["engine_comparison_df"] = comparison_df
             st.session_state["engine_summary_df"] = summary_df
             st.session_state["available_engines"] = engines
-            st.session_state["active_ai_engine"] = ENGINE_HYBRID
+            st.session_state["active_ai_engine"] = ENGINE_LLM_STRICT
 
         summary_df = st.session_state.get("engine_summary_df", pd.DataFrame())
         comparison_df = st.session_state.get("engine_comparison_df", pd.DataFrame())
@@ -3145,12 +3170,12 @@ def ai_platform_page(show_header=True, df_preloaded=None):
             st.markdown("#### Synthèse des moteurs")
             st.dataframe(summary_df, use_container_width=True)
             conflict_count = int((comparison_df.get("Agreement_Rate", pd.Series(dtype=float)) < 67).sum()) if not comparison_df.empty else 0
-            st.info(f"Moteur recommandé par défaut : {ENGINE_HYBRID}. Cas en désaccord à vérifier en priorité : {conflict_count}.")
+            st.info(f"Moteur recommandé par défaut : {ENGINE_LLM_STRICT}. Cas en désaccord à vérifier en priorité : {conflict_count}.")
 
             selected_engine = st.selectbox(
                 "Choisir le moteur actif pour le mapping",
                 options=available_ai_engines(),
-                index=available_ai_engines().index(ENGINE_HYBRID) if ENGINE_HYBRID in available_ai_engines() else 0,
+                index=available_ai_engines().index(ENGINE_LLM_STRICT) if ENGINE_LLM_STRICT in available_ai_engines() else 0,
                 key="selected_professional_engine"
             )
             if st.button("Activer le moteur sélectionné", key="activate_professional_engine"):
@@ -3780,6 +3805,196 @@ def build_consensus_classification(df_scope, selected_engine=ENGINE_DOMAIN):
         })
     return pd.DataFrame(rows)
 
+
+
+# ============================================================
+# LLM STRICT CLASSIFICATION ENGINE
+# ============================================================
+
+def get_llm_api_key():
+    """Return API key from Streamlit session, secrets, or environment."""
+    key = st.session_state.get("llm_api_key", "")
+    if key:
+        return key
+    try:
+        key = st.secrets.get("OPENAI_API_KEY", "")
+        if key:
+            return key
+    except Exception:
+        pass
+    return os.environ.get("OPENAI_API_KEY", "")
+
+
+def get_llm_model_name():
+    return st.session_state.get("llm_model_name", "gpt-4o-mini") or "gpt-4o-mini"
+
+
+def call_openai_chat_json(messages, model=None, temperature=0):
+    api_key = get_llm_api_key()
+    if not api_key:
+        raise RuntimeError("OPENAI_API_KEY manquant")
+
+    payload = {
+        "model": model or get_llm_model_name(),
+        "messages": messages,
+        "temperature": temperature,
+        "response_format": {"type": "json_object"},
+    }
+
+    req = urllib.request.Request(
+        "https://api.openai.com/v1/chat/completions",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+
+    with urllib.request.urlopen(req, timeout=90) as response:
+        data = json.loads(response.read().decode("utf-8"))
+    content = data["choices"][0]["message"]["content"]
+    return json.loads(content)
+
+
+def llm_classify_theme(answer, participant_type, swot_element):
+    themes = official_themes_for(participant_type, swot_element, include_autre=True)
+    themes = [clean(t) for t in themes if clean(t)]
+    if not themes:
+        return "", 0.0, "", "Aucun thème officiel disponible"
+
+    official_list = "\n".join([f"- {t}" for t in themes])
+
+    system_prompt = """
+Tu es un expert senior en analyse qualitative institutionnelle universitaire.
+Ta tâche est de classifier une réponse de focus group USJ dans UN SEUL thème officiel.
+Tu dois respecter strictement la liste fournie. Ne modifie jamais les noms des thèmes.
+
+Règles impératives :
+1. Choisis uniquement un thème dans la liste officielle.
+2. Ne choisis "Intelligence artificielle" que si la réponse mentionne explicitement IA, intelligence artificielle, ChatGPT, automatisation, algorithme, data science, machine learning, outils numériques d'IA, ou un concept directement lié.
+3. Si la réponse parle de cours, programmes, crédits, curricula, enseignement, mise à jour pédagogique, formation, qualité académique, elle relève d'un thème académique/enseignement, jamais de Mission sociétale.
+4. Si la réponse parle de crise, politique, économie, sécurité, émigration, fuite des cerveaux, inflation, banques, familles ou instabilité, elle relève du thème politique/économique/émigration.
+5. Si la réponse parle d'image, attractivité, réputation, visibilité, classements, perception, communication, recruteurs ou jeunes, elle relève du thème Réputation et image si ce thème est disponible.
+6. Si la réponse parle de partenariats internationaux, mobilité, réseau international ou coopération internationale, choisis le thème international le plus proche si disponible, sinon Autres.
+7. Si aucun thème ne correspond clairement, choisis Autres si disponible et donne une confiance faible.
+8. Ne te base pas sur une structure de phrase similaire. Base-toi sur le sens et l'objet principal.
+
+Réponds seulement en JSON valide avec les clés : theme, confidence, explanation, alternatives.
+confidence doit être un nombre entre 0 et 100.
+alternatives doit contenir au maximum 3 thèmes alternatifs officiels.
+"""
+
+    user_prompt = f"""
+Type de participants : {participant_type}
+Élément SWOT : {swot_element}
+
+Thèmes officiels autorisés :
+{official_list}
+
+Réponse à classifier :
+{answer}
+"""
+
+    try:
+        result = call_openai_chat_json(
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            temperature=0,
+        )
+        theme = clean(result.get("theme", ""))
+        if theme not in themes:
+            # Defensive correction: never accept a non-official label.
+            theme = "Autres" if "Autres" in themes else themes[0]
+            conf = 25.0
+            explanation = "Réponse LLM non conforme à la liste officielle; correction défensive appliquée."
+            alternatives = ""
+        else:
+            conf = float(result.get("confidence", 0) or 0)
+            conf = round(max(0, min(conf, 100)), 1)
+            explanation = clean(result.get("explanation", "Classification raisonnée par LLM strict."))
+            alternatives_raw = result.get("alternatives", [])
+            if isinstance(alternatives_raw, list):
+                alternatives = " | ".join([clean(x) for x in alternatives_raw if clean(x) in themes][:3])
+            else:
+                alternatives = clean(alternatives_raw)
+        return theme, conf, alternatives, explanation
+    except Exception as e:
+        # Safe fallback: show failure instead of pretending the local heuristic is reliable.
+        fallback_theme = "Autres" if "Autres" in themes else themes[0]
+        return fallback_theme, 10.0, "", f"Erreur LLM / fallback conservateur : {e}"
+
+
+# Override the final AI engine functions with LLM-first behavior.
+def available_ai_engines():
+    engines = [ENGINE_LLM_STRICT, ENGINE_DOMAIN, ENGINE_KEYWORD_STRICT, ENGINE_TFIDF_RERANK]
+    if load_multilingual_sentence_model() is not None:
+        engines.append(ENGINE_TRANSFORMER_GUARDED)
+    return engines
+
+
+def classify_theme_with_engine(answer, participant_type, swot_element, engine_name=ENGINE_LLM_STRICT):
+    if engine_name == ENGINE_LLM_STRICT:
+        return llm_classify_theme(answer, participant_type, swot_element)
+
+    ranked = score_theme_candidates(answer, participant_type, swot_element, engine_name)
+    if not ranked:
+        return "", 0.0, "", "Aucun thème officiel disponible"
+
+    best = ranked[0]
+    best_theme = best[0]
+    conf = calibrated_confidence(ranked)
+    top3 = " | ".join([f"{t} ({round(s * 100, 1)})" for t, s, *_ in ranked[:3]])
+    evidence_txt = candidate_explanation(
+        best_theme,
+        kw=best[2],
+        tfidf=best[3],
+        lex=best[4],
+        domain_pos=best[5],
+        domain_neg=best[6],
+        matched_domains=best[7],
+    )
+    return best_theme, conf, top3, evidence_txt
+
+
+def build_consensus_classification(df_scope, selected_engine=ENGINE_LLM_STRICT):
+    if selected_engine == ENGINE_LLM_STRICT:
+        return build_classification_with_engine(df_scope, ENGINE_LLM_STRICT)
+    comparison, _, _ = compare_ai_engines(df_scope)
+    if comparison.empty:
+        return pd.DataFrame()
+    preferred_col = f"Theme_{safe_filename(selected_engine)}"
+    preferred_conf = f"Confidence_{safe_filename(selected_engine)}"
+    preferred_top3 = f"Top3_{safe_filename(selected_engine)}"
+    preferred_evidence = f"Evidence_{safe_filename(selected_engine)}"
+    if preferred_col not in comparison.columns:
+        preferred_col = "Consensus_Theme"
+        preferred_conf = "Recommended_Confidence"
+        preferred_top3 = ""
+        preferred_evidence = ""
+    rows = []
+    for _, row in comparison.iterrows():
+        rows.append({
+            "row_id": row["row_id"],
+            "Respondent_Type": row.get("Respondent_Type", ""),
+            "groupe": row.get("groupe", ""),
+            "participants": row.get("participants", ""),
+            "swot_element": row.get("swot_element", ""),
+            "question": row.get("question", ""),
+            "Final_Answer": row.get("Final_Answer", ""),
+            "AI_Suggested_Theme": row.get(preferred_col, ""),
+            "Confidence": row.get(preferred_conf, ""),
+            "Consensus_Theme": row.get("Consensus_Theme", ""),
+            "Agreement_Rate": row.get("Agreement_Rate", ""),
+            "Consensus_Status": row.get("Consensus_Status", ""),
+            "Top_3_Themes": row.get(preferred_top3, "") if preferred_top3 else "",
+            "Evidence": row.get(preferred_evidence, "") if preferred_evidence else "Consensus / guardrails",
+            "Validated_Theme": row.get(preferred_col, ""),
+            "New_Theme": "",
+        })
+    return pd.DataFrame(rows)
 
 def main():
     st.set_page_config(
