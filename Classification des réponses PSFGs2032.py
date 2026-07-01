@@ -1636,7 +1636,7 @@ def build_theme_synthesis(validated_df):
     )
 
 
-def ai_platform_page():
+def ai_platform_page(show_header=True):
     html_block(APP_CSS)
 
     html_block(f"""
@@ -1779,17 +1779,18 @@ def ai_platform_page():
             )
 
 
-def print_preview_page():
-    html_block(APP_CSS)
+def print_preview_page(show_header=True):
+    if show_header:
+        html_block(APP_CSS)
 
-    html_block(f"""
-    <div class="screen-only">
-        <h1 style="margin-bottom:0;">{APP_TITLE}</h1>
-        <h3 style="color:{USJ_RED} !important; margin-top:4px;">
-            Lecture Excel - Print Preview des réponses corrigées
-        </h3>
-    </div>
-    """)
+        html_block(f"""
+        <div class="screen-only">
+            <h1 style="margin-bottom:0;">{APP_TITLE}</h1>
+            <h3 style="color:{USJ_RED} !important; margin-top:4px;">
+                Lecture Excel - Print Preview des réponses corrigées
+            </h3>
+        </div>
+        """)
 
     uploaded_file = st.file_uploader(
         "Uploader le fichier Excel corrigé",
@@ -1935,18 +1936,33 @@ def main():
         initial_sidebar_state="collapsed"
     )
 
-    page = st.sidebar.radio(
-        "Navigation",
+    html_block(APP_CSS)
+
+    html_block(f"""
+    <div class="screen-only">
+        <h1 style="margin-bottom:0;">{APP_TITLE}</h1>
+        <h3 style="color:{USJ_RED} !important; margin-top:4px;">
+            Plateforme Focus Groups USJ 2032
+        </h3>
+    </div>
+    """)
+
+    page = st.radio(
+        "Choisir le module",
         [
             "Print preview / rapports Word",
             "Plateforme IA supervisée"
-        ]
+        ],
+        horizontal=True,
+        label_visibility="collapsed"
     )
 
+    st.markdown("---")
+
     if page == "Print preview / rapports Word":
-        print_preview_page()
+        print_preview_page(show_header=False)
     else:
-        ai_platform_page()
+        ai_platform_page(show_header=False)
 
 
 if __name__ == "__main__":
