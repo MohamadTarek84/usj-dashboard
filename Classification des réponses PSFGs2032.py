@@ -2130,60 +2130,31 @@ def semantic_theme_scores(answer, participant_type, swot_element, engine_name):
 
 
 def classify_theme_with_engine(answer, participant_type, swot_element, engine_name):
-    scores = semantic_theme_scores(answer, participant_type, swot_element, engine_name)
-    if not scores:
-        return "", 0.0, ""
+    ranked = score_theme_candidates(answer, participant_type, swot_element, engine_name)
+    if not ranked:
+        return "", 0.0, "", "Aucun thème officiel disponible"
 
-    best_theme, best_score = scores[0]
-    second_score = scores[1][1] if len(scores) > 1 else 0
-    margin = max(best_score - second_score, 0)
+    best_theme = ranked[0][0]
+    conf = calibrated_confidence(ranked)
+    top3 = " | ".join([f"{t} ({round(s * 100, 1)})" for t, s, *_ in ranked[:3]])
 
-    # Calibrated confidence: high only when the best theme is clearly separated.
-    confidence = min(99.0, max(5.0, 35 + (best_score * 55) + (margin * 65)))
-    if margin < 0.025:
-        confidence = min(confidence, 58.0)
-    elif margin < 0.06:
-        confidence = min(confidence, 72.0)
-    top3 = " | ".join([f"{t} ({round(s * 100, 1)})" for t, s in scores[:3]])
-    return best_theme, round(confidence, 1), top3
+    evidence = []
+    if ranked[0][2] > 0:
+        evidence.append("mots-clés thématiques")
+    if ranked[0][3] > 0:
+        evidence.append("similarité TF-IDF")
+    if ranked[0][4] > 0:
+        evidence.append("recouvrement lexical")
+    if ranked[0][6]:
+        evidence.append(ranked[0][6])
 
+    # Conservative handling: when the best adjusted score remains weak, do not pretend the classification is reliable.
+    if ranked[0][1] < 0.22:
+        conf = min(conf, 35.0)
+        evidence.append("classement faible: à valider")
 
-def build_classification_with_engine(df_scope, engine_name):
-    rows = []
-    for idx, row in df_scope.iterrows():
-        swot_element = row["swot_element"]
-        if swot_element not in ["Forces", "Faiblesses", "Opportunités", "Menaces"]:
-            continue
-
-        answer = clean(row["Final_Answer"])
-        if not answer:
-            continue
-
-        suggested_theme, confidence, top3 = classify_theme_with_engine(
-            answer=answer,
-            participant_type=row["Respondent_Type"],
-            swot_element=swot_element,
-            engine_name=engine_name,
-        )
-
-        rows.append({
-            "row_id": idx,
-            "Respondent_Type": row["Respondent_Type"],
-            "groupe": row["groupe"],
-            "participants": row["participants"],
-            "swot_element": swot_element,
-            "question": row["question"],
-            "Final_Answer": answer,
-            "AI_Suggested_Theme": suggested_theme,
-            "Confidence": confidence,
-            "Top_3_Themes": top3,
-            "Validated_Theme": suggested_theme,
-            "New_Theme": "",
-        })
-    return pd.DataFrame(rows)
-
-
-
+    evidence_txt = ", ".join(dict.fromkeys(evidence)) if evidence else "évidence faible"
+    return best_theme, conf, top3, evidence_txt
 
 def available_ai_engines():
     engines = []
@@ -2707,6 +2678,108 @@ def transformer_scores(answer, themes):
         return None
 
 
+
+
+# Strong domain guardrails: prevent structurally similar but conceptually wrong mappings.
+# These rules do not change the official themes. They only restrict impossible AI suggestions.
+DOMAIN_SIGNAL_RULES = {
+    "intelligence artificielle": ["intelligence artificielle", " ia ", " ai ", "chatgpt", "generative", "générative", "automatisation", "machine learning", "data science", "algorithme"],
+    "concurrence avec les autres universites": ["concurrence", "competition", "compétition", "autres universites", "autres universités", "universites americaines", "universités américaines", "universites regionales", "universités régionales", "scolarites des autres", "classe a"],
+    "reputation et image": ["reputation", "réputation", "image", "visibilite", "visibilité", "notoriete", "notoriété", "attractivite", "attractivité", "perception", "classement", "classements", "communication", "public cible", "demande manifeste", "serieux de la formation", "sérieux de la formation", "rayonnement"],
+    "environnement politique et economique emigration": ["politique", "economique", "économique", "crise", "emigration", "émigration", "instabilite", "instabilité", "inflation", "securite", "sécurité", "guerre", "banque", "immobilier", "parents", "familles", "migration"],
+    "marche du travail": ["marche du travail", "marché du travail", "emploi", "employeur", "employeurs", "entreprise", "entreprises", "professionnel", "professionnels", "professionnelle", "professionnelles", "stage", "stages", "carriere", "carrière", "metier", "métier", "competence", "compétence", "associations professionnelles"],
+    "strategie academique et qualite d enseignement": ["cours", "programme", "programmes", "formation", "formations", "enseignement", "pedagogie", "pédagogie", "curriculum", "credits", "crédits", "diplome", "diplôme", "accreditation", "accréditation", "qualite enseignement", "qualité enseignement", "langue", "anglais", "francais", "français", "trilinguisme", "mis a jour", "mis à jour"],
+    "qualite de l enseignement": ["cours", "enseignement", "enseignant", "enseignants", "pedagogie", "pédagogie", "accompagnement", "orientation", "tutorat", "formation", "langue", "anglais", "francais", "français", "mis a jour", "mis à jour"],
+    "ressources documentaires et environnement digital": ["bibliotheque", "bibliothèque", "documentaire", "numerique", "numérique", "digital", "informatique", "technologie", "technologique", "plateforme", "plateformes", "systeme", "système", "systemes", "systèmes", "logiciel", "logiciels", "outils", "donnees", "données"],
+    "ressources humaines": ["ressources humaines", "personnel", "personnels", "rh", "recrutement", "charge de travail", "enseignants", "administratifs", "competences", "compétences"],
+    "gouvernance et leadership": ["gouvernance", "leadership", "decision", "décision", "decisions", "décisions", "procedure", "procédure", "procedures", "procédures", "doyen", "doyens", "directeur", "directeurs", "administration", "centralisation", "decentralisation", "décentralisation", "transparence", "accountability", "autonomie", "strategie", "stratégie"],
+    "soutenabilite financiere": ["financement", "financier", "financiere", "financière", "budget", "frais", "scolarite", "scolarité", "bourse", "bourses", "cout", "coût", "ressources financieres", "ressources financières"],
+    "recherche et innovation": ["recherche", "innovation", "publications", "publication", "laboratoire", "doctorat", "these", "thèse", "brevet", "brevets", "valorisation"],
+    "mission societale": ["mission societale", "mission sociétale", "societal", "sociétal", "societe", "société", "communauté", "engagement social", "responsabilite sociale", "responsabilité sociale", "impact social", "citoyen", "liban", "reconstruction"],
+    "espace et infrastructures": ["campus", "batiment", "bâtiment", "batiments", "bâtiments", "locaux", "salles", "infrastructure", "infrastructures", "equipement", "équipement", "equipements", "équipements", "laboratoire", "laboratoires", "maintenance"],
+}
+
+EXTERNAL_THEME_GROUPS = {
+    "Intelligence artificielle": "intelligence artificielle",
+    "Concurrence avec les autres universités": "concurrence avec les autres universites",
+    "Réputation et image": "reputation et image",
+    "Environnement politique et économique, émigration": "environnement politique et economique emigration",
+    "Marché du travail et Associations professionnelles": "marche du travail",
+    "Marché du travail et relations avec les employeurs": "marche du travail",
+}
+
+INTERNAL_THEME_GROUPS = {
+    "Stratégie académique et qualité d’enseignement": "strategie academique et qualite d enseignement",
+    "Qualité de l’enseignement (Accompagnement, Orientation, Tutorat, etc.)": "qualite de l enseignement",
+    "Ressources documentaires et Environnement digital": "ressources documentaires et environnement digital",
+    "Ressources documentaires, numériques et informatiques": "ressources documentaires et environnement digital",
+    "Ressources humaines": "ressources humaines",
+    "Gouvernance et Leadership (gestion, relation, représentation, etc.)": "gouvernance et leadership",
+    "Gouvernance et Leadership (Gestion, relation, représentation, etc.)": "gouvernance et leadership",
+    "Soutenabilité financière": "soutenabilite financiere",
+    "Recherche et Innovation": "recherche et innovation",
+    "Mission sociétale": "mission societale",
+    "Espace et infrastructures": "espace et infrastructures",
+    "Espace et infrastructure": "espace et infrastructures",
+}
+
+
+def contains_any_signal(answer_norm, signals):
+    padded = f" {answer_norm} "
+    for sig in signals:
+        sig_norm = normalize(sig)
+        if sig_norm.strip() and sig_norm in padded:
+            return True
+    return False
+
+
+def domain_group_for_theme(theme, swot_element):
+    mapping = EXTERNAL_THEME_GROUPS if swot_element in ["Opportunités", "Menaces"] else INTERNAL_THEME_GROUPS
+    if theme in mapping:
+        return mapping[theme]
+    nt = normalize(theme)
+    for raw, group in mapping.items():
+        if normalize(raw) in nt or nt in normalize(raw):
+            return group
+    return ""
+
+
+def domain_gate_adjustments(answer, themes, swot_element, base_scores):
+    """Apply strict conceptual guardrails and return adjusted scores plus explanation."""
+    answer_norm = normalize(answer)
+    adjusted = list(base_scores)
+    active_groups = set()
+
+    # Identify concepts explicitly present in the answer.
+    for group, signals in DOMAIN_SIGNAL_RULES.items():
+        if contains_any_signal(answer_norm, signals):
+            active_groups.add(group)
+
+    # Special external rules to avoid absurd AI mappings.
+    # If the answer does not explicitly mention AI, the IA theme must not win.
+    for i, theme in enumerate(themes):
+        group = domain_group_for_theme(theme, swot_element)
+        if not group:
+            continue
+
+        if group == "intelligence artificielle" and group not in active_groups:
+            adjusted[i] *= 0.03
+            continue
+
+        if active_groups:
+            # Boost matching conceptual families.
+            if group in active_groups:
+                adjusted[i] += 0.55
+            else:
+                # Penalize unrelated families when a clear conceptual family is detected.
+                adjusted[i] *= 0.25
+
+    # If no strong signal is found, be conservative: avoid confident arbitrary classifications.
+    explanation = "garde-fous conceptuels appliqués"
+    if not active_groups:
+        explanation = "évidence thématique insuffisante: validation experte recommandée"
+    return adjusted, explanation, active_groups
+
 def score_theme_candidates(answer, participant_type, swot_element, engine_name):
     themes = official_themes_for(participant_type, swot_element, include_autre=False)
     if not themes:
@@ -2717,22 +2790,26 @@ def score_theme_candidates(answer, participant_type, swot_element, engine_name):
     lex = lexical_overlap_scores(answer, themes)
 
     if engine_name == ENGINE_RULES:
-        scores = [(0.75 * kw[i]) + (0.25 * lex[i]) for i in range(len(themes))]
+        base_scores = [(0.75 * kw[i]) + (0.25 * lex[i]) for i in range(len(themes))]
     elif engine_name == ENGINE_TFIDF:
-        scores = [(0.80 * tfidf[i]) + (0.20 * lex[i]) for i in range(len(themes))]
+        base_scores = [(0.80 * tfidf[i]) + (0.20 * lex[i]) for i in range(len(themes))]
     elif engine_name == ENGINE_TRANSFORMER:
         tr = transformer_scores(answer, themes)
         if tr is None:
-            scores = [(0.55 * tfidf[i]) + (0.30 * kw[i]) + (0.15 * lex[i]) for i in range(len(themes))]
+            base_scores = [(0.55 * tfidf[i]) + (0.30 * kw[i]) + (0.15 * lex[i]) for i in range(len(themes))]
         else:
-            scores = [(0.65 * tr[i]) + (0.25 * kw[i]) + (0.10 * lex[i]) for i in range(len(themes))]
+            base_scores = [(0.65 * tr[i]) + (0.25 * kw[i]) + (0.10 * lex[i]) for i in range(len(themes))]
     else:
-        # Recommended hybrid: domain keywords prevent illogical mappings; TF-IDF helps with wording variants.
-        scores = [(0.42 * kw[i]) + (0.38 * tfidf[i]) + (0.20 * lex[i]) for i in range(len(themes))]
+        base_scores = [(0.42 * kw[i]) + (0.38 * tfidf[i]) + (0.20 * lex[i]) for i in range(len(themes))]
 
-    ranked = sorted(zip(themes, scores, kw, tfidf, lex), key=lambda x: x[1], reverse=True)
+    adjusted_scores, guardrail_note, active_groups = domain_gate_adjustments(answer, themes, swot_element, base_scores)
+
+    ranked = sorted(
+        zip(themes, adjusted_scores, kw, tfidf, lex, base_scores, [guardrail_note] * len(themes)),
+        key=lambda x: x[1],
+        reverse=True
+    )
     return ranked
-
 
 def calibrated_confidence(ranked):
     if not ranked:
