@@ -1615,7 +1615,7 @@ def _pdf_page_decorator(canvas, doc):
             try:
                 logo = ImageReader(str(logo_path))
                 img_w, img_h = logo.getSize()
-                target_w = 3.0 * cm
+                target_w = 5.0 * cm
                 target_h = target_w * img_h / max(img_w, 1)
                 max_h = 1.35 * cm
                 if target_h > max_h:
