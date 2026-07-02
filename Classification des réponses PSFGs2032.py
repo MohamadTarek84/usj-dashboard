@@ -97,8 +97,20 @@ def normalize(value):
     return value
 
 
+def _strip_control_chars(text):
+    """Remove characters (other than newline/tab) that can break ReportLab's
+    paragraph parser, such as stray control bytes sometimes present in Excel
+    exports (e.g. \\x0b vertical tab from a wrapped cell)."""
+    return "".join(ch for ch in text if ch in ("\n", "\t") or ord(ch) >= 32)
+
+
 def esc(value):
-    return html.escape(clean(value)).replace("\n", "<br>")
+    text = html.escape(_strip_control_chars(clean(value)))
+    # Self-closing <br/>, not <br>: this string is also fed into ReportLab's
+    # Paragraph markup (a strict, XML-like parser) when building PDF reports.
+    # An unclosed <br> there raises a ValueError and aborts the whole report;
+    # <br/> is valid both in HTML (Streamlit) and in ReportLab's parser.
+    return text.replace("\n", "<br/>")
 
 
 def safe_filename(value):
@@ -1529,6 +1541,30 @@ def _register_pdf_fonts():
     return "Helvetica", "Helvetica-Bold"
 
 
+def _safe_paragraph(Paragraph, text, style):
+    """Build a ReportLab Paragraph defensively.
+
+    ReportLab's paragraph text is a small XML-like markup, so any unexpected
+    character from source data that slips past `esc()` can make its parser
+    raise and abort PDF generation entirely (this is what caused the
+    'paragraph text ... caused exception' crash). If the escaped text still
+    fails to parse, fall back to a fully tag-stripped plain-text version so
+    the report is still produced instead of crashing the whole app.
+
+    Callers should pass RAW (unescaped) text — this function calls esc()
+    itself, so pre-escaping the argument would double-escape it.
+    """
+    safe_text = esc(text)
+    try:
+        return Paragraph(safe_text, style)
+    except Exception:
+        fallback = re.sub(r"<[^>]*>", " ", safe_text)
+        try:
+            return Paragraph(fallback, style)
+        except Exception:
+            return Paragraph("(contenu illisible)", style)
+
+
 def _pdf_styles():
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib.enums import TA_JUSTIFY
@@ -1618,7 +1654,14 @@ def build_pdf_swot_matrix(validated_df, participant_type_filter, groupe_filter, 
             for i, (theme, count) in enumerate(theme_counts.items(), start=1):
                 lines.append(f"{i}. {esc(theme)} ({count})")
 
-        para = Paragraph("<br/>".join(lines), styles["USJBody"])
+        joined = "<br/>".join(lines)
+        try:
+            para = Paragraph(joined, styles["USJBody"])
+        except Exception:
+            # This cell intentionally carries <b>/<font> markup, so it can't
+            # go through _safe_paragraph (which would escape those tags too).
+            # If it still fails to parse, strip all tags as a last resort.
+            para = Paragraph(re.sub(r"<[^>]*>", " ", joined), styles["USJBody"])
         cell_data.append(para)
 
     matrix = Table(
@@ -1680,8 +1723,10 @@ def generate_pdf_report(validated_df, participant_type_filter, groupe_filter, re
         if not paragraphs:
             story.append(Paragraph("Aucune donnée validée pour cet élément avec les filtres sélectionnés.", styles["USJBody"]))
         for item in paragraphs:
-            story.append(Paragraph(f"{item['rank']}. {esc(item['theme'])} ({item['count']} réponses)", styles["USJTheme"]))
-            story.append(Paragraph(esc(item["paragraph"]).replace("&#x27;", "'"), styles["USJBody"]))
+            story.append(_safe_paragraph(
+                Paragraph, f"{item['rank']}. {item['theme']} ({item['count']} réponses)", styles["USJTheme"]
+            ))
+            story.append(_safe_paragraph(Paragraph, item["paragraph"], styles["USJBody"]))
         story.append(Spacer(1, 10))
 
     story.append(PageBreak())
@@ -1692,14 +1737,16 @@ def generate_pdf_report(validated_df, participant_type_filter, groupe_filter, re
         items = priorities.get(element, [])
         if items:
             for i, (theme, count) in enumerate(items, start=1):
-                story.append(Paragraph(
-                    f"{i}. {esc(theme)} — {count} occurrences validées ({PRIORITY_LABELS.get(element, '')})",
-                    styles["USJBody"]))
+                story.append(_safe_paragraph(
+                    Paragraph,
+                    f"{i}. {theme} — {count} occurrences validées ({PRIORITY_LABELS.get(element, '')})",
+                    styles["USJBody"],
+                ))
         else:
             story.append(Paragraph("Aucune priorité identifiable pour ce filtre.", styles["USJBody"]))
     story.append(Spacer(1, 12))
     story.append(Paragraph("Conclusion", styles["USJTitle"]))
-    story.append(Paragraph(esc(conclusion), styles["USJConclusion"]))
+    story.append(_safe_paragraph(Paragraph, conclusion, styles["USJConclusion"]))
 
     story.append(PageBreak())
     story.append(Paragraph("Matrice SWOT synthétique", styles["USJTitle"]))
