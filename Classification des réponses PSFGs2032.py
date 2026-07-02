@@ -1073,74 +1073,42 @@ def register_custom_theme(participant_type, swot_element, theme):
         existing.append(theme)
 
 
+# ============================================================
+# DATA EDITOR STATE HELPERS
+# ------------------------------------------------------------
+# st.data_editor's `edited_rows` dict is keyed by POSITION (row order in the
+# displayed frame), not by the DataFrame's index label. `_resolve_row_id` is
+# the single, shared way to turn one of those positional keys back into our
+# real `row_id` (the original Excel row index), and every caller below goes
+# through it so there is exactly one place this logic can go wrong.
+#
+# Persistence itself also has a single source of truth: a session_state
+# "shadow store" (`_editor_value_store`) written by the `on_change` callback
+# (`persist_editor_changes_callback`) *before* Streamlit rebuilds the
+# selectbox options for newly typed themes. Reading straight from
+# `st.session_state[editor_key]["edited_rows"]` a second time in a separate
+# helper was redundant and could drift out of sync with the shadow store, so
+# that path has been removed in favor of this one.
+# ============================================================
 
+def _resolve_row_id(raw_key, row_ids):
+    """Resolve a data_editor `edited_rows` key to the underlying row_id.
 
-def apply_editor_state_to_edit_df(edit_df, editor_key):
-    """Keep manual edits visible after Streamlit reruns.
-
-    This preserves the value typed in "Nouveau thème" while still adding it
-    automatically to the dropdown list. It does not overwrite or clear the last
-    column.
+    `raw_key` is positional (0-based row order in the displayed frame) in
+    normal operation, so position is always checked first. The direct
+    membership fallback only covers the unusual case where the key already
+    equals a row_id (e.g. programmatic edits), and is intentionally tried
+    last so it can never shadow a legitimate positional match.
     """
-    editor_state = st.session_state.get(editor_key, {})
-    if not isinstance(editor_state, dict):
-        return edit_df
-
-    edited_rows = editor_state.get("edited_rows", {})
-    if not isinstance(edited_rows, dict):
-        return edit_df
-
-    out = edit_df.copy()
-    index_list = list(out.index)
-
-    for raw_key, changes in edited_rows.items():
-        if not isinstance(changes, dict):
-            continue
-
-        target_index = None
-        try:
-            key_int = int(raw_key)
-            if key_int in out.index:
-                target_index = key_int
-            elif 0 <= key_int < len(index_list):
-                target_index = index_list[key_int]
-        except Exception:
-            if raw_key in out.index:
-                target_index = raw_key
-
-        if target_index is None or target_index not in out.index:
-            continue
-
-        for col_name, value in changes.items():
-            if col_name in out.columns:
-                out.at[target_index, col_name] = value
-
-    return out
-
-def sync_custom_themes_from_editor_state(editor_key, participant_type, swot_element):
-    """Register newly typed themes before rebuilding the data editor.
-
-    Streamlit reruns the script after a cell edit. The Selectbox options are
-    prepared before edited = st.data_editor(...) returns, so a new theme typed
-    in the previous run must be read from st.session_state at the beginning of
-    the next run. This makes the new theme appear automatically in the dropdown
-    for all rows of the same participant type and SWOT element.
-    """
-    editor_state = st.session_state.get(editor_key, {})
-    if not isinstance(editor_state, dict):
-        return
-
-    edited_rows = editor_state.get("edited_rows", {})
-    if not isinstance(edited_rows, dict):
-        return
-
-    for changes in edited_rows.values():
-        if not isinstance(changes, dict):
-            continue
-        new_theme = clean(changes.get("Nouveau thème", ""))
-        if new_theme:
-            register_custom_theme(participant_type, swot_element, new_theme)
-
+    try:
+        pos = int(raw_key)
+    except (TypeError, ValueError):
+        pos = None
+    if pos is not None and 0 <= pos < len(row_ids):
+        return row_ids[pos]
+    if raw_key in row_ids:
+        return raw_key
+    return None
 
 
 def _editor_value_store():
@@ -1225,17 +1193,7 @@ def persist_editor_changes_callback(editor_key, participant_type, swot_element, 
         if not isinstance(changes, dict):
             continue
 
-        row_id = None
-        try:
-            pos = int(raw_key)
-            if 0 <= pos < len(row_ids):
-                row_id = row_ids[pos]
-            elif pos in row_ids:
-                row_id = pos
-        except Exception:
-            if raw_key in row_ids:
-                row_id = raw_key
-
+        row_id = _resolve_row_id(raw_key, row_ids)
         if row_id is None:
             continue
 
@@ -1794,7 +1752,9 @@ def render_mapping_validation(classified_df):
             continue
 
         editor_key = f"editor_{safe_filename(ptype)}_{safe_filename(swot_element)}"
-        sync_custom_themes_from_editor_state(editor_key, ptype, swot_element)
+        # Single source of truth for restoring previously-typed values: the
+        # shadow store written by persist_editor_changes_callback. See the
+        # comment above the DATA EDITOR STATE HELPERS section.
         sync_custom_themes_from_persistent_values(editor_key, ptype, swot_element)
 
         themes = official_themes_for(ptype, swot_element, include_autre=False)
@@ -1817,7 +1777,6 @@ def render_mapping_validation(classified_df):
                 "AI_Suggested_Theme": "Proposé (IA)",
             }).set_index("row_id")
 
-            edit_df = apply_editor_state_to_edit_df(edit_df, editor_key)
             edit_df = apply_persistent_editor_values(edit_df, editor_key)
 
             row_ids_for_editor = list(edit_df.index)
@@ -2150,10 +2109,23 @@ def ai_platform_page(df):
         engine = render_engine_selector(df_scope)
         trained_model = st.session_state.get("trained_model") if engine == ENGINE_TRAINED else None
 
-        if engine == ENGINE_TRAINED and trained_model is None:
-            st.stop()
+        # NOTE: previously this used `st.stop()` when the trained engine was
+        # selected but no model existed yet. st.stop() halts the ENTIRE
+        # script run, not just this tab, so it silently prevented tabs 2-4
+        # from rendering at all in that run (including the training tab the
+        # user would need to fix the problem). We now simply skip the
+        # classify action for this tab instead, leaving the rest of the app
+        # (and especially tab 2) fully usable.
+        engine_ready = not (engine == ENGINE_TRAINED and trained_model is None)
+        if not engine_ready:
+            st.markdown(
+                '<div class="ai-warning">Ce moteur n\'est pas encore prêt : entraînez un modèle dans '
+                'l\'onglet « 2. Entraîner le modèle », ou sélectionnez l\'heuristique ci-dessus pour '
+                'classifier dès maintenant.</div>',
+                unsafe_allow_html=True,
+            )
 
-        if st.button("Classifier les réponses SWOT", key="run_mapping"):
+        if engine_ready and st.button("Classifier les réponses SWOT", key="run_mapping"):
             with st.spinner("Classification en cours..."):
                 st.session_state["classified_df"] = build_classification_dataframe(df_scope, engine, trained_model)
 
