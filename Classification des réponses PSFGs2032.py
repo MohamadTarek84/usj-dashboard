@@ -338,16 +338,42 @@ def official_themes_for(participant_type, swot_element, include_autre=False):
 
 
 def detect_swot_element(row):
-    section_n = normalize(row.get("section", ""))
-    category_n = normalize(row.get("category", ""))
-    if "faiblesse" in section_n or "faiblesse" in category_n:
+    text = " ".join([
+        clean(row.get("section", "")),
+        clean(row.get("category", "")),
+        clean(row.get("question", "")),
+    ])
+    text_n = normalize(text)
+
+    force_terms = [
+        "force", "forces", "strength", "strengths",
+        "atout", "atouts", "point fort", "points forts"
+    ]
+
+    faiblesse_terms = [
+        "faiblesse", "faiblesses", "weakness", "weaknesses",
+        "point faible", "points faibles", "a ameliorer", "ameliorer"
+    ]
+
+    opportunite_terms = [
+        "opportunite", "opportunites", "opportunity", "opportunities",
+        "levier", "leviers"
+    ]
+
+    menace_terms = [
+        "menace", "menaces", "threat", "threats",
+        "risque", "risques"
+    ]
+
+    if any(term in text_n for term in faiblesse_terms):
         return "Faiblesses"
-    if "force" in section_n or "force" in category_n:
-        return "Forces"
-    if "menace" in section_n or "menace" in category_n:
+    if any(term in text_n for term in menace_terms):
         return "Menaces"
-    if "opportun" in section_n or "opportun" in category_n:
+    if any(term in text_n for term in opportunite_terms):
         return "Opportunités"
+    if any(term in text_n for term in force_terms):
+        return "Forces"
+
     return ""
 
 
@@ -631,6 +657,7 @@ def read_corrected_excel(uploaded_file):
     names_col = get_col(df, ["participants", "Participants", "Nom participants"])
     section_col = get_col(df, ["section"])
     category_col = get_col(df, ["category", "catégorie", "categorie"])
+    question_col = get_col(df, ["Question", "question", "Questions"])
     answer_col = get_col(df, ["Final_Answer", "Final Answer", "Réponse finale", "Reponse finale"])
 
     missing = []
@@ -642,14 +669,25 @@ def read_corrected_excel(uploaded_file):
         st.error("Colonnes manquantes : " + ", ".join(missing))
         st.stop()
 
-    df = df.rename(columns={
-        type_col: "Respondent_Type", group_col: "groupe", names_col: "participants",
-        section_col: "section", category_col: "category", answer_col: "Final_Answer",
-    })
-    df["question"] = df["category"]
+    rename_map = {
+        type_col: "Respondent_Type",
+        group_col: "groupe",
+        names_col: "participants",
+        section_col: "section",
+        category_col: "category",
+        answer_col: "Final_Answer",
+    }
+    if question_col:
+        rename_map[question_col] = "question"
+
+    df = df.rename(columns=rename_map)
+
+    if "question" not in df.columns:
+        df["question"] = df["category"]
 
     for col in ["Respondent_Type", "groupe", "participants", "section", "category", "question", "Final_Answer"]:
-        df[col] = df[col].apply(clean)
+        if col in df.columns:
+            df[col] = df[col].apply(clean)
 
     df = df[(df["Respondent_Type"] != "") & (df["groupe"] != "")]
     df["swot_element"] = df.apply(detect_swot_element, axis=1)
@@ -717,10 +755,6 @@ def strict_duplicate_score(answer_a, answer_b):
 
 
 def detect_duplicate_pairs(df):
-    """Duplicates are only meaningful WITHIN a single subgroup: the same
-    subgroup's members answering the same SWOT element in overlapping ways.
-    Two different subgroups saying similar things is expected convergence,
-    not a duplicate to merge, so cross-subgroup pairs are never compared."""
     rows = df[df["Final_Answer"].apply(clean) != ""].copy()
     rows = rows[rows["swot_element"].isin(SWOT_ELEMENTS)].reset_index(drop=True)
     pairs = []
@@ -728,15 +762,12 @@ def detect_duplicate_pairs(df):
         for j in range(i + 1, len(rows)):
             if rows.loc[i, "swot_element"] != rows.loc[j, "swot_element"]:
                 continue
-            if rows.loc[i, "groupe"] != rows.loc[j, "groupe"]:
-                continue
             score, reason = strict_duplicate_score(rows.loc[i, "Final_Answer"], rows.loc[j, "Final_Answer"])
             if score >= 0.80:
                 pairs.append({
                     "Élément SWOT": rows.loc[i, "swot_element"],
-                    "Sous-groupe": rows.loc[i, "groupe"],
-                    "Réponse 1": rows.loc[i, "Final_Answer"],
-                    "Réponse 2": rows.loc[j, "Final_Answer"],
+                    "Sous-groupe 1": rows.loc[i, "groupe"], "Réponse 1": rows.loc[i, "Final_Answer"],
+                    "Sous-groupe 2": rows.loc[j, "groupe"], "Réponse 2": rows.loc[j, "Final_Answer"],
                     "Score doublon": round(score * 100, 1), "Raison": reason,
                     "Validation expert": "À vérifier",
                 })
@@ -1293,10 +1324,6 @@ def _pdf_styles():
     from reportlab.lib.enums import TA_JUSTIFY
     from reportlab.lib import colors
     styles = getSampleStyleSheet()
-    styles.add(ParagraphStyle(name="USJHeaderTitle", fontSize=15, leading=18,
-                               textColor=colors.HexColor(USJ_BLUE), fontName="Helvetica-Bold"))
-    styles.add(ParagraphStyle(name="USJHeaderSubtitle", fontSize=10.5, leading=13,
-                               textColor=colors.HexColor(USJ_BLUE_2), fontName="Helvetica-Bold", spaceBefore=1))
     styles.add(ParagraphStyle(name="USJTitle", fontSize=20, leading=24,
                                textColor=colors.HexColor(USJ_BLUE), fontName="Helvetica-Bold", spaceAfter=6))
     styles.add(ParagraphStyle(name="USJSubtitle", fontSize=12, leading=16,
@@ -1312,47 +1339,6 @@ def _pdf_styles():
     return styles
 
 
-def _pdf_header_flowables(styles):
-    """USJ masthead matching the official focus-group letterhead: title +
-    'Focus groupe' subtitle on the left, USJ logo on the right, thin rule
-    beneath. Falls back gracefully to text-only if the logo file (checked
-    into the repo alongside this script as 'LOGO NEW UAQ.png') isn't found
-    at runtime."""
-    from reportlab.platypus import Table, TableStyle, Paragraph, Spacer, HRFlowable
-    from reportlab.lib import colors
-    from reportlab.lib.units import cm
-
-    title_cell = [
-        Paragraph(APP_TITLE, styles["USJHeaderTitle"]),
-        Paragraph("Focus groupe", styles["USJHeaderSubtitle"]),
-    ]
-
-    logo_cell = ""
-    try:
-        from reportlab.platypus import Image as RLImage
-        if Path(LOGO_PATH).exists():
-            logo_cell = RLImage(LOGO_PATH, width=2.4 * cm, height=2.4 * cm, kind="proportional")
-    except Exception:
-        logo_cell = ""
-
-    if logo_cell:
-        header_tbl = Table([[title_cell, logo_cell]], colWidths=[13 * cm, 4 * cm])
-    else:
-        header_tbl = Table([[title_cell]], colWidths=[17 * cm])
-    header_tbl.setStyle(TableStyle([
-        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("ALIGN", (-1, 0), (-1, -1), "RIGHT"),
-        ("LEFTPADDING", (0, 0), (-1, -1), 0), ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-    ]))
-
-    return [
-        header_tbl,
-        Spacer(1, 6),
-        HRFlowable(width="100%", thickness=1, color=colors.HexColor("#D0D6E0")),
-        Spacer(1, 16),
-    ]
-
-
 def generate_pdf_report(validated_df, participant_type_filter, groupe_filter, report_label):
     try:
         from reportlab.lib.pagesizes import A4
@@ -1364,11 +1350,11 @@ def generate_pdf_report(validated_df, participant_type_filter, groupe_filter, re
 
     styles = _pdf_styles()
     buf = BytesIO()
-    doc = SimpleDocTemplate(buf, pagesize=A4, topMargin=1.8 * cm, bottomMargin=2 * cm,
+    doc = SimpleDocTemplate(buf, pagesize=A4, topMargin=2 * cm, bottomMargin=2 * cm,
                              leftMargin=2 * cm, rightMargin=2 * cm)
     story = []
 
-    story.extend(_pdf_header_flowables(styles))
+    story.append(Paragraph(APP_TITLE, styles["USJTitle"]))
     story.append(Paragraph(f"Rapport de synthèse thématique — {report_label}", styles["USJSubtitle"]))
     story.append(Spacer(1, 6))
 
@@ -1557,18 +1543,11 @@ def render_training_tab(df_scope):
     st.subheader("2. Entraîner le modèle supervisé sur vos données validées")
     st.markdown("""
     <div class="ai-info-box">
-        <b>À quoi sert cet onglet, concrètement ?</b><br>
-        Dans l'onglet 1, l'IA propose un thème pour chaque réponse et un expert le confirme ou le corrige.
-        Sans cet onglet 2, l'IA qui fait ces propositions reste toujours la même (l'heuristique à base de
-        règles de mots-clés) : elle ne retient jamais vos corrections, donc elle refait les mêmes erreurs.<br><br>
-        Cet onglet permet d'<b>entraîner une deuxième IA sur vos corrections</b> : à chaque réponse que vous
-        validez ou corrigez dans l'onglet 1, elle apprend le lien entre le texte de la réponse et le thème
-        que vous avez choisi. Une fois entraînée, elle remplace l'heuristique comme moteur de suggestion —
-        ses propositions collent donc de plus en plus à la façon dont VOS experts classifient réellement,
-        et son taux de réussite (%) est mesuré objectivement sur vos données, pas estimé à l'œil.<br><br>
-        L'expert garde toujours le dernier mot : ce modèle ne remplace jamais la validation de l'onglet 1,
-        il rend seulement ses suggestions de départ plus fiables, ce qui fait gagner du temps sur les
-        centaines de réponses restantes à valider.
+        C'est ici que la précision réelle se construit. Le modèle apprend directement de vos réponses
+        validées dans l'onglet 1 — pas de règles écrites à la main. La précision affichée est mesurée
+        par validation croisée : les données sont divisées en plusieurs groupes, le modèle s'entraîne
+        sur certains et est testé sur les autres, plusieurs fois, pour donner une estimation fiable
+        plutôt qu'optimiste.
     </div>
     """, unsafe_allow_html=True)
 
@@ -1697,8 +1676,7 @@ def render_synthesis_tab():
                "sous-groupe, ou conservez la vue globale pour une synthèse consolidée.")
     validated_df = st.session_state.get("validated_mapping_df", pd.DataFrame())
     if validated_df.empty:
-        st.warning("Veuillez d'abord classifier puis valider les réponses dans l'onglet 1 (utilisez le "
-                   "bouton « Confirmer la validation de toutes les réponses » pour aller vite).")
+        st.warning("Veuillez d'abord produire et valider le mapping SWOT dans l'onglet 1.")
         return
 
     col_a, col_b = st.columns(2)
@@ -1828,23 +1806,6 @@ def ai_platform_page(df):
             st.dataframe(classified_df[preview_cols], use_container_width=True)
 
             validated_df = render_mapping_validation(classified_df)
-
-            st.markdown("""
-            <div class="ai-info-box">
-                Vous pouvez valider réponse par réponse ci-dessus (recommandé pour la meilleure qualité), ou
-                confirmer d'un coup toutes les suggestions automatiques telles quelles ci-dessous, pour que
-                l'onglet « 4. Synthèse » ne soit jamais vide en attendant une revue détaillée. Ce bouton
-                remplace toute correction manuelle faite ci-dessus par la suggestion de l'IA pour chaque
-                réponse ; vous pourrez toujours revenir corriger des réponses individuelles ensuite.
-            </div>
-            """, unsafe_allow_html=True)
-            if st.button("✅ Confirmer la validation de toutes les réponses (suggestions automatiques)", key="confirm_all_validated"):
-                bulk_df = classified_df.copy()
-                bulk_df["Validated_Theme"] = bulk_df["AI_Suggested_Theme"]
-                bulk_df["New_Theme"] = ""
-                validated_df = bulk_df
-                st.success(f"{len(bulk_df)} réponses validées automatiquement. Consultez l'onglet « 4. Synthèse ».")
-
             st.session_state["validated_mapping_df"] = validated_df
 
             if not validated_df.empty:
@@ -1866,10 +1827,8 @@ def ai_platform_page(df):
 
     with tab_duplicates:
         st.subheader("3. Détection stricte des doublons")
-        st.caption("Règle stricte : même sous-groupe + même élément SWOT + même sujet central. Deux "
-                   "sous-groupes différents qui expriment une idée proche ne sont jamais comparés entre eux "
-                   "(c'est une convergence, pas un doublon) ; seules les réponses d'un même sous-groupe sont "
-                   "confrontées. Une structure grammaticale similaire avec un sujet différent n'est pas retenue.")
+        st.caption("Règle stricte : même élément SWOT + même sujet central. Une structure grammaticale "
+                   "similaire avec un sujet différent n'est pas retenue.")
         if st.button("Détecter les doublons", key="detect_duplicates"):
             st.session_state["duplicates_df"] = detect_duplicate_pairs(df_scope)
         dup_df = st.session_state.get("duplicates_df", pd.DataFrame())
