@@ -1016,32 +1016,13 @@ def build_theme_synthesis(validated_df):
 # STREAMLIT UI
 # ============================================================
 
-def confidence_badge(conf):
-    try:
-        conf = float(conf)
-    except (TypeError, ValueError):
-        return "⚪"
-    if conf < 40:
-        return "🔴"
-    if conf < 70:
-        return "🟡"
-    return "🟢"
-
-
-def short_theme_label(theme, max_len=38):
-    theme = clean(theme)
-    # Official theme names often carry a long parenthetical explanation
-    # (e.g. "Succès des étudiants (recrutement, accompagnement, ...)").
-    # Drop that for the compact title; the full name is still shown inside.
-    base = theme.split("(")[0].strip()
-    if len(base) > max_len:
-        return base[:max_len].rstrip() + "…"
-    return base
-
-
-def short_group_label(value):
-    value = clean(value)
-    return re.sub(r"(?i)^sous-?groupe\s*", "SG ", value)
+def _resolve_validated_theme(selected, new_theme):
+    new_theme = clean(new_theme)
+    if new_theme:
+        return new_theme
+    if selected == "Autre (nouveau thème)":
+        return ""
+    return selected
 
 
 def render_mapping_validation(classified_df):
@@ -1049,37 +1030,66 @@ def render_mapping_validation(classified_df):
         st.warning("Aucune réponse SWOT à classifier.")
         return classified_df
 
-    validated_rows = []
     st.markdown("### Validation experte des classifications")
-    st.caption("Les réponses à faible confiance sont affichées en premier : ce sont celles où votre validation "
-               "apporte le plus de valeur, y compris pour entraîner le modèle supervisé.")
+    st.caption("Groupé par type de participant et élément SWOT, pour que la liste de thèmes proposée "
+               "reste toujours la bonne. Triez : les groupes avec le plus de réponses à faible confiance "
+               "apparaissent en premier et sont ouverts par défaut.")
 
-    ordered = classified_df.sort_values("Confidence", ascending=True)
-    for _, row in ordered.iterrows():
-        swot_element = row["swot_element"]
-        row_key = f"{row['row_id']}_{swot_element}"
-        themes = official_themes_for(row["Respondent_Type"], swot_element, include_autre=False)
-        suggested = row.get("AI_Suggested_Theme", "")
-        default_index = themes.index(suggested) if suggested in themes else 0
-        conf = row.get("Confidence", "")
-        badge = confidence_badge(conf)
-        group_label = short_group_label(row["groupe"])
-        theme_label = short_theme_label(suggested)
-        title = f"{badge} {conf}% · {row['Respondent_Type']}/{group_label} · {swot_element} → {theme_label}"
-        with st.expander(title, expanded=False):
-            st.markdown("**Réponse**")
-            st.write(row["Final_Answer"])
-            if clean(row.get("Top_3_Themes", "")):
-                st.caption("Top 3 : " + clean(row.get("Top_3_Themes", "")))
-            if clean(row.get("Evidence", "")):
-                st.caption("Évidence : " + clean(row.get("Evidence", "")))
-            selected_theme = st.selectbox("Thème validé par l'expert", options=themes, index=default_index, key=f"theme_{row_key}")
-            new_theme = st.text_input("Ajouter un nouveau thème si aucun thème officiel ne convient", value="", key=f"new_theme_{row_key}")
-            final_theme = clean(new_theme) if clean(new_theme) else selected_theme
-            out = row.to_dict()
-            out["Validated_Theme"] = final_theme
-            out["New_Theme"] = clean(new_theme)
-            validated_rows.append(out)
+    group_order = (
+        classified_df.groupby(["Respondent_Type", "swot_element"])["Confidence"]
+        .mean().sort_values().index.tolist()
+    )
+
+    validated_rows = []
+    for ptype, swot_element in group_order:
+        subset = classified_df[
+            (classified_df["Respondent_Type"] == ptype) & (classified_df["swot_element"] == swot_element)
+        ].sort_values("Confidence", ascending=True)
+        if subset.empty:
+            continue
+
+        themes = official_themes_for(ptype, swot_element, include_autre=False)
+        theme_options = themes + ["Autre (nouveau thème)"]
+        low_conf_count = int((subset["Confidence"] < 50).sum())
+
+        header = f"{ptype} · {swot_element} — {len(subset)} réponses"
+        if low_conf_count:
+            header += f" · 🔴 {low_conf_count} à valider en priorité"
+
+        with st.expander(header, expanded=(low_conf_count > 0)):
+            edit_df = subset[["row_id", "Final_Answer", "Confidence", "AI_Suggested_Theme"]].copy()
+            edit_df["Thème validé"] = edit_df["AI_Suggested_Theme"]
+            edit_df["Nouveau thème"] = ""
+            edit_df = edit_df.rename(columns={
+                "Final_Answer": "Réponse", "Confidence": "Confiance %", "AI_Suggested_Theme": "Proposé (IA)",
+            }).set_index("row_id")
+
+            edited = st.data_editor(
+                edit_df,
+                key=f"editor_{safe_filename(ptype)}_{safe_filename(swot_element)}",
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "Réponse": st.column_config.TextColumn(disabled=True, width="large"),
+                    "Confiance %": st.column_config.NumberColumn(disabled=True, width="small", format="%.1f"),
+                    "Proposé (IA)": st.column_config.TextColumn(disabled=True, width="medium"),
+                    "Thème validé": st.column_config.SelectboxColumn(options=theme_options, required=True, width="medium"),
+                    "Nouveau thème": st.column_config.TextColumn(
+                        width="medium", help="Rempli automatiquement si vous choisissez « Autre (nouveau thème) »"
+                    ),
+                },
+            )
+
+            for row_id, edited_row in edited.iterrows():
+                original = subset[subset["row_id"] == row_id]
+                if original.empty:
+                    continue
+                out = original.iloc[0].to_dict()
+                final_theme = _resolve_validated_theme(edited_row["Thème validé"], edited_row["Nouveau thème"])
+                out["Validated_Theme"] = final_theme if final_theme else edited_row["Thème validé"]
+                out["New_Theme"] = clean(edited_row["Nouveau thème"])
+                validated_rows.append(out)
+
     return pd.DataFrame(validated_rows)
 
 
