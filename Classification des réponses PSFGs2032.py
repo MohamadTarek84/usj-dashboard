@@ -1075,6 +1075,31 @@ def register_custom_theme(participant_type, swot_element, theme):
         existing.append(theme)
 
 
+def sync_custom_themes_from_editor_state(editor_key, participant_type, swot_element):
+    """Register newly typed themes before rebuilding the data editor.
+
+    Streamlit reruns the script after a cell edit. The Selectbox options are
+    prepared before edited = st.data_editor(...) returns, so a new theme typed
+    in the previous run must be read from st.session_state at the beginning of
+    the next run. This makes the new theme appear automatically in the dropdown
+    for all rows of the same participant type and SWOT element.
+    """
+    editor_state = st.session_state.get(editor_key, {})
+    if not isinstance(editor_state, dict):
+        return
+
+    edited_rows = editor_state.get("edited_rows", {})
+    if not isinstance(edited_rows, dict):
+        return
+
+    for changes in edited_rows.values():
+        if not isinstance(changes, dict):
+            continue
+        new_theme = clean(changes.get("Nouveau thème", ""))
+        if new_theme:
+            register_custom_theme(participant_type, swot_element, new_theme)
+
+
 # ============================================================
 # ACADEMIC SYNTHESIS TEXT (rule-based, no external API required)
 # ============================================================
@@ -1503,6 +1528,9 @@ def render_mapping_validation(classified_df):
         if subset.empty:
             continue
 
+        editor_key = f"editor_{safe_filename(ptype)}_{safe_filename(swot_element)}"
+        sync_custom_themes_from_editor_state(editor_key, ptype, swot_element)
+
         themes = official_themes_for(ptype, swot_element, include_autre=False)
         custom_themes = get_custom_themes(ptype, swot_element)
         theme_options = themes + [t for t in custom_themes if t not in themes] + ["Autre (nouveau thème)"]
@@ -1525,7 +1553,7 @@ def render_mapping_validation(classified_df):
 
             edited = st.data_editor(
                 edit_df,
-                key=f"editor_{safe_filename(ptype)}_{safe_filename(swot_element)}",
+                key=editor_key,
                 use_container_width=True,
                 hide_index=True,
                 column_config={
