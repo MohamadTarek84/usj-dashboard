@@ -1,3 +1,30 @@
+"""
+PLAN STRATÉGIQUE USJ 2032 - Plateforme IA supervisée d'analyse thématique
+==========================================================================
+
+Architecture de classification (3 moteurs, clairement séparés) :
+
+  1. HEURISTIQUE (démarrage à froid, aucune donnée requise)
+     Règles de domaine + TF-IDF. Sert à pré-remplir des suggestions
+     avant qu'un modèle entraîné existe. Précision plafonnée par nature :
+     un système à base de règles ne "comprend" pas le texte, il reconnaît
+     des motifs. Utile pour démarrer, pas pour la précision finale.
+
+  2. MODÈLE SUPERVISÉ ENTRAÎNÉ (recommandé pour la précision réelle)
+     TF-IDF + Régression logistique / SVM linéaire, entraîné sur les
+     réponses que vous avez validées dans l'onglet de validation experte.
+     C'est le seul moyen d'obtenir une "haute précision" mesurable :
+     la précision annoncée est calculée par validation croisée sur vos
+     propres données, pas une estimation. Plus vous validez de réponses,
+     plus ce modèle s'améliore. Le modèle peut être téléchargé et réutilisé.
+
+  3. IA INSTITUTIONNELLE (optionnel, désactivé par défaut)
+     Appel à une API externe (OpenAI). Envoie le texte des réponses à un
+     service tiers : à activer uniquement si cela est acceptable pour la
+     confidentialité de vos données. Isolé et clairement signalé dans
+     l'interface, jamais activé silencieusement.
+"""
+
 import re
 import os
 import html
@@ -6,11 +33,15 @@ import difflib
 import json
 import urllib.request
 from pathlib import Path
-from datetime import datetime
 from io import BytesIO
 
+import numpy as np
 import pandas as pd
 import streamlit as st
+
+# ============================================================
+# CONSTANTS
+# ============================================================
 
 APP_TITLE = "PLAN STRATÉGIQUE USJ 2032"
 SHEET_NAME = "All answers 29-6-2026"
@@ -21,8 +52,20 @@ USJ_RED = "#8B1538"
 USJ_LIGHT_BLUE = "#EAF2F8"
 USJ_TEXT = "#1B2A41"
 LOGO_PATH = "LOGO NEW UAQ.png"
-ENGINE_LLM_STRICT = "Moteur IA institutionnel - classification raisonnée"
 
+ENGINE_HEURISTIC = "Heuristique (règles + TF-IDF) - démarrage à froid"
+ENGINE_TRAINED = "Modèle supervisé entraîné - recommandé pour la précision"
+ENGINE_LLM = "IA institutionnelle (API externe) - optionnel"
+
+SWOT_ELEMENTS = ["Forces", "Faiblesses", "Opportunités", "Menaces"]
+
+MIN_EXAMPLES_PER_THEME = 3
+MIN_TOTAL_TRAINING_EXAMPLES = 15
+
+
+# ============================================================
+# BASIC UTILITIES
+# ============================================================
 
 def clean(value):
     if pd.isna(value):
@@ -70,47 +113,6 @@ def image_to_base64(image_path):
     return f"data:image/{mime_type};base64,{encoded}"
 
 
-
-APP_CSS = f"""
-<style>
-html, body, .stApp {{
-    font-family: Candara, Calibri, Arial, sans-serif !important;
-    color:{USJ_TEXT};
-}}
-
-header, footer, #MainMenu {{
-    display:none !important;
-}}
-
-.block-container {{
-    max-width:100% !important;
-    padding-left:3rem !important;
-    padding-right:3rem !important;
-}}
-
-h1, h2, h3 {{
-    color:{USJ_BLUE} !important;
-    font-weight:800 !important;
-}}
-
-.stButton button,
-.stDownloadButton button {{
-    background-color:#0070C0 !important;
-    color:white !important;
-    border-radius:8px !important;
-    border:1px solid #0070C0 !important;
-    font-weight:800 !important;
-    font-size:18px !important;
-}}
-
-.stButton button p,
-.stDownloadButton button p {{
-    color:white !important;
-}}
-</style>
-"""
-
-
 def get_col(df, possible_names):
     cols = {normalize(c): c for c in df.columns}
     for name in possible_names:
@@ -120,8 +122,55 @@ def get_col(df, possible_names):
     return None
 
 
+APP_CSS = f"""
+<style>
+html, body, .stApp {{
+    font-family: Candara, Calibri, Arial, sans-serif !important;
+    color:{USJ_TEXT};
+}}
+header, footer, #MainMenu {{ display:none !important; }}
+.block-container {{ max-width:100% !important; padding-left:3rem !important; padding-right:3rem !important; }}
+h1, h2, h3 {{ color:{USJ_BLUE} !important; font-weight:800 !important; }}
+.stButton button, .stDownloadButton button {{
+    background-color:#0070C0 !important; color:white !important; border-radius:8px !important;
+    border:1px solid #0070C0 !important; font-weight:800 !important; font-size:18px !important;
+}}
+.stButton button p, .stDownloadButton button p {{ color:white !important; }}
+.ai-hero {{
+    background: linear-gradient(135deg, #001F5B 0%, #123C7C 55%, #8B1538 100%);
+    color: white; border-radius: 22px; padding: 30px 34px; margin: 8px 0 24px 0;
+    box-shadow: 0 16px 38px rgba(0,31,91,0.22);
+}}
+.ai-hero h2 {{ color: white !important; margin: 0 0 8px 0; font-size: 32px; font-weight: 900; }}
+.ai-hero p {{ color: #EAF2F8; margin: 0; font-size: 16px; line-height: 1.5; }}
+.ai-card {{
+    background: white; border: 1px solid #D0D6E0; border-radius: 18px; padding: 18px 22px;
+    margin: 14px 0 18px 0; box-shadow: 0 8px 24px rgba(0,0,0,0.055);
+}}
+.ai-info-box {{
+    background: #EAF2F8; color: #003B7A; border-left: 6px solid {USJ_BLUE}; border-radius: 12px;
+    padding: 14px 18px; margin: 14px 0; font-size: 15px;
+}}
+.ai-warning {{
+    background: #FFF7E6; border-left: 6px solid #F59F00; border-radius: 12px; padding: 14px 18px;
+    color: #7A4B00; font-weight: 700; margin: 12px 0;
+}}
+.ai-danger {{
+    background: #FDECEC; border-left: 6px solid {USJ_RED}; border-radius: 12px; padding: 14px 18px;
+    color: #7A1B2B; font-weight: 700; margin: 12px 0;
+}}
+.ai-kpi {{
+    background: white; border: 1px solid #D0D6E0; border-radius: 16px; padding: 16px 18px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.045); min-height: 92px;
+}}
+.ai-kpi-number {{ color: {USJ_RED}; font-size: 28px; font-weight: 900; }}
+.ai-kpi-label {{ color: #64748B; font-size: 13px; font-weight: 700; margin-top: 3px; }}
+</style>
+"""
+
+
 # ============================================================
-# AI ASSISTED SWOT THEMATIC CLASSIFICATION
+# OFFICIAL THEME TAXONOMY (unchanged from your source of truth)
 # ============================================================
 
 THEME_TAXONOMY = {
@@ -264,19 +313,6 @@ PARTICIPANT_TYPE_ALIASES = {
 }
 
 
-STOPWORDS_FR = {
-    "le", "la", "les", "un", "une", "des", "du", "de", "d", "l", "et", "ou", "en",
-    "au", "aux", "avec", "sans", "pour", "par", "dans", "sur", "ce", "cet", "cette",
-    "ces", "qui", "que", "quoi", "dont", "est", "sont", "être", "avoir", "plus",
-    "moins", "très", "tres", "comme", "nous", "vous", "ils", "elles", "il", "elle",
-    "ne", "pas", "se", "sa", "son", "ses", "leur", "leurs", "a", "à", "of", "the",
-    "and", "or", "to", "in", "for", "with", "by", "on",
-    # Generic words that must not make two answers look like duplicates
-    "renforce", "renforcee", "renforcer", "davantage", "ameliorer", "meilleur",
-    "meilleure", "systeme", "niveau", "mise", "jour", "usj", "universite"
-}
-
-
 def canonical_participant_type(value):
     raw = clean(value)
     norm = normalize(raw)
@@ -295,7 +331,6 @@ def official_themes_for(participant_type, swot_element, include_autre=False):
 def detect_swot_element(row):
     section_n = normalize(row.get("section", ""))
     category_n = normalize(row.get("category", ""))
-
     if "faiblesse" in section_n or "faiblesse" in category_n:
         return "Faiblesses"
     if "force" in section_n or "force" in category_n:
@@ -307,160 +342,270 @@ def detect_swot_element(row):
     return ""
 
 
+# ============================================================
+# TEXT PROCESSING
+# ============================================================
+
+STOPWORDS_FR = {
+    "le", "la", "les", "un", "une", "des", "du", "de", "d", "l", "et", "ou", "en",
+    "au", "aux", "avec", "sans", "pour", "par", "dans", "sur", "ce", "cet", "cette",
+    "ces", "qui", "que", "quoi", "dont", "est", "sont", "etre", "avoir", "plus",
+    "moins", "tres", "comme", "nous", "vous", "ils", "elles", "il", "elle",
+    "ne", "pas", "se", "sa", "son", "ses", "leur", "leurs", "a", "of", "the",
+    "and", "or", "to", "in", "for", "with", "by", "on",
+    "renforce", "renforcee", "renforcer", "davantage", "ameliorer", "meilleur",
+    "meilleure", "systeme", "niveau", "mise", "jour", "usj", "universite",
+}
+
+
 def tokenize_for_similarity(text):
     text = normalize(text)
     tokens = re.findall(r"[a-z0-9]{3,}", text)
     return [t for t in tokens if t not in STOPWORDS_FR]
 
 
-THEME_KEYWORD_RULES = {
-    "soutenabilite financiere": [
-        "budget", "financement", "financier", "financiere", "finance", "frais", "scolarite", "bourse", "cout", "couts", "ressources financieres", "modele economique", "soutenabilite", "viabilite"
-    ],
-    "gouvernance et leadership": [
-        "gouvernance", "leadership", "direction", "doyen", "doyens", "directeur", "directeurs", "decision", "decisions", "pilotage", "procedure", "procedures", "administration", "centralisation", "decentralisation", "strategie", "representation", "responsabilisation", "accountability", "transparence", "autonomie"
-    ],
-    "strategie academique et qualite d enseignement": [
-        "programme", "programmes", "formation", "formations", "enseignement", "academique", "pedagogie", "pedagogique", "curriculum", "cours", "accreditation", "accreditations", "diplome", "diplomes", "qualite", "evaluation", "apprentissage", "langue", "anglais", "francais", "trilinguisme"
-    ],
-    "qualite de l enseignement": [
-        "enseignement", "cours", "enseignant", "enseignants", "pedagogie", "pedagogique", "qualite", "accompagnement", "orientation", "tutorat", "apprentissage", "evaluation", "formation", "langue", "anglais", "francais"
-    ],
-    "recherche et innovation": [
-        "recherche", "innovation", "innovant", "publications", "publication", "scopus", "laboratoire", "laboratoires", "projet scientifique", "projets scientifiques", "these", "doctorat", "brevet", "brevets", "valorisation"
-    ],
-    "ressources documentaires et environnement digital": [
-        "bibliotheque", "documentaire", "documentaires", "ressources numeriques", "digital", "digitale", "numerique", "numeriques", "plateforme", "plateformes", "informatique", "informatiques", "technologie", "technologique", "systeme", "systemes", "outils", "logiciel", "logiciels", "data", "donnees"
-    ],
-    "ressources documentaires numeriques et informatiques": [
-        "bibliotheque", "documentaire", "documentaires", "ressources numeriques", "digital", "digitale", "numerique", "numeriques", "plateforme", "plateformes", "informatique", "informatiques", "technologie", "technologique", "systeme", "systemes", "outils", "logiciel", "logiciels", "data", "donnees"
-    ],
-    "succes des etudiants": [
-        "etudiant", "etudiants", "recrutement", "inscription", "inscriptions", "accompagnement", "orientation", "support", "service", "services", "employabilite", "insertion", "stage", "stages", "reussite", "parcours", "diplomes", "alumni"
-    ],
-    "ressources humaines": [
-        "personnel", "personnels", "enseignant", "enseignants", "administratif", "administratifs", "rh", "recrutement", "charge", "charges", "competence", "competences", "formation du personnel", "evaluation", "modernisation du personnel", "ressources humaines"
-    ],
-    "strategie et mobilite internationales": [
-        "international", "internationale", "internationales", "mobilite", "echange", "echanges", "partenariat", "partenariats", "etranger", "etrangers", "diaspora", "francophone", "francophonie", "anglais", "langues"
-    ],
-    "mission societale": [
-        "societe", "societal", "societale", "communautaire", "communaute", "social", "sociale", "service", "citoyen", "citoyenne", "engagement", "impact", "liban", "reconstruction", "responsabilite sociale"
-    ],
-    "espace et infrastructures": [
-        "campus", "batiment", "batiments", "salle", "salles", "locaux", "infrastructure", "infrastructures", "espace", "espaces", "equipement", "equipements", "laboratoire", "laboratoires", "maintenance", "beyrouth"
-    ],
-    "espace et infrastructure": [
-        "campus", "batiment", "batiments", "salle", "salles", "locaux", "infrastructure", "infrastructures", "espace", "espaces", "equipement", "equipements", "laboratoire", "laboratoires", "maintenance", "beyrouth"
-    ],
-    "environnement de travail": [
-        "environnement de travail", "conditions de travail", "climat", "bien etre", "collaboration", "communication interne", "charge de travail", "horaires", "processus administratif", "processus administratifs"
-    ],
-    "diversite et inclusion": [
-        "diversite", "inclusion", "inclusive", "egalite", "equite", "handicap", "genre", "discrimination", "accessibilite", "individualiste", "individualistes"
-    ],
-    "developpement durable": [
-        "developpement durable", "odd", "durable", "durabilite", "environnement", "ecologie", "transition energetique", "energie", "responsabilite environnementale"
-    ],
-    "relation avec l administration et les enseignants": [
-        "administration", "enseignants", "enseignant", "relation", "communication", "disponibilite", "ecoute", "procedures", "bureau", "service administratif"
-    ],
-    "representation des etudiants": [
-        "representation", "representants", "delegue", "delegues", "voix etudiante", "participation", "consultation", "conseil etudiant"
-    ],
-    "vie universitaire": [
-        "vie universitaire", "vie etudiante", "sport", "activites", "clubs", "campus", "aide psychologique", "psychologique", "animation", "experience etudiante"
-    ],
-    "mobilite internationale": [
-        "mobilite", "international", "internationale", "echange", "echanges", "erasmus", "partenariat", "partenariats", "etranger", "voyage"
-    ],
-    "aide financiere": [
-        "aide financiere", "bourse", "bourses", "frais", "scolarite", "paiement", "soutien financier", "financement"
-    ],
-    "insertion professionnelle": [
-        "insertion", "professionnelle", "emploi", "employabilite", "stage", "stages", "carriere", "entreprise", "entreprises", "marche du travail", "metier", "metiers"
-    ],
-    "marche du travail et associations professionnelles": [
-        "marche du travail", "emploi", "employeur", "employeurs", "entreprise", "entreprises", "association", "associations", "professionnel", "professionnelle", "professionnelles", "metier", "metiers", "competences", "stage", "stages"
-    ],
-    "marche du travail et relations avec les employeurs": [
-        "marche du travail", "emploi", "employeur", "employeurs", "entreprise", "entreprises", "relation employeurs", "professionnel", "professionnelle", "competences", "stage", "stages", "carriere"
-    ],
-    "concurrence avec les autres universites": [
-        "concurrence", "concurrent", "concurrentes", "universites", "autres universites", "competition", "competitive", "attractivite", "frais", "scolarite", "programmes flexibles", "facilites financieres", "classe a", "americaines"
-    ],
-    "intelligence artificielle": [
-        "intelligence artificielle", "ia", "ai", "agent conversationnel ia", "automatisation", "technologie generative", "generative", "data science", "analyse", "digitalisation", "transformation numerique"
-    ],
-    "reputation et image": [
-        "reputation", "image", "classement", "classements", "visibilite", "notoriete", "communication", "attractivite", "perception", "rayonnement", "jeunes", "ecoles", "recteurs", "recruteurs"
-    ],
-    "environnement politique et economique emigration": [
-        "politique", "economique", "economie", "crise", "emigration", "emigrer", "instabilite", "instabilites", "liban", "inflation", "securite", "guerre", "familles", "parents", "banque", "bancaire", "immobilier", "financiere"
-    ],
+def _contains_term(text_norm, term):
+    term_norm = normalize(term)
+    if not term_norm:
+        return False
+    if " " in term_norm:
+        return term_norm in text_norm
+    return re.search(r"(^|[^a-z0-9])" + re.escape(term_norm) + r"([^a-z0-9]|$)", text_norm) is not None
+
+
+# ============================================================
+# HEURISTIC ENGINE (cold-start only, no training data required)
+# ============================================================
+# Domain vocabularies. Each domain lists positive terms and which official
+# themes it supports / actively contradicts. This gives a conservative
+# starting point for classification before any labeled data exists.
+
+DOMAIN_RULES = {
+    "academic_teaching": {
+        "terms": ["cours", "programme", "programmes", "formation", "formations", "enseignement",
+                  "pedagogie", "pedagogique", "curriculum", "credit", "credits", "ects", "diplome",
+                  "diplomes", "evaluation", "apprentissage", "matiere", "matieres", "langue", "langues",
+                  "anglais", "francais", "trilinguisme", "accreditation", "accreditations", "academique"],
+        "themes": ["strategie academique et qualite d enseignement", "qualite de l enseignement"],
+        "negative_themes": ["mission societale", "developpement durable odd", "ressources humaines",
+                             "gouvernance et leadership"],
+    },
+    "student_success": {
+        "terms": ["etudiant", "etudiants", "recrutement", "inscription", "inscriptions", "accompagnement",
+                  "orientation", "support", "service", "services", "reussite", "parcours", "employabilite"],
+        "themes": ["succes des etudiants", "qualite de l enseignement"],
+        "negative_themes": ["mission societale", "ressources humaines"],
+    },
+    "research": {
+        "terms": ["recherche", "innovation", "publication", "publications", "laboratoire", "laboratoires",
+                  "doctorat", "these", "scientifique", "scientifiques", "brevet", "brevets", "valorisation"],
+        "themes": ["recherche et innovation"],
+        "negative_themes": ["mission societale", "vie universitaire", "relation avec l administration et les enseignants"],
+    },
+    "digital_resources": {
+        "terms": ["bibliotheque", "documentaire", "documentaires", "numerique", "numeriques", "digital",
+                  "digitale", "informatique", "informatiques", "technologie", "technologique", "plateforme",
+                  "plateformes", "logiciel", "logiciels", "outils", "donnees", "data"],
+        "themes": ["ressources documentaires et environnement digital", "ressources documentaires numeriques et informatiques"],
+        "negative_themes": ["mission societale", "soutenabilite financiere"],
+    },
+    "hr": {
+        "terms": ["personnel", "personnels", "enseignant", "enseignants", "professeur", "professeurs",
+                  "administratif", "administratifs", "rh", "ressources humaines", "recrutement", "charge",
+                  "charges", "competence", "competences"],
+        "themes": ["ressources humaines"],
+        "negative_themes": ["mission societale", "strategie academique et qualite d enseignement"],
+    },
+    "governance": {
+        "terms": ["gouvernance", "leadership", "direction", "doyen", "doyens", "directeur", "directeurs",
+                  "decision", "decisions", "procedure", "procedures", "transparence", "responsabilisation",
+                  "accountability", "autonomie", "centralisation", "decentralisation", "pilotage", "administration"],
+        "themes": ["gouvernance et leadership", "relation avec l administration et les enseignants"],
+        "negative_themes": ["mission societale", "recherche et innovation"],
+    },
+    "finance": {
+        "terms": ["budget", "financement", "financier", "financiere", "finance", "frais", "scolarite",
+                  "bourse", "bourses", "cout", "couts", "paiement", "soutenabilite", "viabilite"],
+        "themes": ["soutenabilite financiere", "aide financiere"],
+        "negative_themes": ["mission societale", "qualite de l enseignement"],
+    },
+    "infrastructure": {
+        "terms": ["campus", "batiment", "batiments", "salle", "salles", "locaux", "infrastructure",
+                  "infrastructures", "espace", "espaces", "equipement", "equipements", "maintenance"],
+        "themes": ["espace et infrastructures", "espace et infrastructure"],
+        "negative_themes": ["mission societale", "strategie academique et qualite d enseignement"],
+    },
+    "international": {
+        "terms": ["international", "internationale", "internationales", "mobilite", "echange", "echanges",
+                  "partenariat", "partenariats", "etranger", "etrangers", "diaspora", "francophonie"],
+        "themes": ["strategie et mobilite internationales", "mobilite internationale"],
+        "negative_themes": ["mission societale", "environnement politique et economique emigration"],
+    },
+    "social_mission": {
+        "terms": ["mission societale", "mission sociale", "engagement social", "responsabilite sociale",
+                  "societe", "societal", "societale", "communautaire", "communaute", "citoyen", "citoyenne",
+                  "impact social", "reconstruction", "liban", "territoire"],
+        "themes": ["mission societale"],
+        "negative_themes": ["strategie academique et qualite d enseignement", "ressources documentaires et environnement digital"],
+    },
+    "work_environment": {
+        "terms": ["environnement de travail", "conditions de travail", "climat", "bien etre", "collaboration",
+                  "communication interne", "charge de travail", "horaires", "processus administratif"],
+        "themes": ["environnement de travail"],
+        "negative_themes": ["mission societale", "reputation et image"],
+    },
+    "student_life": {
+        "terms": ["vie universitaire", "vie etudiante", "sport", "activites", "clubs", "animation",
+                  "aide psychologique", "psychologique", "experience etudiante"],
+        "themes": ["vie universitaire"],
+        "negative_themes": ["mission societale", "ressources humaines"],
+    },
+    "diversity": {
+        "terms": ["diversite", "inclusion", "inclusive", "egalite", "equite", "handicap", "genre", "discrimination"],
+        "themes": ["diversite et inclusion"],
+        "negative_themes": ["mission societale"],
+    },
+    "sustainability": {
+        "terms": ["developpement durable", "odd", "durable", "durabilite", "ecologie", "energie",
+                  "transition energetique"],
+        "themes": ["developpement durable odd"],
+        "negative_themes": ["mission societale", "soutenabilite financiere"],
+    },
+    "employment_market": {
+        "terms": ["marche du travail", "emploi", "employeur", "employeurs", "entreprise", "entreprises",
+                  "association professionnelle", "associations professionnelles", "metier", "metiers",
+                  "stage", "stages", "carriere", "professionnel"],
+        "themes": ["marche du travail et associations professionnelles",
+                   "marche du travail et relations avec les employeurs", "insertion professionnelle"],
+        "negative_themes": ["mission societale", "soutenabilite financiere"],
+    },
+    "competition": {
+        "terms": ["concurrence", "concurrent", "concurrentes", "competition", "autres universites",
+                  "universites americaines", "classe a", "programmes flexibles"],
+        "themes": ["concurrence avec les autres universites"],
+        "negative_themes": ["mission societale", "strategie academique et qualite d enseignement"],
+    },
+    "ai": {
+        "terms": ["intelligence artificielle", "ia", "ai", "agent conversationnel ia", "automatisation",
+                  "generative", "data science", "machine learning"],
+        "themes": ["intelligence artificielle"],
+        "negative_themes": ["ressources documentaires et environnement digital", "mission societale"],
+    },
+    "reputation": {
+        "terms": ["reputation", "image", "classement", "classements", "visibilite", "notoriete",
+                  "attractivite", "perception", "rayonnement", "recruteurs"],
+        "themes": ["reputation et image"],
+        "negative_themes": ["mission societale", "gouvernance et leadership"],
+    },
+    "political_economic": {
+        "terms": ["politique", "economique", "economie", "crise", "emigration", "emigrer", "instabilite",
+                  "instabilites", "inflation", "securite", "guerre", "banque", "bancaire", "immobilier"],
+        "themes": ["environnement politique et economique emigration"],
+        "negative_themes": ["mission societale", "reputation et image"],
+    },
 }
 
 
-def strong_keyword_score(answer, theme):
+def _theme_in_list(theme_norm, theme_patterns):
+    return any((pat in theme_norm or theme_norm in pat) for pat in theme_patterns)
+
+
+def detected_answer_domains(answer):
     answer_norm = normalize(answer)
+    domains = {}
+    for domain, profile in DOMAIN_RULES.items():
+        hits = [t for t in profile["terms"] if _contains_term(answer_norm, t)]
+        if hits:
+            domains[domain] = min(1.0, 0.35 + 0.18 * len(hits))
+    return domains
+
+
+def domain_guardrail_score(answer, theme):
     theme_norm = normalize(theme)
-    tokens = set(tokenize_for_similarity(answer))
-    best_words = []
-    for key, words in THEME_KEYWORD_RULES.items():
-        if key in theme_norm or theme_norm in key:
-            best_words = words
-            break
-    if not best_words:
-        return 0.0
-    hits = 0
-    strong_hits = 0
-    for w in best_words:
-        nw = normalize(w)
-        if " " in nw:
-            if nw in answer_norm:
-                hits += 2
-                strong_hits += 1
-        else:
-            if nw in tokens or nw in answer_norm:
-                hits += 1
-    # A single clear domain keyword should matter, but multiple hits should dominate.
-    return min(1.0, (hits / 5.0) + (0.12 * strong_hits))
+    domains = detected_answer_domains(answer)
+    positive, negative, matched = 0.0, 0.0, []
+    for domain, strength in domains.items():
+        profile = DOMAIN_RULES[domain]
+        if _theme_in_list(theme_norm, profile["themes"]):
+            positive += strength
+            matched.append(domain)
+        if _theme_in_list(theme_norm, profile.get("negative_themes", [])):
+            negative += strength
+    return min(1.0, positive), min(1.0, negative), matched
 
 
-def simple_similarity_score(answer, theme):
-    answer_tokens = set(tokenize_for_similarity(answer))
-    theme_tokens = set(tokenize_for_similarity(theme))
+def tfidf_scores_against_themes(answer, themes):
+    try:
+        from sklearn.feature_extraction.text import TfidfVectorizer
+        from sklearn.metrics.pairwise import cosine_similarity
+        from sklearn.pipeline import FeatureUnion
+    except Exception:
+        return [0.0 for _ in themes]
 
-    if not answer_tokens or not theme_tokens:
-        return 0.0
-
-    overlap = len(answer_tokens & theme_tokens) / max(len(theme_tokens), 1)
-    jaccard = len(answer_tokens & theme_tokens) / max(len(answer_tokens | theme_tokens), 1)
-
-    answer_norm = normalize(answer)
-    theme_norm = normalize(theme)
-    phrase_bonus = 0.30 if theme_norm in answer_norm else 0.0
-    keyword_score = strong_keyword_score(answer, theme)
-
-    # Conservative but stronger institutional classifier:
-    # keyword/domain evidence is prioritized over generic sentence similarity.
-    return min(1.0, (0.55 * keyword_score) + (0.20 * overlap) + (0.15 * jaccard) + phrase_bonus)
+    corpus = [clean(answer)] + [clean(t) for t in themes]
+    try:
+        features = FeatureUnion([
+            ("word", TfidfVectorizer(ngram_range=(1, 2), min_df=1, strip_accents="unicode")),
+            ("char", TfidfVectorizer(analyzer="char_wb", ngram_range=(3, 5), min_df=1, strip_accents="unicode")),
+        ])
+        matrix = features.fit_transform(corpus)
+        return cosine_similarity(matrix[0:1], matrix[1:]).flatten().tolist()
+    except Exception:
+        return [0.0 for _ in themes]
 
 
-def classify_theme(answer, participant_type, swot_element):
+def heuristic_score_candidates(answer, participant_type, swot_element):
+    """Score every official theme for this row using domain rules + TF-IDF.
+    Returns a list of (theme, score, matched_domains) sorted best-first.
+    """
     themes = official_themes_for(participant_type, swot_element, include_autre=False)
     if not themes:
-        return "", 0.0
+        return []
 
-    scores = [(theme, simple_similarity_score(answer, theme)) for theme in themes]
-    scores = sorted(scores, key=lambda x: x[1], reverse=True)
-    best_theme, best_score = scores[0]
+    tfidf = tfidf_scores_against_themes(answer, themes)
+    detected = detected_answer_domains(answer)
 
-    if best_score <= 0:
-        return themes[0], 0.0
+    ranked = []
+    for i, theme in enumerate(themes):
+        domain_pos, domain_neg, matched = domain_guardrail_score(answer, theme)
+        score = (0.60 * domain_pos) + (0.40 * tfidf[i]) - (0.65 * domain_neg)
+        # If a clear domain was detected in the answer but this theme is outside
+        # that domain entirely, suppress it so generic word overlap can't win.
+        if detected and domain_pos == 0:
+            score *= 0.5
+        score = max(0.0, min(1.0, score))
+        ranked.append((theme, score, matched))
 
-    return best_theme, round(best_score * 100, 1)
+    return sorted(ranked, key=lambda x: x[1], reverse=True)
 
+
+def heuristic_confidence(ranked):
+    if not ranked:
+        return 0.0
+    best, second = ranked[0][1], (ranked[1][1] if len(ranked) > 1 else 0)
+    margin = max(best - second, 0)
+    conf = 25 + best * 55 + margin * 90
+    if best < 0.20:
+        conf = min(conf, 40)
+    if margin < 0.04:
+        conf = min(conf, 55)
+    return round(max(5, min(conf, 90)), 1)  # heuristic engine is capped below 90: it is not a trained model
+
+
+def classify_heuristic(answer, participant_type, swot_element):
+    ranked = heuristic_score_candidates(answer, participant_type, swot_element)
+    if not ranked:
+        return "", 0.0, "", "Aucun thème officiel disponible"
+    best_theme, best_score, matched = ranked[0]
+    conf = heuristic_confidence(ranked)
+    top3 = " | ".join([f"{t} ({round(s * 100, 1)})" for t, s, _ in ranked[:3]])
+    evidence = f"domaine détecté: {', '.join(matched)}" if matched else "évidence lexicale faible"
+    return best_theme, conf, top3, evidence
+
+
+# ============================================================
+# EXCEL I/O
+# ============================================================
 
 def read_corrected_excel(uploaded_file):
     try:
@@ -480,106 +625,61 @@ def read_corrected_excel(uploaded_file):
     answer_col = get_col(df, ["Final_Answer", "Final Answer", "Réponse finale", "Reponse finale"])
 
     missing = []
-    if not type_col:
-        missing.append("Respondent_Type")
-    if not group_col:
-        missing.append("groupe")
-    if not names_col:
-        missing.append("participants")
-    if not section_col:
-        missing.append("section")
-    if not category_col:
-        missing.append("category")
-    if not answer_col:
-        missing.append("Final_Answer")
-
+    for label, col in [("Respondent_Type", type_col), ("groupe", group_col), ("participants", names_col),
+                        ("section", section_col), ("category", category_col), ("Final_Answer", answer_col)]:
+        if not col:
+            missing.append(label)
     if missing:
         st.error("Colonnes manquantes : " + ", ".join(missing))
         st.stop()
 
     df = df.rename(columns={
-        type_col: "Respondent_Type",
-        group_col: "groupe",
-        names_col: "participants",
-        section_col: "section",
-        category_col: "category",
-        answer_col: "Final_Answer"
+        type_col: "Respondent_Type", group_col: "groupe", names_col: "participants",
+        section_col: "section", category_col: "category", answer_col: "Final_Answer",
     })
-
     df["question"] = df["category"]
 
     for col in ["Respondent_Type", "groupe", "participants", "section", "category", "question", "Final_Answer"]:
         df[col] = df[col].apply(clean)
 
     df = df[(df["Respondent_Type"] != "") & (df["groupe"] != "")]
-    df["section_norm"] = df["section"].apply(normalize)
-    df["question_norm"] = df["question"].apply(normalize)
-    df["category_norm"] = df["category"].apply(normalize)
     df["swot_element"] = df.apply(detect_swot_element, axis=1)
+    return df.reset_index(drop=True)
 
-    return df
+
+# ============================================================
+# DUPLICATE DETECTION
+# ============================================================
+
+DUPLICATE_SYNONYMS = {
+    "alumni": "anciens", "ancien": "anciens", "anciens": "anciens",
+    "diplome": "diplomes", "diplomes": "diplomes",
+    "enseignant": "enseignants", "enseignants": "enseignants",
+    "professeur": "enseignants", "professeurs": "enseignants",
+    "personnel": "personnel", "personnels": "personnel",
+    "administratif": "administratifs", "administratifs": "administratifs",
+    "ia": "intelligence_artificielle", "ai": "intelligence_artificielle",
+    "intelligence": "intelligence_artificielle", "artificielle": "intelligence_artificielle",
+    "emploi": "emploi", "employabilite": "emploi",
+    "stage": "stage", "stages": "stage",
+}
 
 
 def canonical_duplicate_tokens(text):
-    """Tokens for duplicate detection.
-    This is intentionally stricter than general semantic similarity:
-    two answers are duplicates only when they share the same core topic/object,
-    not only the same sentence structure.
-    """
     tokens = tokenize_for_similarity(text)
-    canonical = []
-    synonym_map = {
-        "alumni": "anciens",
-        "ancien": "anciens",
-        "anciens": "anciens",
-        "diplome": "diplomes",
-        "diplomes": "diplomes",
-        "diplômé": "diplomes",
-        "diplômés": "diplomes",
-        "enseignant": "enseignants",
-        "enseignants": "enseignants",
-        "professeur": "enseignants",
-        "professeurs": "enseignants",
-        "personnel": "personnel",
-        "personnels": "personnel",
-        "administratif": "administratifs",
-        "administratifs": "administratifs",
-        "gouvernance": "gouvernance",
-        "integration": "integration",
-        "intégration": "integration",
-        "ia": "intelligence_artificielle",
-        "ai": "intelligence_artificielle",
-        "intelligence": "intelligence_artificielle",
-        "artificielle": "intelligence_artificielle",
-        "technologie": "technologie",
-        "technologies": "technologie",
-        "anglais": "anglais",
-        "emploi": "emploi",
-        "employabilite": "emploi",
-        "employabilité": "emploi",
-        "stage": "stage",
-        "stages": "stage",
-    }
-    for t in tokens:
-        canonical.append(synonym_map.get(t, t))
+    canonical = [DUPLICATE_SYNONYMS.get(t, t) for t in tokens]
     return [t for t in canonical if t not in STOPWORDS_FR]
 
 
 def strict_duplicate_score(answer_a, answer_b):
-    a_norm = normalize(answer_a)
-    b_norm = normalize(answer_b)
-
+    a_norm, b_norm = normalize(answer_a), normalize(answer_b)
     if not a_norm or not b_norm:
         return 0.0, "Vide"
-
     if a_norm == b_norm:
         return 1.0, "Doublon exact"
 
     seq_ratio = difflib.SequenceMatcher(None, a_norm, b_norm).ratio()
-
-    tokens_a = set(canonical_duplicate_tokens(answer_a))
-    tokens_b = set(canonical_duplicate_tokens(answer_b))
-
+    tokens_a, tokens_b = set(canonical_duplicate_tokens(answer_a)), set(canonical_duplicate_tokens(answer_b))
     if not tokens_a or not tokens_b:
         return seq_ratio, "Texte trop court"
 
@@ -588,186 +688,57 @@ def strict_duplicate_score(answer_a, answer_b):
     jaccard = len(shared) / max(len(union), 1)
     containment = len(shared) / max(min(len(tokens_a), len(tokens_b)), 1)
 
-    # Require a common core topic/object. This prevents false positives such as:
-    # "anglais renforcé" vs "technologie renforcée".
     has_core_overlap = len(shared) >= 2 or (len(shared) == 1 and min(len(tokens_a), len(tokens_b)) <= 3)
-
     if not has_core_overlap:
         return max(seq_ratio * 0.35, jaccard), "Même structure possible, mais sujet différent"
 
+    # Three or more shared concept words (after synonym canonicalization) is a strong
+    # signal the two answers express the same idea, even if containment/jaccard alone
+    # fall just under their individual thresholds (e.g. "anciens" vs "alumni" phrasing).
+    if len(shared) >= 3 and containment >= 0.65:
+        return max(0.85, containment), "Même idée avec formulation différente"
+
     if containment >= 0.80 and seq_ratio >= 0.55:
         return max(containment, seq_ratio), "Même idée avec formulation différente"
-
     if jaccard >= 0.62 and seq_ratio >= 0.50:
         return max(jaccard, seq_ratio), "Doublon probable"
-
     if seq_ratio >= 0.88 and containment >= 0.55:
         return seq_ratio, "Très proche lexicalement"
-
     return max(jaccard, containment * 0.75, seq_ratio * 0.50), "Non retenu"
 
 
 def detect_duplicate_pairs(df):
-    rows = df[df["Final_Answer"].apply(clean) != ""].copy().reset_index(drop=True)
-    rows = rows[rows["swot_element"].isin(["Forces", "Faiblesses", "Opportunités", "Menaces"])]
-    rows = rows.reset_index(drop=True)
+    rows = df[df["Final_Answer"].apply(clean) != ""].copy()
+    rows = rows[rows["swot_element"].isin(SWOT_ELEMENTS)].reset_index(drop=True)
     pairs = []
-
     for i in range(len(rows)):
         for j in range(i + 1, len(rows)):
-            # Compare only inside the same SWOT element. A Force and a Priority/Threat are not duplicates.
             if rows.loc[i, "swot_element"] != rows.loc[j, "swot_element"]:
                 continue
-
-            score, reason = strict_duplicate_score(
-                rows.loc[i, "Final_Answer"],
-                rows.loc[j, "Final_Answer"]
-            )
-
-            # Fixed strict rule. No slider.
+            score, reason = strict_duplicate_score(rows.loc[i, "Final_Answer"], rows.loc[j, "Final_Answer"])
             if score >= 0.80:
                 pairs.append({
                     "Élément SWOT": rows.loc[i, "swot_element"],
-                    "Sous-groupe 1": rows.loc[i, "groupe"],
-                    "Réponse 1": rows.loc[i, "Final_Answer"],
-                    "Sous-groupe 2": rows.loc[j, "groupe"],
-                    "Réponse 2": rows.loc[j, "Final_Answer"],
-                    "Score doublon": round(score * 100, 1),
-                    "Raison": reason,
+                    "Sous-groupe 1": rows.loc[i, "groupe"], "Réponse 1": rows.loc[i, "Final_Answer"],
+                    "Sous-groupe 2": rows.loc[j, "groupe"], "Réponse 2": rows.loc[j, "Final_Answer"],
+                    "Score doublon": round(score * 100, 1), "Raison": reason,
                     "Validation expert": "À vérifier",
                 })
-
     return pd.DataFrame(pairs)
 
 
-def build_ai_classification_dataframe(df_scope):
-    rows = []
-    for idx, row in df_scope.iterrows():
-        swot_element = row["swot_element"]
-        if swot_element not in ["Forces", "Faiblesses", "Opportunités", "Menaces"]:
-            continue
-
-        answer = clean(row["Final_Answer"])
-        if not answer:
-            continue
-
-        suggested_theme, confidence = classify_theme(
-            answer=answer,
-            participant_type=row["Respondent_Type"],
-            swot_element=swot_element
-        )
-
-        rows.append({
-            "row_id": idx,
-            "Respondent_Type": row["Respondent_Type"],
-            "groupe": row["groupe"],
-            "participants": row["participants"],
-            "swot_element": swot_element,
-            "question": row["question"],
-            "Final_Answer": answer,
-            "AI_Suggested_Theme": suggested_theme,
-            "Confidence": confidence,
-            "Validated_Theme": suggested_theme,
-            "New_Theme": "",
-        })
-
-    return pd.DataFrame(rows)
-
-
-def render_mapping_validation(classified_df):
-    if classified_df.empty:
-        st.warning("Aucune réponse SWOT à classifier.")
-        return classified_df
-
-    validated_rows = []
-
-    for swot_element in ["Forces", "Faiblesses", "Opportunités", "Menaces"]:
-        temp = classified_df[classified_df["swot_element"] == swot_element].copy()
-        if temp.empty:
-            continue
-
-        st.markdown(f"### {swot_element}")
-
-        for _, row in temp.iterrows():
-            row_key = f"{row['row_id']}_{swot_element}"
-            themes = official_themes_for(row["Respondent_Type"], swot_element, include_autre=False)
-            suggested = row["AI_Suggested_Theme"]
-            default_index = themes.index(suggested) if suggested in themes else 0
-
-            with st.expander(
-                f"{row['groupe']} | Confiance: {row['Confidence']}% | Thème proposé: {suggested}",
-                expanded=False
-            ):
-                st.markdown("**Réponse corrigée**")
-                st.write(row["Final_Answer"])
-
-                selected_theme = st.selectbox(
-                    "Thème validé par l'expert",
-                    options=themes,
-                    index=default_index,
-                    key=f"theme_{row_key}"
-                )
-
-                new_theme = st.text_input(
-                    "Ajouter un nouveau thème si nécessaire",
-                    value="",
-                    key=f"new_theme_{row_key}"
-                )
-
-                final_theme = clean(new_theme) if clean(new_theme) else selected_theme
-
-                validated_row = row.to_dict()
-                validated_row["Validated_Theme"] = final_theme
-                validated_row["New_Theme"] = clean(new_theme)
-                validated_rows.append(validated_row)
-
-    return pd.DataFrame(validated_rows)
-
-
-def build_theme_synthesis(validated_df):
-    if validated_df.empty:
-        return pd.DataFrame()
-
-    rows = []
-    grouped = validated_df.groupby(["Respondent_Type", "swot_element", "Validated_Theme"], dropna=False)
-
-    for (ptype, swot_element, theme), group in grouped:
-        answers = [clean(x) for x in group["Final_Answer"].tolist() if clean(x)]
-        short_points = " | ".join(answers[:3])
-        rows.append({
-            "Type de participants": ptype,
-            "Élément SWOT": swot_element,
-            "Thème": theme,
-            "Nombre de réponses": len(answers),
-            "Synthèse automatique courte": short_points,
-        })
-
-    return pd.DataFrame(rows).sort_values(
-        ["Type de participants", "Élément SWOT", "Nombre de réponses"],
-        ascending=[True, True, False]
-    )
-
-
-def load_validated_mapping_file(uploaded_mapping):
-    if uploaded_mapping is None:
-        return pd.DataFrame()
-    try:
-        df_map = pd.read_excel(uploaded_mapping, engine="openpyxl")
-    except Exception:
-        uploaded_mapping.seek(0)
-        df_map = pd.read_csv(uploaded_mapping)
-    return df_map
-
+# ============================================================
+# SUPERVISED MODEL (this is the real path to high accuracy)
+# ============================================================
 
 def prepare_training_dataset(validated_df):
+    """Build a (text, label) training set from expert-validated rows."""
     if validated_df is None or validated_df.empty:
         return pd.DataFrame()
-
-    text_col = get_col(validated_df, ["Final_Answer", "answer", "Réponse", "Reponse", "text"])
-    label_col = get_col(validated_df, ["Validated_Theme", "Thème validé", "Theme valide", "theme", "label"])
-    swot_col = get_col(validated_df, ["swot_element", "Élément SWOT", "Element SWOT", "SWOT"])
-    type_col = get_col(validated_df, ["Respondent_Type", "Type de participants", "Type participant"])
-
+    text_col = get_col(validated_df, ["Final_Answer", "answer", "text"])
+    label_col = get_col(validated_df, ["Validated_Theme", "Theme valide", "theme", "label"])
+    swot_col = get_col(validated_df, ["swot_element", "Element SWOT", "SWOT"])
+    type_col = get_col(validated_df, ["Respondent_Type", "Type de participants"])
     if not text_col or not label_col:
         return pd.DataFrame()
 
@@ -777,1867 +748,136 @@ def prepare_training_dataset(validated_df):
     })
     out["swot_element"] = validated_df[swot_col].apply(clean) if swot_col else ""
     out["Respondent_Type"] = validated_df[type_col].apply(clean) if type_col else ""
-    out = out[(out["text"] != "") & (out["label"] != "")]
-    return out.reset_index(drop=True)
+    return out[(out["text"] != "") & (out["label"] != "")].reset_index(drop=True)
 
 
-def train_test_theme_algorithms(train_df, test_size=0.25, random_state=42):
+def _build_pipeline(clf):
+    from sklearn.pipeline import Pipeline, FeatureUnion
+    from sklearn.feature_extraction.text import TfidfVectorizer
+    features = FeatureUnion([
+        ("word", TfidfVectorizer(ngram_range=(1, 2), min_df=1, max_df=0.95, strip_accents="unicode")),
+        ("char", TfidfVectorizer(analyzer="char_wb", ngram_range=(3, 5), min_df=1, strip_accents="unicode")),
+    ])
+    return Pipeline([("features", features), ("clf", clf)])
+
+
+def evaluate_theme_models(train_df, random_state=42):
+    """Compare candidate algorithms using stratified k-fold cross-validation.
+    Cross-validation (rather than one train/test split) gives a much more
+    reliable accuracy estimate on small datasets like this one.
+    """
     try:
-        from sklearn.model_selection import train_test_split
-        from sklearn.pipeline import Pipeline, FeatureUnion
-        from sklearn.feature_extraction.text import TfidfVectorizer
+        from sklearn.model_selection import StratifiedKFold, cross_val_predict
         from sklearn.linear_model import LogisticRegression, SGDClassifier
         from sklearn.naive_bayes import MultinomialNB
         from sklearn.svm import LinearSVC
-        from sklearn.metrics import accuracy_score, f1_score, classification_report
+        from sklearn.metrics import accuracy_score, f1_score
     except Exception as e:
-        return pd.DataFrame(), pd.DataFrame(), f"scikit-learn n'est pas installé. Ajoutez scikit-learn dans requirements.txt. Détail: {e}"
+        return pd.DataFrame(), pd.DataFrame(), f"scikit-learn n'est pas installé. Détail : {e}"
 
-    if train_df.empty or train_df["label"].nunique() < 2:
-        return pd.DataFrame(), pd.DataFrame(), "Il faut au moins deux thèmes validés différents pour entraîner/tester un modèle."
+    if train_df.empty:
+        return pd.DataFrame(), pd.DataFrame(), "Aucune donnée validée disponible."
 
     counts = train_df["label"].value_counts()
-    if len(train_df) < 8 or counts.min() < 2:
-        return pd.DataFrame(), pd.DataFrame(), "Données insuffisantes: il faut idéalement au moins 2 réponses validées par thème et au moins 8 réponses au total."
+    n_classes = train_df["label"].nunique()
+    if n_classes < 2:
+        return pd.DataFrame(), pd.DataFrame(), "Il faut au moins deux thèmes différents dans les données validées."
+    if len(train_df) < MIN_TOTAL_TRAINING_EXAMPLES:
+        return pd.DataFrame(), pd.DataFrame(), (
+            f"Données insuffisantes pour un entraînement fiable : {len(train_df)} réponses validées, "
+            f"minimum recommandé {MIN_TOTAL_TRAINING_EXAMPLES}. Continuez à valider des réponses dans "
+            f"l'onglet de classification, puis relancez l'entraînement."
+        )
+
+    # Cross-validation folds cannot exceed the smallest class size.
+    n_splits = max(2, min(5, int(counts.min())))
+    if counts.min() < 2:
+        thin = counts[counts < 2].index.tolist()
+        return pd.DataFrame(), pd.DataFrame(), (
+            "Les thèmes suivants n'ont qu'un seul exemple validé, ce qui empêche une évaluation fiable : "
+            + ", ".join(thin) + ". Validez au moins 2-3 réponses par thème avant d'entraîner."
+        )
 
     X = train_df["text"].astype(str)
     y = train_df["label"].astype(str)
-    stratify = y if counts.min() >= 2 else None
-
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=test_size, random_state=random_state, stratify=stratify
-    )
-
-    features = FeatureUnion([
-        ("word", TfidfVectorizer(ngram_range=(1, 2), min_df=1, max_df=0.95)),
-        ("char", TfidfVectorizer(analyzer="char_wb", ngram_range=(3, 5), min_df=1)),
-    ])
+    skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=random_state)
 
     algorithms = {
-        "TF-IDF + Logistic Regression": LogisticRegression(max_iter=2000, class_weight="balanced"),
-        "TF-IDF + Linear SVM": LinearSVC(class_weight="balanced"),
-        "TF-IDF + SGD Linear SVM": SGDClassifier(loss="hinge", class_weight="balanced", random_state=random_state),
+        "TF-IDF + Régression logistique": LogisticRegression(max_iter=2000, class_weight="balanced"),
+        "TF-IDF + SVM linéaire": LinearSVC(class_weight="balanced"),
+        "TF-IDF + SGD (SVM en ligne)": SGDClassifier(loss="hinge", class_weight="balanced", random_state=random_state),
         "TF-IDF + Naive Bayes": MultinomialNB(),
     }
 
-    rows = []
-    pred_rows = []
-
+    summary_rows, all_predictions = [], []
     for name, clf in algorithms.items():
         try:
-            model = Pipeline([
-                ("features", features),
-                ("clf", clf),
-            ])
-            model.fit(X_train, y_train)
-            pred = model.predict(X_test)
-            acc = accuracy_score(y_test, pred)
-            f1 = f1_score(y_test, pred, average="macro", zero_division=0)
-            rows.append({
-                "Algorithme": name,
-                "Accuracy test": round(acc, 3),
-                "Macro F1 test": round(f1, 3),
-                "Train n": len(X_train),
-                "Test n": len(X_test),
-                "Nombre de thèmes": y.nunique(),
+            model = _build_pipeline(clf)
+            preds = cross_val_predict(model, X, y, cv=skf)
+            acc = accuracy_score(y, preds)
+            f1 = f1_score(y, preds, average="macro", zero_division=0)
+            summary_rows.append({
+                "Algorithme": name, "Accuracy (validation croisée)": round(acc, 3),
+                "Macro F1 (validation croisée)": round(f1, 3),
+                "N validé": len(X), "Nb de thèmes": n_classes, "Folds": n_splits,
             })
-            for true_label, pred_label, txt in zip(y_test, pred, X_test):
-                pred_rows.append({
-                    "Algorithme": name,
-                    "Réponse test": txt,
-                    "Thème réel": true_label,
-                    "Thème prédit": pred_label,
-                    "Correct": true_label == pred_label,
+            for text, true_label, pred_label in zip(X, y, preds):
+                all_predictions.append({
+                    "Algorithme": name, "Réponse": text, "Thème réel": true_label,
+                    "Thème prédit": pred_label, "Correct": true_label == pred_label,
                 })
         except Exception as e:
-            rows.append({
-                "Algorithme": name,
-                "Accuracy test": None,
-                "Macro F1 test": None,
-                "Train n": len(X_train),
-                "Test n": len(X_test),
-                "Nombre de thèmes": y.nunique(),
-                "Erreur": str(e),
+            summary_rows.append({
+                "Algorithme": name, "Accuracy (validation croisée)": None, "Macro F1 (validation croisée)": None,
+                "N validé": len(X), "Nb de thèmes": n_classes, "Folds": n_splits, "Erreur": str(e),
             })
 
-    results = pd.DataFrame(rows).sort_values(["Macro F1 test", "Accuracy test"], ascending=False, na_position="last")
-    predictions = pd.DataFrame(pred_rows)
-    return results, predictions, ""
+    results = pd.DataFrame(summary_rows).sort_values(
+        ["Macro F1 (validation croisée)", "Accuracy (validation croisée)"], ascending=False, na_position="last"
+    )
+    return results, pd.DataFrame(all_predictions), ""
 
 
-
-def build_classification_with_trained_model(df_scope, model):
-    rows = []
-    for idx, row in df_scope.iterrows():
-        swot_element = row["swot_element"]
-        if swot_element not in ["Forces", "Faiblesses", "Opportunités", "Menaces"]:
-            continue
-
-        answer = clean(row["Final_Answer"])
-        if not answer:
-            continue
-
-        suggested_theme = model.predict([answer])[0]
-        confidence = ""
-
-        try:
-            if hasattr(model.named_steps.get("clf"), "predict_proba"):
-                proba = model.predict_proba([answer])[0]
-                confidence = round(float(max(proba)) * 100, 1)
-            elif hasattr(model.named_steps.get("clf"), "decision_function"):
-                scores = model.decision_function([answer])
-                import numpy as np
-                scores = np.array(scores).reshape(-1)
-                if len(scores) > 0:
-                    exp_scores = np.exp(scores - scores.max())
-                    confidence = round(float(exp_scores.max() / exp_scores.sum()) * 100, 1)
-        except Exception:
-            confidence = ""
-
-        rows.append({
-            "row_id": idx,
-            "Respondent_Type": row["Respondent_Type"],
-            "groupe": row["groupe"],
-            "participants": row["participants"],
-            "swot_element": swot_element,
-            "question": row["question"],
-            "Final_Answer": answer,
-            "AI_Suggested_Theme": suggested_theme,
-            "Confidence": confidence,
-            "Validated_Theme": suggested_theme,
-            "New_Theme": "",
-        })
-
-    return pd.DataFrame(rows)
-
-
-def train_final_theme_model(train_df, algorithm_name="TF-IDF + Linear SVM", random_state=42):
-    try:
-        from sklearn.pipeline import Pipeline, FeatureUnion
-        from sklearn.feature_extraction.text import TfidfVectorizer
-        from sklearn.linear_model import LogisticRegression, SGDClassifier
-        from sklearn.naive_bayes import MultinomialNB
-        from sklearn.svm import LinearSVC
-    except Exception as e:
-        return None, f"scikit-learn n'est pas installé. Ajoutez scikit-learn dans requirements.txt. Détail: {e}"
-
-    if train_df.empty or train_df["label"].nunique() < 2:
-        return None, "Il faut au moins deux thèmes validés différents pour entraîner le modèle final."
-
-    features = FeatureUnion([
-        ("word", TfidfVectorizer(ngram_range=(1, 2), min_df=1, max_df=0.95)),
-        ("char", TfidfVectorizer(analyzer="char_wb", ngram_range=(3, 5), min_df=1)),
-    ])
+def train_final_model(train_df, algorithm_name, random_state=42):
+    from sklearn.linear_model import LogisticRegression, SGDClassifier
+    from sklearn.naive_bayes import MultinomialNB
+    from sklearn.svm import LinearSVC
 
     algorithms = {
-        "TF-IDF + Logistic Regression": LogisticRegression(max_iter=2000, class_weight="balanced"),
-        "TF-IDF + Linear SVM": LinearSVC(class_weight="balanced"),
-        "TF-IDF + SGD Linear SVM": SGDClassifier(loss="hinge", class_weight="balanced", random_state=random_state),
+        "TF-IDF + Régression logistique": LogisticRegression(max_iter=2000, class_weight="balanced"),
+        "TF-IDF + SVM linéaire": LinearSVC(class_weight="balanced"),
+        "TF-IDF + SGD (SVM en ligne)": SGDClassifier(loss="hinge", class_weight="balanced", random_state=random_state),
         "TF-IDF + Naive Bayes": MultinomialNB(),
     }
-
     clf = algorithms.get(algorithm_name, LinearSVC(class_weight="balanced"))
-    model = Pipeline([("features", features), ("clf", clf)])
+    model = _build_pipeline(clf)
     model.fit(train_df["text"].astype(str), train_df["label"].astype(str))
-    return model, ""
+    return model
 
 
-
-# ============================================================
-# PROFESSIONAL AI ENGINE - PRETRAINED / NO EXPERT TRAINING REQUIRED
-# ============================================================
-
-THEME_CONTEXT = {
-    "Soutenabilité financière": "budget financement frais scolarité ressources financières modèle économique bourses coûts viabilité financière",
-    "Gouvernance et Leadership": "gouvernance leadership management décision direction pilotage organisation représentation relation procédures transparence responsabilité",
-    "Stratégie académique et qualité d’enseignement": "programmes formation pédagogie qualité enseignement curriculum accréditation excellence académique méthodes cours apprentissage",
-    "Recherche et Innovation": "recherche innovation publications laboratoires projets scientifiques valorisation créativité transfert technologie",
-    "Ressources documentaires et Environnement digital": "bibliothèque ressources numériques plateformes digitales systèmes informatiques documentation accès digitalisation outils technologiques",
-    "Ressources documentaires, numériques et informatiques": "bibliothèque ressources numériques informatique plateformes documentation accès digital technologies outils numériques",
-    "Succès des étudiants": "étudiants recrutement accompagnement orientation soutien services employabilité insertion suivi réussite parcours étudiant",
-    "Ressources humaines": "personnel enseignants administratifs recrutement compétences charge travail formation évaluation ressources humaines",
-    "Stratégie et mobilité internationales": "international mobilité partenariats étrangers échanges coopération internationale rayonnement international",
-    "Mission sociétale": "société engagement service communauté responsabilité sociale impact social mission citoyenne territoire",
-    "Espace et infrastructures": "campus bâtiments salles laboratoires espaces équipements infrastructures locaux maintenance accessibilité",
-    "Espace et infrastructure": "campus bâtiments salles laboratoires espaces équipements infrastructures locaux maintenance accessibilité",
-    "Environnement de travail": "conditions travail climat organisation charge bien-être collaboration communication interne environnement professionnel",
-    "Diversité et inclusion": "diversité inclusion égalité accessibilité handicap genre équité discrimination intégration",
-    "Développement Durable": "développement durable ODD environnement écologie transition énergétique durabilité responsabilité environnementale",
-    "Qualité de l’enseignement": "qualité enseignement accompagnement orientation tutorat pédagogie cours enseignants apprentissage évaluation suivi académique",
-    "Relation avec l’administration et les enseignants": "administration enseignants relation communication disponibilité écoute procédures services étudiants",
-    "Représentation des étudiants": "représentation étudiants délégués participation gouvernance voix étudiante consultation implication",
-    "Vie universitaire": "vie étudiante sport activités campus aide psychologique animation clubs expérience étudiante",
-    "Mobilité internationale": "mobilité internationale échanges Erasmus partenariats étudiants étrangers voyage coopération",
-    "Aide financière": "aide financière bourses frais scolarité soutien social paiement financement étudiants",
-    "Insertion professionnelle": "emploi stage employabilité marché travail carrière entreprises compétences professionnelles insertion",
-    "Marché du travail et Associations professionnelles": "marché travail employeurs entreprises associations professionnelles métiers compétences emploi stages secteur professionnel",
-    "Marché du travail et relations avec les employeurs": "marché travail employeurs entreprises emploi stages insertion besoins compétences relation professionnelle",
-    "Concurrence avec les autres universités": "concurrence universités compétition établissements attractivité inscriptions frais programmes alternatives",
-    "Intelligence artificielle": "intelligence artificielle IA AI outil d’IA générative automatisation technologie transformation numérique outils génératifs",
-    "Réputation et image": "réputation image visibilité marque notoriété classement communication attractivité perception rayonnement",
-    "Environnement politique et économique, émigration": "politique économie crise émigration instabilité contexte pays inflation sécurité situation nationale",
-}
-
-
-def enrich_theme_text(theme):
-    theme_clean = clean(theme)
-    norm_theme = normalize(theme_clean)
-    context = ""
-    for key, value in THEME_CONTEXT.items():
-        if normalize(key) in norm_theme or norm_theme in normalize(key):
-            context = value
-            break
-    return f"{theme_clean}. {context}".strip()
-
-
-@st.cache_resource(show_spinner=False)
-def load_multilingual_sentence_model():
+def classify_with_trained_model(answer, model):
+    pred = model.predict([answer])[0]
+    confidence = None
     try:
-        from sentence_transformers import SentenceTransformer
-        return SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
+        clf = model.named_steps.get("clf")
+        if hasattr(clf, "predict_proba"):
+            proba = model.predict_proba([answer])[0]
+            confidence = round(float(max(proba)) * 100, 1)
+        elif hasattr(clf, "decision_function"):
+            scores = np.array(model.decision_function([answer])).reshape(-1)
+            if len(scores) > 0:
+                exp_scores = np.exp(scores - scores.max())
+                confidence = round(float(exp_scores.max() / exp_scores.sum()) * 100, 1)
     except Exception:
-        return None
-
-
-def cosine_from_vectors(a, b):
-    import numpy as np
-    a = np.asarray(a)
-    b = np.asarray(b)
-    denom = (np.linalg.norm(a) * np.linalg.norm(b))
-    if denom == 0:
-        return 0.0
-    return float(np.dot(a, b) / denom)
-
-
-def semantic_theme_scores(answer, participant_type, swot_element, engine_name):
-    themes = official_themes_for(participant_type, swot_element, include_autre=False)
-    if not themes:
-        return []
-
-    answer_text = clean(answer)
-    theme_texts = [enrich_theme_text(t) for t in themes]
-
-    if "Sentence Transformer" in engine_name:
-        model = load_multilingual_sentence_model()
-        if model is not None:
-            try:
-                embeddings = model.encode([answer_text] + theme_texts, normalize_embeddings=True)
-                answer_vec = embeddings[0]
-                theme_vecs = embeddings[1:]
-                scores = [cosine_from_vectors(answer_vec, v) for v in theme_vecs]
-                return sorted(zip(themes, scores), key=lambda x: x[1], reverse=True)
-            except Exception:
-                pass
-
-    # Offline professional fallback: hybrid word + char TF-IDF + theme context.
-    try:
-        from sklearn.feature_extraction.text import TfidfVectorizer
-        from sklearn.metrics.pairwise import cosine_similarity
-        from sklearn.pipeline import FeatureUnion
-
-        corpus = [answer_text] + theme_texts
-        features = FeatureUnion([
-            ("word", TfidfVectorizer(ngram_range=(1, 2), min_df=1, strip_accents="unicode")),
-            ("char", TfidfVectorizer(analyzer="char_wb", ngram_range=(3, 5), min_df=1, strip_accents="unicode")),
-        ])
-        matrix = features.fit_transform(corpus)
-        sims = cosine_similarity(matrix[0:1], matrix[1:]).flatten().tolist()
-        keyword_scores = [simple_similarity_score(answer_text, t) for t in themes]
-        # Use lexical/domain evidence as the anchor; semantic similarity is only supportive.
-        scores = [(0.45 * keyword_scores[i]) + (0.35 * sims[i]) + (0.20 * strong_keyword_score(answer_text, themes[i])) for i in range(len(themes))]
-        return sorted(zip(themes, scores), key=lambda x: x[1], reverse=True)
-    except Exception:
-        scores = [simple_similarity_score(answer_text, t) for t in themes]
-        return sorted(zip(themes, scores), key=lambda x: x[1], reverse=True)
-
-
-def classify_theme_with_engine(answer, participant_type, swot_element, engine_name):
-    ranked = score_theme_candidates(answer, participant_type, swot_element, engine_name)
-    if not ranked:
-        return "", 0.0, "", "Aucun thème officiel disponible"
-
-    best_theme = ranked[0][0]
-    conf = calibrated_confidence(ranked)
-    top3 = " | ".join([f"{t} ({round(s * 100, 1)})" for t, s, *_ in ranked[:3]])
-
-    evidence = []
-    if ranked[0][2] > 0:
-        evidence.append("mots-clés thématiques")
-    if ranked[0][3] > 0:
-        evidence.append("similarité TF-IDF")
-    if ranked[0][4] > 0:
-        evidence.append("recouvrement lexical")
-    if ranked[0][6]:
-        evidence.append(ranked[0][6])
-
-    # Conservative handling: when the best adjusted score remains weak, do not pretend the classification is reliable.
-    if ranked[0][1] < 0.22:
-        conf = min(conf, 35.0)
-        evidence.append("classement faible: à valider")
-
-    evidence_txt = ", ".join(dict.fromkeys(evidence)) if evidence else "évidence faible"
-    return best_theme, conf, top3, evidence_txt
-
-def available_ai_engines():
-    engines = []
-    if load_multilingual_sentence_model() is not None:
-        engines.append("Sentence Transformer multilingue pré-entraîné - recommandé")
-    engines.extend([
-        "Hybrid semantic TF-IDF offline - fallback robuste",
-        "Keyword-assisted TF-IDF - contrôle lexical",
-    ])
-    return engines
-
-
-def compare_ai_engines(df_scope):
-    engines = available_ai_engines()
-    engine_outputs = []
-
-    for engine in engines:
-        temp = build_classification_with_engine(df_scope, engine)
-        if temp.empty:
-            continue
-        temp = temp[[
-            "row_id", "Respondent_Type", "groupe", "participants", "swot_element",
-            "question", "Final_Answer", "AI_Suggested_Theme", "Confidence", "Top_3_Themes"
-        ]].copy()
-        temp = temp.rename(columns={
-            "AI_Suggested_Theme": f"Theme_{safe_filename(engine)}",
-            "Confidence": f"Confidence_{safe_filename(engine)}",
-            "Top_3_Themes": f"Top3_{safe_filename(engine)}",
-        })
-        engine_outputs.append((engine, temp))
-
-    if not engine_outputs:
-        return pd.DataFrame(), pd.DataFrame(), []
-
-    comparison = engine_outputs[0][1]
-    for _, temp in engine_outputs[1:]:
-        comparison = comparison.merge(
-            temp.drop(columns=["Respondent_Type", "groupe", "participants", "swot_element", "question", "Final_Answer"]),
-            on="row_id",
-            how="outer"
-        )
-
-    summary_rows = []
-    for engine, _ in engine_outputs:
-        theme_col = f"Theme_{safe_filename(engine)}"
-        conf_col = f"Confidence_{safe_filename(engine)}"
-        summary_rows.append({
-            "Moteur": engine,
-            "Réponses classifiées": comparison[theme_col].notna().sum() if theme_col in comparison else 0,
-            "Confiance moyenne": round(pd.to_numeric(comparison[conf_col], errors="coerce").mean(), 1) if conf_col in comparison else None,
-            "Confiance médiane": round(pd.to_numeric(comparison[conf_col], errors="coerce").median(), 1) if conf_col in comparison else None,
-            "Faible confiance (<60%)": int((pd.to_numeric(comparison[conf_col], errors="coerce") < 60).sum()) if conf_col in comparison else 0,
-        })
-
-    theme_cols = [f"Theme_{safe_filename(engine)}" for engine, _ in engine_outputs]
-    if len(theme_cols) >= 2:
-        def agreement(row):
-            vals = [clean(row.get(c, "")) for c in theme_cols if clean(row.get(c, ""))]
-            return "Accord" if vals and len(set(vals)) == 1 else "Désaccord"
-        comparison["Accord_entre_moteurs"] = comparison.apply(agreement, axis=1)
-    else:
-        comparison["Accord_entre_moteurs"] = "Un seul moteur"
-
-    summary = pd.DataFrame(summary_rows)
-    if len(theme_cols) >= 2:
-        agreement_rate = round((comparison["Accord_entre_moteurs"] == "Accord").mean() * 100, 1) if len(comparison) else 0
-        summary.loc[len(summary)] = {
-            "Moteur": "Accord global entre moteurs",
-            "Réponses classifiées": len(comparison),
-            "Confiance moyenne": agreement_rate,
-            "Confiance médiane": None,
-            "Faible confiance (<60%)": None,
-        }
-    return comparison, summary, engines
-
-
-def evaluate_engines_against_validated(comparison_df, validated_file):
-    if validated_file is None or comparison_df.empty:
-        return pd.DataFrame()
-    try:
-        if validated_file.name.lower().endswith(".csv"):
-            valid = pd.read_csv(validated_file)
-        else:
-            valid = pd.read_excel(validated_file)
-    except Exception as e:
-        st.error("Impossible de lire le fichier validé.")
-        st.exception(e)
-        return pd.DataFrame()
-
-    possible_label_cols = ["Validated_Theme", "Theme_validé", "Theme valide", "Thème validé", "Final_Theme", "theme"]
-    label_col = None
-    for c in possible_label_cols:
-        if c in valid.columns:
-            label_col = c
-            break
-    if label_col is None:
-        st.error("Le fichier validé doit contenir une colonne Validated_Theme ou Thème validé.")
-        return pd.DataFrame()
-
-    if "row_id" in valid.columns:
-        merged = comparison_df.merge(valid[["row_id", label_col]], on="row_id", how="inner")
-    else:
-        key_cols = [c for c in ["Respondent_Type", "groupe", "swot_element", "Final_Answer"] if c in valid.columns and c in comparison_df.columns]
-        if not key_cols:
-            st.error("Le fichier validé doit contenir row_id, ou les colonnes Respondent_Type, groupe, swot_element et Final_Answer.")
-            return pd.DataFrame()
-        merged = comparison_df.merge(valid[key_cols + [label_col]], on=key_cols, how="inner")
-
-    results = []
-    true_labels = merged[label_col].apply(clean)
-    for col in [c for c in merged.columns if c.startswith("Theme_")]:
-        pred = merged[col].apply(clean)
-        ok = pred == true_labels
-        results.append({
-            "Moteur": col.replace("Theme_", "").replace("_", " "),
-            "N validé": len(merged),
-            "Accuracy": round(ok.mean() * 100, 1) if len(merged) else 0,
-            "Erreurs": int((~ok).sum()),
-        })
-    return pd.DataFrame(results)
-
-def render_model_management(df_scope, selected_type="Tous"):
-    st.markdown("""
-    <div class="ai-card pro-card">
-        <h3>1. Sélection du moteur IA</h3>
-        <p>Le système utilise un moteur linguistique pré-entraîné. L'expert ne doit pas entraîner le modèle manuellement. Les thèmes officiels restent inchangés; le modèle compare chaque réponse aux thèmes autorisés pour le type de participants et l'élément SWOT.</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-    transformer_available = load_multilingual_sentence_model() is not None
-    engine_options = available_ai_engines()
-
-    c1, c2 = st.columns([1.4, 1])
-    with c1:
-        engine_name = st.selectbox("Moteur de classification", engine_options, key="ai_engine_name")
-    with c2:
-        st.metric("Moteur transformer disponible", "Oui" if transformer_available else "Non")
-
-    swot_rows = df_scope[df_scope["swot_element"].isin(["Forces", "Faiblesses", "Opportunités", "Menaces"])]
-    available_theme_count = 0
-    for ptype in sorted(df_scope["Respondent_Type"].dropna().unique().tolist()):
-        for el in ["Forces", "Faiblesses", "Opportunités", "Menaces"]:
-            available_theme_count += len(official_themes_for(ptype, el, include_autre=False))
-
-    k1, k2, k3 = st.columns(3)
-    k1.metric("Réponses SWOT", len(swot_rows))
-    k2.metric("Thèmes officiels disponibles", available_theme_count)
-    k3.metric("Mode", "Pré-entraîné")
-
-    st.markdown("""
-    <div class="ai-info-box">
-        <b>Important :</b> ce module ne prétend pas créer un modèle supervisé à partir de zéro. Il exploite un modèle linguistique pré-entraîné sur de grands corpus multilingues, puis l'adapte à votre taxonomie officielle par similarité sémantique contrôlée. La validation humaine reste disponible pour corriger les cas ambigus et ajouter un nouveau thème lorsque nécessaire.
-    </div>
-    """, unsafe_allow_html=True)
-
-    if st.button("Activer ce moteur IA", key="activate_ai_engine"):
-        st.session_state["active_ai_engine"] = engine_name
-        st.success(f"Moteur IA actif : {engine_name}")
-
-    active = st.session_state.get("active_ai_engine", "")
-    if active:
-        st.success(f"Moteur actuellement utilisé : {active}")
-    else:
-        st.warning("Veuillez activer un moteur IA avant de lancer le mapping, les doublons ou la synthèse.")
-
-
-def ai_platform_page(show_header=True, df_preloaded=None):
-    html_block(APP_CSS)
-
-    html_block(f"""
-    <style>
-    .ai-hero {{
-        background: linear-gradient(135deg, #001F5B 0%, #123C7C 55%, #8B1538 100%);
-        color: white;
-        border-radius: 22px;
-        padding: 30px 34px;
-        margin: 8px 0 24px 0;
-        box-shadow: 0 16px 38px rgba(0,31,91,0.22);
-    }}
-    .ai-hero h2 {{
-        color: white !important;
-        margin: 0 0 8px 0;
-        font-size: 32px;
-        font-weight: 900;
-        letter-spacing: 0.2px;
-    }}
-    .ai-hero p {{
-        color: #EAF2F8;
-        margin: 0;
-        font-size: 16px;
-        line-height: 1.5;
-    }}
-    .ai-card {{
-        background: white;
-        border: 1px solid #D0D6E0;
-        border-radius: 18px;
-        padding: 18px 22px;
-        margin: 14px 0 18px 0;
-        box-shadow: 0 8px 24px rgba(0,0,0,0.055);
-    }}
-    .pro-card h3 {{
-        color: {USJ_BLUE} !important;
-        font-size: 24px;
-        margin: 0 0 8px 0;
-    }}
-    .ai-info-box {{
-        background: #EAF2F8;
-        color: #003B7A;
-        border-left: 6px solid {USJ_BLUE};
-        border-radius: 12px;
-        padding: 14px 18px;
-        margin: 14px 0;
-        font-size: 15px;
-    }}
-    .ai-warning {{
-        background: #FFF7E6;
-        border-left: 6px solid #F59F00;
-        border-radius: 12px;
-        padding: 14px 18px;
-        color: #7A4B00;
-        font-weight: 700;
-        margin: 12px 0;
-    }}
-    .ai-kpi {{
-        background: white;
-        border: 1px solid #D0D6E0;
-        border-radius: 16px;
-        padding: 16px 18px;
-        box-shadow: 0 8px 20px rgba(0,0,0,0.045);
-    }}
-    .ai-kpi-number {{
-        color: {USJ_RED};
-        font-size: 28px;
-        font-weight: 900;
-    }}
-    .ai-kpi-label {{
-        color: #64748B;
-        font-size: 13px;
-        font-weight: 700;
-        margin-top: 3px;
-    }}
-    </style>
-    <div class="ai-hero">
-        <h2>Plateforme IA supervisée - Analyse thématique stratégique</h2>
-        <p>Workflow institutionnel : moteur IA pré-entraîné, mapping contrôlé sur les thèmes officiels, validation humaine, détection stricte des doublons et synthèse par thème.</p>
-    </div>
-    """)
-
-    if df_preloaded is None:
-        uploaded_file = st.file_uploader(
-            "Uploader le fichier Excel corrigé pour l'analyse IA",
-            type=["xlsx", "xls"],
-            key="ai_excel_upload"
-        )
-        if uploaded_file is None:
-            st.stop()
-        df = read_corrected_excel(uploaded_file)
-    else:
-        df = df_preloaded.copy()
-
-    # IA module works on the full uploaded dataset, not on a selected subset.
-    selected_type = "Tous les types de participants"
-    selected_subgroup = "Tous les sous-groupes"
-    df_scope = df.copy()
-
-    st.markdown("""
-    <div class="ai-info-box">
-        <b>Périmètre IA :</b> l'analyse IA est appliquée à toutes les réponses importées, tous types de participants et tous sous-groupes confondus. La taxonomie officielle reste adaptée ligne par ligne selon le type de participant et l'élément SWOT.
-    </div>
-    """, unsafe_allow_html=True)
-
-    swot_count = len(df_scope[df_scope["swot_element"].isin(["Forces", "Faiblesses", "Opportunités", "Menaces"])])
-    k1, k2, k3 = st.columns(3)
-    with k1:
-        st.markdown(f'<div class="ai-kpi"><div class="ai-kpi-number">{len(df_scope)}</div><div class="ai-kpi-label">Réponses dans le périmètre</div></div>', unsafe_allow_html=True)
-    with k2:
-        st.markdown(f'<div class="ai-kpi"><div class="ai-kpi-number">{swot_count}</div><div class="ai-kpi-label">Réponses SWOT analysables</div></div>', unsafe_allow_html=True)
-    with k3:
-        active_engine = st.session_state.get("active_ai_engine", "Non")
-        st.markdown(f'<div class="ai-kpi"><div class="ai-kpi-number">{"Oui" if active_engine != "Non" else "Non"}</div><div class="ai-kpi-label">Moteur IA actif</div></div>', unsafe_allow_html=True)
-
-    tab_model, tab_compare, tab_mapping, tab_duplicates, tab_synthesis = st.tabs(
-        ["1. Moteur IA global", "2. Comparaison moteurs", "3. Mapping SWOT global", "4. Doublons globaux", "5. Synthèse globale"]
-    )
-
-    with tab_model:
-        render_model_management(df_scope, selected_type)
-
-    with tab_compare:
-        st.subheader("2. Comparaison des moteurs IA sur toutes les réponses")
-        st.caption("Cette étape applique tous les moteurs disponibles au même fichier Excel. Sans fichier validé par expert, elle mesure l'accord entre moteurs et les niveaux de confiance. Avec un fichier validé, elle calcule l'accuracy réelle.")
-
-        if st.button("Comparer les moteurs IA", key="compare_ai_engines"):
-            comparison_df, summary_df, engines = compare_ai_engines(df_scope)
-            st.session_state["engine_comparison_df"] = comparison_df
-            st.session_state["engine_summary_df"] = summary_df
-
-        summary_df = st.session_state.get("engine_summary_df", pd.DataFrame())
-        comparison_df = st.session_state.get("engine_comparison_df", pd.DataFrame())
-
-        if not summary_df.empty:
-            st.markdown("#### Synthèse comparative")
-            st.dataframe(summary_df, use_container_width=True)
-
-        if not comparison_df.empty:
-            st.markdown("#### Détail des prédictions par moteur")
-            display_cols = [c for c in comparison_df.columns if c in ["Respondent_Type", "groupe", "swot_element", "Final_Answer", "Accord_entre_moteurs"] or c.startswith("Theme_") or c.startswith("Confidence_")]
-            st.dataframe(comparison_df[display_cols], use_container_width=True)
-
-            output = BytesIO()
-            with pd.ExcelWriter(output, engine="openpyxl") as writer:
-                comparison_df.to_excel(writer, index=False, sheet_name="Comparaison moteurs")
-                summary_df.to_excel(writer, index=False, sheet_name="Synthese")
-            output.seek(0)
-            st.download_button(
-                "Télécharger la comparaison des moteurs",
-                data=output.getvalue(),
-                file_name="comparaison_moteurs_IA.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
-
-            st.markdown("#### Évaluation avec un fichier validé par expert")
-            validated_file = st.file_uploader(
-                "Uploader un fichier validé contenant row_id et Validated_Theme",
-                type=["xlsx", "csv"],
-                key="validated_engine_eval_upload"
-            )
-            if validated_file is not None:
-                eval_df = evaluate_engines_against_validated(comparison_df, validated_file)
-                if not eval_df.empty:
-                    st.dataframe(eval_df, use_container_width=True)
-        else:
-            st.caption("Cliquez sur « Comparer les moteurs IA » pour produire la comparaison.")
-
-    with tab_mapping:
-        st.subheader("3. Mapping SWOT supervisé - toutes les données")
-        engine = st.session_state.get("active_ai_engine", "")
-        if not engine:
-            st.markdown('<div class="ai-warning">Activez d’abord un moteur IA dans l’onglet 1.</div>', unsafe_allow_html=True)
-        else:
-            st.caption(f"Moteur actif : {engine}")
-            if st.button("Classifier les réponses SWOT", key="run_ai_mapping_engine"):
-                st.session_state["classified_df"] = build_classification_with_engine(df_scope, engine)
-
-            classified_df = st.session_state.get("classified_df", pd.DataFrame())
-            if not classified_df.empty:
-                preview_cols = ["groupe", "swot_element", "Final_Answer", "AI_Suggested_Theme", "Confidence", "Top_3_Themes"]
-                st.dataframe(classified_df[preview_cols], use_container_width=True)
-
-                validated_df = render_mapping_validation(classified_df)
-                st.session_state["validated_mapping_df"] = validated_df
-
-                if not validated_df.empty:
-                    export_cols = [
-                        "Respondent_Type", "groupe", "participants", "swot_element", "question",
-                        "Final_Answer", "AI_Suggested_Theme", "Confidence", "Top_3_Themes",
-                        "Validated_Theme", "New_Theme"
-                    ]
-                    export_df = validated_df[export_cols].copy()
-                    output = BytesIO()
-                    with pd.ExcelWriter(output, engine="openpyxl") as writer:
-                        export_df.to_excel(writer, index=False, sheet_name="Validated Mapping")
-                    output.seek(0)
-                    st.download_button(
-                        "Télécharger le mapping validé",
-                        data=output.getvalue(),
-                        file_name=f"mapping_valide_{safe_filename(selected_type)}_{safe_filename(selected_subgroup)}.xlsx",
-                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                    )
-            else:
-                st.caption("Cliquez sur « Classifier les réponses SWOT » pour lancer le mapping.")
-
-    with tab_duplicates:
-        st.subheader("4. Détection stricte des doublons - toutes les données")
-        engine = st.session_state.get("active_ai_engine", "")
-        if not engine:
-            st.markdown('<div class="ai-warning">Activez d’abord un moteur IA dans l’onglet 1.</div>', unsafe_allow_html=True)
-        else:
-            st.caption("Règle stricte : même élément SWOT + même sujet central. Une structure grammaticale similaire avec sujet différent n’est pas retenue.")
-            if st.button("Détecter les doublons", key="detect_duplicates"):
-                dup_df = detect_duplicate_pairs(df_scope)
-                st.session_state["duplicates_df"] = dup_df
-
-            dup_df = st.session_state.get("duplicates_df", pd.DataFrame())
-            if not dup_df.empty:
-                st.dataframe(dup_df, use_container_width=True)
-                st.download_button(
-                    "Télécharger les doublons détectés",
-                    data=dup_df.to_csv(index=False).encode("utf-8-sig"),
-                    file_name=f"doublons_{safe_filename(selected_type)}.csv",
-                    mime="text/csv"
-                )
-            else:
-                st.caption("Aucun doublon affiché pour le moment.")
-
-    with tab_synthesis:
-        st.subheader("5. Synthèse automatique par thème validé")
-        validated_df = st.session_state.get("validated_mapping_df", pd.DataFrame())
-        if validated_df.empty:
-            st.warning("Veuillez d'abord produire/valider le mapping SWOT dans l'onglet 2.")
-        else:
-            synthesis_df = build_theme_synthesis(validated_df)
-            st.dataframe(synthesis_df, use_container_width=True)
-            output = BytesIO()
-            with pd.ExcelWriter(output, engine="openpyxl") as writer:
-                synthesis_df.to_excel(writer, index=False, sheet_name="Synthese")
-            output.seek(0)
-            st.download_button(
-                "Télécharger la synthèse",
-                data=output.getvalue(),
-                file_name=f"synthese_{safe_filename(selected_type)}_{safe_filename(selected_subgroup)}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
+        confidence = None
+    return pred, confidence
 
 
 # ============================================================
-# PROFESSIONAL AI ENGINE OVERRIDE
-# ============================================================
-# This block intentionally overrides the previous experimental AI workflow.
-# It does NOT modify the print preview / Word / PDF functions above.
-
-ENGINE_RULES = "Expert keyword rules - contrôle thématique"
-ENGINE_TFIDF = "TF-IDF semantic theme matching - comparaison lexicale"
-ENGINE_HYBRID = "Hybrid consensus model - recommandé"
-ENGINE_TRANSFORMER = "Sentence Transformer multilingual - si disponible"
-
-
-THEME_CONTEXT_ENRICHED = {
-    "soutenabilite financiere": "budget financement frais scolarité bourses coût modèle économique viabilité financière ressources financières",
-    "gouvernance et leadership": "gouvernance leadership direction administration décisions procédures transparence stratégie représentation responsabilisation autonomie pilotage",
-    "strategie academique et qualite d enseignement": "programmes formation enseignement pédagogie académique qualité cours curriculum diplôme accréditation apprentissage langues anglais français trilinguisme",
-    "qualite de l enseignement": "enseignement cours pédagogie accompagnement orientation tutorat enseignants apprentissage évaluation formation qualité langues",
-    "recherche et innovation": "recherche innovation publications laboratoire doctorat thèse brevets valorisation scientifique projets scientifiques",
-    "ressources documentaires et environnement digital": "bibliothèque ressources documentaires numérique digital informatique technologie systèmes plateformes logiciels données outils",
-    "ressources documentaires numeriques et informatiques": "bibliothèque ressources documentaires numériques informatiques digital plateformes logiciels technologie systèmes outils données",
-    "succes des etudiants": "étudiants recrutement inscriptions accompagnement services support employabilité insertion stage stages réussite parcours diplômés",
-    "ressources humaines": "ressources humaines personnel personnels enseignants administratifs recrutement compétences charge travail formation évaluation RH",
-    "strategie et mobilite internationales": "international mobilité échanges partenariats étranger diaspora francophonie langues anglais internationalisation",
-    "mission societale": "mission sociétale engagement social société communauté responsabilité sociale impact citoyen Liban reconstruction",
-    "espace et infrastructures": "campus bâtiments locaux salles infrastructures espaces équipements laboratoires maintenance Beyrouth hôtel-dieu",
-    "espace et infrastructure": "campus bâtiment locaux salles infrastructure espaces équipements laboratoires maintenance",
-    "environnement de travail": "conditions de travail environnement travail climat collaboration communication interne charge horaires processus administratif",
-    "diversite et inclusion": "diversité inclusion égalité accessibilité handicap genre équité équitable",
-    "developpement durable odd": "développement durable ODD environnement écologie durable responsabilité environnementale",
-    "relation avec l administration et les enseignants": "administration enseignants relation communication écoute coordination service étudiant procédures administratives",
-    "representation des etudiants": "représentation étudiants conseil étudiant participation voix des étudiants délégués implication",
-    "vie universitaire": "vie universitaire vie étudiante sport activités clubs campus animation aide psychologique expérience étudiante",
-    "mobilite internationale": "mobilité internationale échanges erasmus partenariats étranger voyage",
-    "aide financiere": "aide financière bourses frais scolarité paiement soutien financier financement",
-    "insertion professionnelle": "insertion professionnelle emploi employabilité stage stages carrière entreprises marché travail métier métiers",
-    "marche du travail et associations professionnelles": "marché travail emploi employeurs entreprises associations professionnelles compétences stages métiers carrière",
-    "marche du travail et relations avec les employeurs": "marché travail emploi employeurs entreprises relations employeurs professionnel compétences stages carrière",
-    "concurrence avec les autres universites": "concurrence autres universités compétition attractivité frais scolarité programmes flexibles universités américaines classe A",
-    "intelligence artificielle": "intelligence artificielle IA AI outil d’IA générative automatisation data science analyse générative transformation numérique",
-    "reputation et image": "réputation image classement classements visibilité notoriété communication attractivité perception rayonnement jeunes écoles recruteurs",
-    "environnement politique et economique emigration": "politique économique crise émigration instabilité Liban inflation sécurité guerre familles parents banque immobilier finance",
-}
-
-
-def theme_context(theme):
-    t = clean(theme)
-    nt = normalize(t)
-    for key, value in THEME_CONTEXT_ENRICHED.items():
-        if key in nt or nt in key:
-            return value
-    return " ".join(tokenize_for_similarity(t))
-
-
-def theme_document(theme):
-    return f"{clean(theme)}. {theme_context(theme)}"
-
-
-def tfidf_scores_against_themes(answer, themes):
-    try:
-        from sklearn.feature_extraction.text import TfidfVectorizer
-        from sklearn.metrics.pairwise import cosine_similarity
-        from sklearn.pipeline import FeatureUnion
-    except Exception:
-        # Fallback when scikit-learn is unavailable.
-        return [simple_similarity_score(answer, t) for t in themes]
-
-    corpus = [clean(answer)] + [theme_document(t) for t in themes]
-    try:
-        features = FeatureUnion([
-            ("word", TfidfVectorizer(ngram_range=(1, 2), min_df=1, strip_accents="unicode", lowercase=True)),
-            ("char", TfidfVectorizer(analyzer="char_wb", ngram_range=(3, 5), min_df=1, strip_accents="unicode", lowercase=True)),
-        ])
-        matrix = features.fit_transform(corpus)
-        return cosine_similarity(matrix[0:1], matrix[1:]).flatten().tolist()
-    except Exception:
-        return [simple_similarity_score(answer, t) for t in themes]
-
-
-def keyword_rule_scores(answer, themes):
-    return [strong_keyword_score(answer, t) for t in themes]
-
-
-def lexical_overlap_scores(answer, themes):
-    answer_tokens = set(tokenize_for_similarity(answer))
-    scores = []
-    for theme in themes:
-        theme_tokens = set(tokenize_for_similarity(theme_document(theme)))
-        if not answer_tokens or not theme_tokens:
-            scores.append(0.0)
-        else:
-            overlap = len(answer_tokens & theme_tokens) / max(len(theme_tokens), 1)
-            containment = len(answer_tokens & theme_tokens) / max(min(len(answer_tokens), len(theme_tokens)), 1)
-            scores.append(min(1.0, 0.6 * overlap + 0.4 * containment))
-    return scores
-
-
-def transformer_scores(answer, themes):
-    model = load_multilingual_sentence_model()
-    if model is None:
-        return None
-    try:
-        embs = model.encode([clean(answer)] + [theme_document(t) for t in themes], normalize_embeddings=True)
-        answer_vec = embs[0]
-        return [cosine_from_vectors(answer_vec, v) for v in embs[1:]]
-    except Exception:
-        return None
-
-
-
-
-# Strong domain guardrails: prevent structurally similar but conceptually wrong mappings.
-# These rules do not change the official themes. They only restrict impossible AI suggestions.
-DOMAIN_SIGNAL_RULES = {
-    "intelligence artificielle": ["intelligence artificielle", " ia ", " ai ", "agent conversationnel ia", "generative", "générative", "automatisation", "machine learning", "data science", "algorithme"],
-    "concurrence avec les autres universites": ["concurrence", "competition", "compétition", "autres universites", "autres universités", "universites americaines", "universités américaines", "universites regionales", "universités régionales", "scolarites des autres", "classe a"],
-    "reputation et image": ["reputation", "réputation", "image", "visibilite", "visibilité", "notoriete", "notoriété", "attractivite", "attractivité", "perception", "classement", "classements", "communication", "public cible", "demande manifeste", "serieux de la formation", "sérieux de la formation", "rayonnement"],
-    "environnement politique et economique emigration": ["politique", "economique", "économique", "crise", "emigration", "émigration", "instabilite", "instabilité", "inflation", "securite", "sécurité", "guerre", "banque", "immobilier", "parents", "familles", "migration"],
-    "marche du travail": ["marche du travail", "marché du travail", "emploi", "employeur", "employeurs", "entreprise", "entreprises", "professionnel", "professionnels", "professionnelle", "professionnelles", "stage", "stages", "carriere", "carrière", "metier", "métier", "competence", "compétence", "associations professionnelles"],
-    "strategie academique et qualite d enseignement": ["cours", "programme", "programmes", "formation", "formations", "enseignement", "pedagogie", "pédagogie", "curriculum", "credits", "crédits", "diplome", "diplôme", "accreditation", "accréditation", "qualite enseignement", "qualité enseignement", "langue", "anglais", "francais", "français", "trilinguisme", "mis a jour", "mis à jour"],
-    "qualite de l enseignement": ["cours", "enseignement", "enseignant", "enseignants", "pedagogie", "pédagogie", "accompagnement", "orientation", "tutorat", "formation", "langue", "anglais", "francais", "français", "mis a jour", "mis à jour"],
-    "ressources documentaires et environnement digital": ["bibliotheque", "bibliothèque", "documentaire", "numerique", "numérique", "digital", "informatique", "technologie", "technologique", "plateforme", "plateformes", "systeme", "système", "systemes", "systèmes", "logiciel", "logiciels", "outils", "donnees", "données"],
-    "ressources humaines": ["ressources humaines", "personnel", "personnels", "rh", "recrutement", "charge de travail", "enseignants", "administratifs", "competences", "compétences"],
-    "gouvernance et leadership": ["gouvernance", "leadership", "decision", "décision", "decisions", "décisions", "procedure", "procédure", "procedures", "procédures", "doyen", "doyens", "directeur", "directeurs", "administration", "centralisation", "decentralisation", "décentralisation", "transparence", "accountability", "autonomie", "strategie", "stratégie"],
-    "soutenabilite financiere": ["financement", "financier", "financiere", "financière", "budget", "frais", "scolarite", "scolarité", "bourse", "bourses", "cout", "coût", "ressources financieres", "ressources financières"],
-    "recherche et innovation": ["recherche", "innovation", "publications", "publication", "laboratoire", "doctorat", "these", "thèse", "brevet", "brevets", "valorisation"],
-    "mission societale": ["mission societale", "mission sociétale", "societal", "sociétal", "societe", "société", "communauté", "engagement social", "responsabilite sociale", "responsabilité sociale", "impact social", "citoyen", "liban", "reconstruction"],
-    "espace et infrastructures": ["campus", "batiment", "bâtiment", "batiments", "bâtiments", "locaux", "salles", "infrastructure", "infrastructures", "equipement", "équipement", "equipements", "équipements", "laboratoire", "laboratoires", "maintenance"],
-}
-
-EXTERNAL_THEME_GROUPS = {
-    "Intelligence artificielle": "intelligence artificielle",
-    "Concurrence avec les autres universités": "concurrence avec les autres universites",
-    "Réputation et image": "reputation et image",
-    "Environnement politique et économique, émigration": "environnement politique et economique emigration",
-    "Marché du travail et Associations professionnelles": "marche du travail",
-    "Marché du travail et relations avec les employeurs": "marche du travail",
-}
-
-INTERNAL_THEME_GROUPS = {
-    "Stratégie académique et qualité d’enseignement": "strategie academique et qualite d enseignement",
-    "Qualité de l’enseignement (Accompagnement, Orientation, Tutorat, etc.)": "qualite de l enseignement",
-    "Ressources documentaires et Environnement digital": "ressources documentaires et environnement digital",
-    "Ressources documentaires, numériques et informatiques": "ressources documentaires et environnement digital",
-    "Ressources humaines": "ressources humaines",
-    "Gouvernance et Leadership (gestion, relation, représentation, etc.)": "gouvernance et leadership",
-    "Gouvernance et Leadership (Gestion, relation, représentation, etc.)": "gouvernance et leadership",
-    "Soutenabilité financière": "soutenabilite financiere",
-    "Recherche et Innovation": "recherche et innovation",
-    "Mission sociétale": "mission societale",
-    "Espace et infrastructures": "espace et infrastructures",
-    "Espace et infrastructure": "espace et infrastructures",
-}
-
-
-def contains_any_signal(answer_norm, signals):
-    padded = f" {answer_norm} "
-    for sig in signals:
-        sig_norm = normalize(sig)
-        if sig_norm.strip() and sig_norm in padded:
-            return True
-    return False
-
-
-def domain_group_for_theme(theme, swot_element):
-    mapping = EXTERNAL_THEME_GROUPS if swot_element in ["Opportunités", "Menaces"] else INTERNAL_THEME_GROUPS
-    if theme in mapping:
-        return mapping[theme]
-    nt = normalize(theme)
-    for raw, group in mapping.items():
-        if normalize(raw) in nt or nt in normalize(raw):
-            return group
-    return ""
-
-
-def domain_gate_adjustments(answer, themes, swot_element, base_scores):
-    """Apply strict conceptual guardrails and return adjusted scores plus explanation."""
-    answer_norm = normalize(answer)
-    adjusted = list(base_scores)
-    active_groups = set()
-
-    # Identify concepts explicitly present in the answer.
-    for group, signals in DOMAIN_SIGNAL_RULES.items():
-        if contains_any_signal(answer_norm, signals):
-            active_groups.add(group)
-
-    # Special external rules to avoid absurd AI mappings.
-    # If the answer does not explicitly mention AI, the IA theme must not win.
-    for i, theme in enumerate(themes):
-        group = domain_group_for_theme(theme, swot_element)
-        if not group:
-            continue
-
-        if group == "intelligence artificielle" and group not in active_groups:
-            adjusted[i] *= 0.03
-            continue
-
-        if active_groups:
-            # Boost matching conceptual families.
-            if group in active_groups:
-                adjusted[i] += 0.55
-            else:
-                # Penalize unrelated families when a clear conceptual family is detected.
-                adjusted[i] *= 0.25
-
-    # If no strong signal is found, be conservative: avoid confident arbitrary classifications.
-    explanation = "garde-fous conceptuels appliqués"
-    if not active_groups:
-        explanation = "évidence thématique insuffisante: validation experte recommandée"
-    return adjusted, explanation, active_groups
-
-def score_theme_candidates(answer, participant_type, swot_element, engine_name):
-    themes = official_themes_for(participant_type, swot_element, include_autre=False)
-    if not themes:
-        return []
-
-    kw = keyword_rule_scores(answer, themes)
-    tfidf = tfidf_scores_against_themes(answer, themes)
-    lex = lexical_overlap_scores(answer, themes)
-
-    if engine_name == ENGINE_RULES:
-        base_scores = [(0.75 * kw[i]) + (0.25 * lex[i]) for i in range(len(themes))]
-    elif engine_name == ENGINE_TFIDF:
-        base_scores = [(0.80 * tfidf[i]) + (0.20 * lex[i]) for i in range(len(themes))]
-    elif engine_name == ENGINE_TRANSFORMER:
-        tr = transformer_scores(answer, themes)
-        if tr is None:
-            base_scores = [(0.55 * tfidf[i]) + (0.30 * kw[i]) + (0.15 * lex[i]) for i in range(len(themes))]
-        else:
-            base_scores = [(0.65 * tr[i]) + (0.25 * kw[i]) + (0.10 * lex[i]) for i in range(len(themes))]
-    else:
-        base_scores = [(0.42 * kw[i]) + (0.38 * tfidf[i]) + (0.20 * lex[i]) for i in range(len(themes))]
-
-    adjusted_scores, guardrail_note, active_groups = domain_gate_adjustments(answer, themes, swot_element, base_scores)
-
-    ranked = sorted(
-        zip(themes, adjusted_scores, kw, tfidf, lex, base_scores, [guardrail_note] * len(themes)),
-        key=lambda x: x[1],
-        reverse=True
-    )
-    return ranked
-
-def calibrated_confidence(ranked):
-    if not ranked:
-        return 0.0
-    best = ranked[0][1]
-    second = ranked[1][1] if len(ranked) > 1 else 0
-    margin = max(best - second, 0)
-    conf = 25 + best * 60 + margin * 80
-    if best < 0.18:
-        conf = min(conf, 45)
-    if margin < 0.025:
-        conf = min(conf, 55)
-    elif margin < 0.055:
-        conf = min(conf, 68)
-    return round(max(5, min(conf, 97)), 1)
-
-
-def classify_theme_with_engine(answer, participant_type, swot_element, engine_name):
-    ranked = score_theme_candidates(answer, participant_type, swot_element, engine_name)
-    if not ranked:
-        return "", 0.0, "", "Aucun thème officiel disponible"
-    best_theme = ranked[0][0]
-    conf = calibrated_confidence(ranked)
-    top3 = " | ".join([f"{t} ({round(s * 100, 1)})" for t, s, _, _, _ in ranked[:3]])
-    evidence = []
-    if ranked[0][2] > 0:
-        evidence.append("mots-clés thématiques")
-    if ranked[0][3] > 0:
-        evidence.append("similarité TF-IDF")
-    if ranked[0][4] > 0:
-        evidence.append("recouvrement lexical")
-    evidence_txt = ", ".join(evidence) if evidence else "évidence faible"
-    return best_theme, conf, top3, evidence_txt
-
-
-def available_ai_engines():
-    engines = [ENGINE_RULES, ENGINE_TFIDF, ENGINE_HYBRID]
-    if load_multilingual_sentence_model() is not None:
-        engines.append(ENGINE_TRANSFORMER)
-    return engines
-
-
-def build_classification_with_engine(df_scope, engine_name):
-    rows = []
-    for idx, row in df_scope.iterrows():
-        swot_element = row.get("swot_element", "")
-        if swot_element not in ["Forces", "Faiblesses", "Opportunités", "Menaces"]:
-            continue
-        answer = clean(row.get("Final_Answer", ""))
-        if not answer:
-            continue
-        theme, conf, top3, evidence = classify_theme_with_engine(
-            answer=answer,
-            participant_type=row.get("Respondent_Type", ""),
-            swot_element=swot_element,
-            engine_name=engine_name,
-        )
-        rows.append({
-            "row_id": idx,
-            "Respondent_Type": row.get("Respondent_Type", ""),
-            "groupe": row.get("groupe", ""),
-            "participants": row.get("participants", ""),
-            "swot_element": swot_element,
-            "question": row.get("question", ""),
-            "Final_Answer": answer,
-            "AI_Suggested_Theme": theme,
-            "Confidence": conf,
-            "Top_3_Themes": top3,
-            "Evidence": evidence,
-            "Validation_Status": "À valider" if conf < 70 else "Suggestion forte",
-            "Validated_Theme": theme,
-            "New_Theme": "",
-        })
-    return pd.DataFrame(rows)
-
-
-def compare_ai_engines(df_scope):
-    engines = available_ai_engines()
-    outputs = []
-    for engine in engines:
-        pred = build_classification_with_engine(df_scope, engine)
-        if pred.empty:
-            continue
-        small = pred[[
-            "row_id", "Respondent_Type", "groupe", "participants", "swot_element", "question", "Final_Answer",
-            "AI_Suggested_Theme", "Confidence", "Top_3_Themes", "Evidence", "Validation_Status"
-        ]].copy()
-        suffix = safe_filename(engine)
-        small = small.rename(columns={
-            "AI_Suggested_Theme": f"Theme_{suffix}",
-            "Confidence": f"Confidence_{suffix}",
-            "Top_3_Themes": f"Top3_{suffix}",
-            "Evidence": f"Evidence_{suffix}",
-            "Validation_Status": f"Status_{suffix}",
-        })
-        outputs.append((engine, small))
-
-    if not outputs:
-        return pd.DataFrame(), pd.DataFrame(), engines
-
-    comparison = outputs[0][1]
-    base_cols = ["Respondent_Type", "groupe", "participants", "swot_element", "question", "Final_Answer"]
-    for _, small in outputs[1:]:
-        comparison = comparison.merge(small.drop(columns=base_cols), on="row_id", how="outer")
-
-    theme_cols = [f"Theme_{safe_filename(engine)}" for engine, _ in outputs]
-    conf_cols = [f"Confidence_{safe_filename(engine)}" for engine, _ in outputs]
-
-    def agreement_count(row):
-        vals = [clean(row.get(c, "")) for c in theme_cols if clean(row.get(c, ""))]
-        if not vals:
-            return 0
-        return max(vals.count(v) for v in set(vals))
-
-    def consensus_theme(row):
-        vals = [clean(row.get(c, "")) for c in theme_cols if clean(row.get(c, ""))]
-        if not vals:
-            return ""
-        return max(set(vals), key=vals.count)
-
-    comparison["Consensus_Theme"] = comparison.apply(consensus_theme, axis=1)
-    comparison["Agreement_Count"] = comparison.apply(agreement_count, axis=1)
-    comparison["Agreement_Rate"] = round(comparison["Agreement_Count"] / max(len(theme_cols), 1) * 100, 1)
-    comparison["Consensus_Status"] = comparison["Agreement_Rate"].apply(lambda x: "Accord fort" if x >= 67 else "Désaccord - validation prioritaire")
-    comparison["Max_Confidence"] = comparison[conf_cols].apply(lambda row: pd.to_numeric(row, errors="coerce").max(), axis=1)
-
-    summary_rows = []
-    for engine, _ in outputs:
-        suffix = safe_filename(engine)
-        tcol = f"Theme_{suffix}"
-        ccol = f"Confidence_{suffix}"
-        summary_rows.append({
-            "Moteur": engine,
-            "Réponses classifiées": int(comparison[tcol].notna().sum()),
-            "Confiance moyenne": round(pd.to_numeric(comparison[ccol], errors="coerce").mean(), 1),
-            "Confiance médiane": round(pd.to_numeric(comparison[ccol], errors="coerce").median(), 1),
-            "Faible confiance (<70%)": int((pd.to_numeric(comparison[ccol], errors="coerce") < 70).sum()),
-        })
-    summary_rows.append({
-        "Moteur": "Consensus entre moteurs",
-        "Réponses classifiées": len(comparison),
-        "Confiance moyenne": round(comparison["Agreement_Rate"].mean(), 1),
-        "Confiance médiane": round(comparison["Agreement_Rate"].median(), 1),
-        "Faible confiance (<70%)": int((comparison["Agreement_Rate"] < 67).sum()),
-    })
-    return comparison, pd.DataFrame(summary_rows), engines
-
-
-def build_consensus_classification(df_scope, selected_engine=ENGINE_HYBRID):
-    comparison, _, engines = compare_ai_engines(df_scope)
-    if comparison.empty:
-        return pd.DataFrame()
-    preferred_col = f"Theme_{safe_filename(selected_engine)}"
-    preferred_conf = f"Confidence_{safe_filename(selected_engine)}"
-    preferred_top3 = f"Top3_{safe_filename(selected_engine)}"
-    preferred_evidence = f"Evidence_{safe_filename(selected_engine)}"
-    if preferred_col not in comparison.columns:
-        preferred_col = "Consensus_Theme"
-        preferred_conf = "Max_Confidence"
-        preferred_top3 = ""
-        preferred_evidence = ""
-    rows = []
-    for _, row in comparison.iterrows():
-        top3_value = row.get(preferred_top3, "") if preferred_top3 else ""
-        evidence_value = row.get(preferred_evidence, "") if preferred_evidence else "Consensus entre moteurs"
-        rows.append({
-            "row_id": row["row_id"],
-            "Respondent_Type": row.get("Respondent_Type", ""),
-            "groupe": row.get("groupe", ""),
-            "participants": row.get("participants", ""),
-            "swot_element": row.get("swot_element", ""),
-            "question": row.get("question", ""),
-            "Final_Answer": row.get("Final_Answer", ""),
-            "AI_Suggested_Theme": row.get(preferred_col, ""),
-            "Confidence": row.get(preferred_conf, ""),
-            "Consensus_Theme": row.get("Consensus_Theme", ""),
-            "Agreement_Rate": row.get("Agreement_Rate", ""),
-            "Consensus_Status": row.get("Consensus_Status", ""),
-            "Top_3_Themes": top3_value,
-            "Evidence": evidence_value,
-            "Validated_Theme": row.get(preferred_col, ""),
-            "New_Theme": "",
-        })
-    return pd.DataFrame(rows)
-
-
-def render_mapping_validation(classified_df):
-    if classified_df.empty:
-        st.warning("Aucune réponse SWOT à classifier.")
-        return classified_df
-
-    validated_rows = []
-    st.markdown("### Validation experte des classifications")
-    st.caption("Les cas avec faible accord entre moteurs ou faible confiance sont prioritaires à vérifier.")
-
-    sort_cols = [c for c in ["Consensus_Status", "Confidence"] if c in classified_df.columns]
-    if sort_cols:
-        classified_df = classified_df.sort_values(sort_cols, ascending=[False, True][:len(sort_cols)])
-
-    for _, row in classified_df.iterrows():
-        swot_element = row["swot_element"]
-        row_key = f"{row['row_id']}_{swot_element}"
-        themes = official_themes_for(row["Respondent_Type"], swot_element, include_autre=False)
-        suggested = row.get("AI_Suggested_Theme", "")
-        default_index = themes.index(suggested) if suggested in themes else 0
-        title = f"{row['Respondent_Type']} | {row['groupe']} | {swot_element} | {row.get('Consensus_Status', '')} | {row.get('Confidence', '')}%"
-        with st.expander(title, expanded=False):
-            st.markdown("**Réponse corrigée**")
-            st.write(row["Final_Answer"])
-            st.markdown(f"**Thème proposé :** {suggested}")
-            if clean(row.get("Top_3_Themes", "")):
-                st.caption("Top 3 : " + clean(row.get("Top_3_Themes", "")))
-            if clean(row.get("Evidence", "")):
-                st.caption("Évidence : " + clean(row.get("Evidence", "")))
-            selected_theme = st.selectbox(
-                "Thème validé par l'expert",
-                options=themes,
-                index=default_index,
-                key=f"theme_{row_key}"
-            )
-            new_theme = st.text_input(
-                "Ajouter un nouveau thème si aucun thème officiel ne convient",
-                value="",
-                key=f"new_theme_{row_key}"
-            )
-            final_theme = clean(new_theme) if clean(new_theme) else selected_theme
-            out = row.to_dict()
-            out["Validated_Theme"] = final_theme
-            out["New_Theme"] = clean(new_theme)
-            validated_rows.append(out)
-    return pd.DataFrame(validated_rows)
-
-
-def professional_ai_header():
-    html_block(f"""
-    <style>
-    .ai-hero {{
-        background: linear-gradient(135deg, #001F5B 0%, #123C7C 55%, #8B1538 100%);
-        color: white;
-        border-radius: 22px;
-        padding: 30px 34px;
-        margin: 8px 0 24px 0;
-        box-shadow: 0 16px 38px rgba(0,31,91,0.22);
-    }}
-    .ai-hero h2 {{ color: white !important; margin: 0 0 8px 0; font-size: 32px; font-weight: 900; }}
-    .ai-hero p {{ color: #EAF2F8; margin: 0; font-size: 16px; line-height: 1.5; }}
-    .ai-info-box {{
-        background: #EAF2F8;
-        color: #003B7A;
-        border-left: 6px solid {USJ_BLUE};
-        border-radius: 12px;
-        padding: 14px 18px;
-        margin: 14px 0;
-        font-size: 15px;
-    }}
-    .ai-warning {{
-        background: #FFF7E6;
-        border-left: 6px solid #F59F00;
-        border-radius: 12px;
-        padding: 14px 18px;
-        color: #7A4B00;
-        font-weight: 700;
-        margin: 12px 0;
-    }}
-    .ai-kpi {{
-        background: white;
-        border: 1px solid #D0D6E0;
-        border-radius: 16px;
-        padding: 16px 18px;
-        box-shadow: 0 8px 20px rgba(0,0,0,0.045);
-        min-height: 92px;
-    }}
-    .ai-kpi-number {{ color: {USJ_RED}; font-size: 28px; font-weight: 900; }}
-    .ai-kpi-label {{ color: #64748B; font-size: 13px; font-weight: 700; margin-top: 3px; }}
-    </style>
-    <div class="ai-hero">
-        <h2>Plateforme IA supervisée - Analyse thématique stratégique</h2>
-        <p>Classification sur toutes les réponses importées, comparaison réelle de moteurs distincts, consensus, validation experte et synthèse institutionnelle.</p>
-    </div>
-    """)
-
-
-def ai_platform_page(show_header=True, df_preloaded=None):
-    html_block(APP_CSS)
-    professional_ai_header()
-
-    if df_preloaded is None:
-        uploaded_file = st.file_uploader("Uploader le fichier Excel corrigé pour l'analyse IA", type=["xlsx", "xls"], key="ai_excel_upload")
-        if uploaded_file is None:
-            st.stop()
-        df = read_corrected_excel(uploaded_file)
-    else:
-        df = df_preloaded.copy()
-
-    df_scope = df.copy()
-    swot_df = df_scope[df_scope["swot_element"].isin(["Forces", "Faiblesses", "Opportunités", "Menaces"])]
-
-    c1, c2, c3, c4 = st.columns(4)
-    with c1:
-        st.markdown(f'<div class="ai-kpi"><div class="ai-kpi-number">{len(df_scope)}</div><div class="ai-kpi-label">Réponses importées</div></div>', unsafe_allow_html=True)
-    with c2:
-        st.markdown(f'<div class="ai-kpi"><div class="ai-kpi-number">{len(swot_df)}</div><div class="ai-kpi-label">Réponses SWOT analysées</div></div>', unsafe_allow_html=True)
-    with c3:
-        st.markdown(f'<div class="ai-kpi"><div class="ai-kpi-number">{df_scope["Respondent_Type"].nunique()}</div><div class="ai-kpi-label">Types de participants</div></div>', unsafe_allow_html=True)
-    with c4:
-        st.markdown(f'<div class="ai-kpi"><div class="ai-kpi-number">{len(available_ai_engines())}</div><div class="ai-kpi-label">Moteurs comparables</div></div>', unsafe_allow_html=True)
-
-    st.markdown("""
-    <div class="ai-info-box">
-        <b>Logique professionnelle :</b> l'IA est appliquée à toute la base. Le moteur recommandé est maintenant un moteur IA institutionnel strict : il reçoit la réponse, le type de participant, l'élément SWOT et uniquement les thèmes officiels autorisés. Les anciens moteurs locaux restent disponibles comme comparaison/fallback, mais ne sont plus recommandés pour la décision finale.
-    </div>
-    """, unsafe_allow_html=True)
-
-    with st.expander("Configuration du moteur IA institutionnel", expanded=True):
-        c_api1, c_api2 = st.columns([1.4, 1])
-        with c_api1:
-            api_key_input = st.text_input(
-                "Clé du moteur IA",
-                value="",
-                type="password",
-                help="La clé n’est pas affichée. Elle peut aussi être définie de manière sécurisée dans les paramètres de l’application.",
-                key="institutional_ai_key_input",
-            )
-            if api_key_input:
-                st.session_state["institutional_ai_key"] = api_key_input
-        with c_api2:
-            st.markdown(
-                """
-                <div class="ai-info-box" style="margin-top:0; padding:14px 18px;">
-                    <b>Moteur IA</b><br>
-                    Configuration institutionnelle sécurisée
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-        if get_institutional_ai_key():
-            st.success("Moteur IA institutionnel prêt. Le mapping utilisera la classification raisonnée stricte.")
-            st.session_state.setdefault("active_ai_engine", ENGINE_LLM_STRICT)
-        else:
-            st.warning("Le moteur IA institutionnel n’est pas encore configuré. Le système retournera un fallback conservateur tant que la clé n’est pas fournie.")
-
-    tab_benchmark, tab_mapping, tab_duplicates, tab_synthesis = st.tabs([
-        "1. Benchmark IA global", "2. Mapping SWOT supervisé", "3. Doublons", "4. Synthèse"
-    ])
-
-    with tab_benchmark:
-        st.subheader("1. Benchmark IA global sur toutes les réponses")
-        st.caption("Cette étape compare les moteurs sur la même base. Sans fichier validé, on mesure le consensus et les conflits; avec fichier validé, on mesure l'accuracy réelle.")
-
-        if st.button("Lancer le benchmark IA", key="run_professional_benchmark"):
-            comparison_df, summary_df, engines = compare_ai_engines(df_scope)
-            st.session_state["engine_comparison_df"] = comparison_df
-            st.session_state["engine_summary_df"] = summary_df
-            st.session_state["available_engines"] = engines
-            st.session_state["active_ai_engine"] = ENGINE_LLM_STRICT
-
-        summary_df = st.session_state.get("engine_summary_df", pd.DataFrame())
-        comparison_df = st.session_state.get("engine_comparison_df", pd.DataFrame())
-
-        if not summary_df.empty:
-            st.markdown("#### Synthèse des moteurs")
-            st.dataframe(summary_df, use_container_width=True)
-            conflict_count = int((comparison_df.get("Agreement_Rate", pd.Series(dtype=float)) < 67).sum()) if not comparison_df.empty else 0
-            st.info(f"Moteur recommandé par défaut : {ENGINE_LLM_STRICT}. Cas en désaccord à vérifier en priorité : {conflict_count}.")
-
-            selected_engine = st.selectbox(
-                "Choisir le moteur actif pour le mapping",
-                options=available_ai_engines(),
-                index=available_ai_engines().index(ENGINE_LLM_STRICT) if ENGINE_LLM_STRICT in available_ai_engines() else 0,
-                key="selected_professional_engine"
-            )
-            if st.button("Activer le moteur sélectionné", key="activate_professional_engine"):
-                st.session_state["active_ai_engine"] = selected_engine
-                st.success(f"Moteur actif : {selected_engine}")
-
-            display_cols = [
-                "Respondent_Type", "groupe", "swot_element", "Final_Answer",
-                "Consensus_Theme", "Agreement_Rate", "Consensus_Status", "Max_Confidence"
-            ]
-            existing_cols = [c for c in display_cols if c in comparison_df.columns]
-            st.markdown("#### Résultats de consensus")
-            st.dataframe(comparison_df[existing_cols], use_container_width=True)
-
-            output = BytesIO()
-            with pd.ExcelWriter(output, engine="openpyxl") as writer:
-                comparison_df.to_excel(writer, index=False, sheet_name="Benchmark moteurs")
-                summary_df.to_excel(writer, index=False, sheet_name="Synthese")
-            output.seek(0)
-            st.download_button(
-                "Télécharger le benchmark IA",
-                data=output.getvalue(),
-                file_name="benchmark_IA_global.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
-        else:
-            st.warning("Lancez d'abord le benchmark IA. Le mapping utilise ensuite le moteur actif.")
-
-    with tab_mapping:
-        st.subheader("2. Mapping SWOT supervisé")
-        active_engine = st.session_state.get("active_ai_engine", "")
-        if not active_engine:
-            st.markdown('<div class="ai-warning">Lancez d’abord le benchmark IA dans l’onglet 1.</div>', unsafe_allow_html=True)
-        else:
-            st.caption(f"Moteur actif : {active_engine}")
-            if st.button("Classifier toutes les réponses SWOT", key="run_consensus_mapping"):
-                st.session_state["classified_df"] = build_consensus_classification(df_scope, active_engine)
-            classified_df = st.session_state.get("classified_df", pd.DataFrame())
-            if not classified_df.empty:
-                st.markdown("#### Aperçu des classifications")
-                preview_cols = ["Respondent_Type", "groupe", "swot_element", "Final_Answer", "AI_Suggested_Theme", "Confidence", "Consensus_Status"]
-                st.dataframe(classified_df[[c for c in preview_cols if c in classified_df.columns]], use_container_width=True)
-                validated_df = render_mapping_validation(classified_df)
-                st.session_state["validated_mapping_df"] = validated_df
-                if not validated_df.empty:
-                    output = BytesIO()
-                    with pd.ExcelWriter(output, engine="openpyxl") as writer:
-                        validated_df.to_excel(writer, index=False, sheet_name="Mapping valide")
-                    output.seek(0)
-                    st.download_button(
-                        "Télécharger le mapping validé",
-                        data=output.getvalue(),
-                        file_name="mapping_SWOT_valide_global.xlsx",
-                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                    )
-            else:
-                st.caption("Cliquez sur « Classifier toutes les réponses SWOT » pour lancer le mapping.")
-
-    with tab_duplicates:
-        st.subheader("3. Détection stricte des doublons")
-        if st.button("Détecter les doublons", key="detect_duplicates_professional"):
-            st.session_state["duplicates_df"] = detect_duplicate_pairs(df_scope)
-        dup_df = st.session_state.get("duplicates_df", pd.DataFrame())
-        if not dup_df.empty:
-            st.dataframe(dup_df, use_container_width=True)
-            st.download_button(
-                "Télécharger les doublons détectés",
-                data=dup_df.to_csv(index=False).encode("utf-8-sig"),
-                file_name="doublons_detectes_global.csv",
-                mime="text/csv"
-            )
-        else:
-            st.caption("Aucun doublon affiché pour le moment.")
-
-    with tab_synthesis:
-        st.subheader("4. Synthèse automatique par thème validé")
-        validated_df = st.session_state.get("validated_mapping_df", pd.DataFrame())
-        if validated_df.empty:
-            st.warning("Veuillez d'abord produire ou valider le mapping SWOT.")
-        else:
-            synthesis_df = build_theme_synthesis(validated_df)
-            st.dataframe(synthesis_df, use_container_width=True)
-            output = BytesIO()
-            with pd.ExcelWriter(output, engine="openpyxl") as writer:
-                synthesis_df.to_excel(writer, index=False, sheet_name="Synthese")
-            output.seek(0)
-            st.download_button(
-                "Télécharger la synthèse",
-                data=output.getvalue(),
-                file_name="synthese_theme_SWOT_global.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
-
-
-
-# ============================================================
-# ROBUST AI PIPELINE OVERRIDE V2
-# ============================================================
-# This block replaces the previous weak scoring pipeline with a stricter
-# domain-aware candidate ranking pipeline. It does not change the print preview,
-# Word export, or PDF print preview functions.
-
-ENGINE_DOMAIN = "Domain-aware semantic guardrails - recommandé"
-ENGINE_KEYWORD_STRICT = "Strict expert ontology rules"
-ENGINE_TFIDF_RERANK = "TF-IDF reranking with domain constraints"
-ENGINE_TRANSFORMER_GUARDED = "Sentence Transformer guarded - si disponible"
-ENGINE_HYBRID = ENGINE_DOMAIN
-
-DOMAIN_RULES = {
-    "academic_teaching": {
-        "terms": [
-            "cours", "programme", "programmes", "formation", "formations", "enseignement", "pedagogie", "pedagogique",
-            "curriculum", "credit", "credits", "ects", "diplome", "diplomes", "classe", "classes", "evaluation",
-            "apprentissage", "matiere", "matieres", "langue", "langues", "anglais", "francais", "trilinguisme",
-            "accreditation", "accreditations", "academique"
-        ],
-        "themes": [
-            "strategie academique et qualite d enseignement",
-            "qualite de l enseignement"
-        ],
-        "negative_themes": ["mission societale", "developpement durable odd", "ressources humaines", "gouvernance et leadership"]
-    },
-    "student_success": {
-        "terms": [
-            "etudiant", "etudiants", "recrutement", "inscription", "inscriptions", "accompagnement", "orientation",
-            "support", "service", "services", "reussite", "parcours", "diplome", "diplomes", "employabilite"
-        ],
-        "themes": ["succes des etudiants", "qualite de l enseignement"],
-        "negative_themes": ["mission societale", "ressources humaines"]
-    },
-    "research": {
-        "terms": [
-            "recherche", "innovation", "publication", "publications", "laboratoire", "laboratoires", "doctorat",
-            "these", "scientifique", "scientifiques", "brevet", "brevets", "valorisation", "scopus", "citation", "citations"
-        ],
-        "themes": ["recherche et innovation"],
-        "negative_themes": ["mission societale", "vie universitaire", "relation avec l administration et les enseignants"]
-    },
-    "digital_resources": {
-        "terms": [
-            "bibliotheque", "documentaire", "documentaires", "numerique", "numeriques", "digital", "digitale", "informatique",
-            "informatiques", "technologie", "technologique", "systeme", "systemes", "plateforme", "plateformes",
-            "logiciel", "logiciels", "outils", "donnees", "data", "mise a jour", "a jour"
-        ],
-        "themes": ["ressources documentaires et environnement digital", "ressources documentaires numeriques et informatiques"],
-        "negative_themes": ["mission societale", "soutenabilite financiere"]
-    },
-    "hr": {
-        "terms": [
-            "personnel", "personnels", "enseignant", "enseignants", "professeur", "professeurs", "administratif",
-            "administratifs", "rh", "ressources humaines", "recrutement", "charge", "charges", "competence", "competences",
-            "formation du personnel", "evaluation du personnel"
-        ],
-        "themes": ["ressources humaines"],
-        "negative_themes": ["mission societale", "strategie academique et qualite d enseignement"]
-    },
-    "governance": {
-        "terms": [
-            "gouvernance", "leadership", "direction", "doyen", "doyens", "directeur", "directeurs", "decision",
-            "decisions", "procedure", "procedures", "transparence", "responsabilisation", "accountability", "autonomie",
-            "centralisation", "decentralisation", "pilotage", "strategie", "administration"
-        ],
-        "themes": ["gouvernance et leadership", "relation avec l administration et les enseignants"],
-        "negative_themes": ["mission societale", "recherche et innovation"]
-    },
-    "finance": {
-        "terms": [
-            "budget", "financement", "financier", "financiere", "finance", "frais", "scolarite", "bourse", "bourses",
-            "cout", "couts", "paiement", "soutenabilite", "viabilite", "ressources financieres", "modele economique"
-        ],
-        "themes": ["soutenabilite financiere", "aide financiere"],
-        "negative_themes": ["mission societale", "qualite de l enseignement"]
-    },
-    "infrastructure": {
-        "terms": [
-            "campus", "batiment", "batiments", "salle", "salles", "locaux", "infrastructure", "infrastructures", "espace",
-            "espaces", "equipement", "equipements", "laboratoire", "laboratoires", "maintenance", "hotel-dieu", "beyrouth"
-        ],
-        "themes": ["espace et infrastructures", "espace et infrastructure"],
-        "negative_themes": ["mission societale", "strategie academique et qualite d enseignement"]
-    },
-    "international": {
-        "terms": [
-            "international", "internationale", "internationales", "mobilite", "echange", "echanges", "partenariat", "partenariats",
-            "etranger", "etrangers", "diaspora", "francophonie", "francophone"
-        ],
-        "themes": ["strategie et mobilite internationales", "mobilite internationale"],
-        "negative_themes": ["mission societale", "environnement politique et economique emigration"]
-    },
-    "social_mission": {
-        "terms": [
-            "mission societale", "mission sociale", "engagement social", "responsabilite sociale", "societe", "societal",
-            "societale", "communautaire", "communaute", "citoyen", "citoyenne", "impact social", "service a la societe",
-            "reconstruction", "liban", "territoire"
-        ],
-        "themes": ["mission societale"],
-        "negative_themes": ["strategie academique et qualite d enseignement", "ressources documentaires et environnement digital"]
-    },
-    "work_environment": {
-        "terms": [
-            "environnement de travail", "conditions de travail", "climat", "bien etre", "collaboration", "communication interne",
-            "charge de travail", "horaires", "processus administratif", "processus administratifs"
-        ],
-        "themes": ["environnement de travail"],
-        "negative_themes": ["mission societale", "reputation et image"]
-    },
-    "student_life": {
-        "terms": [
-            "vie universitaire", "vie etudiante", "sport", "activites", "clubs", "animation", "aide psychologique", "psychologique", "experience etudiante"
-        ],
-        "themes": ["vie universitaire"],
-        "negative_themes": ["mission societale", "ressources humaines"]
-    },
-    "diversity": {
-        "terms": ["diversite", "inclusion", "inclusive", "egalite", "equite", "handicap", "genre", "discrimination", "accessibilite"],
-        "themes": ["diversite et inclusion"],
-        "negative_themes": ["mission societale"]
-    },
-    "sustainability": {
-        "terms": ["developpement durable", "odd", "durable", "durabilite", "environnement", "ecologie", "energie", "transition energetique"],
-        "themes": ["developpement durable odd"],
-        "negative_themes": ["mission societale", "soutenabilite financiere"]
-    },
-    "employment_market": {
-        "terms": [
-            "marche du travail", "emploi", "employeur", "employeurs", "entreprise", "entreprises", "association professionnelle",
-            "associations professionnelles", "metier", "metiers", "competence", "competences", "stage", "stages", "carriere", "professionnel"
-        ],
-        "themes": ["marche du travail et associations professionnelles", "marche du travail et relations avec les employeurs", "insertion professionnelle"],
-        "negative_themes": ["mission societale", "soutenabilite financiere"]
-    },
-    "competition": {
-        "terms": [
-            "concurrence", "concurrent", "concurrentes", "competition", "autres universites", "universites americaines",
-            "universites", "classe a", "programmes flexibles", "facilites financieres", "frais des autres"
-        ],
-        "themes": ["concurrence avec les autres universites"],
-        "negative_themes": ["mission societale", "strategie academique et qualite d enseignement"]
-    },
-    "ai": {
-        "terms": ["intelligence artificielle", "ia", "ai", "agent conversationnel ia", "automatisation", "generative", "data science", "analyse", "machine learning"],
-        "themes": ["intelligence artificielle"],
-        "negative_themes": ["ressources documentaires et environnement digital", "mission societale"]
-    },
-    "reputation": {
-        "terms": [
-            "reputation", "image", "classement", "classements", "visibilite", "notoriete", "communication", "attractivite",
-            "perception", "rayonnement", "jeunes", "ecoles", "recruteurs"
-        ],
-        "themes": ["reputation et image"],
-        "negative_themes": ["mission societale", "gouvernance et leadership"]
-    },
-    "political_economic": {
-        "terms": [
-            "politique", "economique", "economie", "crise", "emigration", "emigrer", "instabilite", "instabilites",
-            "liban", "inflation", "securite", "guerre", "familles", "parents", "banque", "bancaire", "immobilier"
-        ],
-        "themes": ["environnement politique et economique emigration"],
-        "negative_themes": ["mission societale", "reputation et image"]
-    },
-}
-
-
-def _contains_term(text_norm, term):
-    term_norm = normalize(term)
-    if not term_norm:
-        return False
-    if " " in term_norm:
-        return term_norm in text_norm
-    return re.search(r"(^|[^a-z0-9])" + re.escape(term_norm) + r"([^a-z0-9]|$)", text_norm) is not None
-
-
-def detected_answer_domains(answer):
-    answer_norm = normalize(answer)
-    domains = {}
-    for domain, profile in DOMAIN_RULES.items():
-        hits = []
-        for term in profile["terms"]:
-            if _contains_term(answer_norm, term):
-                hits.append(term)
-        if hits:
-            # More hits = stronger domain. Cap to avoid one long answer dominating everything.
-            domains[domain] = min(1.0, 0.35 + 0.18 * len(hits))
-    return domains
-
-
-def _theme_in_list(theme_norm, theme_patterns):
-    return any((pat in theme_norm or theme_norm in pat) for pat in theme_patterns)
-
-
-def domain_guardrail_score(answer, theme):
-    theme_norm = normalize(theme)
-    domains = detected_answer_domains(answer)
-    positive = 0.0
-    negative = 0.0
-    matched_domains = []
-
-    for domain, strength in domains.items():
-        profile = DOMAIN_RULES[domain]
-        if _theme_in_list(theme_norm, profile["themes"]):
-            positive += strength
-            matched_domains.append(domain)
-        if _theme_in_list(theme_norm, profile.get("negative_themes", [])):
-            negative += strength
-
-    positive = min(1.0, positive)
-    negative = min(1.0, negative)
-    return positive, negative, matched_domains
-
-
-def candidate_explanation(theme, kw, tfidf, lex, domain_pos, domain_neg, matched_domains):
-    parts = []
-    if domain_pos > 0:
-        parts.append("domaine détecté: " + ", ".join(matched_domains))
-    if domain_neg > 0:
-        parts.append("pénalité anti-confusion")
-    if kw > 0:
-        parts.append("mots-clés")
-    if tfidf > 0:
-        parts.append("similarité textuelle")
-    if lex > 0:
-        parts.append("recouvrement lexical")
-    return "; ".join(parts) if parts else "évidence faible"
-
-
-def score_theme_candidates(answer, participant_type, swot_element, engine_name=ENGINE_DOMAIN):
-    themes = official_themes_for(participant_type, swot_element, include_autre=False)
-    if not themes:
-        return []
-
-    kw = keyword_rule_scores(answer, themes)
-    tfidf = tfidf_scores_against_themes(answer, themes)
-    lex = lexical_overlap_scores(answer, themes)
-    tr = transformer_scores(answer, themes) if engine_name == ENGINE_TRANSFORMER_GUARDED else None
-
-    ranked = []
-    for i, theme in enumerate(themes):
-        domain_pos, domain_neg, matched_domains = domain_guardrail_score(answer, theme)
-
-        if engine_name == ENGINE_KEYWORD_STRICT:
-            raw_score = (0.72 * domain_pos) + (0.20 * kw[i]) + (0.08 * lex[i]) - (0.65 * domain_neg)
-        elif engine_name == ENGINE_TFIDF_RERANK:
-            raw_score = (0.45 * domain_pos) + (0.35 * tfidf[i]) + (0.12 * kw[i]) + (0.08 * lex[i]) - (0.55 * domain_neg)
-        elif engine_name == ENGINE_TRANSFORMER_GUARDED and tr is not None:
-            raw_score = (0.48 * domain_pos) + (0.34 * tr[i]) + (0.12 * kw[i]) + (0.06 * lex[i]) - (0.55 * domain_neg)
-        else:
-            # Recommended professional mode: domain guardrails first, text similarity second.
-            raw_score = (0.55 * domain_pos) + (0.20 * kw[i]) + (0.15 * tfidf[i]) + (0.10 * lex[i]) - (0.65 * domain_neg)
-
-        # If a clear domain is detected and a theme is outside that domain, do not let generic words win.
-        detected = detected_answer_domains(answer)
-        if detected and domain_pos == 0:
-            raw_score *= 0.55
-
-        raw_score = max(0.0, min(1.0, raw_score))
-        ranked.append((theme, raw_score, kw[i], tfidf[i], lex[i], domain_pos, domain_neg, matched_domains))
-
-    ranked = sorted(ranked, key=lambda x: x[1], reverse=True)
-    return ranked
-
-
-def calibrated_confidence(ranked):
-    if not ranked:
-        return 0.0
-    best = ranked[0][1]
-    second = ranked[1][1] if len(ranked) > 1 else 0
-    margin = max(best - second, 0)
-
-    conf = 30 + best * 55 + margin * 95
-    if best < 0.22:
-        conf = min(conf, 42)
-    if margin < 0.035:
-        conf = min(conf, 54)
-    elif margin < 0.08:
-        conf = min(conf, 68)
-    if ranked[0][5] <= 0 and best < 0.40:
-        conf = min(conf, 58)
-    if ranked[0][6] > 0:
-        conf = min(conf, 50)
-    return round(max(5, min(conf, 97)), 1)
-
-
-def classify_theme_with_engine(answer, participant_type, swot_element, engine_name=ENGINE_DOMAIN):
-    ranked = score_theme_candidates(answer, participant_type, swot_element, engine_name)
-    if not ranked:
-        return "", 0.0, "", "Aucun thème officiel disponible"
-
-    best = ranked[0]
-    best_theme = best[0]
-    conf = calibrated_confidence(ranked)
-    top3 = " | ".join([f"{t} ({round(s * 100, 1)})" for t, s, *_ in ranked[:3]])
-    evidence_txt = candidate_explanation(
-        best_theme,
-        kw=best[2],
-        tfidf=best[3],
-        lex=best[4],
-        domain_pos=best[5],
-        domain_neg=best[6],
-        matched_domains=best[7],
-    )
-    return best_theme, conf, top3, evidence_txt
-
-
-def available_ai_engines():
-    engines = [ENGINE_DOMAIN, ENGINE_KEYWORD_STRICT, ENGINE_TFIDF_RERANK]
-    if load_multilingual_sentence_model() is not None:
-        engines.append(ENGINE_TRANSFORMER_GUARDED)
-    return engines
-
-
-def compare_ai_engines(df_scope):
-    engines = available_ai_engines()
-    outputs = []
-    for engine in engines:
-        pred = build_classification_with_engine(df_scope, engine)
-        if pred.empty:
-            continue
-        small = pred[[
-            "row_id", "Respondent_Type", "groupe", "participants", "swot_element", "question", "Final_Answer",
-            "AI_Suggested_Theme", "Confidence", "Top_3_Themes", "Evidence", "Validation_Status"
-        ]].copy()
-        suffix = safe_filename(engine)
-        small = small.rename(columns={
-            "AI_Suggested_Theme": f"Theme_{suffix}",
-            "Confidence": f"Confidence_{suffix}",
-            "Top_3_Themes": f"Top3_{suffix}",
-            "Evidence": f"Evidence_{suffix}",
-            "Validation_Status": f"Status_{suffix}",
-        })
-        outputs.append((engine, small))
-
-    if not outputs:
-        return pd.DataFrame(), pd.DataFrame(), engines
-
-    comparison = outputs[0][1]
-    base_cols = ["Respondent_Type", "groupe", "participants", "swot_element", "question", "Final_Answer"]
-    for _, small in outputs[1:]:
-        comparison = comparison.merge(small.drop(columns=base_cols), on="row_id", how="outer")
-
-    theme_cols = [f"Theme_{safe_filename(engine)}" for engine, _ in outputs]
-    conf_cols = [f"Confidence_{safe_filename(engine)}" for engine, _ in outputs]
-    recommended_col = f"Theme_{safe_filename(ENGINE_DOMAIN)}"
-    recommended_conf = f"Confidence_{safe_filename(ENGINE_DOMAIN)}"
-
-    def agreement_count(row):
-        vals = [clean(row.get(c, "")) for c in theme_cols if clean(row.get(c, ""))]
-        if not vals:
-            return 0
-        return max(vals.count(v) for v in set(vals))
-
-    def consensus_theme(row):
-        if recommended_col in row and clean(row.get(recommended_col, "")):
-            return clean(row.get(recommended_col, ""))
-        vals = [clean(row.get(c, "")) for c in theme_cols if clean(row.get(c, ""))]
-        if not vals:
-            return ""
-        return max(set(vals), key=vals.count)
-
-    comparison["Consensus_Theme"] = comparison.apply(consensus_theme, axis=1)
-    comparison["Agreement_Count"] = comparison.apply(agreement_count, axis=1)
-    comparison["Agreement_Rate"] = round(comparison["Agreement_Count"] / max(len(theme_cols), 1) * 100, 1)
-    comparison["Max_Confidence"] = comparison[conf_cols].apply(lambda row: pd.to_numeric(row, errors="coerce").max(), axis=1)
-    if recommended_conf in comparison.columns:
-        comparison["Recommended_Confidence"] = pd.to_numeric(comparison[recommended_conf], errors="coerce")
-    else:
-        comparison["Recommended_Confidence"] = comparison["Max_Confidence"]
-
-    comparison["Consensus_Status"] = comparison.apply(
-        lambda r: "Validation prioritaire" if (r.get("Agreement_Rate", 0) < 67 or r.get("Recommended_Confidence", 0) < 70) else "Accord fort",
-        axis=1,
-    )
-
-    summary_rows = []
-    for engine, _ in outputs:
-        suffix = safe_filename(engine)
-        tcol = f"Theme_{suffix}"
-        ccol = f"Confidence_{suffix}"
-        summary_rows.append({
-            "Moteur": engine,
-            "Réponses classifiées": int(comparison[tcol].notna().sum()),
-            "Confiance moyenne": round(pd.to_numeric(comparison[ccol], errors="coerce").mean(), 1),
-            "Confiance médiane": round(pd.to_numeric(comparison[ccol], errors="coerce").median(), 1),
-            "Faible confiance (<70%)": int((pd.to_numeric(comparison[ccol], errors="coerce") < 70).sum()),
-        })
-    summary_rows.append({
-        "Moteur": "Consensus / validation prioritaire",
-        "Réponses classifiées": len(comparison),
-        "Confiance moyenne": round(comparison["Agreement_Rate"].mean(), 1),
-        "Confiance médiane": round(comparison["Agreement_Rate"].median(), 1),
-        "Faible confiance (<70%)": int((comparison["Consensus_Status"] == "Validation prioritaire").sum()),
-    })
-    return comparison, pd.DataFrame(summary_rows), engines
-
-
-def build_consensus_classification(df_scope, selected_engine=ENGINE_DOMAIN):
-    comparison, _, _ = compare_ai_engines(df_scope)
-    if comparison.empty:
-        return pd.DataFrame()
-    preferred_col = f"Theme_{safe_filename(selected_engine)}"
-    preferred_conf = f"Confidence_{safe_filename(selected_engine)}"
-    preferred_top3 = f"Top3_{safe_filename(selected_engine)}"
-    preferred_evidence = f"Evidence_{safe_filename(selected_engine)}"
-    if preferred_col not in comparison.columns:
-        preferred_col = "Consensus_Theme"
-        preferred_conf = "Recommended_Confidence"
-        preferred_top3 = ""
-        preferred_evidence = ""
-    rows = []
-    for _, row in comparison.iterrows():
-        rows.append({
-            "row_id": row["row_id"],
-            "Respondent_Type": row.get("Respondent_Type", ""),
-            "groupe": row.get("groupe", ""),
-            "participants": row.get("participants", ""),
-            "swot_element": row.get("swot_element", ""),
-            "question": row.get("question", ""),
-            "Final_Answer": row.get("Final_Answer", ""),
-            "AI_Suggested_Theme": row.get(preferred_col, ""),
-            "Confidence": row.get(preferred_conf, ""),
-            "Consensus_Theme": row.get("Consensus_Theme", ""),
-            "Agreement_Rate": row.get("Agreement_Rate", ""),
-            "Consensus_Status": row.get("Consensus_Status", ""),
-            "Top_3_Themes": row.get(preferred_top3, "") if preferred_top3 else "",
-            "Evidence": row.get(preferred_evidence, "") if preferred_evidence else "Consensus / guardrails",
-            "Validated_Theme": row.get(preferred_col, ""),
-            "New_Theme": "",
-        })
-    return pd.DataFrame(rows)
-
-
-
-# ============================================================
-# INSTITUTIONAL AI CLASSIFICATION ENGINE
+# OPTIONAL EXTERNAL LLM ENGINE (opt-in, isolated, never silent)
 # ============================================================
 
 def get_institutional_ai_key():
-    """Return API key from Streamlit session, secrets, or environment."""
     key = st.session_state.get("institutional_ai_key", "")
     if key:
         return key
@@ -2657,238 +897,431 @@ def get_institutional_ai_model_name():
             return model_name
     except Exception:
         pass
-    model_name = os.environ.get("AI_ENGINE_MODEL", "")
-    if model_name:
-        return model_name
-    return "gpt-4o-mini"
+    return os.environ.get("AI_ENGINE_MODEL", "gpt-4o-mini")
 
 
-def call_institutional_ai_json(messages, model=None, temperature=0):
+def call_institutional_ai_json(messages, temperature=0):
     api_key = get_institutional_ai_key()
     if not api_key:
         raise RuntimeError("Clé du moteur IA manquante")
-
     payload = {
-        "model": model or get_institutional_ai_model_name(),
-        "messages": messages,
-        "temperature": temperature,
-        "response_format": {"type": "json_object"},
+        "model": get_institutional_ai_model_name(), "messages": messages,
+        "temperature": temperature, "response_format": {"type": "json_object"},
     }
-
     req = urllib.request.Request(
         "https://api.openai.com/v1/chat/completions",
         data=json.dumps(payload).encode("utf-8"),
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        },
+        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
         method="POST",
     )
-
     with urllib.request.urlopen(req, timeout=90) as response:
         data = json.loads(response.read().decode("utf-8"))
-    content = data["choices"][0]["message"]["content"]
-    return json.loads(content)
+    return json.loads(data["choices"][0]["message"]["content"])
 
 
-def institutional_ai_classify_theme(answer, participant_type, swot_element):
-    themes = official_themes_for(participant_type, swot_element, include_autre=True)
-    themes = [clean(t) for t in themes if clean(t)]
+def classify_with_llm(answer, participant_type, swot_element):
+    themes = [clean(t) for t in official_themes_for(participant_type, swot_element, include_autre=True) if clean(t)]
     if not themes:
         return "", 0.0, "", "Aucun thème officiel disponible"
-
     official_list = "\n".join([f"- {t}" for t in themes])
 
-    system_prompt = """
-Tu es un expert senior en analyse qualitative institutionnelle universitaire.
-Ta tâche est de classifier une réponse de focus group USJ dans UN SEUL thème officiel.
-Tu dois respecter strictement la liste fournie. Ne modifie jamais les noms des thèmes.
+    system_prompt = """Tu es un expert senior en analyse qualitative institutionnelle universitaire.
+Classifie une réponse de focus group USJ dans UN SEUL thème de la liste officielle fournie.
+Respecte strictement les noms de thèmes, ne les modifie jamais.
+Base-toi sur le sens et l'objet principal de la réponse, pas sur la structure de la phrase.
+Si aucun thème ne correspond clairement, choisis Autres/Autre si disponible et indique une confiance faible.
+Réponds uniquement en JSON valide : {"theme": "...", "confidence": 0-100, "explanation": "...", "alternatives": ["...", "..."]}"""
 
-Règles impératives :
-1. Choisis uniquement un thème dans la liste officielle.
-2. Ne choisis "Intelligence artificielle" que si la réponse mentionne explicitement IA, intelligence artificielle, outil d’IA générative, automatisation, algorithme, data science, machine learning, outils numériques d'IA, ou un concept directement lié.
-3. Si la réponse parle de cours, programmes, crédits, curricula, enseignement, mise à jour pédagogique, formation, qualité académique, elle relève d'un thème académique/enseignement, jamais de Mission sociétale.
-4. Si la réponse parle de crise, politique, économie, sécurité, émigration, fuite des cerveaux, inflation, banques, familles ou instabilité, elle relève du thème politique/économique/émigration.
-5. Si la réponse parle d'image, attractivité, réputation, visibilité, classements, perception, communication, recruteurs ou jeunes, elle relève du thème Réputation et image si ce thème est disponible.
-6. Si la réponse parle de partenariats internationaux, mobilité, réseau international ou coopération internationale, choisis le thème international le plus proche si disponible, sinon Autres.
-7. Si aucun thème ne correspond clairement, choisis Autres si disponible et donne une confiance faible.
-8. Ne te base pas sur une structure de phrase similaire. Base-toi sur le sens et l'objet principal.
-
-Réponds seulement en JSON valide avec les clés : theme, confidence, explanation, alternatives.
-confidence doit être un nombre entre 0 et 100.
-alternatives doit contenir au maximum 3 thèmes alternatifs officiels.
-"""
-
-    user_prompt = f"""
-Type de participants : {participant_type}
-Élément SWOT : {swot_element}
-
-Thèmes officiels autorisés :
-{official_list}
-
-Réponse à classifier :
-{answer}
-"""
+    user_prompt = f"Type de participants : {participant_type}\nÉlément SWOT : {swot_element}\n\nThèmes officiels autorisés :\n{official_list}\n\nRéponse à classifier :\n{answer}"
 
     try:
-        result = call_institutional_ai_json(
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
-            temperature=0,
-        )
+        result = call_institutional_ai_json([
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ])
         theme = clean(result.get("theme", ""))
         if theme not in themes:
-            # Defensive correction: never accept a non-official label.
-            theme = "Autres" if "Autres" in themes else themes[0]
-            conf = 25.0
-            explanation = "Réponse du moteur IA non conforme à la liste officielle; correction défensive appliquée."
-            alternatives = ""
-        else:
-            conf = float(result.get("confidence", 0) or 0)
-            conf = round(max(0, min(conf, 100)), 1)
-            explanation = clean(result.get("explanation", "Classification raisonnée par le moteur IA institutionnel."))
-            alternatives_raw = result.get("alternatives", [])
-            if isinstance(alternatives_raw, list):
-                alternatives = " | ".join([clean(x) for x in alternatives_raw if clean(x) in themes][:3])
-            else:
-                alternatives = clean(alternatives_raw)
-        return theme, conf, alternatives, explanation
+            fallback = "Autres" if "Autres" in themes else ("Autre" if "Autre" in themes else themes[0])
+            return fallback, 25.0, "", "Réponse hors liste officielle ; correction défensive appliquée."
+        conf = round(max(0, min(float(result.get("confidence", 0) or 0), 100)), 1)
+        explanation = clean(result.get("explanation", "Classification par le moteur IA institutionnel."))
+        alts = result.get("alternatives", [])
+        alt_txt = " | ".join([clean(x) for x in alts if clean(x) in themes][:3]) if isinstance(alts, list) else ""
+        return theme, conf, alt_txt, explanation
     except Exception as e:
-        # Safe fallback: show failure instead of pretending the local heuristic is reliable.
-        fallback_theme = "Autres" if "Autres" in themes else themes[0]
-        return fallback_theme, 10.0, "", f"Erreur moteur IA / fallback conservateur : {e}"
+        fallback = "Autres" if "Autres" in themes else ("Autre" if "Autre" in themes else themes[0])
+        return fallback, 10.0, "", f"Erreur moteur IA / fallback conservateur : {e}"
 
 
-# Override the final AI engine functions with institutional AI-first behavior.
-def available_ai_engines():
-    engines = [ENGINE_LLM_STRICT, ENGINE_DOMAIN, ENGINE_KEYWORD_STRICT, ENGINE_TFIDF_RERANK]
-    if load_multilingual_sentence_model() is not None:
-        engines.append(ENGINE_TRANSFORMER_GUARDED)
-    return engines
+# ============================================================
+# UNIFIED CLASSIFICATION DISPATCH
+# ============================================================
+
+def classify_answer(answer, participant_type, swot_element, engine, trained_model=None):
+    if engine == ENGINE_TRAINED and trained_model is not None:
+        theme, conf = classify_with_trained_model(answer, trained_model)
+        return theme, (conf if conf is not None else 0.0), "", "Modèle supervisé entraîné sur vos données validées"
+    if engine == ENGINE_LLM:
+        return classify_with_llm(answer, participant_type, swot_element)
+    return classify_heuristic(answer, participant_type, swot_element)
 
 
-def classify_theme_with_engine(answer, participant_type, swot_element, engine_name=ENGINE_LLM_STRICT):
-    if engine_name == ENGINE_LLM_STRICT:
-        return institutional_ai_classify_theme(answer, participant_type, swot_element)
-
-    ranked = score_theme_candidates(answer, participant_type, swot_element, engine_name)
-    if not ranked:
-        return "", 0.0, "", "Aucun thème officiel disponible"
-
-    best = ranked[0]
-    best_theme = best[0]
-    conf = calibrated_confidence(ranked)
-    top3 = " | ".join([f"{t} ({round(s * 100, 1)})" for t, s, *_ in ranked[:3]])
-    evidence_txt = candidate_explanation(
-        best_theme,
-        kw=best[2],
-        tfidf=best[3],
-        lex=best[4],
-        domain_pos=best[5],
-        domain_neg=best[6],
-        matched_domains=best[7],
-    )
-    return best_theme, conf, top3, evidence_txt
-
-
-def build_consensus_classification(df_scope, selected_engine=ENGINE_LLM_STRICT):
-    if selected_engine == ENGINE_LLM_STRICT:
-        return build_classification_with_engine(df_scope, ENGINE_LLM_STRICT)
-    comparison, _, _ = compare_ai_engines(df_scope)
-    if comparison.empty:
-        return pd.DataFrame()
-    preferred_col = f"Theme_{safe_filename(selected_engine)}"
-    preferred_conf = f"Confidence_{safe_filename(selected_engine)}"
-    preferred_top3 = f"Top3_{safe_filename(selected_engine)}"
-    preferred_evidence = f"Evidence_{safe_filename(selected_engine)}"
-    if preferred_col not in comparison.columns:
-        preferred_col = "Consensus_Theme"
-        preferred_conf = "Recommended_Confidence"
-        preferred_top3 = ""
-        preferred_evidence = ""
+def build_classification_dataframe(df_scope, engine, trained_model=None):
     rows = []
-    for _, row in comparison.iterrows():
+    for idx, row in df_scope.iterrows():
+        swot_element = row.get("swot_element", "")
+        if swot_element not in SWOT_ELEMENTS:
+            continue
+        answer = clean(row.get("Final_Answer", ""))
+        if not answer:
+            continue
+        theme, conf, top3, evidence = classify_answer(
+            answer, row.get("Respondent_Type", ""), swot_element, engine, trained_model
+        )
         rows.append({
-            "row_id": row["row_id"],
-            "Respondent_Type": row.get("Respondent_Type", ""),
-            "groupe": row.get("groupe", ""),
-            "participants": row.get("participants", ""),
-            "swot_element": row.get("swot_element", ""),
-            "question": row.get("question", ""),
-            "Final_Answer": row.get("Final_Answer", ""),
-            "AI_Suggested_Theme": row.get(preferred_col, ""),
-            "Confidence": row.get(preferred_conf, ""),
-            "Consensus_Theme": row.get("Consensus_Theme", ""),
-            "Agreement_Rate": row.get("Agreement_Rate", ""),
-            "Consensus_Status": row.get("Consensus_Status", ""),
-            "Top_3_Themes": row.get(preferred_top3, "") if preferred_top3 else "",
-            "Evidence": row.get(preferred_evidence, "") if preferred_evidence else "Consensus / guardrails",
-            "Validated_Theme": row.get(preferred_col, ""),
-            "New_Theme": "",
+            "row_id": idx, "Respondent_Type": row.get("Respondent_Type", ""), "groupe": row.get("groupe", ""),
+            "participants": row.get("participants", ""), "swot_element": swot_element,
+            "question": row.get("question", ""), "Final_Answer": answer,
+            "AI_Suggested_Theme": theme, "Confidence": conf, "Top_3_Themes": top3, "Evidence": evidence,
+            "Validated_Theme": theme, "New_Theme": "",
         })
     return pd.DataFrame(rows)
 
-def main():
-    st.set_page_config(
-        page_title=APP_TITLE,
-        layout="wide",
-        initial_sidebar_state="collapsed"
+
+def build_theme_synthesis(validated_df):
+    if validated_df.empty:
+        return pd.DataFrame()
+    rows = []
+    grouped = validated_df.groupby(["Respondent_Type", "swot_element", "Validated_Theme"], dropna=False)
+    for (ptype, swot_element, theme), group in grouped:
+        answers = [clean(x) for x in group["Final_Answer"].tolist() if clean(x)]
+        rows.append({
+            "Type de participants": ptype, "Élément SWOT": swot_element, "Thème": theme,
+            "Nombre de réponses": len(answers), "Synthèse automatique courte": " | ".join(answers[:3]),
+        })
+    return pd.DataFrame(rows).sort_values(
+        ["Type de participants", "Élément SWOT", "Nombre de réponses"], ascending=[True, True, False]
     )
 
-    html_block(APP_CSS)
 
+# ============================================================
+# STREAMLIT UI
+# ============================================================
+
+def render_mapping_validation(classified_df):
+    if classified_df.empty:
+        st.warning("Aucune réponse SWOT à classifier.")
+        return classified_df
+
+    validated_rows = []
+    st.markdown("### Validation experte des classifications")
+    st.caption("Les réponses à faible confiance sont affichées en premier : ce sont celles où votre validation "
+               "apporte le plus de valeur, y compris pour entraîner le modèle supervisé.")
+
+    ordered = classified_df.sort_values("Confidence", ascending=True)
+    for _, row in ordered.iterrows():
+        swot_element = row["swot_element"]
+        row_key = f"{row['row_id']}_{swot_element}"
+        themes = official_themes_for(row["Respondent_Type"], swot_element, include_autre=False)
+        suggested = row.get("AI_Suggested_Theme", "")
+        default_index = themes.index(suggested) if suggested in themes else 0
+        conf = row.get("Confidence", "")
+        title = f"{row['Respondent_Type']} | {row['groupe']} | {swot_element} | Confiance : {conf}% | Proposé : {suggested}"
+        with st.expander(title, expanded=False):
+            st.markdown("**Réponse**")
+            st.write(row["Final_Answer"])
+            if clean(row.get("Top_3_Themes", "")):
+                st.caption("Top 3 : " + clean(row.get("Top_3_Themes", "")))
+            if clean(row.get("Evidence", "")):
+                st.caption("Évidence : " + clean(row.get("Evidence", "")))
+            selected_theme = st.selectbox("Thème validé par l'expert", options=themes, index=default_index, key=f"theme_{row_key}")
+            new_theme = st.text_input("Ajouter un nouveau thème si aucun thème officiel ne convient", value="", key=f"new_theme_{row_key}")
+            final_theme = clean(new_theme) if clean(new_theme) else selected_theme
+            out = row.to_dict()
+            out["Validated_Theme"] = final_theme
+            out["New_Theme"] = clean(new_theme)
+            validated_rows.append(out)
+    return pd.DataFrame(validated_rows)
+
+
+def render_engine_selector(df_scope):
+    st.markdown("""
+    <div class="ai-card">
+        <h3>Moteur de classification actif</h3>
+        <p>Commencez avec l'heuristique pour obtenir des suggestions de départ. Validez des réponses dans
+        l'onglet suivant, puis entraînez le modèle supervisé : c'est lui qui donnera une précision réelle
+        et mesurable, calculée sur vos propres données par validation croisée.</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    trained_model = st.session_state.get("trained_model")
+    trained_acc = st.session_state.get("trained_model_accuracy")
+
+    options = [ENGINE_HEURISTIC]
+    if trained_model is not None:
+        label = f"{ENGINE_TRAINED} (précision validée : {trained_acc}%)" if trained_acc is not None else ENGINE_TRAINED
+        options.append(label)
+    else:
+        options.append(f"{ENGINE_TRAINED} (pas encore entraîné - voir onglet 2)")
+    options.append(ENGINE_LLM)
+
+    choice = st.radio("Choisir le moteur", options, key="engine_choice_radio")
+    if choice.startswith(ENGINE_HEURISTIC):
+        engine = ENGINE_HEURISTIC
+    elif choice.startswith(ENGINE_TRAINED):
+        engine = ENGINE_TRAINED
+        if trained_model is None:
+            st.markdown('<div class="ai-warning">Aucun modèle entraîné pour le moment. Rendez-vous dans l\'onglet '
+                        '« 2. Entraîner le modèle » après avoir validé quelques réponses.</div>', unsafe_allow_html=True)
+    else:
+        engine = ENGINE_LLM
+        with st.expander("Configuration de l'IA institutionnelle (API externe)", expanded=True):
+            st.markdown('<div class="ai-danger">Ce moteur envoie le texte des réponses à une API externe '
+                        '(OpenAI). N\'activez ce moteur que si cela est acceptable pour la confidentialité '
+                        'de vos données.</div>', unsafe_allow_html=True)
+            api_key_input = st.text_input("Clé API", value="", type="password", key="institutional_ai_key_input")
+            if api_key_input:
+                st.session_state["institutional_ai_key"] = api_key_input
+            if get_institutional_ai_key():
+                st.success("Clé API configurée.")
+            else:
+                st.warning("Aucune clé API configurée : ce moteur renverra un résultat de repli conservateur.")
+
+    st.session_state["active_engine"] = engine
+    return engine
+
+
+def render_training_tab(df_scope):
+    st.subheader("2. Entraîner le modèle supervisé sur vos données validées")
+    st.markdown("""
+    <div class="ai-info-box">
+        C'est ici que la précision réelle se construit. Le modèle apprend directement de vos réponses
+        validées dans l'onglet 1 — pas de règles écrites à la main. La précision affichée est mesurée
+        par validation croisée : les données sont divisées en plusieurs groupes, le modèle s'entraîne
+        sur certains et est testé sur les autres, plusieurs fois, pour donner une estimation fiable
+        plutôt qu'optimiste.
+    </div>
+    """, unsafe_allow_html=True)
+
+    validated_df = st.session_state.get("validated_mapping_df", pd.DataFrame())
+
+    st.markdown("#### Source des données d'entraînement")
+    upload_extra = st.file_uploader(
+        "Optionnel : ajouter un fichier de réponses déjà validées (Excel ou CSV, colonnes Final_Answer et Validated_Theme)",
+        type=["xlsx", "csv"], key="extra_training_upload"
+    )
+    extra_df = pd.DataFrame()
+    if upload_extra is not None:
+        try:
+            extra_df = pd.read_excel(upload_extra) if upload_extra.name.lower().endswith(("xlsx", "xls")) else pd.read_csv(upload_extra)
+        except Exception as e:
+            st.error("Impossible de lire ce fichier.")
+            st.exception(e)
+
+    combined = pd.concat([validated_df, extra_df], ignore_index=True) if not extra_df.empty else validated_df
+    train_df = prepare_training_dataset(combined)
+
+    if train_df.empty:
+        st.markdown('<div class="ai-warning">Aucune donnée validée disponible pour l\'instant. Allez dans '
+                    'l\'onglet 1, classifiez et validez quelques réponses, puis revenez ici.</div>', unsafe_allow_html=True)
+        return
+
+    st.markdown("#### Aperçu des données d'entraînement")
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Réponses validées", len(train_df))
+    c2.metric("Thèmes distincts", train_df["label"].nunique())
+    c3.metric("Min. requis", MIN_TOTAL_TRAINING_EXAMPLES)
+
+    counts = train_df["label"].value_counts().reset_index()
+    counts.columns = ["Thème", "Nombre d'exemples validés"]
+    st.dataframe(counts, use_container_width=True)
+    thin_themes = counts[counts["Nombre d'exemples validés"] < MIN_EXAMPLES_PER_THEME]
+    if not thin_themes.empty:
+        st.caption(f"Thèmes avec moins de {MIN_EXAMPLES_PER_THEME} exemples validés (à renforcer en priorité) : "
+                   + ", ".join(thin_themes["Thème"].tolist()))
+
+    if st.button("Lancer l'entraînement et l'évaluation", key="run_training"):
+        with st.spinner("Entraînement et validation croisée en cours..."):
+            results_df, predictions_df, error = evaluate_theme_models(train_df)
+        st.session_state["training_results_df"] = results_df
+        st.session_state["training_predictions_df"] = predictions_df
+        st.session_state["training_error"] = error
+        st.session_state["training_data_snapshot"] = train_df
+
+    results_df = st.session_state.get("training_results_df", pd.DataFrame())
+    error = st.session_state.get("training_error", "")
+
+    if error:
+        st.markdown(f'<div class="ai-warning">{esc(error)}</div>', unsafe_allow_html=True)
+        return
+
+    if not results_df.empty:
+        st.markdown("#### Résultats — précision réelle par algorithme (validation croisée)")
+        st.dataframe(results_df, use_container_width=True)
+
+        best_row = results_df.iloc[0]
+        best_algo = best_row["Algorithme"]
+        best_acc = best_row["Accuracy (validation croisée)"]
+
+        predictions_df = st.session_state.get("training_predictions_df", pd.DataFrame())
+        if not predictions_df.empty:
+            errors_df = predictions_df[(predictions_df["Algorithme"] == best_algo) & (~predictions_df["Correct"])]
+            if not errors_df.empty:
+                with st.expander(f"Voir les erreurs de classification du meilleur modèle ({len(errors_df)} cas)"):
+                    st.dataframe(errors_df[["Réponse", "Thème réel", "Thème prédit"]], use_container_width=True)
+
+        st.markdown(f"""
+        <div class="ai-info-box">
+            Meilleur algorithme : <b>{esc(best_algo)}</b> — précision estimée : <b>{round(best_acc * 100, 1)}%</b>
+            sur {len(st.session_state.get("training_data_snapshot", pd.DataFrame()))} réponses validées.
+            Cette précision reflète vos données réelles : plus vous validez de réponses (en particulier pour
+            les thèmes peu représentés ci-dessus), plus ce chiffre montera lors du prochain entraînement.
+        </div>
+        """, unsafe_allow_html=True)
+
+        chosen_algo = st.selectbox("Algorithme à activer", options=results_df["Algorithme"].tolist(),
+                                    index=0, key="chosen_training_algo")
+        if st.button("Activer ce modèle pour la classification", key="activate_trained_model"):
+            snapshot = st.session_state.get("training_data_snapshot", train_df)
+            model = train_final_model(snapshot, chosen_algo)
+            st.session_state["trained_model"] = model
+            chosen_acc = results_df[results_df["Algorithme"] == chosen_algo]["Accuracy (validation croisée)"].iloc[0]
+            st.session_state["trained_model_accuracy"] = round(chosen_acc * 100, 1)
+            st.success(f"Modèle activé : {chosen_algo} (précision validée : {round(chosen_acc * 100, 1)}%). "
+                       f"Retournez à l'onglet 1 et sélectionnez « Modèle supervisé entraîné » pour l'utiliser.")
+
+            import pickle
+            buf = BytesIO()
+            pickle.dump(model, buf)
+            st.download_button("Télécharger ce modèle entraîné (.pkl)", data=buf.getvalue(),
+                                file_name=f"modele_theme_{safe_filename(chosen_algo)}.pkl",
+                                mime="application/octet-stream")
+
+    st.markdown("#### Réutiliser un modèle déjà entraîné")
+    model_upload = st.file_uploader("Charger un fichier de modèle (.pkl)", type=["pkl"], key="model_pkl_upload")
+    if model_upload is not None:
+        import pickle
+        try:
+            loaded_model = pickle.load(model_upload)
+            st.session_state["trained_model"] = loaded_model
+            st.session_state["trained_model_accuracy"] = None
+            st.success("Modèle chargé et activé. Sélectionnez « Modèle supervisé entraîné » dans l'onglet 1.")
+        except Exception as e:
+            st.error("Impossible de charger ce fichier de modèle.")
+            st.exception(e)
+
+
+def ai_platform_page(df):
+    html_block(APP_CSS)
+    html_block("""
+    <div class="ai-hero">
+        <h2>Plateforme IA supervisée - Analyse thématique stratégique</h2>
+        <p>Classification, validation experte, entraînement d'un modèle supervisé sur vos données,
+        détection de doublons et synthèse par thème.</p>
+    </div>
+    """)
+
+    df_scope = df.copy()
+    swot_df = df_scope[df_scope["swot_element"].isin(SWOT_ELEMENTS)]
+
+    c1, c2, c3, c4 = st.columns(4)
+    c1.markdown(f'<div class="ai-kpi"><div class="ai-kpi-number">{len(df_scope)}</div><div class="ai-kpi-label">Réponses importées</div></div>', unsafe_allow_html=True)
+    c2.markdown(f'<div class="ai-kpi"><div class="ai-kpi-number">{len(swot_df)}</div><div class="ai-kpi-label">Réponses SWOT</div></div>', unsafe_allow_html=True)
+    c3.markdown(f'<div class="ai-kpi"><div class="ai-kpi-number">{df_scope["Respondent_Type"].nunique()}</div><div class="ai-kpi-label">Types de participants</div></div>', unsafe_allow_html=True)
+    trained_acc = st.session_state.get("trained_model_accuracy")
+    c4.markdown(f'<div class="ai-kpi"><div class="ai-kpi-number">{trained_acc if trained_acc is not None else "—"}%</div><div class="ai-kpi-label">Précision du modèle entraîné</div></div>', unsafe_allow_html=True)
+
+    tab_mapping, tab_training, tab_duplicates, tab_synthesis = st.tabs([
+        "1. Classification et validation", "2. Entraîner le modèle", "3. Doublons", "4. Synthèse"
+    ])
+
+    with tab_mapping:
+        st.subheader("1. Classification et validation experte")
+        engine = render_engine_selector(df_scope)
+        trained_model = st.session_state.get("trained_model") if engine == ENGINE_TRAINED else None
+
+        if engine == ENGINE_TRAINED and trained_model is None:
+            st.stop()
+
+        if st.button("Classifier les réponses SWOT", key="run_mapping"):
+            with st.spinner("Classification en cours..."):
+                st.session_state["classified_df"] = build_classification_dataframe(df_scope, engine, trained_model)
+
+        classified_df = st.session_state.get("classified_df", pd.DataFrame())
+        if not classified_df.empty:
+            preview_cols = ["Respondent_Type", "groupe", "swot_element", "Final_Answer", "AI_Suggested_Theme", "Confidence"]
+            st.dataframe(classified_df[preview_cols], use_container_width=True)
+
+            validated_df = render_mapping_validation(classified_df)
+            st.session_state["validated_mapping_df"] = validated_df
+
+            if not validated_df.empty:
+                export_cols = ["Respondent_Type", "groupe", "participants", "swot_element", "question",
+                                "Final_Answer", "AI_Suggested_Theme", "Confidence", "Validated_Theme", "New_Theme"]
+                export_df = validated_df[[c for c in export_cols if c in validated_df.columns]].copy()
+                output = BytesIO()
+                with pd.ExcelWriter(output, engine="openpyxl") as writer:
+                    export_df.to_excel(writer, index=False, sheet_name="Mapping valide")
+                output.seek(0)
+                st.download_button("Télécharger le mapping validé", data=output.getvalue(),
+                                    file_name="mapping_SWOT_valide.xlsx",
+                                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        else:
+            st.caption("Cliquez sur « Classifier les réponses SWOT » pour lancer la classification.")
+
+    with tab_training:
+        render_training_tab(df_scope)
+
+    with tab_duplicates:
+        st.subheader("3. Détection stricte des doublons")
+        st.caption("Règle stricte : même élément SWOT + même sujet central. Une structure grammaticale "
+                   "similaire avec un sujet différent n'est pas retenue.")
+        if st.button("Détecter les doublons", key="detect_duplicates"):
+            st.session_state["duplicates_df"] = detect_duplicate_pairs(df_scope)
+        dup_df = st.session_state.get("duplicates_df", pd.DataFrame())
+        if not dup_df.empty:
+            st.dataframe(dup_df, use_container_width=True)
+            st.download_button("Télécharger les doublons détectés", data=dup_df.to_csv(index=False).encode("utf-8-sig"),
+                                file_name="doublons_detectes.csv", mime="text/csv")
+        else:
+            st.caption("Aucun doublon affiché pour le moment.")
+
+    with tab_synthesis:
+        st.subheader("4. Synthèse automatique par thème validé")
+        validated_df = st.session_state.get("validated_mapping_df", pd.DataFrame())
+        if validated_df.empty:
+            st.warning("Veuillez d'abord produire et valider le mapping SWOT dans l'onglet 1.")
+        else:
+            synthesis_df = build_theme_synthesis(validated_df)
+            st.dataframe(synthesis_df, use_container_width=True)
+            output = BytesIO()
+            with pd.ExcelWriter(output, engine="openpyxl") as writer:
+                synthesis_df.to_excel(writer, index=False, sheet_name="Synthese")
+            output.seek(0)
+            st.download_button("Télécharger la synthèse", data=output.getvalue(),
+                                file_name="synthese_theme_SWOT.xlsx",
+                                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+
+def main():
+    st.set_page_config(page_title=APP_TITLE, layout="wide", initial_sidebar_state="collapsed")
+    html_block(APP_CSS)
     html_block(f"""
     <style>
     .usj-dashboard-header {{
         background: linear-gradient(135deg, #001F5B 0%, #1F3C88 70%, #8B1538 100%);
-        border-radius: 22px;
-        padding: 28px 34px;
-        margin-bottom: 24px;
+        border-radius: 22px; padding: 28px 34px; margin-bottom: 24px;
         box-shadow: 0 14px 34px rgba(0,31,91,0.20);
     }}
-    .usj-dashboard-header h1 {{
-        margin: 0;
-        color: white !important;
-        font-size: 36px;
-        font-weight: 900;
-        letter-spacing: 0.2px;
-    }}
-    .usj-dashboard-header h3 {{
-        margin: 8px 0 0 0;
-        color: #EAF2F8 !important;
-        font-weight: 800;
-        font-size: 20px;
-    }}
+    .usj-dashboard-header h1 {{ margin: 0; color: white !important; font-size: 36px; font-weight: 900; }}
+    .usj-dashboard-header h3 {{ margin: 8px 0 0 0; color: #EAF2F8 !important; font-weight: 800; font-size: 20px; }}
     .usj-step-card {{
-        background: #ffffff;
-        border: 1px solid #D0D6E0;
-        border-radius: 16px;
-        padding: 18px 20px;
-        margin: 14px 0 18px 0;
-        box-shadow: 0 8px 22px rgba(0,0,0,0.045);
-    }}
-    .usj-step-title {{
-        color: {USJ_BLUE};
-        font-size: 19px;
-        font-weight: 900;
-        margin-bottom: 5px;
-    }}
-    .usj-step-subtitle {{
-        color: #667085;
-        font-size: 14px;
-        margin-bottom: 0;
+        background: #ffffff; border: 1px solid #D0D6E0; border-radius: 16px; padding: 18px 20px;
+        margin: 14px 0 18px 0; box-shadow: 0 8px 22px rgba(0,0,0,0.045);
     }}
     .usj-status-box {{
-        background: #F0F7FF;
-        border: 1px solid #CFE4FF;
-        border-left: 6px solid {USJ_BLUE};
-        border-radius: 14px;
-        padding: 14px 18px;
-        margin: 10px 0 18px 0;
-        color: {USJ_TEXT};
-        font-weight: 800;
+        background: #F0F7FF; border: 1px solid #CFE4FF; border-left: 6px solid {USJ_BLUE}; border-radius: 14px;
+        padding: 14px 18px; margin: 10px 0 18px 0; color: {USJ_TEXT}; font-weight: 800;
     }}
     </style>
     <div class="usj-dashboard-header">
@@ -2899,34 +1332,25 @@ def main():
 
     html_block("""
     <div class="usj-step-card">
-        <div class="usj-step-title">Uploader le fichier Excel corrigé</div>
-        <div class="usj-step-subtitle">Le fichier sera utilisé pour l'analyse IA supervisée, le mapping SWOT, les doublons et la synthèse.</div>
+        <div class="usj-step-title" style="color:#001F5B;font-size:19px;font-weight:900;">Uploader le fichier Excel corrigé</div>
+        <div style="color:#667085;font-size:14px;">Le fichier sera utilisé pour la classification, la validation, les doublons et la synthèse.</div>
     </div>
     """)
 
-    uploaded_file = st.file_uploader(
-        "Uploader le fichier Excel corrigé",
-        type=["xlsx", "xls"],
-        key="main_excel_upload"
-    )
-
+    uploaded_file = st.file_uploader("Uploader le fichier Excel corrigé", type=["xlsx", "xls"], key="main_excel_upload")
     if uploaded_file is None:
         st.info(f"Veuillez uploader le fichier Excel contenant la feuille : {SHEET_NAME}")
         st.stop()
 
     df = read_corrected_excel(uploaded_file)
-
-    nb_rows = len(df)
-    nb_types = df["Respondent_Type"].nunique()
-    nb_groups = df["groupe"].nunique()
-
     html_block(f"""
     <div class="usj-status-box">
-        Fichier chargé avec succès : {nb_rows} réponses, {nb_types} types de participants, {nb_groups} sous-groupes.
+        Fichier chargé avec succès : {len(df)} réponses, {df["Respondent_Type"].nunique()} types de participants,
+        {df["groupe"].nunique()} sous-groupes.
     </div>
     """)
 
-    ai_platform_page(show_header=False, df_preloaded=df)
+    ai_platform_page(df)
 
 
 if __name__ == "__main__":
