@@ -337,44 +337,56 @@ def official_themes_for(participant_type, swot_element, include_autre=False):
     return [t for t in themes if normalize(t) not in ["autre", "autres"]]
 
 
-def detect_swot_element(row):
-    text = " ".join([
-        clean(row.get("section", "")),
-        clean(row.get("category", "")),
-        clean(row.get("question", "")),
-    ])
-    text_n = normalize(text)
+def _detect_swot_from_text(value):
+    """Detect one SWOT element from a single field.
+    This is intentionally applied field by field so that an exact category
+    like "Forces" cannot be overridden by another field containing
+    "Faiblesses".
+    """
+    text_n = normalize(value)
+    if not text_n:
+        return ""
 
     force_terms = [
         "force", "forces", "strength", "strengths",
         "atout", "atouts", "point fort", "points forts"
     ]
-
     faiblesse_terms = [
         "faiblesse", "faiblesses", "weakness", "weaknesses",
-        "point faible", "points faibles", "a ameliorer", "ameliorer"
+        "point faible", "points faibles"
     ]
-
     opportunite_terms = [
         "opportunite", "opportunites", "opportunity", "opportunities",
-        "levier", "leviers"
+        "levier externe", "leviers externes"
     ]
-
     menace_terms = [
         "menace", "menaces", "threat", "threats",
-        "risque", "risques"
+        "risque externe", "risques externes"
     ]
 
-    if any(term in text_n for term in faiblesse_terms):
-        return "Faiblesses"
-    if any(term in text_n for term in menace_terms):
-        return "Menaces"
-    if any(term in text_n for term in opportunite_terms):
-        return "Opportunités"
-    if any(term in text_n for term in force_terms):
+    if any(_contains_term(text_n, term) for term in force_terms):
         return "Forces"
-
+    if any(_contains_term(text_n, term) for term in faiblesse_terms):
+        return "Faiblesses"
+    if any(_contains_term(text_n, term) for term in opportunite_terms):
+        return "Opportunités"
+    if any(_contains_term(text_n, term) for term in menace_terms):
+        return "Menaces"
     return ""
+
+
+def detect_swot_element(row):
+    """Detect SWOT from structured Excel fields.
+    Priority order is category -> question -> section.
+    The category column is the source of truth when it explicitly contains
+    Forces / Faiblesses / Opportunités / Menaces.
+    """
+    for field in ["category", "question", "section"]:
+        detected = _detect_swot_from_text(row.get(field, ""))
+        if detected:
+            return detected
+    return ""
+
 
 
 # ============================================================
