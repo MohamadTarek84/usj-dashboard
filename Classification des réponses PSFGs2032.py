@@ -1075,6 +1075,50 @@ def register_custom_theme(participant_type, swot_element, theme):
         existing.append(theme)
 
 
+
+
+def apply_editor_state_to_edit_df(edit_df, editor_key):
+    """Keep manual edits visible after Streamlit reruns.
+
+    This preserves the value typed in "Nouveau thème" while still adding it
+    automatically to the dropdown list. It does not overwrite or clear the last
+    column.
+    """
+    editor_state = st.session_state.get(editor_key, {})
+    if not isinstance(editor_state, dict):
+        return edit_df
+
+    edited_rows = editor_state.get("edited_rows", {})
+    if not isinstance(edited_rows, dict):
+        return edit_df
+
+    out = edit_df.copy()
+    index_list = list(out.index)
+
+    for raw_key, changes in edited_rows.items():
+        if not isinstance(changes, dict):
+            continue
+
+        target_index = None
+        try:
+            key_int = int(raw_key)
+            if key_int in out.index:
+                target_index = key_int
+            elif 0 <= key_int < len(index_list):
+                target_index = index_list[key_int]
+        except Exception:
+            if raw_key in out.index:
+                target_index = raw_key
+
+        if target_index is None or target_index not in out.index:
+            continue
+
+        for col_name, value in changes.items():
+            if col_name in out.columns:
+                out.at[target_index, col_name] = value
+
+    return out
+
 def sync_custom_themes_from_editor_state(editor_key, participant_type, swot_element):
     """Register newly typed themes before rebuilding the data editor.
 
@@ -1550,6 +1594,8 @@ def render_mapping_validation(classified_df):
                 "groupe": "Sous-groupe", "Final_Answer": "Réponse", "Confidence": "Confiance %",
                 "AI_Suggested_Theme": "Proposé (IA)",
             }).set_index("row_id")
+
+            edit_df = apply_editor_state_to_edit_df(edit_df, editor_key)
 
             edited = st.data_editor(
                 edit_df,
