@@ -1205,6 +1205,57 @@ def sync_custom_themes_from_persistent_values(editor_key, participant_type, swot
             register_custom_theme(participant_type, swot_element, new_theme)
 
 
+def persist_editor_changes_callback(editor_key, participant_type, swot_element, row_ids):
+    """Save data_editor cell changes immediately when Streamlit triggers a rerun.
+
+    This is necessary because changing the selectbox options after adding a new
+    theme can reset the widget state. The callback captures the typed value
+    before the widget is rebuilt, so the value remains visible in the
+    "Nouveau thème" column and is also added to the dropdown list.
+    """
+    editor_state = st.session_state.get(editor_key, {})
+    if not isinstance(editor_state, dict):
+        return
+
+    edited_rows = editor_state.get("edited_rows", {})
+    if not isinstance(edited_rows, dict):
+        return
+
+    values = _editor_store_for(editor_key)
+
+    for raw_key, changes in edited_rows.items():
+        if not isinstance(changes, dict):
+            continue
+
+        row_id = None
+        try:
+            pos = int(raw_key)
+            if 0 <= pos < len(row_ids):
+                row_id = row_ids[pos]
+            elif pos in row_ids:
+                row_id = pos
+        except Exception:
+            if raw_key in row_ids:
+                row_id = raw_key
+
+        if row_id is None:
+            continue
+
+        row_values = values.setdefault(row_id, {})
+
+        if "Nouveau thème" in changes:
+            new_theme_value = clean(changes.get("Nouveau thème", ""))
+            row_values["Nouveau thème"] = new_theme_value
+            if new_theme_value:
+                register_custom_theme(participant_type, swot_element, new_theme_value)
+
+        if "Thème validé" in changes:
+            theme_value = clean(changes.get("Thème validé", ""))
+            if theme_value:
+                row_values["Thème validé"] = theme_value
+
+
+
 # ============================================================
 # ACADEMIC SYNTHESIS TEXT (rule-based, no external API required)
 # ============================================================
@@ -1660,11 +1711,15 @@ def render_mapping_validation(classified_df):
             edit_df = apply_editor_state_to_edit_df(edit_df, editor_key)
             edit_df = apply_persistent_editor_values(edit_df, editor_key)
 
+            row_ids_for_editor = list(edit_df.index)
+
             edited = st.data_editor(
                 edit_df,
                 key=editor_key,
                 use_container_width=True,
                 hide_index=True,
+                on_change=persist_editor_changes_callback,
+                args=(editor_key, ptype, swot_element, row_ids_for_editor),
                 column_config={
                     "Sous-groupe": st.column_config.TextColumn(disabled=True, width="small"),
                     "Réponse": st.column_config.TextColumn(disabled=True, width="large"),
