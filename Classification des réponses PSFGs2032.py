@@ -1,5 +1,4 @@
 import re
-import os
 import html
 import base64
 import difflib
@@ -27,7 +26,7 @@ USJ_RED = "#8B1538"
 USJ_LIGHT_BLUE = "#EAF2F8"
 USJ_TEXT = "#1B2A41"
 LOGO_PATH = "LOGO NEW UAQ.png"
-ENGINE_LLM_STRICT = "LLM strict classifier - classification raisonnée"
+ENGINE_LLM_STRICT = "Moteur IA institutionnel - classification raisonnée"
 
 
 def clean(value):
@@ -1470,7 +1469,7 @@ THEME_KEYWORD_RULES = {
         "concurrence", "concurrent", "concurrentes", "universites", "autres universites", "competition", "competitive", "attractivite", "frais", "scolarite", "programmes flexibles", "facilites financieres", "classe a", "americaines"
     ],
     "intelligence artificielle": [
-        "intelligence artificielle", "ia", "ai", "chatgpt", "automatisation", "technologie generative", "generative", "data science", "analyse", "digitalisation", "transformation numerique"
+        "intelligence artificielle", "ia", "ai", "agent conversationnel ia", "automatisation", "technologie generative", "generative", "data science", "analyse", "digitalisation", "transformation numerique"
     ],
     "reputation et image": [
         "reputation", "image", "classement", "classements", "visibilite", "notoriete", "communication", "attractivite", "perception", "rayonnement", "jeunes", "ecoles", "recteurs", "recruteurs"
@@ -2053,7 +2052,7 @@ THEME_CONTEXT = {
     "Marché du travail et Associations professionnelles": "marché travail employeurs entreprises associations professionnelles métiers compétences emploi stages secteur professionnel",
     "Marché du travail et relations avec les employeurs": "marché travail employeurs entreprises emploi stages insertion besoins compétences relation professionnelle",
     "Concurrence avec les autres universités": "concurrence universités compétition établissements attractivité inscriptions frais programmes alternatives",
-    "Intelligence artificielle": "intelligence artificielle IA AI ChatGPT automatisation technologie transformation numérique outils génératifs",
+    "Intelligence artificielle": "intelligence artificielle IA AI outil d’IA générative automatisation technologie transformation numérique outils génératifs",
     "Réputation et image": "réputation image visibilité marque notoriété classement communication attractivité perception rayonnement",
     "Environnement politique et économique, émigration": "politique économie crise émigration instabilité contexte pays inflation sécurité situation nationale",
 }
@@ -2610,7 +2609,7 @@ THEME_CONTEXT_ENRICHED = {
     "marche du travail et associations professionnelles": "marché travail emploi employeurs entreprises associations professionnelles compétences stages métiers carrière",
     "marche du travail et relations avec les employeurs": "marché travail emploi employeurs entreprises relations employeurs professionnel compétences stages carrière",
     "concurrence avec les autres universites": "concurrence autres universités compétition attractivité frais scolarité programmes flexibles universités américaines classe A",
-    "intelligence artificielle": "intelligence artificielle IA AI ChatGPT automatisation data science analyse générative transformation numérique",
+    "intelligence artificielle": "intelligence artificielle IA AI outil d’IA générative automatisation data science analyse générative transformation numérique",
     "reputation et image": "réputation image classement classements visibilité notoriété communication attractivité perception rayonnement jeunes écoles recruteurs",
     "environnement politique et economique emigration": "politique économique crise émigration instabilité Liban inflation sécurité guerre familles parents banque immobilier finance",
 }
@@ -2685,7 +2684,7 @@ def transformer_scores(answer, themes):
 # Strong domain guardrails: prevent structurally similar but conceptually wrong mappings.
 # These rules do not change the official themes. They only restrict impossible AI suggestions.
 DOMAIN_SIGNAL_RULES = {
-    "intelligence artificielle": ["intelligence artificielle", " ia ", " ai ", "chatgpt", "generative", "générative", "automatisation", "machine learning", "data science", "algorithme"],
+    "intelligence artificielle": ["intelligence artificielle", " ia ", " ai ", "agent conversationnel ia", "generative", "générative", "automatisation", "machine learning", "data science", "algorithme"],
     "concurrence avec les autres universites": ["concurrence", "competition", "compétition", "autres universites", "autres universités", "universites americaines", "universités américaines", "universites regionales", "universités régionales", "scolarites des autres", "classe a"],
     "reputation et image": ["reputation", "réputation", "image", "visibilite", "visibilité", "notoriete", "notoriété", "attractivite", "attractivité", "perception", "classement", "classements", "communication", "public cible", "demande manifeste", "serieux de la formation", "sérieux de la formation", "rayonnement"],
     "environnement politique et economique emigration": ["politique", "economique", "économique", "crise", "emigration", "émigration", "instabilite", "instabilité", "inflation", "securite", "sécurité", "guerre", "banque", "immobilier", "parents", "familles", "migration"],
@@ -3121,33 +3120,37 @@ def ai_platform_page(show_header=True, df_preloaded=None):
 
     st.markdown("""
     <div class="ai-info-box">
-        <b>Logique professionnelle :</b> l'IA est appliquée à toute la base. Le moteur recommandé est maintenant un classificateur LLM strict : il reçoit la réponse, le type de participant, l'élément SWOT et uniquement les thèmes officiels autorisés. Les anciens moteurs locaux restent disponibles comme comparaison/fallback, mais ne sont plus recommandés pour la décision finale.
+        <b>Logique professionnelle :</b> l'IA est appliquée à toute la base. Le moteur recommandé est maintenant un moteur IA institutionnel strict : il reçoit la réponse, le type de participant, l'élément SWOT et uniquement les thèmes officiels autorisés. Les anciens moteurs locaux restent disponibles comme comparaison/fallback, mais ne sont plus recommandés pour la décision finale.
     </div>
     """, unsafe_allow_html=True)
 
-    with st.expander("Configuration du moteur LLM strict", expanded=True):
+    with st.expander("Configuration du moteur IA institutionnel", expanded=True):
         c_api1, c_api2 = st.columns([1.4, 1])
         with c_api1:
             api_key_input = st.text_input(
-                "Clé API OpenAI",
+                "Clé du moteur IA",
                 value="",
                 type="password",
-                help="La clé n'est pas affichée. Vous pouvez aussi la définir dans Streamlit secrets ou variable d'environnement OPENAI_API_KEY.",
-                key="llm_api_key_input",
+                help="La clé n’est pas affichée. Elle peut aussi être définie de manière sécurisée dans les paramètres de l’application.",
+                key="institutional_ai_key_input",
             )
             if api_key_input:
-                st.session_state["llm_api_key"] = api_key_input
+                st.session_state["institutional_ai_key"] = api_key_input
         with c_api2:
-            st.session_state["llm_model_name"] = st.text_input(
-                "Modèle LLM",
-                value=st.session_state.get("llm_model_name", "gpt-4o-mini"),
-                key="llm_model_name_input",
+            st.markdown(
+                """
+                <div class="ai-info-box" style="margin-top:0; padding:14px 18px;">
+                    <b>Moteur IA</b><br>
+                    Configuration institutionnelle sécurisée
+                </div>
+                """,
+                unsafe_allow_html=True,
             )
-        if get_llm_api_key():
-            st.success("Moteur LLM prêt. Le mapping utilisera la classification raisonnée stricte.")
+        if get_institutional_ai_key():
+            st.success("Moteur IA institutionnel prêt. Le mapping utilisera la classification raisonnée stricte.")
             st.session_state.setdefault("active_ai_engine", ENGINE_LLM_STRICT)
         else:
-            st.warning("Aucune clé API détectée. Le moteur LLM retournera un fallback conservateur tant que la clé n'est pas fournie.")
+            st.warning("Le moteur IA institutionnel n’est pas encore configuré. Le système retournera un fallback conservateur tant que la clé n’est pas fournie.")
 
     tab_benchmark, tab_mapping, tab_duplicates, tab_synthesis = st.tabs([
         "1. Benchmark IA global", "2. Mapping SWOT supervisé", "3. Doublons", "4. Synthèse"
@@ -3517,7 +3520,7 @@ DOMAIN_RULES = {
         "negative_themes": ["mission societale", "strategie academique et qualite d enseignement"]
     },
     "ai": {
-        "terms": ["intelligence artificielle", "ia", "ai", "chatgpt", "automatisation", "generative", "data science", "analyse", "machine learning"],
+        "terms": ["intelligence artificielle", "ia", "ai", "agent conversationnel ia", "automatisation", "generative", "data science", "analyse", "machine learning"],
         "themes": ["intelligence artificielle"],
         "negative_themes": ["ressources documentaires et environnement digital", "mission societale"]
     },
@@ -3809,34 +3812,43 @@ def build_consensus_classification(df_scope, selected_engine=ENGINE_DOMAIN):
 
 
 # ============================================================
-# LLM STRICT CLASSIFICATION ENGINE
+# INSTITUTIONAL AI CLASSIFICATION ENGINE
 # ============================================================
 
-def get_llm_api_key():
+def get_institutional_ai_key():
     """Return API key from Streamlit session, secrets, or environment."""
-    key = st.session_state.get("llm_api_key", "")
+    key = st.session_state.get("institutional_ai_key", "")
     if key:
         return key
     try:
-        key = st.secrets.get("OPENAI_API_KEY", "")
+        key = st.secrets.get("AI_ENGINE_API_KEY", "")
         if key:
             return key
     except Exception:
         pass
-    return os.environ.get("OPENAI_API_KEY", "")
+    return os.environ.get("AI_ENGINE_API_KEY", "")
 
 
-def get_llm_model_name():
-    return st.session_state.get("llm_model_name", "gpt-4o-mini") or "gpt-4o-mini"
+def get_institutional_ai_model_name():
+    try:
+        model_name = st.secrets.get("AI_ENGINE_MODEL", "")
+        if model_name:
+            return model_name
+    except Exception:
+        pass
+    model_name = os.environ.get("AI_ENGINE_MODEL", "")
+    if model_name:
+        return model_name
+    return "gpt-4o-mini"
 
 
-def call_openai_chat_json(messages, model=None, temperature=0):
-    api_key = get_llm_api_key()
+def call_institutional_ai_json(messages, model=None, temperature=0):
+    api_key = get_institutional_ai_key()
     if not api_key:
-        raise RuntimeError("OPENAI_API_KEY manquant")
+        raise RuntimeError("Clé du moteur IA manquante")
 
     payload = {
-        "model": model or get_llm_model_name(),
+        "model": model or get_institutional_ai_model_name(),
         "messages": messages,
         "temperature": temperature,
         "response_format": {"type": "json_object"},
@@ -3858,7 +3870,7 @@ def call_openai_chat_json(messages, model=None, temperature=0):
     return json.loads(content)
 
 
-def llm_classify_theme(answer, participant_type, swot_element):
+def institutional_ai_classify_theme(answer, participant_type, swot_element):
     themes = official_themes_for(participant_type, swot_element, include_autre=True)
     themes = [clean(t) for t in themes if clean(t)]
     if not themes:
@@ -3873,7 +3885,7 @@ Tu dois respecter strictement la liste fournie. Ne modifie jamais les noms des t
 
 Règles impératives :
 1. Choisis uniquement un thème dans la liste officielle.
-2. Ne choisis "Intelligence artificielle" que si la réponse mentionne explicitement IA, intelligence artificielle, ChatGPT, automatisation, algorithme, data science, machine learning, outils numériques d'IA, ou un concept directement lié.
+2. Ne choisis "Intelligence artificielle" que si la réponse mentionne explicitement IA, intelligence artificielle, outil d’IA générative, automatisation, algorithme, data science, machine learning, outils numériques d'IA, ou un concept directement lié.
 3. Si la réponse parle de cours, programmes, crédits, curricula, enseignement, mise à jour pédagogique, formation, qualité académique, elle relève d'un thème académique/enseignement, jamais de Mission sociétale.
 4. Si la réponse parle de crise, politique, économie, sécurité, émigration, fuite des cerveaux, inflation, banques, familles ou instabilité, elle relève du thème politique/économique/émigration.
 5. Si la réponse parle d'image, attractivité, réputation, visibilité, classements, perception, communication, recruteurs ou jeunes, elle relève du thème Réputation et image si ce thème est disponible.
@@ -3898,7 +3910,7 @@ Réponse à classifier :
 """
 
     try:
-        result = call_openai_chat_json(
+        result = call_institutional_ai_json(
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
@@ -3910,12 +3922,12 @@ Réponse à classifier :
             # Defensive correction: never accept a non-official label.
             theme = "Autres" if "Autres" in themes else themes[0]
             conf = 25.0
-            explanation = "Réponse LLM non conforme à la liste officielle; correction défensive appliquée."
+            explanation = "Réponse du moteur IA non conforme à la liste officielle; correction défensive appliquée."
             alternatives = ""
         else:
             conf = float(result.get("confidence", 0) or 0)
             conf = round(max(0, min(conf, 100)), 1)
-            explanation = clean(result.get("explanation", "Classification raisonnée par LLM strict."))
+            explanation = clean(result.get("explanation", "Classification raisonnée par le moteur IA institutionnel."))
             alternatives_raw = result.get("alternatives", [])
             if isinstance(alternatives_raw, list):
                 alternatives = " | ".join([clean(x) for x in alternatives_raw if clean(x) in themes][:3])
@@ -3925,10 +3937,10 @@ Réponse à classifier :
     except Exception as e:
         # Safe fallback: show failure instead of pretending the local heuristic is reliable.
         fallback_theme = "Autres" if "Autres" in themes else themes[0]
-        return fallback_theme, 10.0, "", f"Erreur LLM / fallback conservateur : {e}"
+        return fallback_theme, 10.0, "", f"Erreur moteur IA / fallback conservateur : {e}"
 
 
-# Override the final AI engine functions with LLM-first behavior.
+# Override the final AI engine functions with institutional AI-first behavior.
 def available_ai_engines():
     engines = [ENGINE_LLM_STRICT, ENGINE_DOMAIN, ENGINE_KEYWORD_STRICT, ENGINE_TFIDF_RERANK]
     if load_multilingual_sentence_model() is not None:
@@ -3938,7 +3950,7 @@ def available_ai_engines():
 
 def classify_theme_with_engine(answer, participant_type, swot_element, engine_name=ENGINE_LLM_STRICT):
     if engine_name == ENGINE_LLM_STRICT:
-        return llm_classify_theme(answer, participant_type, swot_element)
+        return institutional_ai_classify_theme(answer, participant_type, swot_element)
 
     ranked = score_theme_candidates(answer, participant_type, swot_element, engine_name)
     if not ranked:
