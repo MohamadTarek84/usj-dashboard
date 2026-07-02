@@ -1817,8 +1817,13 @@ def ai_platform_page(df):
             preview_cols = ["Respondent_Type", "groupe", "swot_element", "Final_Answer", "AI_Suggested_Theme", "Confidence"]
             st.dataframe(classified_df[preview_cols], use_container_width=True)
 
-            validated_df = render_mapping_validation(classified_df)
-            st.session_state["validated_mapping_df"] = validated_df
+            validated_df_candidate = render_mapping_validation(classified_df)
+
+            if st.button("Confirmer la validation experte", key="confirm_validated_mapping"):
+                st.session_state["validated_mapping_df"] = validated_df_candidate.copy()
+                st.success("Validation experte confirmée. Le mapping validé est maintenant utilisé dans la synthèse, la matrice SWOT et les exports.")
+
+            validated_df = st.session_state.get("validated_mapping_df", pd.DataFrame())
 
             if not validated_df.empty:
                 export_cols = ["Respondent_Type", "groupe", "participants", "swot_element", "question",
