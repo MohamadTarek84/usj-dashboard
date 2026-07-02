@@ -1510,24 +1510,135 @@ def render_swot_matrix_html(validated_df, participant_type_filter, groupe_filter
 # NEW: DOWNLOADABLE PDF REPORT (post-validation synthesis)
 # ============================================================
 
+def _find_existing_file(possible_paths):
+    """Return the first existing path from a list of possible local paths."""
+    for candidate in possible_paths:
+        try:
+            path = Path(candidate)
+            if path.exists():
+                return path
+        except Exception:
+            continue
+    return None
+
+
+def _register_pdf_fonts():
+    """Use Candara in PDF reports when the font file is available on the server.
+    If Candara is not installed or not included in the app folder, ReportLab falls
+    back safely to Helvetica so the report generation does not fail.
+    """
+    try:
+        from reportlab.pdfbase import pdfmetrics
+        from reportlab.pdfbase.ttfonts import TTFont
+
+        base_dir = Path(__file__).parent if "__file__" in globals() else Path(".")
+        regular_candidates = [
+            base_dir / "Candara.ttf",
+            base_dir / "candara.ttf",
+            Path("Candara.ttf"),
+            Path("candara.ttf"),
+            Path("/usr/share/fonts/truetype/msttcorefonts/Candara.ttf"),
+            Path("/usr/share/fonts/truetype/msttcorefonts/candara.ttf"),
+            Path("C:/Windows/Fonts/Candara.ttf"),
+            Path("C:/Windows/Fonts/candara.ttf"),
+        ]
+        bold_candidates = [
+            base_dir / "Candarab.ttf",
+            base_dir / "Candara Bold.ttf",
+            base_dir / "candarab.ttf",
+            Path("Candarab.ttf"),
+            Path("Candara Bold.ttf"),
+            Path("candarab.ttf"),
+            Path("/usr/share/fonts/truetype/msttcorefonts/Candarab.ttf"),
+            Path("/usr/share/fonts/truetype/msttcorefonts/candarab.ttf"),
+            Path("C:/Windows/Fonts/Candarab.ttf"),
+            Path("C:/Windows/Fonts/candarab.ttf"),
+        ]
+
+        regular_path = _find_existing_file(regular_candidates)
+        bold_path = _find_existing_file(bold_candidates)
+
+        if regular_path:
+            pdfmetrics.registerFont(TTFont("Candara", str(regular_path)))
+            if bold_path:
+                pdfmetrics.registerFont(TTFont("Candara-Bold", str(bold_path)))
+            else:
+                pdfmetrics.registerFont(TTFont("Candara-Bold", str(regular_path)))
+            return "Candara", "Candara-Bold"
+    except Exception:
+        pass
+
+    return "Helvetica", "Helvetica-Bold"
+
+
 def _pdf_styles():
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib.enums import TA_JUSTIFY
     from reportlab.lib import colors
+
+    body_font, bold_font = _register_pdf_fonts()
+
     styles = getSampleStyleSheet()
     styles.add(ParagraphStyle(name="USJTitle", fontSize=20, leading=24,
-                               textColor=colors.HexColor(USJ_BLUE), fontName="Helvetica-Bold", spaceAfter=6))
+                               textColor=colors.HexColor(USJ_BLUE), fontName=bold_font, spaceAfter=6))
     styles.add(ParagraphStyle(name="USJSubtitle", fontSize=12, leading=16,
-                               textColor=colors.HexColor("#64748B"), spaceAfter=14))
+                               textColor=colors.HexColor("#64748B"), fontName=body_font, spaceAfter=14))
     styles.add(ParagraphStyle(name="USJElement", fontSize=15, leading=18,
-                               textColor=colors.white, fontName="Helvetica-Bold"))
+                               textColor=colors.white, fontName=bold_font))
     styles.add(ParagraphStyle(name="USJTheme", fontSize=11.5, leading=15, textColor=colors.HexColor(USJ_BLUE),
-                               fontName="Helvetica-Bold", spaceBefore=10, spaceAfter=2))
+                               fontName=bold_font, spaceBefore=10, spaceAfter=2))
     styles.add(ParagraphStyle(name="USJBody", fontSize=10, leading=14.5, textColor=colors.HexColor(USJ_TEXT),
-                               alignment=TA_JUSTIFY, spaceAfter=8))
+                               fontName=body_font, alignment=TA_JUSTIFY, spaceAfter=8))
     styles.add(ParagraphStyle(name="USJConclusion", fontSize=10.5, leading=15,
-                               textColor=colors.HexColor(USJ_TEXT), alignment=TA_JUSTIFY))
+                               textColor=colors.HexColor(USJ_TEXT), fontName=body_font, alignment=TA_JUSTIFY))
     return styles
+
+
+def _pdf_page_decorator(canvas, doc):
+    """Draw UAQ logo in the top-right corner and page number in the footer."""
+    try:
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib.units import cm
+        from reportlab.lib import colors
+        from reportlab.lib.utils import ImageReader
+
+        page_width, page_height = A4
+        base_dir = Path(__file__).parent if "__file__" in globals() else Path(".")
+        logo_path = _find_existing_file([
+            base_dir / LOGO_PATH,
+            Path(LOGO_PATH),
+            base_dir / "LOGO NEW UAQ.png",
+            Path("LOGO NEW UAQ.png"),
+        ])
+
+        if logo_path:
+            try:
+                logo = ImageReader(str(logo_path))
+                img_w, img_h = logo.getSize()
+                target_w = 3.0 * cm
+                target_h = target_w * img_h / max(img_w, 1)
+                max_h = 1.35 * cm
+                if target_h > max_h:
+                    target_h = max_h
+                    target_w = target_h * img_w / max(img_h, 1)
+                canvas.drawImage(
+                    logo,
+                    page_width - doc.rightMargin - target_w,
+                    page_height - 1.55 * cm,
+                    width=target_w,
+                    height=target_h,
+                    preserveAspectRatio=True,
+                    mask="auto",
+                )
+            except Exception:
+                pass
+
+        body_font, _ = _register_pdf_fonts()
+        canvas.setFont(body_font, 8)
+        canvas.setFillColor(colors.HexColor("#64748B"))
+        canvas.drawCentredString(page_width / 2, 1.05 * cm, f"Page {doc.page}")
+    except Exception:
+        pass
 
 
 def build_pdf_swot_matrix(validated_df, participant_type_filter, groupe_filter, styles, colors, cm, Paragraph, Table, TableStyle, top_n=5):
@@ -1588,7 +1699,7 @@ def generate_pdf_report(validated_df, participant_type_filter, groupe_filter, re
 
     styles = _pdf_styles()
     buf = BytesIO()
-    doc = SimpleDocTemplate(buf, pagesize=A4, topMargin=2 * cm, bottomMargin=2 * cm,
+    doc = SimpleDocTemplate(buf, pagesize=A4, topMargin=2.4 * cm, bottomMargin=2.0 * cm,
                              leftMargin=2 * cm, rightMargin=2 * cm)
     story = []
 
@@ -1639,7 +1750,7 @@ def generate_pdf_report(validated_df, participant_type_filter, groupe_filter, re
         validated_df, participant_type_filter, groupe_filter, styles, colors, cm, Paragraph, Table, TableStyle
     ))
 
-    doc.build(story)
+    doc.build(story, onFirstPage=_pdf_page_decorator, onLaterPages=_pdf_page_decorator)
     buf.seek(0)
     return buf.getvalue(), ""
 
