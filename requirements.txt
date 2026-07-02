@@ -12,3 +12,4 @@ xlsxwriter
 python-docx
 PyMuPDF
 language-tool-python
+reportlab
