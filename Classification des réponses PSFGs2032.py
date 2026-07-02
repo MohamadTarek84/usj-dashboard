@@ -1020,8 +1020,6 @@ def classify_answer(answer, participant_type, swot_element, engine, trained_mode
     if engine == ENGINE_TRAINED and trained_model is not None:
         theme, conf = classify_with_trained_model(answer, trained_model)
         return theme, (conf if conf is not None else 0.0), "", "Modèle supervisé entraîné sur vos données validées"
-    if engine == ENGINE_LLM:
-        return classify_with_llm(answer, participant_type, swot_element)
     return classify_heuristic(answer, participant_type, swot_element)
 
 
@@ -1773,29 +1771,15 @@ def render_engine_selector(df_scope):
         options.append(label)
     else:
         options.append(f"{ENGINE_TRAINED} (pas encore entraîné - voir onglet 2)")
-    options.append(ENGINE_LLM)
 
     choice = st.radio("Choisir le moteur", options, key="engine_choice_radio")
-    if choice.startswith(ENGINE_HEURISTIC):
-        engine = ENGINE_HEURISTIC
-    elif choice.startswith(ENGINE_TRAINED):
+    if choice.startswith(ENGINE_TRAINED):
         engine = ENGINE_TRAINED
         if trained_model is None:
             st.markdown('<div class="ai-warning">Aucun modèle entraîné pour le moment. Rendez-vous dans l\'onglet '
                         '« 2. Entraîner le modèle » après avoir validé quelques réponses.</div>', unsafe_allow_html=True)
     else:
-        engine = ENGINE_LLM
-        with st.expander("Configuration de l'IA institutionnelle (API externe)", expanded=True):
-            st.markdown('<div class="ai-danger">Ce moteur envoie le texte des réponses à une API externe '
-                        '(OpenAI). N\'activez ce moteur que si cela est acceptable pour la confidentialité '
-                        'de vos données.</div>', unsafe_allow_html=True)
-            api_key_input = st.text_input("Clé API", value="", type="password", key="institutional_ai_key_input")
-            if api_key_input:
-                st.session_state["institutional_ai_key"] = api_key_input
-            if get_institutional_ai_key():
-                st.success("Clé API configurée.")
-            else:
-                st.warning("Aucune clé API configurée : ce moteur renverra un résultat de repli conservateur.")
+        engine = ENGINE_HEURISTIC
 
     st.session_state["active_engine"] = engine
     return engine
