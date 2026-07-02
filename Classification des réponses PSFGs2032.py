@@ -2,6 +2,14 @@
 PLAN STRATÉGIQUE USJ 2032 - Plateforme IA supervisée d'analyse thématique
 ==========================================================================
 
+Ce fichier remplace la version précédente, qui contenait quatre générations
+successives du même pipeline de classification empilées les unes sur les
+autres (chaque nouvelle définition de fonction écrasant silencieusement la
+précédente). Cette version ne garde qu'UNE implémentation propre de chaque
+fonction, et ajoute un véritable moteur de classification supervisée
+(entraîné sur vos réponses validées) plutôt que de se reposer uniquement
+sur des règles de mots-clés.
+
 Architecture de classification (3 moteurs, clairement séparés) :
 
   1. HEURISTIQUE (démarrage à froid, aucune donnée requise)
@@ -1008,6 +1016,34 @@ def build_theme_synthesis(validated_df):
 # STREAMLIT UI
 # ============================================================
 
+def confidence_badge(conf):
+    try:
+        conf = float(conf)
+    except (TypeError, ValueError):
+        return "⚪"
+    if conf < 40:
+        return "🔴"
+    if conf < 70:
+        return "🟡"
+    return "🟢"
+
+
+def short_theme_label(theme, max_len=38):
+    theme = clean(theme)
+    # Official theme names often carry a long parenthetical explanation
+    # (e.g. "Succès des étudiants (recrutement, accompagnement, ...)").
+    # Drop that for the compact title; the full name is still shown inside.
+    base = theme.split("(")[0].strip()
+    if len(base) > max_len:
+        return base[:max_len].rstrip() + "…"
+    return base
+
+
+def short_group_label(value):
+    value = clean(value)
+    return re.sub(r"(?i)^sous-?groupe\s*", "SG ", value)
+
+
 def render_mapping_validation(classified_df):
     if classified_df.empty:
         st.warning("Aucune réponse SWOT à classifier.")
@@ -1026,7 +1062,10 @@ def render_mapping_validation(classified_df):
         suggested = row.get("AI_Suggested_Theme", "")
         default_index = themes.index(suggested) if suggested in themes else 0
         conf = row.get("Confidence", "")
-        title = f"{row['Respondent_Type']} | {row['groupe']} | {swot_element} | Confiance : {conf}% | Proposé : {suggested}"
+        badge = confidence_badge(conf)
+        group_label = short_group_label(row["groupe"])
+        theme_label = short_theme_label(suggested)
+        title = f"{badge} {conf}% · {row['Respondent_Type']}/{group_label} · {swot_element} → {theme_label}"
         with st.expander(title, expanded=False):
             st.markdown("**Réponse**")
             st.write(row["Final_Answer"])
