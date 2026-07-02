@@ -42,6 +42,7 @@ import json
 import urllib.request
 from pathlib import Path
 from io import BytesIO
+from collections import Counter
 
 import numpy as np
 import pandas as pd
@@ -996,6 +997,81 @@ def build_classification_dataframe(df_scope, engine, trained_model=None):
     return pd.DataFrame(rows)
 
 
+# ============================================================
+# CUSTOM THEMES ADDED BY EXPERTS (auto-saved, reused across rows)
+# ============================================================
+
+def _custom_theme_key(participant_type, swot_element):
+    return f"{normalize(participant_type)}||{normalize(swot_element)}"
+
+
+def get_custom_themes(participant_type, swot_element):
+    """Themes that experts have typed in as 'Nouveau thème' for this
+    participant type / SWOT element combination, in the order they were added.
+    Stored in session_state so they are immediately proposed for every
+    subsequent row of the same group, without the expert retyping them."""
+    store = st.session_state.setdefault("custom_themes", {})
+    return store.get(_custom_theme_key(participant_type, swot_element), [])
+
+
+def register_custom_theme(participant_type, swot_element, theme):
+    theme = clean(theme)
+    if not theme:
+        return
+    store = st.session_state.setdefault("custom_themes", {})
+    key = _custom_theme_key(participant_type, swot_element)
+    existing = store.setdefault(key, [])
+    if theme not in existing:
+        existing.append(theme)
+
+
+# ============================================================
+# ACADEMIC SYNTHESIS TEXT (rule-based, no external API required)
+# ============================================================
+
+SWOT_ACADEMIC_FRAMING = {
+    "Forces": "constitue une force structurante clairement mise en évidence par les répondants",
+    "Faiblesses": "constitue une faiblesse récurrente qui appelle une action correctrice prioritaire",
+    "Opportunités": "représente une opportunité stratégique que l'institution gagnerait à saisir",
+    "Menaces": "constitue une menace potentielle dont les effets doivent être anticipés",
+}
+
+
+def extract_top_keywords(answers, top_n=6):
+    counter = Counter()
+    for answer in answers:
+        counter.update(tokenize_for_similarity(answer))
+    return [word for word, _ in counter.most_common(top_n)]
+
+
+def build_academic_synthesis(participant_type, swot_element, theme, groupes, answers):
+    """Produce a clear, structured, academically-toned synthesis paragraph.
+    This is deliberately rule-based (keyword extraction + templated framing)
+    rather than a literal concatenation of answers, so it complements —
+    and does not replace — the raw data table."""
+    n = len(answers)
+    if n == 0:
+        return ""
+
+    groupe_list = sorted({clean(g) for g in groupes if clean(g)})
+    groupe_str = ", ".join(groupe_list) if groupe_list else participant_type
+    framing = SWOT_ACADEMIC_FRAMING.get(swot_element, "présente une pertinence notable")
+    keywords = extract_top_keywords(answers)
+    keyword_str = ", ".join(keywords) if keywords else "des préoccupations convergentes"
+
+    plural_reponse = "réponses" if n > 1 else "réponse"
+    plural_groupe = "sous-groupes" if len(groupe_list) > 1 else "sous-groupe"
+
+    return (
+        f"Sur la base de {n} {plural_reponse} recueillie{'s' if n > 1 else ''} auprès des répondants "
+        f"de la catégorie « {participant_type} » (issue{'s' if len(groupe_list) > 1 else ''} du "
+        f"{plural_groupe} : {groupe_str}), le thème « {theme} » {framing} au sein de l'analyse SWOT. "
+        f"L'examen du corpus révèle une convergence des contributions autour des dimensions suivantes : "
+        f"{keyword_str}. Cette récurrence traduit une perception partagée qu'il conviendra de documenter "
+        f"avec attention dans le cadre de l'élaboration du Plan Stratégique USJ 2032."
+    )
+
+
 def build_theme_synthesis(validated_df):
     if validated_df.empty:
         return pd.DataFrame()
@@ -1003,9 +1079,15 @@ def build_theme_synthesis(validated_df):
     grouped = validated_df.groupby(["Respondent_Type", "swot_element", "Validated_Theme"], dropna=False)
     for (ptype, swot_element, theme), group in grouped:
         answers = [clean(x) for x in group["Final_Answer"].tolist() if clean(x)]
+        groupes = group["groupe"].tolist() if "groupe" in group.columns else []
         rows.append({
-            "Type de participants": ptype, "Élément SWOT": swot_element, "Thème": theme,
-            "Nombre de réponses": len(answers), "Synthèse automatique courte": " | ".join(answers[:3]),
+            "Type de participants": ptype,
+            "Élément SWOT": swot_element,
+            "Thème": theme,
+            "Sous-groupe(s)": ", ".join(sorted({clean(g) for g in groupes if clean(g)})),
+            "Nombre de réponses": len(answers),
+            "Synthèse automatique courte": " | ".join(answers[:3]),
+            "Synthèse académique": build_academic_synthesis(ptype, swot_element, theme, groupes, answers),
         })
     return pd.DataFrame(rows).sort_values(
         ["Type de participants", "Élément SWOT", "Nombre de réponses"], ascending=[True, True, False]
@@ -1033,7 +1115,9 @@ def render_mapping_validation(classified_df):
     st.markdown("### Validation experte des classifications")
     st.caption("Groupé par type de participant et élément SWOT, pour que la liste de thèmes proposée "
                "reste toujours la bonne. Triez : les groupes avec le plus de réponses à faible confiance "
-               "apparaissent en premier et sont ouverts par défaut.")
+               "apparaissent en premier et sont ouverts par défaut. Tout nouveau thème saisi dans la colonne "
+               "« Nouveau thème » est automatiquement enregistré et proposé dans la liste déroulante "
+               "« Thème validé » pour toutes les réponses suivantes du même groupe.")
 
     group_order = (
         classified_df.groupby(["Respondent_Type", "swot_element"])["Confidence"]
@@ -1049,19 +1133,23 @@ def render_mapping_validation(classified_df):
             continue
 
         themes = official_themes_for(ptype, swot_element, include_autre=False)
-        theme_options = themes + ["Autre (nouveau thème)"]
+        custom_themes = get_custom_themes(ptype, swot_element)
+        theme_options = themes + [t for t in custom_themes if t not in themes] + ["Autre (nouveau thème)"]
         low_conf_count = int((subset["Confidence"] < 50).sum())
 
         header = f"{ptype} · {swot_element} — {len(subset)} réponses"
         if low_conf_count:
             header += f" · 🔴 {low_conf_count} à valider en priorité"
+        if custom_themes:
+            header += f" · ➕ {len(custom_themes)} thème(s) ajouté(s) par les experts"
 
         with st.expander(header, expanded=(low_conf_count > 0)):
-            edit_df = subset[["row_id", "Final_Answer", "Confidence", "AI_Suggested_Theme"]].copy()
+            edit_df = subset[["row_id", "groupe", "Final_Answer", "Confidence", "AI_Suggested_Theme"]].copy()
             edit_df["Thème validé"] = edit_df["AI_Suggested_Theme"]
             edit_df["Nouveau thème"] = ""
             edit_df = edit_df.rename(columns={
-                "Final_Answer": "Réponse", "Confidence": "Confiance %", "AI_Suggested_Theme": "Proposé (IA)",
+                "groupe": "Sous-groupe", "Final_Answer": "Réponse", "Confidence": "Confiance %",
+                "AI_Suggested_Theme": "Proposé (IA)",
             }).set_index("row_id")
 
             edited = st.data_editor(
@@ -1070,12 +1158,15 @@ def render_mapping_validation(classified_df):
                 use_container_width=True,
                 hide_index=True,
                 column_config={
+                    "Sous-groupe": st.column_config.TextColumn(disabled=True, width="small"),
                     "Réponse": st.column_config.TextColumn(disabled=True, width="large"),
                     "Confiance %": st.column_config.NumberColumn(disabled=True, width="small", format="%.1f"),
                     "Proposé (IA)": st.column_config.TextColumn(disabled=True, width="medium"),
                     "Thème validé": st.column_config.SelectboxColumn(options=theme_options, required=True, width="medium"),
                     "Nouveau thème": st.column_config.TextColumn(
-                        width="medium", help="Rempli automatiquement si vous choisissez « Autre (nouveau thème) »"
+                        width="medium", help="Un thème saisi ici est automatiquement enregistré et "
+                        "apparaîtra dans la liste déroulante « Thème validé » pour les réponses suivantes "
+                        "de ce même groupe."
                     ),
                 },
             )
@@ -1085,9 +1176,12 @@ def render_mapping_validation(classified_df):
                 if original.empty:
                     continue
                 out = original.iloc[0].to_dict()
-                final_theme = _resolve_validated_theme(edited_row["Thème validé"], edited_row["Nouveau thème"])
+                new_theme_input = clean(edited_row["Nouveau thème"])
+                final_theme = _resolve_validated_theme(edited_row["Thème validé"], new_theme_input)
                 out["Validated_Theme"] = final_theme if final_theme else edited_row["Thème validé"]
-                out["New_Theme"] = clean(edited_row["Nouveau thème"])
+                out["New_Theme"] = new_theme_input
+                if new_theme_input:
+                    register_custom_theme(ptype, swot_element, new_theme_input)
                 validated_rows.append(out)
 
     return pd.DataFrame(validated_rows)
@@ -1176,6 +1270,8 @@ def render_training_tab(df_scope):
         return
 
     st.markdown("#### Aperçu des données d'entraînement")
+    st.caption("Ce tableau se met à jour automatiquement : tout nouveau thème ajouté par un expert dans "
+               "l'onglet 1 apparaît ici comme une nouvelle ligne dès qu'au moins une réponse lui est validée.")
     c1, c2, c3 = st.columns(3)
     c1.metric("Réponses validées", len(train_df))
     c2.metric("Thèmes distincts", train_df["label"].nunique())
@@ -1183,7 +1279,15 @@ def render_training_tab(df_scope):
 
     counts = train_df["label"].value_counts().reset_index()
     counts.columns = ["Thème", "Nombre d'exemples validés"]
-    st.dataframe(counts, use_container_width=True)
+    st.dataframe(
+        counts,
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "Thème": st.column_config.TextColumn(width="large"),
+            "Nombre d'exemples validés": st.column_config.NumberColumn(width="small"),
+        },
+    )
     thin_themes = counts[counts["Nombre d'exemples validés"] < MIN_EXAMPLES_PER_THEME]
     if not thin_themes.empty:
         st.caption(f"Thèmes avec moins de {MIN_EXAMPLES_PER_THEME} exemples validés (à renforcer en priorité) : "
@@ -1337,12 +1441,28 @@ def ai_platform_page(df):
 
     with tab_synthesis:
         st.subheader("4. Synthèse automatique par thème validé")
+        st.caption("La « Synthèse académique » est un texte rédigé, clair et structuré, généré automatiquement "
+                   "à partir des réponses validées de chaque groupe (thème, sous-groupe(s), type de participants). "
+                   "Elle vient compléter le tableau de données ci-dessous, qui reste affiché intégralement.")
         validated_df = st.session_state.get("validated_mapping_df", pd.DataFrame())
         if validated_df.empty:
             st.warning("Veuillez d'abord produire et valider le mapping SWOT dans l'onglet 1.")
         else:
             synthesis_df = build_theme_synthesis(validated_df)
-            st.dataframe(synthesis_df, use_container_width=True)
+            st.dataframe(
+                synthesis_df,
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "Type de participants": st.column_config.TextColumn(width="small"),
+                    "Élément SWOT": st.column_config.TextColumn(width="small"),
+                    "Thème": st.column_config.TextColumn(width="medium"),
+                    "Sous-groupe(s)": st.column_config.TextColumn(width="medium"),
+                    "Nombre de réponses": st.column_config.NumberColumn(width="small"),
+                    "Synthèse automatique courte": st.column_config.TextColumn(width="medium"),
+                    "Synthèse académique": st.column_config.TextColumn(width="large"),
+                },
+            )
             output = BytesIO()
             with pd.ExcelWriter(output, engine="openpyxl") as writer:
                 synthesis_df.to_excel(writer, index=False, sheet_name="Synthese")
