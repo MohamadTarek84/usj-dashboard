@@ -1144,6 +1144,67 @@ def sync_custom_themes_from_editor_state(editor_key, participant_type, swot_elem
             register_custom_theme(participant_type, swot_element, new_theme)
 
 
+
+def _editor_value_store():
+    """Persistent cell-level storage for manual edits in st.data_editor.
+
+    Streamlit keeps only deltas inside the data_editor widget state. When the
+    dropdown options are rebuilt after adding a new theme, those deltas can be
+    recalculated and the visual value of the text column may disappear. This
+    store keeps the expert-entered value independently from the widget, so the
+    column "Nouveau thème" remains visible and exportable.
+    """
+    return st.session_state.setdefault("editor_cell_values", {})
+
+
+def _editor_store_for(editor_key):
+    store = _editor_value_store()
+    return store.setdefault(editor_key, {})
+
+
+def apply_persistent_editor_values(edit_df, editor_key):
+    values = _editor_store_for(editor_key)
+    if not values:
+        return edit_df
+    out = edit_df.copy()
+    for row_id, row_values in values.items():
+        if row_id in out.index and isinstance(row_values, dict):
+            for col_name, value in row_values.items():
+                if col_name in out.columns:
+                    out.at[row_id, col_name] = value
+    return out
+
+
+def save_persistent_editor_values(edited_df, editor_key):
+    values = _editor_store_for(editor_key)
+    for row_id, row in edited_df.iterrows():
+        row_values = values.setdefault(row_id, {})
+        if "Nouveau thème" in edited_df.columns:
+            new_theme_value = clean(row.get("Nouveau thème", ""))
+            if new_theme_value:
+                row_values["Nouveau thème"] = new_theme_value
+            elif row_values.get("Nouveau thème"):
+                # Keep the previously typed theme visible unless the expert
+                # explicitly edits this same cell to another non-empty value.
+                pass
+            else:
+                row_values["Nouveau thème"] = ""
+        if "Thème validé" in edited_df.columns:
+            theme_value = clean(row.get("Thème validé", ""))
+            if theme_value:
+                row_values["Thème validé"] = theme_value
+
+
+def sync_custom_themes_from_persistent_values(editor_key, participant_type, swot_element):
+    values = _editor_store_for(editor_key)
+    for row_values in values.values():
+        if not isinstance(row_values, dict):
+            continue
+        new_theme = clean(row_values.get("Nouveau thème", ""))
+        if new_theme:
+            register_custom_theme(participant_type, swot_element, new_theme)
+
+
 # ============================================================
 # ACADEMIC SYNTHESIS TEXT (rule-based, no external API required)
 # ============================================================
@@ -1574,6 +1635,7 @@ def render_mapping_validation(classified_df):
 
         editor_key = f"editor_{safe_filename(ptype)}_{safe_filename(swot_element)}"
         sync_custom_themes_from_editor_state(editor_key, ptype, swot_element)
+        sync_custom_themes_from_persistent_values(editor_key, ptype, swot_element)
 
         themes = official_themes_for(ptype, swot_element, include_autre=False)
         custom_themes = get_custom_themes(ptype, swot_element)
@@ -1596,6 +1658,7 @@ def render_mapping_validation(classified_df):
             }).set_index("row_id")
 
             edit_df = apply_editor_state_to_edit_df(edit_df, editor_key)
+            edit_df = apply_persistent_editor_values(edit_df, editor_key)
 
             edited = st.data_editor(
                 edit_df,
@@ -1616,12 +1679,16 @@ def render_mapping_validation(classified_df):
                 },
             )
 
+            save_persistent_editor_values(edited, editor_key)
+            sync_custom_themes_from_persistent_values(editor_key, ptype, swot_element)
+
             for row_id, edited_row in edited.iterrows():
                 original = subset[subset["row_id"] == row_id]
                 if original.empty:
                     continue
                 out = original.iloc[0].to_dict()
-                new_theme_input = clean(edited_row["Nouveau thème"])
+                stored_values = _editor_store_for(editor_key).get(row_id, {})
+                new_theme_input = clean(edited_row["Nouveau thème"]) or clean(stored_values.get("Nouveau thème", ""))
                 final_theme = _resolve_validated_theme(edited_row["Thème validé"], new_theme_input)
                 out["Validated_Theme"] = final_theme if final_theme else edited_row["Thème validé"]
                 out["New_Theme"] = new_theme_input
