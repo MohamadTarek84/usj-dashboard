@@ -1036,6 +1036,13 @@ SWOT_ACADEMIC_FRAMING = {
     "Menaces": "constitue une menace potentielle dont les effets doivent être anticipés",
 }
 
+PRIORITY_LABELS = {
+    "Forces": "à consolider",
+    "Faiblesses": "à corriger en priorité",
+    "Opportunités": "à saisir stratégiquement",
+    "Menaces": "à anticiper et atténuer",
+}
+
 
 def extract_top_keywords(answers, top_n=6):
     counter = Counter()
@@ -1092,6 +1099,266 @@ def build_theme_synthesis(validated_df):
     return pd.DataFrame(rows).sort_values(
         ["Type de participants", "Élément SWOT", "Nombre de réponses"], ascending=[True, True, False]
     )
+
+
+# ============================================================
+# NEW: THEMATIC PARAGRAPH SYNTHESIS PER SWOT ELEMENT
+# (separate prose per theme, real quotes as illustrative evidence,
+#  filterable by participant type / subgroup — replaces the flat table
+#  as the primary view in the Synthèse tab)
+# ============================================================
+
+def _select_illustrative_quotes(answers, max_quotes=2, max_len=220):
+    """Pick up to max_quotes representative real answers (verbatim, since
+    these are the institution's own primary survey data, not third-party
+    copyrighted text), shortened only if very long, to illustrate a theme
+    without turning the paragraph into a raw data dump."""
+    quotes, seen = [], set()
+    for a in sorted(answers, key=len, reverse=True):
+        a_clean = clean(a)
+        key = a_clean.lower()
+        if not a_clean or key in seen:
+            continue
+        seen.add(key)
+        if len(a_clean) > max_len:
+            a_clean = a_clean[:max_len].rsplit(" ", 1)[0] + "…"
+        quotes.append(a_clean)
+        if len(quotes) >= max_quotes:
+            break
+    return quotes
+
+
+def build_theme_paragraph(participant_label, swot_element, theme, groupes, answers):
+    n = len(answers)
+    if n == 0:
+        return ""
+    groupe_list = sorted({clean(g) for g in groupes if clean(g)})
+    groupe_str = ", ".join(groupe_list) if groupe_list else participant_label
+    framing = SWOT_ACADEMIC_FRAMING.get(swot_element, "présente une pertinence notable")
+    keywords = extract_top_keywords(answers)
+    keyword_str = ", ".join(keywords) if keywords else "des préoccupations convergentes"
+    quotes = _select_illustrative_quotes(answers)
+    plural_reponse = "réponses" if n > 1 else "réponse"
+    intensity = ("un poids significatif" if n >= 5 else
+                 "un poids modéré" if n >= 2 else "une occurrence isolée mais notable")
+
+    paragraph = (
+        f"Ce thème {framing}, avec {n} {plural_reponse} recensée{'s' if n > 1 else ''} parmi les "
+        f"contributions {('de la catégorie « ' + participant_label + ' »') if participant_label else ''} "
+        f"({groupe_str}), ce qui lui confère {intensity} au sein de cet axe de l'analyse SWOT. Les "
+        f"contributions convergent notamment autour de : {keyword_str}."
+    )
+    if quotes:
+        quoted = " ; ".join([f"« {q} »" for q in quotes])
+        paragraph += f" À titre d'illustration, les répondants s'expriment ainsi : {quoted}."
+    return paragraph.strip()
+
+
+def filter_validated(validated_df, participant_type_filter, groupe_filter):
+    scope = validated_df.copy()
+    if participant_type_filter and participant_type_filter != "Tous les types confondus":
+        scope = scope[scope["Respondent_Type"] == participant_type_filter]
+    if groupe_filter and groupe_filter != "Tous les sous-groupes":
+        scope = scope[scope["groupe"] == groupe_filter]
+    return scope
+
+
+def build_swot_element_synthesis(validated_df, participant_type_filter, groupe_filter, swot_element):
+    """Returns a ranked list of {theme, count, paragraph} dicts for one SWOT
+    element, restricted to the requested participant type / subgroup."""
+    scope = filter_validated(validated_df, participant_type_filter, groupe_filter)
+    scope = scope[scope["swot_element"] == swot_element]
+    if scope.empty:
+        return [], 0
+
+    participant_label = participant_type_filter if participant_type_filter != "Tous les types confondus" else ""
+    grouped = scope.groupby("Validated_Theme")
+    ranked_themes = grouped.size().sort_values(ascending=False)
+
+    paragraphs = []
+    for rank, (theme, count) in enumerate(ranked_themes.items(), start=1):
+        group = grouped.get_group(theme)
+        answers = [clean(x) for x in group["Final_Answer"].tolist() if clean(x)]
+        groupes = group["groupe"].tolist()
+        para = build_theme_paragraph(participant_label, swot_element, theme, groupes, answers)
+        paragraphs.append({"theme": theme, "count": int(count), "paragraph": para, "rank": rank})
+    return paragraphs, len(scope)
+
+
+def build_priorities_and_conclusion(validated_df, participant_type_filter, groupe_filter):
+    scope = filter_validated(validated_df, participant_type_filter, groupe_filter)
+    priorities = {}
+    for element in SWOT_ELEMENTS:
+        sub = scope[scope["swot_element"] == element]
+        top = sub.groupby("Validated_Theme").size().sort_values(ascending=False).head(3)
+        priorities[element] = list(top.items())
+
+    total = len(scope)
+    label = participant_type_filter if participant_type_filter != "Tous les types confondus" else "l'ensemble des parties prenantes consultées"
+    conclusion = (
+        f"L'analyse thématique conduite auprès de {label} ({total} contributions validées) met en évidence "
+        f"des dynamiques internes et externes structurantes pour la trajectoire du Plan Stratégique USJ 2032. "
+        f"Les forces recensées offrent des leviers de consolidation immédiats, tandis que les faiblesses "
+        f"identifiées appellent des plans d'action correctifs ciblés. Sur le plan externe, les opportunités "
+        f"relevées gagneraient à être intégrées dans la feuille de route stratégique, en parallèle d'une "
+        f"vigilance soutenue à l'égard des menaces signalées par les répondants. La priorisation qui suit, "
+        f"établie sur la base de la fréquence des occurrences validées par les experts, est proposée comme "
+        f"point de départ pour les arbitrages à venir."
+    )
+    return priorities, conclusion
+
+
+# ============================================================
+# NEW: DYNAMIC SWOT MATRIX VISUAL (HTML/CSS card grid)
+# ============================================================
+
+SWOT_QUADRANT_META = {
+    "Forces": {"icon": "✓", "color": USJ_BLUE, "bg": "#EAF2FB", "subtitle": "Atouts internes à consolider"},
+    "Faiblesses": {"icon": "!", "color": USJ_RED, "bg": "#FDEDEE", "subtitle": "Points internes à améliorer"},
+    "Opportunités": {"icon": "↗", "color": "#1E7A46", "bg": "#EAF7EF", "subtitle": "Leviers externes à saisir"},
+    "Menaces": {"icon": "⚠", "color": "#B23A22", "bg": "#FDEFE9", "subtitle": "Risques externes à anticiper"},
+}
+
+
+def _swot_quadrant_html(element, scope, top_n=5):
+    meta = SWOT_QUADRANT_META[element]
+    sub = scope[scope["swot_element"] == element]
+    theme_counts = sub.groupby("Validated_Theme").size().sort_values(ascending=False).head(top_n)
+    items_html = ""
+    for i, (theme, count) in enumerate(theme_counts.items(), start=1):
+        items_html += f"""
+        <div class="swot-item">
+            <span class="swot-item-num" style="background:{meta['color']}">{i}</span>
+            <span class="swot-item-text">{esc(theme)}<span class="swot-item-count">({count})</span></span>
+        </div>"""
+    if not items_html:
+        items_html = '<div class="swot-item-empty">Aucune donnée validée pour ce filtre</div>'
+    return f"""
+    <div class="swot-quadrant" style="background:{meta['bg']}; border-top:5px solid {meta['color']}">
+        <div class="swot-quadrant-header">
+            <span class="swot-icon" style="background:{meta['color']}">{meta['icon']}</span>
+            <div>
+                <div class="swot-title" style="color:{meta['color']}">{element.upper()}</div>
+                <div class="swot-subtitle">{meta['subtitle']}</div>
+            </div>
+            <span class="swot-badge" style="color:{meta['color']}">{len(sub)} éléments</span>
+        </div>
+        <div class="swot-items">{items_html}</div>
+    </div>"""
+
+
+def render_swot_matrix_html(validated_df, participant_type_filter, groupe_filter, top_n=5):
+    scope = filter_validated(validated_df, participant_type_filter, groupe_filter)
+    cards = {element: _swot_quadrant_html(element, scope, top_n) for element in SWOT_ELEMENTS}
+
+    html_block(f"""
+    <style>
+    .swot-matrix-wrap {{ display:grid; grid-template-columns:1fr 1fr; gap:20px; margin: 10px 0 26px 0; }}
+    .swot-quadrant {{ border-radius:18px; padding:20px 22px; box-shadow:0 10px 26px rgba(0,0,0,0.06); }}
+    .swot-quadrant-header {{ display:flex; align-items:center; gap:12px; margin-bottom:14px; }}
+    .swot-icon {{ width:34px; height:34px; border-radius:10px; color:white; display:flex; align-items:center;
+                  justify-content:center; font-weight:900; font-size:18px; flex-shrink:0; }}
+    .swot-title {{ font-weight:900; font-size:17px; letter-spacing:0.5px; }}
+    .swot-subtitle {{ font-size:12px; color:#64748B; font-weight:600; }}
+    .swot-badge {{ margin-left:auto; font-size:12px; font-weight:800; background:white; padding:4px 10px;
+                   border-radius:20px; }}
+    .swot-item {{ display:flex; align-items:flex-start; gap:10px; background:white; border-radius:12px;
+                  padding:10px 14px; margin-bottom:8px; box-shadow:0 2px 6px rgba(0,0,0,0.04); }}
+    .swot-item-num {{ width:20px; height:20px; border-radius:50%; color:white; font-size:11px; font-weight:800;
+                       display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px; }}
+    .swot-item-text {{ font-size:13.5px; font-weight:600; color:{USJ_TEXT}; }}
+    .swot-item-count {{ color:#94A3B8; font-weight:700; margin-left:6px; font-size:12px; }}
+    .swot-item-empty {{ font-size:13px; color:#94A3B8; font-style:italic; padding:6px 0; }}
+    @media (max-width: 900px) {{ .swot-matrix-wrap {{ grid-template-columns: 1fr; }} }}
+    </style>
+    <div class="swot-matrix-wrap">
+        {cards['Forces']}{cards['Faiblesses']}{cards['Opportunités']}{cards['Menaces']}
+    </div>
+    """)
+
+
+# ============================================================
+# NEW: DOWNLOADABLE PDF REPORT (post-validation synthesis)
+# ============================================================
+
+def _pdf_styles():
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.enums import TA_JUSTIFY
+    from reportlab.lib import colors
+    styles = getSampleStyleSheet()
+    styles.add(ParagraphStyle(name="USJTitle", fontSize=20, leading=24,
+                               textColor=colors.HexColor(USJ_BLUE), fontName="Helvetica-Bold", spaceAfter=6))
+    styles.add(ParagraphStyle(name="USJSubtitle", fontSize=12, leading=16,
+                               textColor=colors.HexColor("#64748B"), spaceAfter=14))
+    styles.add(ParagraphStyle(name="USJElement", fontSize=15, leading=18,
+                               textColor=colors.white, fontName="Helvetica-Bold"))
+    styles.add(ParagraphStyle(name="USJTheme", fontSize=11.5, leading=15, textColor=colors.HexColor(USJ_BLUE),
+                               fontName="Helvetica-Bold", spaceBefore=10, spaceAfter=2))
+    styles.add(ParagraphStyle(name="USJBody", fontSize=10, leading=14.5, textColor=colors.HexColor(USJ_TEXT),
+                               alignment=TA_JUSTIFY, spaceAfter=8))
+    styles.add(ParagraphStyle(name="USJConclusion", fontSize=10.5, leading=15,
+                               textColor=colors.HexColor(USJ_TEXT), alignment=TA_JUSTIFY))
+    return styles
+
+
+def generate_pdf_report(validated_df, participant_type_filter, groupe_filter, report_label):
+    try:
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib import colors
+        from reportlab.lib.units import cm
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
+    except Exception as e:
+        return None, f"reportlab n'est pas installé sur ce serveur : {e}"
+
+    styles = _pdf_styles()
+    buf = BytesIO()
+    doc = SimpleDocTemplate(buf, pagesize=A4, topMargin=2 * cm, bottomMargin=2 * cm,
+                             leftMargin=2 * cm, rightMargin=2 * cm)
+    story = []
+
+    story.append(Paragraph(APP_TITLE, styles["USJTitle"]))
+    story.append(Paragraph(f"Rapport de synthèse thématique — {report_label}", styles["USJSubtitle"]))
+    story.append(Spacer(1, 6))
+
+    element_colors = {"Forces": USJ_BLUE, "Faiblesses": USJ_RED, "Opportunités": "#1E7A46", "Menaces": "#B23A22"}
+
+    for element in SWOT_ELEMENTS:
+        paragraphs, n = build_swot_element_synthesis(validated_df, participant_type_filter, groupe_filter, element)
+        header_tbl = Table([[Paragraph(f"{element.upper()} ({n} réponses)", styles["USJElement"])]], colWidths=[17 * cm])
+        header_tbl.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(element_colors[element])),
+            ("LEFTPADDING", (0, 0), (-1, -1), 10), ("TOPPADDING", (0, 0), (-1, -1), 6),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+        ]))
+        story.append(header_tbl)
+        story.append(Spacer(1, 8))
+        if not paragraphs:
+            story.append(Paragraph("Aucune donnée validée pour cet élément avec les filtres sélectionnés.", styles["USJBody"]))
+        for item in paragraphs:
+            story.append(Paragraph(f"{item['rank']}. {esc(item['theme'])} ({item['count']} réponses)", styles["USJTheme"]))
+            story.append(Paragraph(esc(item["paragraph"]).replace("&#x27;", "'"), styles["USJBody"]))
+        story.append(Spacer(1, 10))
+
+    story.append(PageBreak())
+    story.append(Paragraph("Priorités par élément SWOT", styles["USJTitle"]))
+    priorities, conclusion = build_priorities_and_conclusion(validated_df, participant_type_filter, groupe_filter)
+    for element in SWOT_ELEMENTS:
+        story.append(Paragraph(element, styles["USJTheme"]))
+        items = priorities.get(element, [])
+        if items:
+            for i, (theme, count) in enumerate(items, start=1):
+                story.append(Paragraph(
+                    f"{i}. {esc(theme)} — {count} occurrences validées ({PRIORITY_LABELS.get(element, '')})",
+                    styles["USJBody"]))
+        else:
+            story.append(Paragraph("Aucune priorité identifiable pour ce filtre.", styles["USJBody"]))
+    story.append(Spacer(1, 12))
+    story.append(Paragraph("Conclusion", styles["USJTitle"]))
+    story.append(Paragraph(esc(conclusion), styles["USJConclusion"]))
+
+    doc.build(story)
+    buf.seek(0)
+    return buf.getvalue(), ""
 
 
 # ============================================================
@@ -1364,6 +1631,101 @@ def render_training_tab(df_scope):
             st.exception(e)
 
 
+def render_synthesis_tab():
+    st.subheader("4. Synthèse thématique académique")
+    st.caption("Analyse thématique rédigée par élément SWOT, avec extraits réels des réponses validées "
+               "par les experts. Utilisez les filtres pour cibler un type de participants et/ou un "
+               "sous-groupe, ou conservez la vue globale pour une synthèse consolidée.")
+    validated_df = st.session_state.get("validated_mapping_df", pd.DataFrame())
+    if validated_df.empty:
+        st.warning("Veuillez d'abord produire et valider le mapping SWOT dans l'onglet 1.")
+        return
+
+    col_a, col_b = st.columns(2)
+    type_options = ["Tous les types confondus"] + sorted(validated_df["Respondent_Type"].dropna().unique().tolist())
+    selected_type = col_a.selectbox("Type de participants", type_options, key="synthesis_type_filter")
+
+    if selected_type == "Tous les types confondus":
+        groupe_pool = validated_df["groupe"].dropna().unique().tolist()
+    else:
+        groupe_pool = validated_df[validated_df["Respondent_Type"] == selected_type]["groupe"].dropna().unique().tolist()
+    groupe_options = ["Tous les sous-groupes"] + sorted(groupe_pool)
+    selected_groupe = col_b.selectbox("Sous-groupe", groupe_options, key="synthesis_groupe_filter")
+
+    st.markdown("#### Matrice SWOT dynamique")
+    render_swot_matrix_html(validated_df, selected_type, selected_groupe)
+
+    st.markdown("#### Analyse thématique par élément SWOT")
+    for element in SWOT_ELEMENTS:
+        paragraphs, n = build_swot_element_synthesis(validated_df, selected_type, selected_groupe, element)
+        meta = SWOT_QUADRANT_META[element]
+        st.markdown(
+            f'<h5 style="color:{meta["color"]};margin-top:22px;">{element} <span style="color:#94A3B8;'
+            f'font-size:13px;font-weight:600;">({n} réponses)</span></h5>', unsafe_allow_html=True
+        )
+        if not paragraphs:
+            st.caption("Aucune donnée validée pour ce filtre.")
+            continue
+        for item in paragraphs:
+            st.markdown(
+                f'<div class="ai-card"><b style="color:{USJ_BLUE};">{item["rank"]}. {esc(item["theme"])}'
+                f' <span style="color:#94A3B8;font-weight:600;font-size:12.5px;">({item["count"]} réponses)</span>'
+                f'</b><p style="margin-top:8px;line-height:1.55;">{item["paragraph"]}</p></div>',
+                unsafe_allow_html=True,
+            )
+
+    st.markdown("#### Priorités et conclusion")
+    priorities, conclusion = build_priorities_and_conclusion(validated_df, selected_type, selected_groupe)
+    for element in SWOT_ELEMENTS:
+        items = priorities.get(element, [])
+        if items:
+            st.markdown(f"**{element}** : " + " · ".join([f"{t} ({c})" for t, c in items]))
+    st.markdown(f'<div class="ai-info-box">{esc(conclusion)}</div>', unsafe_allow_html=True)
+
+    st.markdown("#### Rapport PDF téléchargeable")
+    report_scope = st.radio(
+        "Portée du rapport",
+        ["Vue actuelle (filtres ci-dessus)",
+         "Un rapport par type de participants (tous sous-groupes fusionnés)",
+         "Un rapport par sous-groupe"],
+        key="pdf_report_scope",
+    )
+
+    def _offer_pdf(ptype_filter, groupe_filter, label, key_suffix):
+        pdf_bytes, error = generate_pdf_report(validated_df, ptype_filter, groupe_filter, label)
+        if error:
+            st.markdown(f'<div class="ai-warning">{esc(error)}</div>', unsafe_allow_html=True)
+            return
+        st.download_button(f"Télécharger le rapport PDF — {label}", data=pdf_bytes,
+                            file_name=f"rapport_{safe_filename(label)}.pdf", mime="application/pdf",
+                            key=f"pdf_dl_{key_suffix}")
+
+    if report_scope.startswith("Vue actuelle"):
+        if st.button("Générer le rapport PDF de la vue actuelle", key="gen_pdf_current"):
+            label = f"{selected_type} - {selected_groupe}" if selected_groupe != "Tous les sous-groupes" else selected_type
+            _offer_pdf(selected_type, selected_groupe, label, "current")
+    elif report_scope.startswith("Un rapport par type"):
+        if st.button("Générer un rapport PDF par type de participants", key="gen_pdf_by_type"):
+            for ptype in sorted(validated_df["Respondent_Type"].dropna().unique().tolist()):
+                _offer_pdf(ptype, "Tous les sous-groupes", ptype, safe_filename(ptype))
+    else:
+        if st.button("Générer un rapport PDF par sous-groupe", key="gen_pdf_by_groupe"):
+            for _, row in validated_df[["Respondent_Type", "groupe"]].drop_duplicates().iterrows():
+                label = f"{row['Respondent_Type']} - {row['groupe']}"
+                _offer_pdf(row["Respondent_Type"], row["groupe"], label, safe_filename(label))
+
+    st.markdown("#### Tableau de synthèse complet (export)")
+    st.caption("Toujours disponible en complément des paragraphes ci-dessus, pour la traçabilité et le travail en Excel.")
+    synthesis_df = build_theme_synthesis(validated_df)
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        synthesis_df.to_excel(writer, index=False, sheet_name="Synthese")
+    output.seek(0)
+    st.download_button("Télécharger le tableau de synthèse (Excel)", data=output.getvalue(),
+                        file_name="synthese_theme_SWOT.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+
 def ai_platform_page(df):
     html_block(APP_CSS)
     html_block("""
@@ -1440,36 +1802,7 @@ def ai_platform_page(df):
             st.caption("Aucun doublon affiché pour le moment.")
 
     with tab_synthesis:
-        st.subheader("4. Synthèse automatique par thème validé")
-        st.caption("La « Synthèse académique » est un texte rédigé, clair et structuré, généré automatiquement "
-                   "à partir des réponses validées de chaque groupe (thème, sous-groupe(s), type de participants). "
-                   "Elle vient compléter le tableau de données ci-dessous, qui reste affiché intégralement.")
-        validated_df = st.session_state.get("validated_mapping_df", pd.DataFrame())
-        if validated_df.empty:
-            st.warning("Veuillez d'abord produire et valider le mapping SWOT dans l'onglet 1.")
-        else:
-            synthesis_df = build_theme_synthesis(validated_df)
-            st.dataframe(
-                synthesis_df,
-                use_container_width=True,
-                hide_index=True,
-                column_config={
-                    "Type de participants": st.column_config.TextColumn(width="small"),
-                    "Élément SWOT": st.column_config.TextColumn(width="small"),
-                    "Thème": st.column_config.TextColumn(width="medium"),
-                    "Sous-groupe(s)": st.column_config.TextColumn(width="medium"),
-                    "Nombre de réponses": st.column_config.NumberColumn(width="small"),
-                    "Synthèse automatique courte": st.column_config.TextColumn(width="medium"),
-                    "Synthèse académique": st.column_config.TextColumn(width="large"),
-                },
-            )
-            output = BytesIO()
-            with pd.ExcelWriter(output, engine="openpyxl") as writer:
-                synthesis_df.to_excel(writer, index=False, sheet_name="Synthese")
-            output.seek(0)
-            st.download_button("Télécharger la synthèse", data=output.getvalue(),
-                                file_name="synthese_theme_SWOT.xlsx",
-                                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        render_synthesis_tab()
 
 
 def main():
