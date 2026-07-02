@@ -1351,6 +1351,53 @@ def _pdf_styles():
     return styles
 
 
+def build_pdf_swot_matrix(validated_df, participant_type_filter, groupe_filter, styles, colors, cm, Paragraph, Table, TableStyle, top_n=5):
+    """Build a printable SWOT matrix for the PDF report using the same validated data
+    and filters as the on-screen dynamic SWOT matrix."""
+    scope = filter_validated(validated_df, participant_type_filter, groupe_filter)
+    element_colors = {"Forces": USJ_BLUE, "Faiblesses": USJ_RED, "Opportunités": "#1E7A46", "Menaces": "#B23A22"}
+    element_bgs = {"Forces": "#EAF2FB", "Faiblesses": "#FDEDEE", "Opportunités": "#EAF7EF", "Menaces": "#FDEFE9"}
+
+    cell_data = []
+    for element in SWOT_ELEMENTS:
+        sub = scope[scope["swot_element"] == element]
+        theme_counts = sub.groupby("Validated_Theme").size().sort_values(ascending=False).head(top_n)
+
+        lines = [f"<b>{element.upper()}</b> ({len(sub)} éléments)"]
+        if theme_counts.empty:
+            lines.append("<font color='#64748B'>Aucune donnée validée pour ce filtre</font>")
+        else:
+            for i, (theme, count) in enumerate(theme_counts.items(), start=1):
+                lines.append(f"{i}. {esc(theme)} ({count})")
+
+        para = Paragraph("<br/>".join(lines), styles["USJBody"])
+        cell_data.append(para)
+
+    matrix = Table(
+        [[cell_data[0], cell_data[1]], [cell_data[2], cell_data[3]]],
+        colWidths=[8.25 * cm, 8.25 * cm],
+        rowHeights=None,
+    )
+    matrix.setStyle(TableStyle([
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("BOX", (0, 0), (-1, -1), 0.75, colors.HexColor("#D0D6E0")),
+        ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#D0D6E0")),
+        ("LEFTPADDING", (0, 0), (-1, -1), 10),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+        ("TOPPADDING", (0, 0), (-1, -1), 10),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
+        ("BACKGROUND", (0, 0), (0, 0), colors.HexColor(element_bgs["Forces"])),
+        ("BACKGROUND", (1, 0), (1, 0), colors.HexColor(element_bgs["Faiblesses"])),
+        ("BACKGROUND", (0, 1), (0, 1), colors.HexColor(element_bgs["Opportunités"])),
+        ("BACKGROUND", (1, 1), (1, 1), colors.HexColor(element_bgs["Menaces"])),
+        ("LINEABOVE", (0, 0), (0, 0), 3, colors.HexColor(element_colors["Forces"])),
+        ("LINEABOVE", (1, 0), (1, 0), 3, colors.HexColor(element_colors["Faiblesses"])),
+        ("LINEABOVE", (0, 1), (0, 1), 3, colors.HexColor(element_colors["Opportunités"])),
+        ("LINEABOVE", (1, 1), (1, 1), 3, colors.HexColor(element_colors["Menaces"])),
+    ]))
+    return matrix
+
+
 def generate_pdf_report(validated_df, participant_type_filter, groupe_filter, report_label):
     try:
         from reportlab.lib.pagesizes import A4
@@ -1405,6 +1452,13 @@ def generate_pdf_report(validated_df, participant_type_filter, groupe_filter, re
     story.append(Spacer(1, 12))
     story.append(Paragraph("Conclusion", styles["USJTitle"]))
     story.append(Paragraph(esc(conclusion), styles["USJConclusion"]))
+
+    story.append(PageBreak())
+    story.append(Paragraph("Matrice SWOT synthétique", styles["USJTitle"]))
+    story.append(Paragraph("Vue consolidée des thèmes dominants selon les filtres du rapport.", styles["USJSubtitle"]))
+    story.append(build_pdf_swot_matrix(
+        validated_df, participant_type_filter, groupe_filter, styles, colors, cm, Paragraph, Table, TableStyle
+    ))
 
     doc.build(story)
     buf.seek(0)
