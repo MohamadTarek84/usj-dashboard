@@ -39,6 +39,9 @@ import html
 import base64
 import difflib
 import json
+import sqlite3
+import hashlib
+from datetime import datetime
 import urllib.request
 from pathlib import Path
 from io import BytesIO
@@ -69,7 +72,7 @@ ENGINE_LLM = "IA institutionnelle (API externe) - optionnel"
 SWOT_ELEMENTS = ["Forces", "Faiblesses", "Opportunités", "Menaces"]
 
 MIN_EXAMPLES_PER_THEME = 3
-MIN_TOTAL_TRAINING_EXAMPLES = 15
+MIN_TOTAL_TRAINING_EXAMPLES = 500  # supervised training only after enough validated institutional data
 
 
 # ============================================================
@@ -141,6 +144,106 @@ def get_col(df, possible_names):
         if n in cols:
             return cols[n]
     return None
+
+
+# ============================================================
+# PERSISTENT VALIDATION DATABASE
+# ============================================================
+
+def get_validation_db_path():
+    """Persistent institutional storage for expert-validated decisions."""
+    if Path("/home/site").exists():
+        db_dir = Path("/home/data")
+    else:
+        db_dir = Path(".")
+    db_dir.mkdir(parents=True, exist_ok=True)
+    return db_dir / "usj_ai_validated_mappings.db"
+
+
+def init_validation_db():
+    db_path = get_validation_db_path()
+    with sqlite3.connect(db_path) as conn:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS validated_mappings (
+                answer_hash TEXT PRIMARY KEY,
+                saved_at TEXT,
+                respondent_type TEXT,
+                groupe TEXT,
+                participants TEXT,
+                swot_element TEXT,
+                question TEXT,
+                final_answer TEXT,
+                ai_suggested_theme TEXT,
+                confidence REAL,
+                validated_theme TEXT,
+                new_theme TEXT
+            )
+        """)
+        conn.commit()
+    return db_path
+
+
+def _answer_hash(row):
+    raw = "||".join([
+        clean(row.get("Respondent_Type", "")),
+        clean(row.get("groupe", "")),
+        clean(row.get("swot_element", "")),
+        clean(row.get("question", "")),
+        clean(row.get("Final_Answer", "")),
+    ])
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+def save_validated_mappings_to_db(validated_df):
+    if validated_df is None or validated_df.empty:
+        return 0, get_validation_db_path()
+    db_path = init_validation_db()
+    saved_at = datetime.now().isoformat(timespec="seconds")
+    rows = []
+    for _, row in validated_df.iterrows():
+        rows.append((
+            _answer_hash(row),
+            saved_at,
+            clean(row.get("Respondent_Type", "")),
+            clean(row.get("groupe", "")),
+            clean(row.get("participants", "")),
+            clean(row.get("swot_element", "")),
+            clean(row.get("question", "")),
+            clean(row.get("Final_Answer", "")),
+            clean(row.get("AI_Suggested_Theme", "")),
+            float(row.get("Confidence", 0) or 0),
+            clean(row.get("Validated_Theme", "")),
+            clean(row.get("New_Theme", "")),
+        ))
+    with sqlite3.connect(db_path) as conn:
+        conn.executemany("""
+            INSERT OR REPLACE INTO validated_mappings (
+                answer_hash, saved_at, respondent_type, groupe, participants, swot_element,
+                question, final_answer, ai_suggested_theme, confidence, validated_theme, new_theme
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, rows)
+        conn.commit()
+    return len(rows), db_path
+
+
+def load_validated_mappings_from_db():
+    db_path = init_validation_db()
+    try:
+        with sqlite3.connect(db_path) as conn:
+            db_df = pd.read_sql_query("SELECT * FROM validated_mappings", conn)
+    except Exception:
+        return pd.DataFrame()
+    if db_df.empty:
+        return pd.DataFrame()
+    return db_df.rename(columns={
+        "respondent_type": "Respondent_Type",
+        "final_answer": "Final_Answer",
+        "validated_theme": "Validated_Theme",
+        "ai_suggested_theme": "AI_Suggested_Theme",
+        "swot_element": "swot_element",
+        "new_theme": "New_Theme",
+    })
+
 
 
 APP_CSS = f"""
@@ -613,6 +716,52 @@ def tfidf_scores_against_themes(answer, themes):
         return [0.0 for _ in themes]
 
 
+
+@st.cache_resource(show_spinner=False)
+def _load_local_sentence_transformer():
+    """Optional local semantic model.
+    For privacy, this never calls an external API. It is used only if a local model
+    path is provided through SEMANTIC_MODEL_PATH or if the package can load a local
+    cached model. Otherwise the platform automatically falls back to the ontology
+    and TF-IDF engine.
+    """
+    model_path = os.environ.get("SEMANTIC_MODEL_PATH", "").strip()
+    if not model_path:
+        return None
+    try:
+        from sentence_transformers import SentenceTransformer
+        return SentenceTransformer(model_path)
+    except Exception:
+        return None
+
+
+def semantic_scores_against_themes(answer, themes):
+    model = _load_local_sentence_transformer()
+    if model is None or not themes:
+        return None
+    try:
+        from sklearn.metrics.pairwise import cosine_similarity
+        corpus = [clean(answer)] + [clean(t) for t in themes]
+        emb = model.encode(corpus, normalize_embeddings=True)
+        return cosine_similarity([emb[0]], emb[1:]).flatten().tolist()
+    except Exception:
+        return None
+
+
+def calibrated_confidence_from_scores(best_score, second_score, evidence_domains, semantic_used=False):
+    margin = max(best_score - second_score, 0)
+    base = 30 + best_score * 50 + margin * 70
+    if evidence_domains:
+        base += 8
+    if semantic_used:
+        base += 5
+    if best_score < 0.25:
+        base = min(base, 45)
+    if margin < 0.05:
+        base = min(base, 55)
+    return round(max(10, min(base, 92)), 1)
+
+
 def heuristic_score_candidates(answer, participant_type, swot_element):
     """Score every official theme for this row using domain rules + TF-IDF.
     Returns a list of (theme, score, matched_domains) sorted best-first.
@@ -622,18 +771,29 @@ def heuristic_score_candidates(answer, participant_type, swot_element):
         return []
 
     tfidf = tfidf_scores_against_themes(answer, themes)
+    semantic = semantic_scores_against_themes(answer, themes)
+    semantic_used = semantic is not None
     detected = detected_answer_domains(answer)
 
     ranked = []
     for i, theme in enumerate(themes):
         domain_pos, domain_neg, matched = domain_guardrail_score(answer, theme)
-        score = (0.60 * domain_pos) + (0.40 * tfidf[i]) - (0.65 * domain_neg)
+
+        if semantic_used:
+            # Local semantic similarity is weighted more strongly when available.
+            lexical_component = 0.20 * tfidf[i] + 0.45 * semantic[i]
+        else:
+            lexical_component = 0.40 * tfidf[i]
+
+        score = (0.45 * domain_pos) + lexical_component - (0.70 * domain_neg)
+
         # If a clear domain was detected in the answer but this theme is outside
-        # that domain entirely, suppress it so generic word overlap can't win.
+        # that domain entirely, suppress it so generic word overlap cannot win.
         if detected and domain_pos == 0:
-            score *= 0.5
+            score *= 0.45
+
         score = max(0.0, min(1.0, score))
-        ranked.append((theme, score, matched))
+        ranked.append((theme, score, matched, semantic_used))
 
     return sorted(ranked, key=lambda x: x[1], reverse=True)
 
@@ -642,23 +802,20 @@ def heuristic_confidence(ranked):
     if not ranked:
         return 0.0
     best, second = ranked[0][1], (ranked[1][1] if len(ranked) > 1 else 0)
-    margin = max(best - second, 0)
-    conf = 25 + best * 55 + margin * 90
-    if best < 0.20:
-        conf = min(conf, 40)
-    if margin < 0.04:
-        conf = min(conf, 55)
-    return round(max(5, min(conf, 90)), 1)  # heuristic engine is capped below 90: it is not a trained model
+    matched = ranked[0][2] if len(ranked[0]) > 2 else []
+    semantic_used = ranked[0][3] if len(ranked[0]) > 3 else False
+    return calibrated_confidence_from_scores(best, second, matched, semantic_used)
 
 
 def classify_heuristic(answer, participant_type, swot_element):
     ranked = heuristic_score_candidates(answer, participant_type, swot_element)
     if not ranked:
         return "", 0.0, "", "Aucun thème officiel disponible"
-    best_theme, best_score, matched = ranked[0]
+    best_theme, best_score, matched, semantic_used = ranked[0]
     conf = heuristic_confidence(ranked)
-    top3 = " | ".join([f"{t} ({round(s * 100, 1)})" for t, s, _ in ranked[:3]])
-    evidence = f"domaine détecté: {', '.join(matched)}" if matched else "évidence lexicale faible"
+    top3 = " | ".join([f"{t} ({round(s * 100, 1)})" for t, s, *_ in ranked[:3]])
+    engine_note = "similarité sémantique locale + ontologie" if semantic_used else "ontologie institutionnelle + similarité lexicale"
+    evidence = f"{engine_note}; domaine détecté: {', '.join(matched)}" if matched else f"{engine_note}; évidence faible"
     return best_theme, conf, top3, evidence
 
 
@@ -856,8 +1013,9 @@ def evaluate_theme_models(train_df, random_state=42):
     if len(train_df) < MIN_TOTAL_TRAINING_EXAMPLES:
         return pd.DataFrame(), pd.DataFrame(), (
             f"Données insuffisantes pour un entraînement fiable : {len(train_df)} réponses validées, "
-            f"minimum recommandé {MIN_TOTAL_TRAINING_EXAMPLES}. Continuez à valider des réponses dans "
-            f"l'onglet de classification, puis relancez l'entraînement."
+            f"minimum recommandé {MIN_TOTAL_TRAINING_EXAMPLES}. Avec un corpus limité, il vaut mieux utiliser "
+            f"le moteur de suggestion + validation experte, puis accumuler les validations dans la base "
+            f"institutionnelle avant d'entraîner un modèle supervisé."
         )
 
     # Cross-validation folds cannot exceed the smallest class size.
@@ -1785,15 +1943,44 @@ def render_mapping_validation(classified_df):
                "« Nouveau thème » est automatiquement enregistré et proposé dans la liste déroulante "
                "« Thème validé » pour toutes les réponses suivantes du même groupe.")
 
+    st.markdown("#### Filtres de validation")
+    f1, f2, f3 = st.columns([1.2, 1.2, 2])
+    type_filter = f1.selectbox(
+        "Type",
+        ["Tous"] + sorted(classified_df["Respondent_Type"].dropna().unique().tolist()),
+        key="validation_filter_type",
+    )
+    confidence_filter = f2.selectbox(
+        "Confiance",
+        ["Toutes", "Faible (<50)", "Moyenne (50-70)", "Élevée (≥70)"],
+        key="validation_filter_confidence",
+    )
+    search_filter = f3.text_input("Rechercher dans les réponses", key="validation_filter_search")
+
+    visible_df = classified_df.copy()
+    if type_filter != "Tous":
+        visible_df = visible_df[visible_df["Respondent_Type"] == type_filter]
+    if confidence_filter == "Faible (<50)":
+        visible_df = visible_df[visible_df["Confidence"] < 50]
+    elif confidence_filter == "Moyenne (50-70)":
+        visible_df = visible_df[(visible_df["Confidence"] >= 50) & (visible_df["Confidence"] < 70)]
+    elif confidence_filter == "Élevée (≥70)":
+        visible_df = visible_df[visible_df["Confidence"] >= 70]
+    if clean(search_filter):
+        s = normalize(search_filter)
+        visible_df = visible_df[visible_df["Final_Answer"].apply(lambda x: s in normalize(x))]
+
+    hidden_df = classified_df[~classified_df["row_id"].isin(visible_df["row_id"])].copy()
+
     group_order = (
-        classified_df.groupby(["Respondent_Type", "swot_element"])["Confidence"]
+        visible_df.groupby(["Respondent_Type", "swot_element"])["Confidence"]
         .mean().sort_values().index.tolist()
     )
 
     validated_rows = []
     for ptype, swot_element in group_order:
-        subset = classified_df[
-            (classified_df["Respondent_Type"] == ptype) & (classified_df["swot_element"] == swot_element)
+        subset = visible_df[
+            (visible_df["Respondent_Type"] == ptype) & (visible_df["swot_element"] == swot_element)
         ].sort_values("Confidence", ascending=True)
         if subset.empty:
             continue
@@ -1816,6 +2003,12 @@ def render_mapping_validation(classified_df):
             header += f" · ➕ {len(custom_themes)} thème(s) ajouté(s) par les experts"
 
         with st.expander(header, expanded=(low_conf_count > 0)):
+            if st.button("Accepter toutes les suggestions visibles de ce groupe", key=f"bulk_accept_{editor_key}"):
+                group_store = _editor_store_for(editor_key)
+                for _, r in subset.iterrows():
+                    group_store.setdefault(r["row_id"], {})["Thème validé"] = clean(r.get("AI_Suggested_Theme", ""))
+                st.success("Suggestions visibles acceptées pour ce groupe. Cliquez ensuite sur « Confirmer la validation experte ».")
+
             edit_df = subset[["row_id", "groupe", "Final_Answer", "Confidence", "AI_Suggested_Theme"]].copy()
             edit_df["Thème validé"] = edit_df["AI_Suggested_Theme"]
             edit_df["Nouveau thème"] = ""
@@ -1866,16 +2059,25 @@ def render_mapping_validation(classified_df):
                     register_custom_theme(ptype, swot_element, new_theme_input)
                 validated_rows.append(out)
 
+    # Preserve non-visible rows when filters are active, so confirming a filtered
+    # view does not accidentally remove the rest of the mapping.
+    if not hidden_df.empty:
+        for _, row in hidden_df.iterrows():
+            out = row.to_dict()
+            out["Validated_Theme"] = clean(out.get("Validated_Theme", "")) or clean(out.get("AI_Suggested_Theme", ""))
+            out["New_Theme"] = clean(out.get("New_Theme", ""))
+            validated_rows.append(out)
+
     return pd.DataFrame(validated_rows)
 
 
 def render_engine_selector(df_scope):
     st.markdown("""
     <div class="ai-card">
-        <h3>Moteur de classification actif</h3>
-        <p>Commencez avec l'heuristique pour obtenir des suggestions de départ. Validez des réponses dans
-        l'onglet suivant, puis entraînez le modèle supervisé : c'est lui qui donnera une précision réelle
-        et mesurable, calculée sur vos propres données par validation croisée.</p>
+        <h3>Moteur de suggestion actif</h3>
+        <p>Le moteur actuel sert à proposer un pré-codage. La décision finale reste celle des experts.
+        Les validations confirmées sont stockées dans une base institutionnelle et pourront alimenter
+        un modèle supervisé uniquement lorsque le volume de données validées sera suffisant.</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -1915,6 +2117,12 @@ def render_training_tab(df_scope):
     """, unsafe_allow_html=True)
 
     validated_df = st.session_state.get("validated_mapping_df", pd.DataFrame())
+    db_validated_df = load_validated_mappings_from_db()
+    if not db_validated_df.empty:
+        validated_df = pd.concat([db_validated_df, validated_df], ignore_index=True).drop_duplicates(
+            subset=["Respondent_Type", "groupe", "swot_element", "Final_Answer", "Validated_Theme"],
+            keep="last",
+        )
 
     st.markdown("#### Source des données d'entraînement")
     upload_extra = st.file_uploader(
@@ -2185,7 +2393,12 @@ def ai_platform_page(df):
 
             if st.button("Confirmer la validation experte", key="confirm_validated_mapping"):
                 st.session_state["validated_mapping_df"] = validated_df_candidate.copy()
-                st.success("Validation experte confirmée. Le mapping validé est maintenant utilisé dans la synthèse, la matrice SWOT et les exports.")
+                saved_count, db_path = save_validated_mappings_to_db(validated_df_candidate)
+                st.success(
+                    f"Validation experte confirmée. {saved_count} décisions validées ont été enregistrées "
+                    f"dans la base institutionnelle. Le mapping validé est maintenant utilisé dans la synthèse, "
+                    f"la matrice SWOT et les exports."
+                )
 
             validated_df = st.session_state.get("validated_mapping_df", pd.DataFrame())
 
