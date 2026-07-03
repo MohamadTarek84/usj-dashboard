@@ -1826,6 +1826,11 @@ def render_mapping_validation(classified_df):
             st.caption(f"Types de participants dans ce tableau : {', '.join(present_types)}. La liste de "
                        "thèmes ci-dessous regroupe les thèmes officiels de tous ces types (voir docstring "
                        "de la fonction pour la justification) — vérifiez la cohérence type/thème au besoin.")
+        st.caption("Le texte de la colonne « Réponse » ne se met pas automatiquement à la ligne — "
+                   "limitation du composant tableau natif de Streamlit, pas un réglage manquant côté "
+                   "application. Deux options intégrées pour lire une réponse longue en entier : "
+                   "élargissez la colonne en tirant son bord, ou cliquez l'icône plein écran en haut à "
+                   "droite du tableau.")
         editor_key = f"editor_swot_{safe_filename(swot_choice)}"
         edit_df = subset[["row_id", "Respondent_Type", "groupe", "Final_Answer", "AI_Suggested_Theme"]].copy()
         edit_df["Thème validé"] = edit_df["AI_Suggested_Theme"]
@@ -1842,11 +1847,12 @@ def render_mapping_validation(classified_df):
             hide_index=True,
             on_change=persist_editor_changes_callback,
             args=(editor_key, None, swot_choice, row_ids_for_editor),
+            height=560,
             column_config={
                 "Type": st.column_config.TextColumn(disabled=True, width="small"),
                 "Sous-groupe": st.column_config.TextColumn(disabled=True, width="small"),
                 "Réponse": st.column_config.TextColumn(disabled=True, width="large"),
-                "Proposé (IA)": st.column_config.TextColumn(disabled=True, width="medium"),
+                "Proposé (IA)": st.column_config.TextColumn(disabled=True, width="small"),
                 "Thème validé": st.column_config.SelectboxColumn(options=theme_options, required=True, width="medium"),
             },
         )
