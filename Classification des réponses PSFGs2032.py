@@ -1177,14 +1177,6 @@ def build_classification_dataframe(df_scope, engine, trained_models=None):
             "Validated_Theme": theme, "New_Theme": "",
         })
     return pd.DataFrame(rows)
-def confidence_column_label(engine):
-    """Single source of truth for how the 'Confidence' column is labeled in
-    the UI, so a statistically-backed number (trained model, cross-validated)
-    is never displayed with the same wording as a heuristic ranking score
-    (semantic engine, uncalibrated)."""
-    if engine == ENGINE_TRAINED:
-        return "Confiance % (modèle entraîné, validation croisée)"
-    return "Score de pertinence % (heuristique, non calibré)"
 # ============================================================
 # CUSTOM THEMES ADDED BY EXPERTS (auto-saved, reused across rows)
 # ============================================================
@@ -1793,122 +1785,108 @@ def _resolve_validated_theme(selected, new_theme):
         return ""
     return selected
 def render_mapping_validation(classified_df):
+    """Single-table expert validation: one dropdown to pick the SWOT element,
+    one flat table underneath for every participant type at once.
+
+    Trade-off, stated explicitly rather than hidden: the official theme
+    taxonomy (THEME_TAXONOMY) differs by participant type, but one table
+    needs one shared dropdown per column. The "Thème validé" options here
+    are the UNION of official themes across every participant type present
+    for the selected SWOT element — not the strict per-type list. This is a
+    deliberate simplicity/rigor trade-off for a single-table UI; it does not
+    prevent picking a theme that isn't officially valid for a given row's
+    participant type. If that matters for your final coding scheme, spot-
+    check across participant types before treating a batch as final.
+    """
     if classified_df.empty:
         st.warning("Aucune réponse SWOT à classifier.")
-        return classified_df
+        return pd.DataFrame()
     st.markdown("### Validation experte des classifications")
-    st.caption("Groupé par type de participant et élément SWOT, pour que la liste de thèmes proposée "
-               "reste toujours la bonne. Triez : les groupes avec le plus de réponses à faible confiance "
-               "apparaissent en premier et sont ouverts par défaut. Chaque groupe affiche deux tableaux "
-               "liés par le numéro « # » : un tableau de lecture (texte intégral, non modifiable) et un "
-               "tableau de validation compact juste en dessous (thème à choisir ou saisir).")
-    st.caption("Note méthodologique : le libellé du score varie selon le groupe ci-dessous. "
-               "« Confiance % (modèle entraîné, validation croisée) » indique une estimation statistique "
-               "réelle. « Score de pertinence % (heuristique, non calibré) » indique le moteur sémantique — "
-               "un classement indicatif, pas une probabilité. Le sous-titre de chaque groupe précise "
-               "toujours lequel des deux a été utilisé.")
-    group_order = (
-        classified_df.groupby(["Respondent_Type", "swot_element"])["Confidence"]
-        .mean().sort_values().index.tolist()
-    )
-    validated_rows = []
-    for ptype, swot_element in group_order:
-        subset = classified_df[
-            (classified_df["Respondent_Type"] == ptype) & (classified_df["swot_element"] == swot_element)
-        ].sort_values("Confidence", ascending=True).reset_index(drop=True)
-        subset.insert(0, "#", subset.index + 1)
-        if subset.empty:
-            continue
-        editor_key = f"editor_{safe_filename(ptype)}_{safe_filename(swot_element)}"
-        # Single source of truth for restoring previously-typed values: the
-        # shadow store written by persist_editor_changes_callback. See the
-        # comment above the DATA EDITOR STATE HELPERS section.
-        sync_custom_themes_from_persistent_values(editor_key, ptype, swot_element)
-        themes = official_themes_for(ptype, swot_element, include_autre=False)
-        custom_themes = get_custom_themes(ptype, swot_element)
-        theme_options = themes + [t for t in custom_themes if t not in themes] + ["Autre (nouveau thème)"]
-        low_conf_count = int((subset["Confidence"] < 50).sum())
-        # All rows in this subset share the same (ptype, swot_element), so
-        # they all resolved to the same effective engine — see
-        # resolve_effective_engine, which depends only on those two values
-        # plus the currently active trained_models, never on the answer text.
-        group_engine = subset["Engine_Used"].iloc[0] if "Engine_Used" in subset.columns else ENGINE_SEMANTIC
-        group_pool_key = subset["Training_Group"].iloc[0] if "Training_Group" in subset.columns else None
-        conf_label = confidence_column_label(group_engine)
-        header = f"{ptype} · {swot_element} — {len(subset)} réponses"
-        if group_engine == ENGINE_TRAINED and group_pool_key:
-            header += f" · 🎯 modèle entraîné ({TRAINING_POOLS[group_pool_key]['label']})"
-        elif group_pool_key is None:
-            header += " · moteur sémantique (aucun regroupement d'entraînement disponible pour ce type)"
-        else:
-            header += " · moteur sémantique (pool non encore entraîné)"
-        if low_conf_count:
-            header += f" · 🔴 {low_conf_count} à valider en priorité"
-        if custom_themes:
-            header += f" · ➕ {len(custom_themes)} thème(s) ajouté(s) par les experts"
-        with st.expander(header, expanded=(low_conf_count > 0)):
-            st.markdown("**Lecture** — texte intégral, non modifiable :")
-            reading_df = subset[["#", "groupe", "Final_Answer", "AI_Suggested_Theme", "Confidence"]].rename(
-                columns={"groupe": "Sous-groupe", "Final_Answer": "Réponse",
-                         "AI_Suggested_Theme": "Proposé (IA)", "Confidence": conf_label}
-            )
-            render_html_table(reading_df, wrap_cols=["Réponse", "Proposé (IA)"], max_height=360)
-            st.markdown("**Validation** — choisissez ou saisissez le thème pour chaque « # » ci-dessus :")
-            edited = _render_validation_grid(subset, editor_key, ptype, swot_element, theme_options, conf_label)
+    st.caption("Choisissez un élément SWOT, validez le tableau, passez au suivant. Les réponses à "
+               "faible score de pertinence / confiance apparaissent en premier dans chaque tableau.")
+    validated_store = st.session_state.setdefault("validated_by_swot", {})
+    swot_choice = st.selectbox("Élément SWOT à valider", SWOT_ELEMENTS, key="validation_swot_choice")
+    subset = classified_df[classified_df["swot_element"] == swot_choice].sort_values(
+        "Confidence", ascending=True
+    ).reset_index(drop=True)
+    if subset.empty:
+        st.caption("Aucune réponse pour cet élément SWOT.")
+    else:
+        present_types = subset["Respondent_Type"].unique().tolist()
+        theme_union = []
+        for pt in present_types:
+            for t in official_themes_for(pt, swot_choice, include_autre=False):
+                if t not in theme_union:
+                    theme_union.append(t)
+        custom_themes_all = set()
+        for pt in present_types:
+            custom_themes_all.update(get_custom_themes(pt, swot_choice))
+        theme_options = theme_union + [t for t in sorted(custom_themes_all) if t not in theme_union] + ["Autre (nouveau thème)"]
+        if len(present_types) > 1:
+            st.caption(f"Types de participants dans ce tableau : {', '.join(present_types)}. La liste de "
+                       "thèmes ci-dessous regroupe les thèmes officiels de tous ces types (voir docstring "
+                       "de la fonction pour la justification) — vérifiez la cohérence type/thème au besoin.")
+        editor_key = f"editor_swot_{safe_filename(swot_choice)}"
+        edit_df = subset[["row_id", "Respondent_Type", "groupe", "Final_Answer", "AI_Suggested_Theme"]].copy()
+        edit_df["Thème validé"] = edit_df["AI_Suggested_Theme"]
+        edit_df = edit_df.rename(columns={
+            "Respondent_Type": "Type", "groupe": "Sous-groupe", "Final_Answer": "Réponse",
+            "AI_Suggested_Theme": "Proposé (IA)",
+        }).set_index("row_id")
+        edit_df = apply_persistent_editor_values(edit_df, editor_key)
+        row_ids_for_editor = list(edit_df.index)
+        edited = st.data_editor(
+            edit_df,
+            key=editor_key,
+            use_container_width=True,
+            hide_index=True,
+            on_change=persist_editor_changes_callback,
+            args=(editor_key, None, swot_choice, row_ids_for_editor),
+            column_config={
+                "Type": st.column_config.TextColumn(disabled=True, width="small"),
+                "Sous-groupe": st.column_config.TextColumn(disabled=True, width="small"),
+                "Réponse": st.column_config.TextColumn(disabled=True, width="large"),
+                "Proposé (IA)": st.column_config.TextColumn(disabled=True, width="medium"),
+                "Thème validé": st.column_config.SelectboxColumn(options=theme_options, required=True, width="medium"),
+            },
+        )
+        save_persistent_editor_values(edited, editor_key)
+        pending_new = edited[edited["Thème validé"] == "Autre (nouveau thème)"]
+        if not pending_new.empty:
+            st.markdown(f"**Nouveaux thèmes à préciser** ({len(pending_new)} réponse(s) marquée(s) « Autre ») :")
+            for row_id, row in pending_new.iterrows():
+                orig = subset[subset["row_id"] == row_id].iloc[0]
+                preview = orig["Final_Answer"]
+                preview = preview[:80] + "…" if len(preview) > 80 else preview
+                stored_new = _editor_store_for(editor_key).get(row_id, {}).get("Nouveau thème", "")
+                new_val = st.text_input(
+                    f"« {preview} » — {orig['Respondent_Type']}",
+                    value=stored_new, key=f"newtheme_{editor_key}_{row_id}",
+                )
+                row_values = _editor_store_for(editor_key).setdefault(row_id, {})
+                row_values["Nouveau thème"] = new_val
+                if new_val:
+                    register_custom_theme(orig["Respondent_Type"], swot_choice, new_val)
+        if st.button(f"✅ Confirmer les validations — {swot_choice}", key=f"confirm_{editor_key}"):
+            store = _editor_store_for(editor_key)
+            confirmed_rows = []
             for _, row in subset.iterrows():
                 row_id = row["row_id"]
-                out = {k: v for k, v in row.to_dict().items() if k != "#"}
-                stored_values = _editor_store_for(editor_key).get(row_id, {})
+                out = row.to_dict()
+                stored_values = store.get(row_id, {})
                 selected_theme = stored_values.get("Thème validé", row["AI_Suggested_Theme"])
                 new_theme_input = clean(stored_values.get("Nouveau thème", ""))
                 final_theme = _resolve_validated_theme(selected_theme, new_theme_input)
                 out["Validated_Theme"] = final_theme if final_theme else selected_theme
                 out["New_Theme"] = new_theme_input
-                if new_theme_input:
-                    register_custom_theme(ptype, swot_element, new_theme_input)
-                validated_rows.append(out)
-    return pd.DataFrame(validated_rows)
-def _render_validation_grid(subset, editor_key, ptype, swot_element, theme_options, conf_label):
-    """Compact validation grid: the full answer text is shown once, in the
-    read-only reading table above (see render_mapping_validation) — it is
-    deliberately NOT repeated here, so this grid stays short and easy to
-    scan. Rows are linked to the reading table above via the "#" column.
-    Text still cannot wrap inside this grid (st.dataframe/data_editor is
-    canvas-rendered, not real DOM — see render_html_table's docstring), but
-    that no longer matters here since the only text this grid carries is the
-    short theme name, and it's editable via a proper dropdown regardless.
-    """
-    edit_df = subset[["row_id", "#", "groupe", "Confidence", "AI_Suggested_Theme"]].copy()
-    edit_df["Thème validé"] = edit_df["AI_Suggested_Theme"]
-    edit_df["Nouveau thème"] = ""
-    edit_df = edit_df.rename(columns={
-        "groupe": "Sous-groupe", "Confidence": conf_label, "AI_Suggested_Theme": "Proposé (IA)",
-    }).set_index("row_id")
-    edit_df = apply_persistent_editor_values(edit_df, editor_key)
-    row_ids_for_editor = list(edit_df.index)
-    edited = st.data_editor(
-        edit_df,
-        key=editor_key,
-        use_container_width=True,
-        hide_index=True,
-        on_change=persist_editor_changes_callback,
-        args=(editor_key, ptype, swot_element, row_ids_for_editor),
-        column_config={
-            "#": st.column_config.NumberColumn(disabled=True, width="small"),
-            "Sous-groupe": st.column_config.TextColumn(disabled=True, width="small"),
-            conf_label: st.column_config.NumberColumn(disabled=True, width="small", format="%.1f"),
-            "Proposé (IA)": st.column_config.TextColumn(disabled=True, width="medium"),
-            "Thème validé": st.column_config.SelectboxColumn(options=theme_options, required=True, width="medium"),
-            "Nouveau thème": st.column_config.TextColumn(
-                width="medium", help="Un thème saisi ici est automatiquement enregistré et "
-                "apparaîtra dans la liste déroulante « Thème validé » pour les réponses suivantes "
-                "de ce même groupe."
-            ),
-        },
-    )
-    save_persistent_editor_values(edited, editor_key)
-    sync_custom_themes_from_persistent_values(editor_key, ptype, swot_element)
-    return edited
+                confirmed_rows.append(out)
+            validated_store[swot_choice] = pd.DataFrame(confirmed_rows)
+            st.success(f"{len(confirmed_rows)} réponses validées pour « {swot_choice} ».")
+    if validated_store:
+        st.caption("Validations confirmées jusqu'ici : " +
+                   " · ".join(f"{k} ({len(v)})" for k, v in validated_store.items()))
+    return pd.concat(validated_store.values(), ignore_index=True) if validated_store else pd.DataFrame()
+
 def render_engine_selector(df_scope):
     st.markdown("""
     <div class="ai-card">
@@ -2229,12 +2207,9 @@ def ai_platform_page(df):
             render_html_table(preview_df, wrap_cols=["Final_Answer", "AI_Suggested_Theme"])
             with st.expander("Vue tableau triable (grille interactive)"):
                 st.dataframe(preview_df, use_container_width=True)
-            validated_df_candidate = render_mapping_validation(classified_df)
-            if st.button("Confirmer la validation experte", key="confirm_validated_mapping"):
-                st.session_state["validated_mapping_df"] = validated_df_candidate.copy()
-                st.success("Validation experte confirmée. Le mapping validé est maintenant utilisé dans la synthèse, la matrice SWOT et les exports.")
-            validated_df = st.session_state.get("validated_mapping_df", pd.DataFrame())
+            validated_df = render_mapping_validation(classified_df)
             if not validated_df.empty:
+                st.session_state["validated_mapping_df"] = validated_df
                 export_cols = ["Respondent_Type", "groupe", "participants", "swot_element", "question",
                                 "Final_Answer", "AI_Suggested_Theme", "Confidence", "Engine_Used",
                                 "Validated_Theme", "New_Theme"]
