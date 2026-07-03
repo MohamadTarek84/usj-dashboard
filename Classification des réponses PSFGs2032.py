@@ -1733,7 +1733,7 @@ def render_mapping_validation(classified_df):
             else:
                 st.warning("Saisissez un nom de thème avant de l'ajouter.")
     subset = classified_df[classified_df["swot_element"] == swot_choice].sort_values(
-        "Confidence", ascending=True
+        ["Respondent_Type", "Confidence"], ascending=[True, True]
     ).reset_index(drop=True)
     if subset.empty:
         st.caption("Aucune réponse pour cet élément SWOT.")
@@ -1852,8 +1852,8 @@ def _render_aggrid_validation_table(base_df, theme_by_type, theme_union_flat, ed
     gb = GridOptionsBuilder.from_dataframe(base_df)
     gb.configure_default_column(resizable=True, wrapText=True, autoHeight=True, editable=False)
     gb.configure_column("row_id", hide=True)
-    gb.configure_column("Type", width=100, wrapText=False)
-    gb.configure_column("Sous-groupe", width=110, wrapText=False)
+    gb.configure_column("Type", width=140, wrapText=False)
+    gb.configure_column("Sous-groupe", width=150, wrapText=False)
     gb.configure_column("Réponse", flex=3, minWidth=320)
     gb.configure_column("Proposé (IA)", flex=2, minWidth=200)
     gb.configure_column(
@@ -1892,8 +1892,8 @@ def _render_builtin_validation_table(base_df, theme_options, editor_key):
         hide_index=True,
         height=560,
         column_config={
-            "Type": st.column_config.TextColumn(disabled=True, width="small"),
-            "Sous-groupe": st.column_config.TextColumn(disabled=True, width="small"),
+            "Type": st.column_config.TextColumn(disabled=True, width="medium"),
+            "Sous-groupe": st.column_config.TextColumn(disabled=True, width="medium"),
             "Réponse": st.column_config.TextColumn(disabled=True, width="large"),
             "Proposé (IA)": st.column_config.TextColumn(disabled=True, width="small"),
             "Thème validé": st.column_config.SelectboxColumn(options=theme_options, required=True, width="medium"),
