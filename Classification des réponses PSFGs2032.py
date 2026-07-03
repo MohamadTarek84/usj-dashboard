@@ -74,6 +74,7 @@ import os
 import html
 import base64
 import difflib
+import json
 from pathlib import Path
 from io import BytesIO
 from collections import Counter
@@ -1693,15 +1694,19 @@ def render_mapping_validation(classified_df):
     built-in grid (no wrap) so the app doesn't break — the fallback is
     visibly flagged in the UI, never silent.
 
-    Taxonomy trade-off (unchanged from the prior version, restated for
-    completeness): the official theme taxonomy differs by participant type,
-    but one shared table needs one shared dropdown list per column. The
-    "Thème validé" options are the UNION of official themes across whichever
-    participant types appear for the selected SWOT element, not the strict
-    per-type list. This does not prevent choosing a theme that isn't
-    officially valid for a specific row's participant type — spot-check
-    across types before treating a validated batch as final if that matters
-    for your coding scheme.
+    Theme list is filtered PER ROW by that row's own participant type, not a
+    flat union across types (this was a deliberate simplification in an
+    earlier revision, corrected here since it allowed choosing a theme that
+    isn't officially valid for a given row — e.g. an Étudiants-only theme
+    like "Vie universitaire" being applied to an Anciens row). This is
+    implemented via AgGrid's cellEditorSelector, a small JS function that
+    looks up the row's Type column and returns that type's own official
+    theme list — the built-in Streamlit grid cannot do this (SelectboxColumn
+    options apply to the whole column, not per row), which is the other
+    reason this validation screen needs AgGrid rather than st.data_editor.
+    The fallback path (no streamlit-aggrid installed) cannot filter per row
+    either, so it still uses a flat union of themes as a lesser-rigor
+    last resort, clearly flagged in its warning message.
     """
     if classified_df.empty:
         st.warning("Aucune réponse SWOT à classifier.")
@@ -1711,6 +1716,22 @@ def render_mapping_validation(classified_df):
                "faible score de pertinence / confiance apparaissent en premier dans chaque tableau.")
     validated_store = st.session_state.setdefault("validated_by_swot", {})
     swot_choice = st.selectbox("Élément SWOT à valider", SWOT_ELEMENTS, key="validation_swot_choice")
+    with st.expander("➕ Ajouter un nouveau thème pour cet élément SWOT", expanded=False):
+        st.caption("Ajoute le thème à la liste déroulante « Thème validé » ci-dessous, pour tous les "
+                   "types de participants, sans passer par « Autre (nouveau thème) » ligne par ligne.")
+        col_new_a, col_new_b = st.columns([3, 1])
+        new_global_theme = col_new_a.text_input(
+            "Nom du nouveau thème", key=f"new_global_theme_{safe_filename(swot_choice)}",
+            label_visibility="collapsed", placeholder="ex. Partenariats industriels",
+        )
+        if col_new_b.button("Ajouter", key=f"add_global_theme_{safe_filename(swot_choice)}"):
+            new_global_theme_clean = clean(new_global_theme)
+            if new_global_theme_clean:
+                for pt in THEME_TAXONOMY.keys():
+                    register_custom_theme(pt, swot_choice, new_global_theme_clean)
+                st.success(f"Thème « {new_global_theme_clean} » ajouté pour « {swot_choice} ».")
+            else:
+                st.warning("Saisissez un nom de thème avant de l'ajouter.")
     subset = classified_df[classified_df["swot_element"] == swot_choice].sort_values(
         "Confidence", ascending=True
     ).reset_index(drop=True)
@@ -1718,19 +1739,20 @@ def render_mapping_validation(classified_df):
         st.caption("Aucune réponse pour cet élément SWOT.")
     else:
         present_types = subset["Respondent_Type"].unique().tolist()
-        theme_union = []
+        theme_by_type = {}
+        theme_union_flat = []
         for pt in present_types:
-            for t in official_themes_for(pt, swot_choice, include_autre=False):
-                if t not in theme_union:
-                    theme_union.append(t)
-        custom_themes_all = set()
-        for pt in present_types:
-            custom_themes_all.update(get_custom_themes(pt, swot_choice))
-        theme_options = theme_union + [t for t in sorted(custom_themes_all) if t not in theme_union] + ["Autre (nouveau thème)"]
+            base_themes = official_themes_for(pt, swot_choice, include_autre=False)
+            custom_themes = get_custom_themes(pt, swot_choice)
+            type_themes = base_themes + [t for t in custom_themes if t not in base_themes] + ["Autre (nouveau thème)"]
+            theme_by_type[pt] = type_themes
+            for t in type_themes:
+                if t not in theme_union_flat:
+                    theme_union_flat.append(t)
         if len(present_types) > 1:
-            st.caption(f"Types de participants dans ce tableau : {', '.join(present_types)}. La liste de "
-                       "thèmes ci-dessous regroupe les thèmes officiels de tous ces types (voir docstring "
-                       "de la fonction pour la justification) — vérifiez la cohérence type/thème au besoin.")
+            st.caption(f"Types de participants dans ce tableau : {', '.join(present_types)}. La liste "
+                       "de thèmes dans « Thème validé » est filtrée pour chaque ligne selon son propre "
+                       "type de participant (voir docstring de la fonction).")
         editor_key = f"editor_swot_{safe_filename(swot_choice)}"
         base_df = subset[["row_id", "Respondent_Type", "groupe", "Final_Answer", "AI_Suggested_Theme"]].copy()
         base_df = base_df.rename(columns={
@@ -1742,13 +1764,15 @@ def render_mapping_validation(classified_df):
         base_df["Thème validé"] = base_df.apply(
             lambda r: theme_values_store.get(r["row_id"], r["Proposé (IA)"]), axis=1
         )
-        edited_df = _render_aggrid_validation_table(base_df, theme_options, editor_key, height=560)
+        edited_df = _render_aggrid_validation_table(base_df, theme_by_type, theme_union_flat, editor_key, height=560)
         if edited_df is None:
             st.markdown('<div class="ai-warning">Le module <code>streamlit-aggrid</code> n\'est pas '
                         'installé sur ce serveur (<code>pip install streamlit-aggrid</code>, puis '
                         'l\'ajouter à requirements.txt). Repli temporaire sur le tableau natif Streamlit '
-                        '— le texte n\'y sera pas mis à la ligne.</div>', unsafe_allow_html=True)
-            edited_df = _render_builtin_validation_table(base_df, theme_options, editor_key)
+                        '— le texte n\'y sera pas mis à la ligne, et la liste de thèmes redevient '
+                        'fusionnée (non filtrée par type) car le tableau natif ne permet pas une liste '
+                        'différente par ligne.</div>', unsafe_allow_html=True)
+            edited_df = _render_builtin_validation_table(base_df, theme_union_flat, editor_key)
         for _, r in edited_df.iterrows():
             theme_values_store[r["row_id"]] = r["Thème validé"]
         pending_new = edited_df[edited_df["Thème validé"] == "Autre (nouveau thème)"]
@@ -1782,14 +1806,49 @@ def render_mapping_validation(classified_df):
         st.caption("Validations confirmées jusqu'ici : " +
                    " · ".join(f"{k} ({len(v)})" for k, v in validated_store.items()))
     return pd.concat(validated_store.values(), ignore_index=True) if validated_store else pd.DataFrame()
-def _render_aggrid_validation_table(base_df, theme_options, editor_key, height=560):
-    """Wrapped + editable table via streamlit-aggrid. Returns None (signal
-    to fall back) if the package isn't installed — never raises, since a
-    missing optional dependency shouldn't crash the classification tab."""
+def _render_aggrid_validation_table(base_df, theme_by_type, theme_union_flat, editor_key, height=560):
+    """Wrapped + editable table via streamlit-aggrid, with the theme
+    dropdown filtered per row by that row's own participant type.
+
+    The per-row filtering uses AgGrid's cellEditorSelector, which must be a
+    JS function (evaluated in the browser per cell), not a Python callback —
+    AgGrid's Python wrapper only sends the grid definition once, so any
+    per-cell logic has to live in JS. theme_by_type is serialized with
+    json.dumps (not manual string formatting) specifically to avoid
+    quote/apostrophe-escaping bugs in theme names such as "Qualité de
+    l'enseignement" — JSON syntax is a valid JS object literal, so this is
+    safe and exact, not an approximation.
+
+    allow_unsafe_jscode=True is required for cellEditorSelector to work. The
+    "unsafe" label refers to arbitrary JS being injected into the browser;
+    it is a real concern only when that JS originates from untrusted input.
+    Here it is authored entirely by this application from a static template
+    plus json.dumps-escaped theme names — never from a participant's answer
+    text or any other user-supplied string — so it does not introduce an
+    injection risk in this context.
+
+    Returns None (signal to fall back) if streamlit-aggrid isn't installed —
+    never raises, since a missing optional dependency shouldn't crash the
+    classification tab.
+    """
     try:
-        from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode, DataReturnMode
+        from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode, DataReturnMode, JsCode
     except ImportError:
         return None
+    theme_map_json = json.dumps(theme_by_type, ensure_ascii=False)
+    fallback_json = json.dumps(theme_union_flat, ensure_ascii=False)
+    cell_editor_selector = JsCode(f"""
+    function(params) {{
+        var themesByType = {theme_map_json};
+        var fallbackThemes = {fallback_json};
+        var rowType = params.data ? params.data['Type'] : null;
+        var values = (rowType && themesByType[rowType]) ? themesByType[rowType] : fallbackThemes;
+        return {{
+            component: 'agSelectCellEditor',
+            params: {{ values: values }}
+        }};
+    }}
+    """)
     gb = GridOptionsBuilder.from_dataframe(base_df)
     gb.configure_default_column(resizable=True, wrapText=True, autoHeight=True, editable=False)
     gb.configure_column("row_id", hide=True)
@@ -1799,7 +1858,7 @@ def _render_aggrid_validation_table(base_df, theme_options, editor_key, height=5
     gb.configure_column("Proposé (IA)", flex=2, minWidth=200)
     gb.configure_column(
         "Thème validé", flex=2, minWidth=220, editable=True,
-        cellEditor="agSelectCellEditor", cellEditorParams={"values": theme_options},
+        cellEditorSelector=cell_editor_selector,
         cellStyle={"backgroundColor": "#EAF2F8"},
     )
     grid_options = gb.build()
@@ -1811,7 +1870,7 @@ def _render_aggrid_validation_table(base_df, theme_options, editor_key, height=5
         update_mode=GridUpdateMode.VALUE_CHANGED,
         data_return_mode=DataReturnMode.AS_INPUT,
         fit_columns_on_grid_load=False,
-        allow_unsafe_jscode=False,
+        allow_unsafe_jscode=True,
         theme="alpine",
         key=f"aggrid_{editor_key}",
     )
@@ -1819,7 +1878,9 @@ def _render_aggrid_validation_table(base_df, theme_options, editor_key, height=5
 def _render_builtin_validation_table(base_df, theme_options, editor_key):
     """Fallback used only when streamlit-aggrid is unavailable. Same
     built-in st.data_editor grid as the previous revision — no text wrap,
-    flagged to the user above this call, not silently degraded."""
+    and no per-row theme filtering (SelectboxColumn options are fixed for
+    the whole column, not per row), both flagged to the user above this
+    call, not silently degraded."""
     # Initial values already reflect any prior selection (base_df["Thème
     # validé"] is pre-filled from theme_values_store by the caller), so no
     # separate restore step is needed here.
