@@ -216,8 +216,86 @@ h1, h2, h3 {{ color:{USJ_BLUE} !important; font-weight:800 !important; }}
 }}
 .ai-kpi-number {{ color: {USJ_RED}; font-size: 28px; font-weight: 900; }}
 .ai-kpi-label {{ color: #64748B; font-size: 13px; font-weight: 700; margin-top: 3px; }}
+
+/* Wrapped HTML tables — real <table> DOM, not st.dataframe's canvas grid,
+   so long text wraps reliably instead of being clipped or ellipsized. */
+.usj-table-wrap {{
+    border: 1px solid #D0D6E0; border-radius: 14px; overflow: hidden;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.045); margin: 10px 0 18px 0;
+}}
+.usj-table {{ width: 100%; border-collapse: collapse; font-size: 13.5px; }}
+.usj-table thead th {{
+    background: {USJ_BLUE}; color: white; text-align: left; font-weight: 800;
+    padding: 10px 14px; position: sticky; top: 0; z-index: 1;
+}}
+.usj-table tbody td {{
+    padding: 10px 14px; vertical-align: top; white-space: normal;
+    word-break: break-word; border-top: 1px solid #EEF1F6; color: {USJ_TEXT};
+}}
+.usj-table tbody tr:nth-child(even) {{ background: #F7FAFD; }}
+.usj-table tbody tr:hover {{ background: {USJ_LIGHT_BLUE}; }}
+.usj-table-scroll {{ max-height: 480px; overflow-y: auto; }}
+
+/* Per-answer review cards, used in the expert validation screen instead of
+   packing full answer text into a narrow spreadsheet cell. */
+.review-card {{
+    background: white; border: 1px solid #D0D6E0; border-radius: 14px;
+    padding: 14px 18px; margin: 0 0 12px 0; box-shadow: 0 4px 14px rgba(0,0,0,0.04);
+}}
+.review-card-text {{
+    font-size: 14.5px; line-height: 1.55; color: {USJ_TEXT}; margin: 6px 0 10px 0;
+    white-space: normal; word-break: break-word;
+}}
+.review-badges {{ display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }}
+.usj-badge {{
+    display: inline-block; padding: 3px 10px; border-radius: 20px;
+    font-size: 11.5px; font-weight: 800; letter-spacing: 0.2px;
+}}
+.badge-trained {{ background: #E6F4EA; color: #1E7A46; }}
+.badge-semantic {{ background: #EAF2FB; color: {USJ_BLUE}; }}
+.badge-lowconf {{ background: #FDECEC; color: {USJ_RED}; }}
+.badge-neutral {{ background: #EEF1F6; color: #64748B; }}
 </style>
 """
+def render_html_table(df, columns=None, rename=None, wrap_cols=None, max_height=480):
+    """Render a dataframe as a real, wrapped HTML <table> instead of
+    st.dataframe's canvas-rendered grid. Streamlit's grid (glide-data-grid)
+    does not expose text wrapping or variable row height in its public API
+    as of the current release — these remain open feature requests upstream
+    — so long text is clipped there regardless of column width settings.
+    A real <table> wraps naturally because each cell is an actual DOM
+    element. Trade-off: no built-in column sort/resize/filter the way
+    st.dataframe has; callers needing that should also offer st.dataframe
+    in a companion expander (see calls to this function for the pattern).
+    """
+    if df is None or df.empty:
+        st.caption("Aucune donnée à afficher.")
+        return
+    view = df.copy()
+    if columns:
+        view = view[[c for c in columns if c in view.columns]]
+    if rename:
+        view = view.rename(columns=rename)
+    wrap_cols = set(rename.get(c, c) if rename else c for c in (wrap_cols or []))
+    header_html = "".join(f"<th>{esc(c)}</th>" for c in view.columns)
+    rows_html = []
+    for _, row in view.iterrows():
+        cells = []
+        for col in view.columns:
+            value = row[col]
+            text = esc(value) if not isinstance(value, (int, float, np.floating, np.integer)) or pd.isna(value) else str(value)
+            cells.append(f"<td>{text}</td>")
+        rows_html.append(f"<tr>{''.join(cells)}</tr>")
+    html_block(f"""
+    <div class="usj-table-wrap">
+      <div class="usj-table-scroll" style="max-height:{max_height}px;">
+        <table class="usj-table">
+          <thead><tr>{header_html}</tr></thead>
+          <tbody>{''.join(rows_html)}</tbody>
+        </table>
+      </div>
+    </div>
+    """)
 # ============================================================
 # OFFICIAL THEME TAXONOMY (unchanged from your source of truth)
 # ============================================================
@@ -1721,14 +1799,13 @@ def render_mapping_validation(classified_df):
     st.markdown("### Validation experte des classifications")
     st.caption("Groupé par type de participant et élément SWOT, pour que la liste de thèmes proposée "
                "reste toujours la bonne. Triez : les groupes avec le plus de réponses à faible confiance "
-               "apparaissent en premier et sont ouverts par défaut. Tout nouveau thème saisi dans la colonne "
-               "« Nouveau thème » est automatiquement enregistré et proposé dans la liste déroulante "
-               "« Thème validé » pour toutes les réponses suivantes du même groupe.")
-    st.caption("Note méthodologique : le libellé de la colonne de score varie selon le groupe ci-dessous. "
+               "apparaissent en premier et sont ouverts par défaut. Tout nouveau thème saisi est "
+               "automatiquement enregistré et proposé pour toutes les réponses suivantes du même groupe.")
+    st.caption("Note méthodologique : le libellé du score varie selon le groupe ci-dessous. "
                "« Confiance % (modèle entraîné, validation croisée) » indique une estimation statistique "
                "réelle. « Score de pertinence % (heuristique, non calibré) » indique le moteur sémantique — "
                "un classement indicatif, pas une probabilité. Le sous-titre de chaque groupe précise "
-               "toujours lequel des deux a été utilisé pour ces réponses.")
+               "toujours lequel des deux a été utilisé.")
     group_order = (
         classified_df.groupby(["Respondent_Type", "swot_element"])["Confidence"]
         .mean().sort_values().index.tolist()
@@ -1742,8 +1819,11 @@ def render_mapping_validation(classified_df):
             continue
         editor_key = f"editor_{safe_filename(ptype)}_{safe_filename(swot_element)}"
         # Single source of truth for restoring previously-typed values: the
-        # shadow store written by persist_editor_changes_callback. See the
-        # comment above the DATA EDITOR STATE HELPERS section.
+        # shadow store written either by persist_editor_changes_callback (grid
+        # mode) or directly by the card-mode widgets below. Both modes write
+        # into the exact same store keyed by row_id, so switching between
+        # views for the same group never loses an edit — see the comment
+        # above the DATA EDITOR STATE HELPERS section.
         sync_custom_themes_from_persistent_values(editor_key, ptype, swot_element)
         themes = official_themes_for(ptype, swot_element, include_autre=False)
         custom_themes = get_custom_themes(ptype, swot_element)
@@ -1768,51 +1848,122 @@ def render_mapping_validation(classified_df):
         if custom_themes:
             header += f" · ➕ {len(custom_themes)} thème(s) ajouté(s) par les experts"
         with st.expander(header, expanded=(low_conf_count > 0)):
-            edit_df = subset[["row_id", "groupe", "Final_Answer", "Confidence", "AI_Suggested_Theme"]].copy()
-            edit_df["Thème validé"] = edit_df["AI_Suggested_Theme"]
-            edit_df["Nouveau thème"] = ""
-            edit_df = edit_df.rename(columns={
-                "groupe": "Sous-groupe", "Final_Answer": "Réponse", "Confidence": conf_label,
-                "AI_Suggested_Theme": "Proposé (IA)",
-            }).set_index("row_id")
-            edit_df = apply_persistent_editor_values(edit_df, editor_key)
-            row_ids_for_editor = list(edit_df.index)
-            edited = st.data_editor(
-                edit_df,
-                key=editor_key,
-                use_container_width=True,
-                hide_index=True,
-                on_change=persist_editor_changes_callback,
-                args=(editor_key, ptype, swot_element, row_ids_for_editor),
-                column_config={
-                    "Sous-groupe": st.column_config.TextColumn(disabled=True, width="small"),
-                    "Réponse": st.column_config.TextColumn(disabled=True, width="large"),
-                    conf_label: st.column_config.NumberColumn(disabled=True, width="small", format="%.1f"),
-                    "Proposé (IA)": st.column_config.TextColumn(disabled=True, width="medium"),
-                    "Thème validé": st.column_config.SelectboxColumn(options=theme_options, required=True, width="medium"),
-                    "Nouveau thème": st.column_config.TextColumn(
-                        width="medium", help="Un thème saisi ici est automatiquement enregistré et "
-                        "apparaîtra dans la liste déroulante « Thème validé » pour les réponses suivantes "
-                        "de ce même groupe."
-                    ),
-                },
+            view_mode = st.radio(
+                "Affichage", ["Fiches détaillées (texte intégral, recommandé)", "Grille tableau (édition rapide)"],
+                key=f"viewmode_{editor_key}", horizontal=True, label_visibility="collapsed",
             )
-            save_persistent_editor_values(edited, editor_key)
-            sync_custom_themes_from_persistent_values(editor_key, ptype, swot_element)
-            for row_id, edited_row in edited.iterrows():
-                original = subset[subset["row_id"] == row_id]
-                if original.empty:
-                    continue
-                out = original.iloc[0].to_dict()
-                stored_values = _editor_store_for(editor_key).get(row_id, {})
-                new_theme_input = clean(edited_row["Nouveau thème"]) or clean(stored_values.get("Nouveau thème", ""))
-                final_theme = _resolve_validated_theme(edited_row["Thème validé"], new_theme_input)
-                out["Validated_Theme"] = final_theme if final_theme else edited_row["Thème validé"]
+            if view_mode.startswith("Fiches"):
+                _render_validation_cards(subset, editor_key, ptype, swot_element, theme_options,
+                                          conf_label, group_engine)
+            else:
+                _render_validation_grid(subset, editor_key, ptype, swot_element, theme_options, conf_label)
+            # Collected once per group, after rendering, straight from the
+            # shared store — identical regardless of which view mode was
+            # used, so toggling views never changes what gets validated.
+            store = _editor_store_for(editor_key)
+            for _, row in subset.iterrows():
+                row_id = row["row_id"]
+                out = row.to_dict()
+                stored_values = store.get(row_id, {})
+                selected_theme = stored_values.get("Thème validé", row["AI_Suggested_Theme"])
+                new_theme_input = clean(stored_values.get("Nouveau thème", ""))
+                final_theme = _resolve_validated_theme(selected_theme, new_theme_input)
+                out["Validated_Theme"] = final_theme if final_theme else selected_theme
                 out["New_Theme"] = new_theme_input
-                if new_theme_input:
-                    register_custom_theme(ptype, swot_element, new_theme_input)
                 validated_rows.append(out)
     return pd.DataFrame(validated_rows)
+def _render_validation_cards(subset, editor_key, ptype, swot_element, theme_options, conf_label, group_engine):
+    """Card-based review: one real HTML card per answer (text wraps because
+    it's an actual DOM element), with a genuine st.selectbox/st.text_input
+    underneath for validation. This is the primary fix for long answers
+    being clipped in the old spreadsheet-style grid, and reads closer to
+    how ATLAS.ti/MAXQDA present a single coded segment at a time."""
+    search = st.text_input("🔍 Filtrer par mot-clé (réponse ou thème proposé)",
+                            key=f"search_{editor_key}", placeholder="ex. budget, gouvernance...")
+    rows = subset
+    if clean(search):
+        needle = normalize(search)
+        rows = subset[
+            subset["Final_Answer"].apply(lambda v: needle in normalize(v))
+            | subset["AI_Suggested_Theme"].apply(lambda v: needle in normalize(v))
+        ]
+        if rows.empty:
+            st.caption("Aucune réponse ne correspond à ce filtre.")
+    store = _editor_store_for(editor_key)
+    for _, row in rows.iterrows():
+        row_id = row["row_id"]
+        stored_values = store.setdefault(row_id, {})
+        low_conf = row["Confidence"] < 50
+        engine_badge = (
+            '<span class="usj-badge badge-trained">🎯 Modèle entraîné</span>'
+            if group_engine == ENGINE_TRAINED else
+            '<span class="usj-badge badge-semantic">🧭 Moteur sémantique</span>'
+        )
+        conf_badge_class = "badge-lowconf" if low_conf else "badge-neutral"
+        html_block(f"""
+        <div class="review-card">
+            <div class="review-badges">
+                {engine_badge}
+                <span class="usj-badge {conf_badge_class}">{conf_label.split(' (')[0]} : {row['Confidence']:.1f}</span>
+                <span class="usj-badge badge-neutral">Sous-groupe : {esc(row['groupe'])}</span>
+            </div>
+            <div class="review-card-text">{esc(row['Final_Answer'])}</div>
+        </div>
+        """)
+        col_a, col_b = st.columns([2, 2])
+        current_theme = stored_values.get("Thème validé", row["AI_Suggested_Theme"])
+        default_index = theme_options.index(current_theme) if current_theme in theme_options else 0
+        selected_theme = col_a.selectbox(
+            "Thème validé", options=theme_options, index=default_index,
+            key=f"card_theme_{editor_key}_{row_id}",
+            help=f"Suggestion IA : {row['AI_Suggested_Theme']}",
+        )
+        new_theme_val = ""
+        if selected_theme == "Autre (nouveau thème)":
+            new_theme_val = col_b.text_input(
+                "Nouveau thème", value=stored_values.get("Nouveau thème", ""),
+                key=f"card_newtheme_{editor_key}_{row_id}",
+            )
+        stored_values["Thème validé"] = selected_theme
+        stored_values["Nouveau thème"] = new_theme_val
+        if new_theme_val:
+            register_custom_theme(ptype, swot_element, new_theme_val)
+def _render_validation_grid(subset, editor_key, ptype, swot_element, theme_options, conf_label):
+    """Original spreadsheet-style grid, kept as the power-user option for
+    bulk editing (drag-fill, paste from Excel). Text remains clipped here —
+    see render_html_table's docstring for why — so this is a secondary view,
+    not the default."""
+    edit_df = subset[["row_id", "groupe", "Final_Answer", "Confidence", "AI_Suggested_Theme"]].copy()
+    edit_df["Thème validé"] = edit_df["AI_Suggested_Theme"]
+    edit_df["Nouveau thème"] = ""
+    edit_df = edit_df.rename(columns={
+        "groupe": "Sous-groupe", "Final_Answer": "Réponse", "Confidence": conf_label,
+        "AI_Suggested_Theme": "Proposé (IA)",
+    }).set_index("row_id")
+    edit_df = apply_persistent_editor_values(edit_df, editor_key)
+    row_ids_for_editor = list(edit_df.index)
+    edited = st.data_editor(
+        edit_df,
+        key=editor_key,
+        use_container_width=True,
+        hide_index=True,
+        on_change=persist_editor_changes_callback,
+        args=(editor_key, ptype, swot_element, row_ids_for_editor),
+        column_config={
+            "Sous-groupe": st.column_config.TextColumn(disabled=True, width="small"),
+            "Réponse": st.column_config.TextColumn(disabled=True, width="large"),
+            conf_label: st.column_config.NumberColumn(disabled=True, width="small", format="%.1f"),
+            "Proposé (IA)": st.column_config.TextColumn(disabled=True, width="medium"),
+            "Thème validé": st.column_config.SelectboxColumn(options=theme_options, required=True, width="medium"),
+            "Nouveau thème": st.column_config.TextColumn(
+                width="medium", help="Un thème saisi ici est automatiquement enregistré et "
+                "apparaîtra dans la liste déroulante « Thème validé » pour les réponses suivantes "
+                "de ce même groupe."
+            ),
+        },
+    )
+    save_persistent_editor_values(edited, editor_key)
+    sync_custom_themes_from_persistent_values(editor_key, ptype, swot_element)
 def render_engine_selector(df_scope):
     st.markdown("""
     <div class="ai-card">
@@ -1940,7 +2091,8 @@ def render_training_tab(df_scope):
             errors_df = predictions_df[(predictions_df["Algorithme"] == best_algo) & (~predictions_df["Correct"])]
             if not errors_df.empty:
                 with st.expander(f"Voir les erreurs du meilleur modèle ({len(errors_df)} cas) — {pool['label']}"):
-                    st.dataframe(errors_df[["Réponse", "Thème réel", "Thème prédit"]], use_container_width=True)
+                    render_html_table(errors_df, columns=["Réponse", "Thème réel", "Thème prédit"],
+                                       wrap_cols=["Réponse"], max_height=360)
         st.markdown(f"""
         <div class="ai-info-box">
             Meilleur algorithme pour ce groupe : <b>{esc(best_algo)}</b> — précision estimée :
@@ -2126,7 +2278,9 @@ def ai_platform_page(df):
                 ["Respondent_Type", "groupe", "swot_element", "Final_Answer", "AI_Suggested_Theme",
                  "Confidence", "Engine_Used"]
             ].rename(columns={"Confidence": "Score / Confiance (%)", "Engine_Used": "Moteur utilisé"})
-            st.dataframe(preview_df, use_container_width=True)
+            render_html_table(preview_df, wrap_cols=["Final_Answer", "AI_Suggested_Theme"])
+            with st.expander("Vue tableau triable (grille interactive)"):
+                st.dataframe(preview_df, use_container_width=True)
             validated_df_candidate = render_mapping_validation(classified_df)
             if st.button("Confirmer la validation experte", key="confirm_validated_mapping"):
                 st.session_state["validated_mapping_df"] = validated_df_candidate.copy()
@@ -2160,7 +2314,9 @@ def ai_platform_page(df):
             st.session_state["duplicates_df"] = detect_duplicate_pairs(df_scope)
         dup_df = st.session_state.get("duplicates_df", pd.DataFrame())
         if not dup_df.empty:
-            st.dataframe(dup_df, use_container_width=True)
+            render_html_table(dup_df, wrap_cols=["Réponse 1", "Réponse 2"])
+            with st.expander("Vue tableau triable (grille interactive)"):
+                st.dataframe(dup_df, use_container_width=True)
             st.download_button("Télécharger les doublons détectés", data=dup_df.to_csv(index=False).encode("utf-8-sig"),
                                 file_name="doublons_detectes.csv", mime="text/csv")
         else:
