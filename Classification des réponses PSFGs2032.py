@@ -1,87 +1,87 @@
 """
 PLAN STRATÉGIQUE USJ 2032 - Plateforme IA supervisée d'analyse thématique
 ==========================================================================
+Cette version corrige un audit de code portant sur trois points :
 
-Ce fichier remplace la version précédente, qui contenait quatre générations
-successives du même pipeline de classification empilées les unes sur les
-autres (chaque nouvelle définition de fonction écrasant silencieusement la
-précédente). Cette version ne garde qu'UNE implémentation propre de chaque
-fonction, et ajoute un véritable moteur de classification supervisée
-(entraîné sur vos réponses validées) plutôt que de se reposer uniquement
-sur des règles de mots-clés.
+1. CODE MORT SUPPRIMÉ
+   L'ancien "moteur heuristique pur" (classify_heuristic / heuristic_score_candidates /
+   heuristic_confidence) n'était plus jamais appelé par le dispatcher de classification
+   (classify_answer) : toute réponse non traitée par le modèle entraîné passait déjà par
+   le moteur sémantique institutionnel. Ce code mort a été supprimé.
 
-Architecture de classification (3 moteurs, clairement séparés) :
+2. MOTEUR IA EXTERNE (LLM) SUPPRIMÉ
+   Le moteur "IA institutionnelle" (appel à l'API OpenAI) n'était jamais câblé dans
+   l'interface (ENGINE_LLM n'apparaissait dans aucune option du sélecteur, et
+   classify_answer ne l'appelait jamais). Du code mort qui contredit la documentation
+   utilisateur du projet ("aucune réponse participant n'est transmise à un service IA
+   externe") est un risque : quelqu'un pourrait le réactiver plus tard sans revoir cet
+   engagement de confidentialité. Il a donc été retiré entièrement. Architecture actuelle :
+   uniquement deux moteurs, tous deux 100% locaux.
 
-  1. HEURISTIQUE (démarrage à froid, aucune donnée requise)
-     Règles de domaine + TF-IDF. Sert à pré-remplir des suggestions
-     avant qu'un modèle entraîné existe. Précision plafonnée par nature :
-     un système à base de règles ne "comprend" pas le texte, il reconnaît
-     des motifs. Utile pour démarrer, pas pour la précision finale.
+   Architecture de classification (2 moteurs, clairement séparés) :
+     1. MOTEUR SÉMANTIQUE INSTITUTIONNEL (démarrage à froid, aucune donnée requise)
+        Taxonomie officielle + ontologie de domaine + embeddings locaux (si le modèle
+        sentence-transformers est installé sur le serveur), avec repli sur TF-IDF sinon.
+        Précision plafonnée par nature : ce moteur ne "comprend" pas le texte comme un
+        modèle entraîné sur vos propres données, il reconnaît des motifs et de la
+        similarité sémantique générique. Utile pour démarrer, pas pour la précision finale.
+     2. MODÈLE SUPERVISÉ ENTRAÎNÉ (recommandé pour la précision réelle)
+        TF-IDF + Régression logistique / SVM linéaire / SGD / Naive Bayes, entraîné sur les
+        réponses que vous avez validées dans l'onglet de validation experte. C'est le seul
+        moyen d'obtenir une précision mesurable par validation croisée sur vos propres
+        données plutôt qu'une estimation. Le modèle peut être téléchargé et réutilisé.
 
-  2. MODÈLE SUPERVISÉ ENTRAÎNÉ (recommandé pour la précision réelle)
-     TF-IDF + Régression logistique / SVM linéaire, entraîné sur les
-     réponses que vous avez validées dans l'onglet de validation experte.
-     C'est le seul moyen d'obtenir une "haute précision" mesurable :
-     la précision annoncée est calculée par validation croisée sur vos
-     propres données, pas une estimation. Plus vous validez de réponses,
-     plus ce modèle s'améliore. Le modèle peut être téléchargé et réutilisé.
+3. BUG DE CONFIANCE CORRIGÉ POUR LA CLASSIFICATION BINAIRE
+   Pour un modèle SVM linéaire (ou SGD) entraîné sur exactement 2 thèmes,
+   `decision_function` renvoie un score signé unique (distance à l'hyperplan), pas un
+   score par classe. L'ancien code appliquait un softmax multi-classes sur ce score
+   unique, ce qui renvoyait systématiquement 100% de confiance quel que soit le cas réel.
+   Corrigé via une transformation logistique (sigmoïde) du score de marge — voir
+   `classify_with_trained_model`. Il s'agit toujours d'une approximation non calibrée
+   (pas une probabilité au sens statistique du terme), ce qui est maintenant documenté
+   explicitement dans le code et dans l'interface.
 
-  3. IA INSTITUTIONNELLE (optionnel, désactivé par défaut)
-     Appel à une API externe (OpenAI). Envoie le texte des réponses à un
-     service tiers : à activer uniquement si cela est acceptable pour la
-     confidentialité de vos données. Isolé et clairement signalé dans
-     l'interface, jamais activé silencieusement.
+Par ailleurs, le score de pertinence produit par le moteur sémantique institutionnel
+(non entraîné) est désormais étiqueté dans l'interface comme un "score de pertinence
+heuristique, non calibré", et non plus comme une "confiance %", afin de ne pas laisser
+croire à une précision statistique qu'il n'a pas. Seul le score du modèle supervisé,
+mesuré par validation croisée, est présenté comme une confiance/précision au sens
+statistique.
 """
-
 import re
 import os
 import html
 import base64
 import difflib
-import json
-import urllib.request
 from pathlib import Path
 from io import BytesIO
 from collections import Counter
-
 import numpy as np
 import pandas as pd
 import streamlit as st
-
 # ============================================================
 # CONSTANTS
 # ============================================================
-
 APP_TITLE = "PLAN STRATÉGIQUE USJ 2032"
 SHEET_NAME = "All answers 29-6-2026"
-
 USJ_BLUE = "#001F5B"
 USJ_BLUE_2 = "#1F3C88"
 USJ_RED = "#8B1538"
 USJ_LIGHT_BLUE = "#EAF2F8"
 USJ_TEXT = "#1B2A41"
 LOGO_PATH = "LOGO NEW UAQ.png"
-
-ENGINE_HEURISTIC = "Moteur sémantique institutionnel - taxonomie + ontologie + embeddings locaux"
+ENGINE_SEMANTIC = "Moteur sémantique institutionnel - taxonomie + ontologie + embeddings locaux"
 ENGINE_TRAINED = "Modèle supervisé entraîné - recommandé pour la précision"
-ENGINE_LLM = "IA institutionnelle (API externe) - optionnel"
-
 SWOT_ELEMENTS = ["Forces", "Faiblesses", "Opportunités", "Menaces"]
-
 MIN_EXAMPLES_PER_THEME = 3
 MIN_TOTAL_TRAINING_EXAMPLES = 15
-
-
 # ============================================================
 # BASIC UTILITIES
 # ============================================================
-
 def clean(value):
     if pd.isna(value):
         return ""
     return str(value).strip()
-
-
 def normalize(value):
     value = clean(value).lower()
     replacements = {
@@ -95,15 +95,11 @@ def normalize(value):
     for old, new in replacements.items():
         value = value.replace(old, new)
     return value
-
-
 def _strip_control_chars(text):
     """Remove characters (other than newline/tab) that can break ReportLab's
     paragraph parser, such as stray control bytes sometimes present in Excel
     exports (e.g. \\x0b vertical tab from a wrapped cell)."""
     return "".join(ch for ch in text if ch in ("\n", "\t") or ord(ch) >= 32)
-
-
 def esc(value):
     text = html.escape(_strip_control_chars(clean(value)))
     # Self-closing <br/>, not <br>: this string is also fed into ReportLab's
@@ -111,18 +107,12 @@ def esc(value):
     # An unclosed <br> there raises a ValueError and aborts the whole report;
     # <br/> is valid both in HTML (Streamlit) and in ReportLab's parser.
     return text.replace("\n", "<br/>")
-
-
 def safe_filename(value):
     value = clean(value)
     value = re.sub(r"[^A-Za-z0-9À-ÿ._-]+", "_", value)
     return value.strip("_") or "rapport"
-
-
 def html_block(content):
     st.markdown(content, unsafe_allow_html=True)
-
-
 def image_to_base64(image_path):
     image_path = Path(image_path)
     if not image_path.exists():
@@ -132,8 +122,6 @@ def image_to_base64(image_path):
     with open(image_path, "rb") as img_file:
         encoded = base64.b64encode(img_file.read()).decode()
     return f"data:image/{mime_type};base64,{encoded}"
-
-
 def get_col(df, possible_names):
     cols = {normalize(c): c for c in df.columns}
     for name in possible_names:
@@ -141,8 +129,6 @@ def get_col(df, possible_names):
         if n in cols:
             return cols[n]
     return None
-
-
 APP_CSS = f"""
 <style>
 html, body, .stApp {{
@@ -188,12 +174,9 @@ h1, h2, h3 {{ color:{USJ_BLUE} !important; font-weight:800 !important; }}
 .ai-kpi-label {{ color: #64748B; font-size: 13px; font-weight: 700; margin-top: 3px; }}
 </style>
 """
-
-
 # ============================================================
 # OFFICIAL THEME TAXONOMY (unchanged from your source of truth)
 # ============================================================
-
 THEME_TAXONOMY = {
     "PSG": {
         "internal": [
@@ -320,7 +303,6 @@ THEME_TAXONOMY = {
         ],
     },
 }
-
 PARTICIPANT_TYPE_ALIASES = {
     "psg": "PSG",
     "anciens": "Anciens",
@@ -332,14 +314,10 @@ PARTICIPANT_TYPE_ALIASES = {
     "enseignants": "Enseignants",
     "teachers": "Enseignants",
 }
-
-
 def canonical_participant_type(value):
     raw = clean(value)
     norm = normalize(raw)
     return PARTICIPANT_TYPE_ALIASES.get(norm, raw)
-
-
 def official_themes_for(participant_type, swot_element, include_autre=False):
     participant_type = canonical_participant_type(participant_type)
     family = "internal" if swot_element in ["Forces", "Faiblesses"] else "external"
@@ -347,8 +325,6 @@ def official_themes_for(participant_type, swot_element, include_autre=False):
     if include_autre:
         return themes
     return [t for t in themes if normalize(t) not in ["autre", "autres"]]
-
-
 def _detect_swot_from_text(value):
     """Detect one SWOT element from a single field.
     This is intentionally applied field by field so that an exact category
@@ -358,7 +334,6 @@ def _detect_swot_from_text(value):
     text_n = normalize(value)
     if not text_n:
         return ""
-
     force_terms = [
         "force", "forces", "strength", "strengths",
         "atout", "atouts", "point fort", "points forts"
@@ -375,7 +350,6 @@ def _detect_swot_from_text(value):
         "menace", "menaces", "threat", "threats",
         "risque externe", "risques externes"
     ]
-
     if any(_contains_term(text_n, term) for term in force_terms):
         return "Forces"
     if any(_contains_term(text_n, term) for term in faiblesse_terms):
@@ -385,8 +359,6 @@ def _detect_swot_from_text(value):
     if any(_contains_term(text_n, term) for term in menace_terms):
         return "Menaces"
     return ""
-
-
 def detect_swot_element(row):
     """Detect SWOT from structured Excel fields.
     Priority order is category -> question -> section.
@@ -398,13 +370,9 @@ def detect_swot_element(row):
         if detected:
             return detected
     return ""
-
-
-
 # ============================================================
 # TEXT PROCESSING
 # ============================================================
-
 STOPWORDS_FR = {
     "le", "la", "les", "un", "une", "des", "du", "de", "d", "l", "et", "ou", "en",
     "au", "aux", "avec", "sans", "pour", "par", "dans", "sur", "ce", "cet", "cette",
@@ -415,14 +383,10 @@ STOPWORDS_FR = {
     "renforce", "renforcee", "renforcer", "davantage", "ameliorer", "meilleur",
     "meilleure", "systeme", "niveau", "mise", "jour", "usj", "universite",
 }
-
-
 def tokenize_for_similarity(text):
     text = normalize(text)
     tokens = re.findall(r"[a-z0-9]{3,}", text)
     return [t for t in tokens if t not in STOPWORDS_FR]
-
-
 def _contains_term(text_norm, term):
     term_norm = normalize(term)
     if not term_norm:
@@ -430,15 +394,13 @@ def _contains_term(text_norm, term):
     if " " in term_norm:
         return term_norm in text_norm
     return re.search(r"(^|[^a-z0-9])" + re.escape(term_norm) + r"([^a-z0-9]|$)", text_norm) is not None
-
-
 # ============================================================
-# HEURISTIC ENGINE (cold-start only, no training data required)
+# DOMAIN ONTOLOGY (shared guardrails used by the semantic engine)
 # ============================================================
 # Domain vocabularies. Each domain lists positive terms and which official
 # themes it supports / actively contradicts. This gives a conservative
-# starting point for classification before any labeled data exists.
-
+# guardrail so the semantic engine can't be pulled toward an unrelated theme
+# purely by generic word overlap.
 DOMAIN_RULES = {
     "academic_teaching": {
         "terms": ["cours", "programme", "programmes", "formation", "formations", "enseignement",
@@ -563,12 +525,8 @@ DOMAIN_RULES = {
         "negative_themes": ["mission societale", "reputation et image"],
     },
 }
-
-
 def _theme_in_list(theme_norm, theme_patterns):
     return any((pat in theme_norm or theme_norm in pat) for pat in theme_patterns)
-
-
 def detected_answer_domains(answer):
     answer_norm = normalize(answer)
     domains = {}
@@ -577,8 +535,6 @@ def detected_answer_domains(answer):
         if hits:
             domains[domain] = min(1.0, 0.35 + 0.18 * len(hits))
     return domains
-
-
 def domain_guardrail_score(answer, theme):
     theme_norm = normalize(theme)
     domains = detected_answer_domains(answer)
@@ -591,8 +547,6 @@ def domain_guardrail_score(answer, theme):
         if _theme_in_list(theme_norm, profile.get("negative_themes", [])):
             negative += strength
     return min(1.0, positive), min(1.0, negative), matched
-
-
 def tfidf_scores_against_themes(answer, themes):
     try:
         from sklearn.feature_extraction.text import TfidfVectorizer
@@ -600,7 +554,6 @@ def tfidf_scores_against_themes(answer, themes):
         from sklearn.pipeline import FeatureUnion
     except Exception:
         return [0.0 for _ in themes]
-
     corpus = [clean(answer)] + [clean(t) for t in themes]
     try:
         features = FeatureUnion([
@@ -611,70 +564,18 @@ def tfidf_scores_against_themes(answer, themes):
         return cosine_similarity(matrix[0:1], matrix[1:]).flatten().tolist()
     except Exception:
         return [0.0 for _ in themes]
-
-
-def heuristic_score_candidates(answer, participant_type, swot_element):
-    """Score every official theme for this row using domain rules + TF-IDF.
-    Returns a list of (theme, score, matched_domains) sorted best-first.
-    """
-    themes = official_themes_for(participant_type, swot_element, include_autre=False)
-    if not themes:
-        return []
-
-    tfidf = tfidf_scores_against_themes(answer, themes)
-    detected = detected_answer_domains(answer)
-
-    ranked = []
-    for i, theme in enumerate(themes):
-        domain_pos, domain_neg, matched = domain_guardrail_score(answer, theme)
-        score = (0.60 * domain_pos) + (0.40 * tfidf[i]) - (0.65 * domain_neg)
-        # If a clear domain was detected in the answer but this theme is outside
-        # that domain entirely, suppress it so generic word overlap can't win.
-        if detected and domain_pos == 0:
-            score *= 0.5
-        score = max(0.0, min(1.0, score))
-        ranked.append((theme, score, matched))
-
-    return sorted(ranked, key=lambda x: x[1], reverse=True)
-
-
-def heuristic_confidence(ranked):
-    if not ranked:
-        return 0.0
-    best, second = ranked[0][1], (ranked[1][1] if len(ranked) > 1 else 0)
-    margin = max(best - second, 0)
-    conf = 25 + best * 55 + margin * 90
-    if best < 0.20:
-        conf = min(conf, 40)
-    if margin < 0.04:
-        conf = min(conf, 55)
-    return round(max(5, min(conf, 90)), 1)  # heuristic engine is capped below 90: it is not a trained model
-
-
-def classify_heuristic(answer, participant_type, swot_element):
-    ranked = heuristic_score_candidates(answer, participant_type, swot_element)
-    if not ranked:
-        return "", 0.0, "", "Aucun thème officiel disponible"
-    best_theme, best_score, matched = ranked[0]
-    conf = heuristic_confidence(ranked)
-    top3 = " | ".join([f"{t} ({round(s * 100, 1)})" for t, s, _ in ranked[:3]])
-    evidence = f"domaine détecté: {', '.join(matched)}" if matched else "évidence lexicale faible"
-    return best_theme, conf, top3, evidence
-
-
 # ============================================================
 # SEMANTIC INSTITUTIONAL ENGINE
 # ------------------------------------------------------------
-# This replaces the old "rules + TF-IDF only" suggestion path.
-# It remains fully local and private: no external API call.
-# Pipeline:
+# Fully local, no external API call. Pipeline:
 #   1. official taxonomy filtering
 #   2. domain ontology guardrails
 #   3. local sentence embeddings when available
 #   4. TF-IDF fallback only if embeddings are not installed/cached
-#   5. confidence calibrated from score level + margin
+#   5. relevance score calibrated from score level + margin
+#      (this is a heuristic ranking signal, not a statistical probability —
+#       see semantic_confidence docstring)
 # ============================================================
-
 THEME_PROFILE_HINTS = {
     "soutenabilite financiere": "budget financement frais scolarite couts bourses viabilite ressources financieres soutenabilite economique",
     "gouvernance et leadership": "gouvernance leadership decision transparence pilotage direction representation procedures gestion institutionnelle",
@@ -703,7 +604,6 @@ THEME_PROFILE_HINTS = {
     "reputation et image": "reputation image classement visibilite notoriete attractivite rayonnement perception reconnaissance",
     "environnement politique et economique emigration": "crise politique economique emigration instabilite inflation guerre securite contexte libanais",
 }
-
 def _theme_profile_text(theme):
     theme_n = normalize(theme)
     hints = []
@@ -711,7 +611,6 @@ def _theme_profile_text(theme):
         if key in theme_n or theme_n in key:
             hints.append(value)
     return clean(theme) + ". " + " ".join(hints)
-
 @st.cache_resource(show_spinner=False)
 def _load_local_sentence_model():
     """Load a local multilingual sentence-transformer if available.
@@ -727,7 +626,6 @@ def _load_local_sentence_model():
             return SentenceTransformer(model_name)
     except Exception:
         return None
-
 def _cosine_scores_from_embeddings(answer, theme_profiles):
     model = _load_local_sentence_model()
     if model is None:
@@ -738,12 +636,10 @@ def _cosine_scores_from_embeddings(answer, theme_profiles):
         return cosine_similarity([vectors[0]], vectors[1:]).flatten().tolist()
     except Exception:
         return None
-
 def semantic_institutional_score_candidates(answer, participant_type, swot_element):
     themes = official_themes_for(participant_type, swot_element, include_autre=False)
     if not themes:
         return [], "no_themes"
-
     theme_profiles = [_theme_profile_text(t) for t in themes]
     embedding_scores = _cosine_scores_from_embeddings(answer, theme_profiles)
     if embedding_scores is not None:
@@ -756,40 +652,39 @@ def semantic_institutional_score_candidates(answer, participant_type, swot_eleme
         semantic_source = "fallback TF-IDF"
         semantic_weight = 0.30
         lexical_weight = 0.20
-
     lexical_scores = tfidf_scores_against_themes(answer, themes)
     detected = detected_answer_domains(answer)
-
     ranked = []
     for i, theme in enumerate(themes):
         domain_pos, domain_neg, matched = domain_guardrail_score(answer, theme)
         ontology_score = max(0.0, domain_pos - 0.70 * domain_neg)
-
         score = (
             semantic_weight * semantic_scores[i]
             + 0.40 * ontology_score
             + lexical_weight * lexical_scores[i]
         )
-
         # Strong guardrail: when the answer clearly belongs to a domain and
         # the candidate theme is in a contradictory domain, suppress it.
         if detected and domain_pos == 0 and domain_neg > 0:
             score *= 0.35
         elif detected and domain_pos == 0:
             score *= 0.70
-
         score = max(0.0, min(1.0, score))
         ranked.append((theme, score, matched, semantic_scores[i], lexical_scores[i], ontology_score))
-
     return sorted(ranked, key=lambda x: x[1], reverse=True), semantic_source
-
 def semantic_confidence(ranked, semantic_source):
+    """Heuristic relevance score (0-100), NOT a calibrated statistical
+    probability. It combines the top candidate's raw score with the margin
+    over the runner-up. Displayed in the UI as "score de pertinence", kept
+    deliberately distinct from the trained model's cross-validated accuracy,
+    which is the only number in this app backed by a real statistical
+    estimate.
+    """
     if not ranked:
         return 0.0
     best = ranked[0][1]
     second = ranked[1][1] if len(ranked) > 1 else 0.0
     margin = max(best - second, 0.0)
-
     conf = 20 + best * 62 + margin * 120
     if semantic_source == "fallback TF-IDF":
         conf = min(conf, 78)
@@ -799,18 +694,14 @@ def semantic_confidence(ranked, semantic_source):
         conf = min(conf, 55)
     if margin >= 0.18 and best >= 0.55 and semantic_source != "fallback TF-IDF":
         conf = max(conf, 82)
-
     return round(max(5, min(conf, 95)), 1)
-
 def classify_semantic_institutional(answer, participant_type, swot_element):
     ranked, source = semantic_institutional_score_candidates(answer, participant_type, swot_element)
     if not ranked:
         return "", 0.0, "", "Aucun thème officiel disponible"
-
     best_theme, best_score, matched, sem_score, lex_score, onto_score = ranked[0]
     conf = semantic_confidence(ranked, source)
     top3 = " | ".join([f"{t} ({round(s * 100, 1)})" for t, s, *_ in ranked[:3]])
-
     if source == "embeddings locaux":
         evidence = (
             "Moteur sémantique institutionnel : taxonomie officielle + ontologie de domaine "
@@ -821,14 +712,10 @@ def classify_semantic_institutional(answer, participant_type, swot_element):
             "Moteur sémantique institutionnel : taxonomie officielle + ontologie de domaine. "
             "Embeddings locaux non disponibles sur ce serveur ; fallback lexical contrôlé utilisé."
         )
-
     return best_theme, conf, top3, evidence
-
-
 # ============================================================
 # EXCEL I/O
 # ============================================================
-
 def read_corrected_excel(uploaded_file):
     try:
         df = pd.read_excel(uploaded_file, sheet_name=SHEET_NAME, engine="openpyxl")
@@ -836,9 +723,7 @@ def read_corrected_excel(uploaded_file):
         st.error(f"Impossible de lire la feuille : {SHEET_NAME}")
         st.exception(e)
         st.stop()
-
     df = df.dropna(how="all")
-
     type_col = get_col(df, ["Respondent_Type", "Type participant", "Type de participants"])
     group_col = get_col(df, ["groupe", "Sous groupe", "Subgroup"])
     names_col = get_col(df, ["participants", "Participants", "Nom participants"])
@@ -846,7 +731,6 @@ def read_corrected_excel(uploaded_file):
     category_col = get_col(df, ["category", "catégorie", "categorie"])
     question_col = get_col(df, ["Question", "question", "Questions"])
     answer_col = get_col(df, ["Final_Answer", "Final Answer", "Réponse finale", "Reponse finale"])
-
     missing = []
     for label, col in [("Respondent_Type", type_col), ("groupe", group_col), ("participants", names_col),
                         ("section", section_col), ("category", category_col), ("Final_Answer", answer_col)]:
@@ -855,7 +739,6 @@ def read_corrected_excel(uploaded_file):
     if missing:
         st.error("Colonnes manquantes : " + ", ".join(missing))
         st.stop()
-
     rename_map = {
         type_col: "Respondent_Type",
         group_col: "groupe",
@@ -866,25 +749,18 @@ def read_corrected_excel(uploaded_file):
     }
     if question_col:
         rename_map[question_col] = "question"
-
     df = df.rename(columns=rename_map)
-
     if "question" not in df.columns:
         df["question"] = df["category"]
-
     for col in ["Respondent_Type", "groupe", "participants", "section", "category", "question", "Final_Answer"]:
         if col in df.columns:
             df[col] = df[col].apply(clean)
-
     df = df[(df["Respondent_Type"] != "") & (df["groupe"] != "")]
     df["swot_element"] = df.apply(detect_swot_element, axis=1)
     return df.reset_index(drop=True)
-
-
 # ============================================================
 # DUPLICATE DETECTION
 # ============================================================
-
 DUPLICATE_SYNONYMS = {
     "alumni": "anciens", "ancien": "anciens", "anciens": "anciens",
     "diplome": "diplomes", "diplomes": "diplomes",
@@ -897,41 +773,32 @@ DUPLICATE_SYNONYMS = {
     "emploi": "emploi", "employabilite": "emploi",
     "stage": "stage", "stages": "stage",
 }
-
-
 def canonical_duplicate_tokens(text):
     tokens = tokenize_for_similarity(text)
     canonical = [DUPLICATE_SYNONYMS.get(t, t) for t in tokens]
     return [t for t in canonical if t not in STOPWORDS_FR]
-
-
 def strict_duplicate_score(answer_a, answer_b):
     a_norm, b_norm = normalize(answer_a), normalize(answer_b)
     if not a_norm or not b_norm:
         return 0.0, "Vide"
     if a_norm == b_norm:
         return 1.0, "Doublon exact"
-
     seq_ratio = difflib.SequenceMatcher(None, a_norm, b_norm).ratio()
     tokens_a, tokens_b = set(canonical_duplicate_tokens(answer_a)), set(canonical_duplicate_tokens(answer_b))
     if not tokens_a or not tokens_b:
         return seq_ratio, "Texte trop court"
-
     shared = tokens_a & tokens_b
     union = tokens_a | tokens_b
     jaccard = len(shared) / max(len(union), 1)
     containment = len(shared) / max(min(len(tokens_a), len(tokens_b)), 1)
-
     has_core_overlap = len(shared) >= 2 or (len(shared) == 1 and min(len(tokens_a), len(tokens_b)) <= 3)
     if not has_core_overlap:
         return max(seq_ratio * 0.35, jaccard), "Même structure possible, mais sujet différent"
-
     # Three or more shared concept words (after synonym canonicalization) is a strong
     # signal the two answers express the same idea, even if containment/jaccard alone
     # fall just under their individual thresholds (e.g. "anciens" vs "alumni" phrasing).
     if len(shared) >= 3 and containment >= 0.65:
         return max(0.85, containment), "Même idée avec formulation différente"
-
     if containment >= 0.80 and seq_ratio >= 0.55:
         return max(containment, seq_ratio), "Même idée avec formulation différente"
     if jaccard >= 0.62 and seq_ratio >= 0.50:
@@ -939,8 +806,6 @@ def strict_duplicate_score(answer_a, answer_b):
     if seq_ratio >= 0.88 and containment >= 0.55:
         return seq_ratio, "Très proche lexicalement"
     return max(jaccard, containment * 0.75, seq_ratio * 0.50), "Non retenu"
-
-
 def detect_duplicate_pairs(df):
     rows = df[df["Final_Answer"].apply(clean) != ""].copy()
     rows = rows[rows["swot_element"].isin(SWOT_ELEMENTS)].reset_index(drop=True)
@@ -959,12 +824,9 @@ def detect_duplicate_pairs(df):
                     "Validation expert": "À vérifier",
                 })
     return pd.DataFrame(pairs)
-
-
 # ============================================================
 # SUPERVISED MODEL (this is the real path to high accuracy)
 # ============================================================
-
 def prepare_training_dataset(validated_df):
     """Build a (text, label) training set from expert-validated rows."""
     if validated_df is None or validated_df.empty:
@@ -975,7 +837,6 @@ def prepare_training_dataset(validated_df):
     type_col = get_col(validated_df, ["Respondent_Type", "Type de participants"])
     if not text_col or not label_col:
         return pd.DataFrame()
-
     out = pd.DataFrame({
         "text": validated_df[text_col].apply(clean),
         "label": validated_df[label_col].apply(clean),
@@ -983,8 +844,6 @@ def prepare_training_dataset(validated_df):
     out["swot_element"] = validated_df[swot_col].apply(clean) if swot_col else ""
     out["Respondent_Type"] = validated_df[type_col].apply(clean) if type_col else ""
     return out[(out["text"] != "") & (out["label"] != "")].reset_index(drop=True)
-
-
 def _build_pipeline(clf):
     from sklearn.pipeline import Pipeline, FeatureUnion
     from sklearn.feature_extraction.text import TfidfVectorizer
@@ -993,8 +852,6 @@ def _build_pipeline(clf):
         ("char", TfidfVectorizer(analyzer="char_wb", ngram_range=(3, 5), min_df=1, strip_accents="unicode")),
     ])
     return Pipeline([("features", features), ("clf", clf)])
-
-
 def evaluate_theme_models(train_df, random_state=42):
     """Compare candidate algorithms using stratified k-fold cross-validation.
     Cross-validation (rather than one train/test split) gives a much more
@@ -1008,10 +865,8 @@ def evaluate_theme_models(train_df, random_state=42):
         from sklearn.metrics import accuracy_score, f1_score
     except Exception as e:
         return pd.DataFrame(), pd.DataFrame(), f"scikit-learn n'est pas installé. Détail : {e}"
-
     if train_df.empty:
         return pd.DataFrame(), pd.DataFrame(), "Aucune donnée validée disponible."
-
     counts = train_df["label"].value_counts()
     n_classes = train_df["label"].nunique()
     if n_classes < 2:
@@ -1022,7 +877,6 @@ def evaluate_theme_models(train_df, random_state=42):
             f"minimum recommandé {MIN_TOTAL_TRAINING_EXAMPLES}. Continuez à valider des réponses dans "
             f"l'onglet de classification, puis relancez l'entraînement."
         )
-
     # Cross-validation folds cannot exceed the smallest class size.
     n_splits = max(2, min(5, int(counts.min())))
     if counts.min() < 2:
@@ -1031,18 +885,15 @@ def evaluate_theme_models(train_df, random_state=42):
             "Les thèmes suivants n'ont qu'un seul exemple validé, ce qui empêche une évaluation fiable : "
             + ", ".join(thin) + ". Validez au moins 2-3 réponses par thème avant d'entraîner."
         )
-
     X = train_df["text"].astype(str)
     y = train_df["label"].astype(str)
     skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=random_state)
-
     algorithms = {
         "TF-IDF + Régression logistique": LogisticRegression(max_iter=2000, class_weight="balanced"),
         "TF-IDF + SVM linéaire": LinearSVC(class_weight="balanced"),
         "TF-IDF + SGD (SVM en ligne)": SGDClassifier(loss="hinge", class_weight="balanced", random_state=random_state),
         "TF-IDF + Naive Bayes": MultinomialNB(),
     }
-
     summary_rows, all_predictions = [], []
     for name, clf in algorithms.items():
         try:
@@ -1065,18 +916,14 @@ def evaluate_theme_models(train_df, random_state=42):
                 "Algorithme": name, "Accuracy (validation croisée)": None, "Macro F1 (validation croisée)": None,
                 "N validé": len(X), "Nb de thèmes": n_classes, "Folds": n_splits, "Erreur": str(e),
             })
-
     results = pd.DataFrame(summary_rows).sort_values(
         ["Macro F1 (validation croisée)", "Accuracy (validation croisée)"], ascending=False, na_position="last"
     )
     return results, pd.DataFrame(all_predictions), ""
-
-
 def train_final_model(train_df, algorithm_name, random_state=42):
     from sklearn.linear_model import LogisticRegression, SGDClassifier
     from sklearn.naive_bayes import MultinomialNB
     from sklearn.svm import LinearSVC
-
     algorithms = {
         "TF-IDF + Régression logistique": LogisticRegression(max_iter=2000, class_weight="balanced"),
         "TF-IDF + SVM linéaire": LinearSVC(class_weight="balanced"),
@@ -1087,9 +934,25 @@ def train_final_model(train_df, algorithm_name, random_state=42):
     model = _build_pipeline(clf)
     model.fit(train_df["text"].astype(str), train_df["label"].astype(str))
     return model
-
-
 def classify_with_trained_model(answer, model):
+    """Classify one answer with the trained pipeline and return (theme, confidence).
+
+    confidence handling by classifier type:
+      - predict_proba available (LogisticRegression, MultinomialNB): use it directly,
+        this is a genuine calibrated-ish probability from the algorithm itself.
+      - decision_function only, >=3 classes (LinearSVC, SGDClassifier): softmax over
+        the per-class margins. A reasonable ranking signal, not a calibrated probability.
+      - decision_function only, exactly 2 classes: BUG FIX. scikit-learn's
+        decision_function for a binary linear classifier returns a single signed
+        margin (shape (1,)), not one score per class. The previous implementation
+        ran the multi-class softmax on this single value, which always produced
+        exp(0)/exp(0) = 100% confidence regardless of how close the answer was to
+        the decision boundary. Fixed by applying a logistic (sigmoid) squashing to
+        the margin and reporting the winning class's probability instead. This is
+        still an approximation, not a statistically calibrated probability — true
+        calibration would require CalibratedClassifierCV with an isotonic/Platt fit,
+        which needs more validated data than this project currently has.
+    """
     pred = model.predict([answer])[0]
     confidence = None
     try:
@@ -1098,106 +961,26 @@ def classify_with_trained_model(answer, model):
             proba = model.predict_proba([answer])[0]
             confidence = round(float(max(proba)) * 100, 1)
         elif hasattr(clf, "decision_function"):
-            scores = np.array(model.decision_function([answer])).reshape(-1)
-            if len(scores) > 0:
-                exp_scores = np.exp(scores - scores.max())
+            raw_scores = np.array(model.decision_function([answer])).reshape(-1)
+            n_classes = len(getattr(clf, "classes_", []))
+            if n_classes == 2 and raw_scores.shape[0] == 1:
+                margin = float(raw_scores[0])
+                prob_positive = 1.0 / (1.0 + np.exp(-margin))
+                confidence = round(max(prob_positive, 1.0 - prob_positive) * 100, 1)
+            elif raw_scores.shape[0] > 1:
+                exp_scores = np.exp(raw_scores - raw_scores.max())
                 confidence = round(float(exp_scores.max() / exp_scores.sum()) * 100, 1)
     except Exception:
         confidence = None
     return pred, confidence
-
-
-# ============================================================
-# OPTIONAL EXTERNAL LLM ENGINE (opt-in, isolated, never silent)
-# ============================================================
-
-def get_institutional_ai_key():
-    key = st.session_state.get("institutional_ai_key", "")
-    if key:
-        return key
-    try:
-        key = st.secrets.get("AI_ENGINE_API_KEY", "")
-        if key:
-            return key
-    except Exception:
-        pass
-    return os.environ.get("AI_ENGINE_API_KEY", "")
-
-
-def get_institutional_ai_model_name():
-    try:
-        model_name = st.secrets.get("AI_ENGINE_MODEL", "")
-        if model_name:
-            return model_name
-    except Exception:
-        pass
-    return os.environ.get("AI_ENGINE_MODEL", "gpt-4o-mini")
-
-
-def call_institutional_ai_json(messages, temperature=0):
-    api_key = get_institutional_ai_key()
-    if not api_key:
-        raise RuntimeError("Clé du moteur IA manquante")
-    payload = {
-        "model": get_institutional_ai_model_name(), "messages": messages,
-        "temperature": temperature, "response_format": {"type": "json_object"},
-    }
-    req = urllib.request.Request(
-        "https://api.openai.com/v1/chat/completions",
-        data=json.dumps(payload).encode("utf-8"),
-        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-        method="POST",
-    )
-    with urllib.request.urlopen(req, timeout=90) as response:
-        data = json.loads(response.read().decode("utf-8"))
-    return json.loads(data["choices"][0]["message"]["content"])
-
-
-def classify_with_llm(answer, participant_type, swot_element):
-    themes = [clean(t) for t in official_themes_for(participant_type, swot_element, include_autre=True) if clean(t)]
-    if not themes:
-        return "", 0.0, "", "Aucun thème officiel disponible"
-    official_list = "\n".join([f"- {t}" for t in themes])
-
-    system_prompt = """Tu es un expert senior en analyse qualitative institutionnelle universitaire.
-Classifie une réponse de focus group USJ dans UN SEUL thème de la liste officielle fournie.
-Respecte strictement les noms de thèmes, ne les modifie jamais.
-Base-toi sur le sens et l'objet principal de la réponse, pas sur la structure de la phrase.
-Si aucun thème ne correspond clairement, choisis Autres/Autre si disponible et indique une confiance faible.
-Réponds uniquement en JSON valide : {"theme": "...", "confidence": 0-100, "explanation": "...", "alternatives": ["...", "..."]}"""
-
-    user_prompt = f"Type de participants : {participant_type}\nÉlément SWOT : {swot_element}\n\nThèmes officiels autorisés :\n{official_list}\n\nRéponse à classifier :\n{answer}"
-
-    try:
-        result = call_institutional_ai_json([
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ])
-        theme = clean(result.get("theme", ""))
-        if theme not in themes:
-            fallback = "Autres" if "Autres" in themes else ("Autre" if "Autre" in themes else themes[0])
-            return fallback, 25.0, "", "Réponse hors liste officielle ; correction défensive appliquée."
-        conf = round(max(0, min(float(result.get("confidence", 0) or 0), 100)), 1)
-        explanation = clean(result.get("explanation", "Classification par le moteur IA institutionnel."))
-        alts = result.get("alternatives", [])
-        alt_txt = " | ".join([clean(x) for x in alts if clean(x) in themes][:3]) if isinstance(alts, list) else ""
-        return theme, conf, alt_txt, explanation
-    except Exception as e:
-        fallback = "Autres" if "Autres" in themes else ("Autre" if "Autre" in themes else themes[0])
-        return fallback, 10.0, "", f"Erreur moteur IA / fallback conservateur : {e}"
-
-
 # ============================================================
 # UNIFIED CLASSIFICATION DISPATCH
 # ============================================================
-
 def classify_answer(answer, participant_type, swot_element, engine, trained_model=None):
     if engine == ENGINE_TRAINED and trained_model is not None:
         theme, conf = classify_with_trained_model(answer, trained_model)
         return theme, (conf if conf is not None else 0.0), "", "Modèle supervisé entraîné sur vos données validées"
     return classify_semantic_institutional(answer, participant_type, swot_element)
-
-
 def build_classification_dataframe(df_scope, engine, trained_model=None):
     rows = []
     for idx, row in df_scope.iterrows():
@@ -1218,16 +1001,19 @@ def build_classification_dataframe(df_scope, engine, trained_model=None):
             "Validated_Theme": theme, "New_Theme": "",
         })
     return pd.DataFrame(rows)
-
-
+def confidence_column_label(engine):
+    """Single source of truth for how the 'Confidence' column is labeled in
+    the UI, so a statistically-backed number (trained model, cross-validated)
+    is never displayed with the same wording as a heuristic ranking score
+    (semantic engine, uncalibrated)."""
+    if engine == ENGINE_TRAINED:
+        return "Confiance % (modèle entraîné, validation croisée)"
+    return "Score de pertinence % (heuristique, non calibré)"
 # ============================================================
 # CUSTOM THEMES ADDED BY EXPERTS (auto-saved, reused across rows)
 # ============================================================
-
 def _custom_theme_key(participant_type, swot_element):
     return f"{normalize(participant_type)}||{normalize(swot_element)}"
-
-
 def get_custom_themes(participant_type, swot_element):
     """Themes that experts have typed in as 'Nouveau thème' for this
     participant type / SWOT element combination, in the order they were added.
@@ -1235,8 +1021,6 @@ def get_custom_themes(participant_type, swot_element):
     subsequent row of the same group, without the expert retyping them."""
     store = st.session_state.setdefault("custom_themes", {})
     return store.get(_custom_theme_key(participant_type, swot_element), [])
-
-
 def register_custom_theme(participant_type, swot_element, theme):
     theme = clean(theme)
     if not theme:
@@ -1246,8 +1030,6 @@ def register_custom_theme(participant_type, swot_element, theme):
     existing = store.setdefault(key, [])
     if theme not in existing:
         existing.append(theme)
-
-
 # ============================================================
 # DATA EDITOR STATE HELPERS
 # ------------------------------------------------------------
@@ -1265,10 +1047,8 @@ def register_custom_theme(participant_type, swot_element, theme):
 # helper was redundant and could drift out of sync with the shadow store, so
 # that path has been removed in favor of this one.
 # ============================================================
-
 def _resolve_row_id(raw_key, row_ids):
     """Resolve a data_editor `edited_rows` key to the underlying row_id.
-
     `raw_key` is positional (0-based row order in the displayed frame) in
     normal operation, so position is always checked first. The direct
     membership fallback only covers the unusual case where the key already
@@ -1284,11 +1064,8 @@ def _resolve_row_id(raw_key, row_ids):
     if raw_key in row_ids:
         return raw_key
     return None
-
-
 def _editor_value_store():
     """Persistent cell-level storage for manual edits in st.data_editor.
-
     Streamlit keeps only deltas inside the data_editor widget state. When the
     dropdown options are rebuilt after adding a new theme, those deltas can be
     recalculated and the visual value of the text column may disappear. This
@@ -1296,13 +1073,9 @@ def _editor_value_store():
     column "Nouveau thème" remains visible and exportable.
     """
     return st.session_state.setdefault("editor_cell_values", {})
-
-
 def _editor_store_for(editor_key):
     store = _editor_value_store()
     return store.setdefault(editor_key, {})
-
-
 def apply_persistent_editor_values(edit_df, editor_key):
     values = _editor_store_for(editor_key)
     if not values:
@@ -1314,8 +1087,6 @@ def apply_persistent_editor_values(edit_df, editor_key):
                 if col_name in out.columns:
                     out.at[row_id, col_name] = value
     return out
-
-
 def save_persistent_editor_values(edited_df, editor_key):
     values = _editor_store_for(editor_key)
     for row_id, row in edited_df.iterrows():
@@ -1334,8 +1105,6 @@ def save_persistent_editor_values(edited_df, editor_key):
             theme_value = clean(row.get("Thème validé", ""))
             if theme_value:
                 row_values["Thème validé"] = theme_value
-
-
 def sync_custom_themes_from_persistent_values(editor_key, participant_type, swot_element):
     values = _editor_store_for(editor_key)
     for row_values in values.values():
@@ -1344,11 +1113,8 @@ def sync_custom_themes_from_persistent_values(editor_key, participant_type, swot
         new_theme = clean(row_values.get("Nouveau thème", ""))
         if new_theme:
             register_custom_theme(participant_type, swot_element, new_theme)
-
-
 def persist_editor_changes_callback(editor_key, participant_type, swot_element, row_ids):
     """Save data_editor cell changes immediately when Streamlit triggers a rerun.
-
     This is necessary because changing the selectbox options after adding a new
     theme can reset the widget state. The callback captures the typed value
     before the widget is rebuilt, so the value remains visible in the
@@ -1357,62 +1123,46 @@ def persist_editor_changes_callback(editor_key, participant_type, swot_element, 
     editor_state = st.session_state.get(editor_key, {})
     if not isinstance(editor_state, dict):
         return
-
     edited_rows = editor_state.get("edited_rows", {})
     if not isinstance(edited_rows, dict):
         return
-
     values = _editor_store_for(editor_key)
-
     for raw_key, changes in edited_rows.items():
         if not isinstance(changes, dict):
             continue
-
         row_id = _resolve_row_id(raw_key, row_ids)
         if row_id is None:
             continue
-
         row_values = values.setdefault(row_id, {})
-
         if "Nouveau thème" in changes:
             new_theme_value = clean(changes.get("Nouveau thème", ""))
             row_values["Nouveau thème"] = new_theme_value
             if new_theme_value:
                 register_custom_theme(participant_type, swot_element, new_theme_value)
-
         if "Thème validé" in changes:
             theme_value = clean(changes.get("Thème validé", ""))
             if theme_value:
                 row_values["Thème validé"] = theme_value
-
-
-
 # ============================================================
 # ACADEMIC SYNTHESIS TEXT (rule-based, no external API required)
 # ============================================================
-
 SWOT_ACADEMIC_FRAMING = {
     "Forces": "constitue une force structurante clairement mise en évidence par les répondants",
     "Faiblesses": "constitue une faiblesse récurrente qui appelle une action correctrice prioritaire",
     "Opportunités": "représente une opportunité stratégique que l'institution gagnerait à saisir",
     "Menaces": "constitue une menace potentielle dont les effets doivent être anticipés",
 }
-
 PRIORITY_LABELS = {
     "Forces": "à consolider",
     "Faiblesses": "à corriger en priorité",
     "Opportunités": "à saisir stratégiquement",
     "Menaces": "à anticiper et atténuer",
 }
-
-
 def extract_top_keywords(answers, top_n=6):
     counter = Counter()
     for answer in answers:
         counter.update(tokenize_for_similarity(answer))
     return [word for word, _ in counter.most_common(top_n)]
-
-
 def build_academic_synthesis(participant_type, swot_element, theme, groupes, answers):
     """Produce a clear, structured, academically-toned synthesis paragraph.
     This is deliberately rule-based (keyword extraction + templated framing)
@@ -1421,16 +1171,13 @@ def build_academic_synthesis(participant_type, swot_element, theme, groupes, ans
     n = len(answers)
     if n == 0:
         return ""
-
     groupe_list = sorted({clean(g) for g in groupes if clean(g)})
     groupe_str = ", ".join(groupe_list) if groupe_list else participant_type
     framing = SWOT_ACADEMIC_FRAMING.get(swot_element, "présente une pertinence notable")
     keywords = extract_top_keywords(answers)
     keyword_str = ", ".join(keywords) if keywords else "des préoccupations convergentes"
-
     plural_reponse = "réponses" if n > 1 else "réponse"
     plural_groupe = "sous-groupes" if len(groupe_list) > 1 else "sous-groupe"
-
     return (
         f"Sur la base de {n} {plural_reponse} recueillie{'s' if n > 1 else ''} auprès des répondants "
         f"de la catégorie « {participant_type} » (issue{'s' if len(groupe_list) > 1 else ''} du "
@@ -1439,8 +1186,6 @@ def build_academic_synthesis(participant_type, swot_element, theme, groupes, ans
         f"{keyword_str}. Cette récurrence traduit une perception partagée qu'il conviendra de documenter "
         f"avec attention dans le cadre de l'élaboration du Plan Stratégique USJ 2032."
     )
-
-
 def build_theme_synthesis(validated_df):
     if validated_df.empty:
         return pd.DataFrame()
@@ -1461,15 +1206,12 @@ def build_theme_synthesis(validated_df):
     return pd.DataFrame(rows).sort_values(
         ["Type de participants", "Élément SWOT", "Nombre de réponses"], ascending=[True, True, False]
     )
-
-
 # ============================================================
-# NEW: THEMATIC PARAGRAPH SYNTHESIS PER SWOT ELEMENT
+# THEMATIC PARAGRAPH SYNTHESIS PER SWOT ELEMENT
 # (separate prose per theme, real quotes as illustrative evidence,
 #  filterable by participant type / subgroup — replaces the flat table
 #  as the primary view in the Synthèse tab)
 # ============================================================
-
 def _select_illustrative_quotes(answers, max_quotes=2, max_len=220):
     """Pick up to max_quotes representative real answers (verbatim, since
     these are the institution's own primary survey data, not third-party
@@ -1488,8 +1230,6 @@ def _select_illustrative_quotes(answers, max_quotes=2, max_len=220):
         if len(quotes) >= max_quotes:
             break
     return quotes
-
-
 def build_theme_paragraph(participant_label, swot_element, theme, groupes, answers):
     n = len(answers)
     if n == 0:
@@ -1503,7 +1243,6 @@ def build_theme_paragraph(participant_label, swot_element, theme, groupes, answe
     plural_reponse = "réponses" if n > 1 else "réponse"
     intensity = ("un poids significatif" if n >= 5 else
                  "un poids modéré" if n >= 2 else "une occurrence isolée mais notable")
-
     paragraph = (
         f"Ce thème {framing}, avec {n} {plural_reponse} recensée{'s' if n > 1 else ''} parmi les "
         f"contributions {('de la catégorie « ' + participant_label + ' »') if participant_label else ''} "
@@ -1514,8 +1253,6 @@ def build_theme_paragraph(participant_label, swot_element, theme, groupes, answe
         quoted = " ; ".join([f"« {q} »" for q in quotes])
         paragraph += f" À titre d'illustration, les répondants s'expriment ainsi : {quoted}."
     return paragraph.strip()
-
-
 def filter_validated(validated_df, participant_type_filter, groupe_filter):
     scope = validated_df.copy()
     if participant_type_filter and participant_type_filter != "Tous les types confondus":
@@ -1523,8 +1260,6 @@ def filter_validated(validated_df, participant_type_filter, groupe_filter):
     if groupe_filter and groupe_filter != "Tous les sous-groupes":
         scope = scope[scope["groupe"] == groupe_filter]
     return scope
-
-
 def build_swot_element_synthesis(validated_df, participant_type_filter, groupe_filter, swot_element):
     """Returns a ranked list of {theme, count, paragraph} dicts for one SWOT
     element, restricted to the requested participant type / subgroup."""
@@ -1532,11 +1267,9 @@ def build_swot_element_synthesis(validated_df, participant_type_filter, groupe_f
     scope = scope[scope["swot_element"] == swot_element]
     if scope.empty:
         return [], 0
-
     participant_label = participant_type_filter if participant_type_filter != "Tous les types confondus" else ""
     grouped = scope.groupby("Validated_Theme")
     ranked_themes = grouped.size().sort_values(ascending=False)
-
     paragraphs = []
     for rank, (theme, count) in enumerate(ranked_themes.items(), start=1):
         group = grouped.get_group(theme)
@@ -1545,8 +1278,6 @@ def build_swot_element_synthesis(validated_df, participant_type_filter, groupe_f
         para = build_theme_paragraph(participant_label, swot_element, theme, groupes, answers)
         paragraphs.append({"theme": theme, "count": int(count), "paragraph": para, "rank": rank})
     return paragraphs, len(scope)
-
-
 def build_priorities_and_conclusion(validated_df, participant_type_filter, groupe_filter):
     scope = filter_validated(validated_df, participant_type_filter, groupe_filter)
     priorities = {}
@@ -1554,7 +1285,6 @@ def build_priorities_and_conclusion(validated_df, participant_type_filter, group
         sub = scope[scope["swot_element"] == element]
         top = sub.groupby("Validated_Theme").size().sort_values(ascending=False).head(3)
         priorities[element] = list(top.items())
-
     total = len(scope)
     label = participant_type_filter if participant_type_filter != "Tous les types confondus" else "l'ensemble des parties prenantes consultées"
     conclusion = (
@@ -1568,20 +1298,15 @@ def build_priorities_and_conclusion(validated_df, participant_type_filter, group
         f"point de départ pour les arbitrages à venir."
     )
     return priorities, conclusion
-
-
 # ============================================================
-# NEW: DYNAMIC SWOT MATRIX VISUAL (HTML/CSS card grid)
+# DYNAMIC SWOT MATRIX VISUAL (HTML/CSS card grid)
 # ============================================================
-
 SWOT_QUADRANT_META = {
     "Forces": {"icon": "✓", "color": USJ_BLUE, "bg": "#EAF2FB", "subtitle": "Atouts internes à consolider"},
     "Faiblesses": {"icon": "!", "color": USJ_RED, "bg": "#FDEDEE", "subtitle": "Points internes à améliorer"},
     "Opportunités": {"icon": "↗", "color": "#1E7A46", "bg": "#EAF7EF", "subtitle": "Leviers externes à saisir"},
     "Menaces": {"icon": "⚠", "color": "#B23A22", "bg": "#FDEFE9", "subtitle": "Risques externes à anticiper"},
 }
-
-
 def _swot_quadrant_html(element, scope, top_n=5):
     meta = SWOT_QUADRANT_META[element]
     sub = scope[scope["swot_element"] == element]
@@ -1607,12 +1332,9 @@ def _swot_quadrant_html(element, scope, top_n=5):
         </div>
         <div class="swot-items">{items_html}</div>
     </div>"""
-
-
 def render_swot_matrix_html(validated_df, participant_type_filter, groupe_filter, top_n=5):
     scope = filter_validated(validated_df, participant_type_filter, groupe_filter)
     cards = {element: _swot_quadrant_html(element, scope, top_n) for element in SWOT_ELEMENTS}
-
     html_block(f"""
     <style>
     .swot-matrix-wrap {{ display:grid; grid-template-columns:1fr 1fr; gap:20px; margin: 10px 0 26px 0; }}
@@ -1637,12 +1359,9 @@ def render_swot_matrix_html(validated_df, participant_type_filter, groupe_filter
         {cards['Forces']}{cards['Faiblesses']}{cards['Opportunités']}{cards['Menaces']}
     </div>
     """)
-
-
 # ============================================================
-# NEW: DOWNLOADABLE PDF REPORT (post-validation synthesis)
+# DOWNLOADABLE PDF REPORT (post-validation synthesis)
 # ============================================================
-
 def _find_existing_file(possible_paths):
     """Return the first existing path from a list of possible local paths."""
     for candidate in possible_paths:
@@ -1653,8 +1372,6 @@ def _find_existing_file(possible_paths):
         except Exception:
             continue
     return None
-
-
 def _register_pdf_fonts():
     """Use Candara in PDF reports when the font file is available on the server.
     If Candara is not installed or not included in the app folder, ReportLab falls
@@ -1663,7 +1380,6 @@ def _register_pdf_fonts():
     try:
         from reportlab.pdfbase import pdfmetrics
         from reportlab.pdfbase.ttfonts import TTFont
-
         base_dir = Path(__file__).parent if "__file__" in globals() else Path(".")
         regular_candidates = [
             base_dir / "Candara.ttf",
@@ -1687,10 +1403,8 @@ def _register_pdf_fonts():
             Path("C:/Windows/Fonts/Candarab.ttf"),
             Path("C:/Windows/Fonts/candarab.ttf"),
         ]
-
         regular_path = _find_existing_file(regular_candidates)
         bold_path = _find_existing_file(bold_candidates)
-
         if regular_path:
             pdfmetrics.registerFont(TTFont("Candara", str(regular_path)))
             if bold_path:
@@ -1700,20 +1414,15 @@ def _register_pdf_fonts():
             return "Candara", "Candara-Bold"
     except Exception:
         pass
-
     return "Helvetica", "Helvetica-Bold"
-
-
 def _safe_paragraph(Paragraph, text, style):
     """Build a ReportLab Paragraph defensively.
-
     ReportLab's paragraph text is a small XML-like markup, so any unexpected
     character from source data that slips past `esc()` can make its parser
     raise and abort PDF generation entirely (this is what caused the
     'paragraph text ... caused exception' crash). If the escaped text still
     fails to parse, fall back to a fully tag-stripped plain-text version so
     the report is still produced instead of crashing the whole app.
-
     Callers should pass RAW (unescaped) text — this function calls esc()
     itself, so pre-escaping the argument would double-escape it.
     """
@@ -1726,15 +1435,11 @@ def _safe_paragraph(Paragraph, text, style):
             return Paragraph(fallback, style)
         except Exception:
             return Paragraph("(contenu illisible)", style)
-
-
 def _pdf_styles():
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib.enums import TA_JUSTIFY
     from reportlab.lib import colors
-
     body_font, bold_font = _register_pdf_fonts()
-
     styles = getSampleStyleSheet()
     styles.add(ParagraphStyle(name="USJTitle", fontSize=20, leading=24,
                                textColor=colors.HexColor(USJ_BLUE), fontName=bold_font, spaceAfter=6))
@@ -1749,8 +1454,6 @@ def _pdf_styles():
     styles.add(ParagraphStyle(name="USJConclusion", fontSize=10.5, leading=15,
                                textColor=colors.HexColor(USJ_TEXT), fontName=body_font, alignment=TA_JUSTIFY))
     return styles
-
-
 def _pdf_page_decorator(canvas, doc):
     """Draw UAQ logo in the top-right corner and page number in the footer."""
     try:
@@ -1758,7 +1461,6 @@ def _pdf_page_decorator(canvas, doc):
         from reportlab.lib.units import cm
         from reportlab.lib import colors
         from reportlab.lib.utils import ImageReader
-
         page_width, page_height = A4
         base_dir = Path(__file__).parent if "__file__" in globals() else Path(".")
         logo_path = _find_existing_file([
@@ -1767,7 +1469,6 @@ def _pdf_page_decorator(canvas, doc):
             base_dir / "LOGO NEW UAQ.png",
             Path("LOGO NEW UAQ.png"),
         ])
-
         if logo_path:
             try:
                 logo = ImageReader(str(logo_path))
@@ -1789,34 +1490,28 @@ def _pdf_page_decorator(canvas, doc):
                 )
             except Exception:
                 pass
-
         body_font, _ = _register_pdf_fonts()
         canvas.setFont(body_font, 8)
         canvas.setFillColor(colors.HexColor("#64748B"))
         canvas.drawCentredString(page_width / 2, 1.05 * cm, f"Page {doc.page}")
     except Exception:
         pass
-
-
 def build_pdf_swot_matrix(validated_df, participant_type_filter, groupe_filter, styles, colors, cm, Paragraph, Table, TableStyle, top_n=5):
     """Build a printable SWOT matrix for the PDF report using the same validated data
     and filters as the on-screen dynamic SWOT matrix."""
     scope = filter_validated(validated_df, participant_type_filter, groupe_filter)
     element_colors = {"Forces": USJ_BLUE, "Faiblesses": USJ_RED, "Opportunités": "#1E7A46", "Menaces": "#B23A22"}
     element_bgs = {"Forces": "#EAF2FB", "Faiblesses": "#FDEDEE", "Opportunités": "#EAF7EF", "Menaces": "#FDEFE9"}
-
     cell_data = []
     for element in SWOT_ELEMENTS:
         sub = scope[scope["swot_element"] == element]
         theme_counts = sub.groupby("Validated_Theme").size().sort_values(ascending=False).head(top_n)
-
         lines = [f"<b>{element.upper()}</b> ({len(sub)} éléments)"]
         if theme_counts.empty:
             lines.append("<font color='#64748B'>Aucune donnée validée pour ce filtre</font>")
         else:
             for i, (theme, count) in enumerate(theme_counts.items(), start=1):
                 lines.append(f"{i}. {esc(theme)} ({count})")
-
         joined = "<br/>".join(lines)
         try:
             para = Paragraph(joined, styles["USJBody"])
@@ -1826,7 +1521,6 @@ def build_pdf_swot_matrix(validated_df, participant_type_filter, groupe_filter, 
             # If it still fails to parse, strip all tags as a last resort.
             para = Paragraph(re.sub(r"<[^>]*>", " ", joined), styles["USJBody"])
         cell_data.append(para)
-
     matrix = Table(
         [[cell_data[0], cell_data[1]], [cell_data[2], cell_data[3]]],
         colWidths=[8.25 * cm, 8.25 * cm],
@@ -1850,8 +1544,6 @@ def build_pdf_swot_matrix(validated_df, participant_type_filter, groupe_filter, 
         ("LINEABOVE", (1, 1), (1, 1), 3, colors.HexColor(element_colors["Menaces"])),
     ]))
     return matrix
-
-
 def generate_pdf_report(validated_df, participant_type_filter, groupe_filter, report_label):
     try:
         from reportlab.lib.pagesizes import A4
@@ -1860,19 +1552,15 @@ def generate_pdf_report(validated_df, participant_type_filter, groupe_filter, re
         from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
     except Exception as e:
         return None, f"reportlab n'est pas installé sur ce serveur : {e}"
-
     styles = _pdf_styles()
     buf = BytesIO()
     doc = SimpleDocTemplate(buf, pagesize=A4, topMargin=2.4 * cm, bottomMargin=2.0 * cm,
                              leftMargin=2 * cm, rightMargin=2 * cm)
     story = []
-
     story.append(Paragraph(APP_TITLE, styles["USJTitle"]))
     story.append(Paragraph(f"Rapport de synthèse thématique — {report_label}", styles["USJSubtitle"]))
     story.append(Spacer(1, 6))
-
     element_colors = {"Forces": USJ_BLUE, "Faiblesses": USJ_RED, "Opportunités": "#1E7A46", "Menaces": "#B23A22"}
-
     for element in SWOT_ELEMENTS:
         paragraphs, n = build_swot_element_synthesis(validated_df, participant_type_filter, groupe_filter, element)
         header_tbl = Table([[Paragraph(f"{element.upper()} ({n} réponses)", styles["USJElement"])]], colWidths=[17 * cm])
@@ -1891,7 +1579,6 @@ def generate_pdf_report(validated_df, participant_type_filter, groupe_filter, re
             ))
             story.append(_safe_paragraph(Paragraph, item["paragraph"], styles["USJBody"]))
         story.append(Spacer(1, 10))
-
     story.append(PageBreak())
     story.append(Paragraph("Priorités par élément SWOT", styles["USJTitle"]))
     priorities, conclusion = build_priorities_and_conclusion(validated_df, participant_type_filter, groupe_filter)
@@ -1910,23 +1597,18 @@ def generate_pdf_report(validated_df, participant_type_filter, groupe_filter, re
     story.append(Spacer(1, 12))
     story.append(Paragraph("Conclusion", styles["USJTitle"]))
     story.append(_safe_paragraph(Paragraph, conclusion, styles["USJConclusion"]))
-
     story.append(PageBreak())
     story.append(Paragraph("Matrice SWOT synthétique", styles["USJTitle"]))
     story.append(Paragraph("Vue consolidée des thèmes dominants selon les filtres du rapport.", styles["USJSubtitle"]))
     story.append(build_pdf_swot_matrix(
         validated_df, participant_type_filter, groupe_filter, styles, colors, cm, Paragraph, Table, TableStyle
     ))
-
     doc.build(story, onFirstPage=_pdf_page_decorator, onLaterPages=_pdf_page_decorator)
     buf.seek(0)
     return buf.getvalue(), ""
-
-
 # ============================================================
 # STREAMLIT UI
 # ============================================================
-
 def _resolve_validated_theme(selected, new_theme):
     new_theme = clean(new_theme)
     if new_theme:
@@ -1934,25 +1616,26 @@ def _resolve_validated_theme(selected, new_theme):
     if selected == "Autre (nouveau thème)":
         return ""
     return selected
-
-
-def render_mapping_validation(classified_df):
+def render_mapping_validation(classified_df, active_engine):
     if classified_df.empty:
         st.warning("Aucune réponse SWOT à classifier.")
         return classified_df
-
+    conf_label = confidence_column_label(active_engine)
     st.markdown("### Validation experte des classifications")
     st.caption("Groupé par type de participant et élément SWOT, pour que la liste de thèmes proposée "
                "reste toujours la bonne. Triez : les groupes avec le plus de réponses à faible confiance "
                "apparaissent en premier et sont ouverts par défaut. Tout nouveau thème saisi dans la colonne "
                "« Nouveau thème » est automatiquement enregistré et proposé dans la liste déroulante "
                "« Thème validé » pour toutes les réponses suivantes du même groupe.")
-
+    if active_engine != ENGINE_TRAINED:
+        st.caption(f"Note méthodologique : « {conf_label} » est un score de classement heuristique "
+                   "(taxonomie + ontologie + similarité sémantique), pas une probabilité statistique "
+                   "calibrée. Seule la précision du modèle supervisé entraîné (onglet 2) est mesurée par "
+                   "validation croisée sur vos données.")
     group_order = (
         classified_df.groupby(["Respondent_Type", "swot_element"])["Confidence"]
         .mean().sort_values().index.tolist()
     )
-
     validated_rows = []
     for ptype, swot_element in group_order:
         subset = classified_df[
@@ -1960,37 +1643,30 @@ def render_mapping_validation(classified_df):
         ].sort_values("Confidence", ascending=True)
         if subset.empty:
             continue
-
         editor_key = f"editor_{safe_filename(ptype)}_{safe_filename(swot_element)}"
         # Single source of truth for restoring previously-typed values: the
         # shadow store written by persist_editor_changes_callback. See the
         # comment above the DATA EDITOR STATE HELPERS section.
         sync_custom_themes_from_persistent_values(editor_key, ptype, swot_element)
-
         themes = official_themes_for(ptype, swot_element, include_autre=False)
         custom_themes = get_custom_themes(ptype, swot_element)
         theme_options = themes + [t for t in custom_themes if t not in themes] + ["Autre (nouveau thème)"]
         low_conf_count = int((subset["Confidence"] < 50).sum())
-
         header = f"{ptype} · {swot_element} — {len(subset)} réponses"
         if low_conf_count:
             header += f" · 🔴 {low_conf_count} à valider en priorité"
         if custom_themes:
             header += f" · ➕ {len(custom_themes)} thème(s) ajouté(s) par les experts"
-
         with st.expander(header, expanded=(low_conf_count > 0)):
             edit_df = subset[["row_id", "groupe", "Final_Answer", "Confidence", "AI_Suggested_Theme"]].copy()
             edit_df["Thème validé"] = edit_df["AI_Suggested_Theme"]
             edit_df["Nouveau thème"] = ""
             edit_df = edit_df.rename(columns={
-                "groupe": "Sous-groupe", "Final_Answer": "Réponse", "Confidence": "Confiance %",
+                "groupe": "Sous-groupe", "Final_Answer": "Réponse", "Confidence": conf_label,
                 "AI_Suggested_Theme": "Proposé (IA)",
             }).set_index("row_id")
-
             edit_df = apply_persistent_editor_values(edit_df, editor_key)
-
             row_ids_for_editor = list(edit_df.index)
-
             edited = st.data_editor(
                 edit_df,
                 key=editor_key,
@@ -2001,7 +1677,7 @@ def render_mapping_validation(classified_df):
                 column_config={
                     "Sous-groupe": st.column_config.TextColumn(disabled=True, width="small"),
                     "Réponse": st.column_config.TextColumn(disabled=True, width="large"),
-                    "Confiance %": st.column_config.NumberColumn(disabled=True, width="small", format="%.1f"),
+                    conf_label: st.column_config.NumberColumn(disabled=True, width="small", format="%.1f"),
                     "Proposé (IA)": st.column_config.TextColumn(disabled=True, width="medium"),
                     "Thème validé": st.column_config.SelectboxColumn(options=theme_options, required=True, width="medium"),
                     "Nouveau thème": st.column_config.TextColumn(
@@ -2011,10 +1687,8 @@ def render_mapping_validation(classified_df):
                     ),
                 },
             )
-
             save_persistent_editor_values(edited, editor_key)
             sync_custom_themes_from_persistent_values(editor_key, ptype, swot_element)
-
             for row_id, edited_row in edited.iterrows():
                 original = subset[subset["row_id"] == row_id]
                 if original.empty:
@@ -2028,32 +1702,27 @@ def render_mapping_validation(classified_df):
                 if new_theme_input:
                     register_custom_theme(ptype, swot_element, new_theme_input)
                 validated_rows.append(out)
-
     return pd.DataFrame(validated_rows)
-
-
 def render_engine_selector(df_scope):
     st.markdown("""
     <div class="ai-card">
         <h3>Moteur de classification actif</h3>
-        <p>Le moteur par défaut est maintenant un moteur sémantique institutionnel local :
+        <p>Le moteur par défaut est un moteur sémantique institutionnel, 100% local :
         il filtre d'abord les thèmes officiels selon le type de participant et l'élément SWOT,
         applique une ontologie de domaine, puis utilise des embeddings locaux si disponibles.
         Les règles lexicales ne sont utilisées qu'en fallback lorsque le modèle sémantique local
-        n'est pas installé sur le serveur.</p>
+        n'est pas installé sur le serveur. Aucune donnée n'est jamais transmise à un service
+        externe par ce moteur.</p>
     </div>
     """, unsafe_allow_html=True)
-
     trained_model = st.session_state.get("trained_model")
     trained_acc = st.session_state.get("trained_model_accuracy")
-
-    options = [ENGINE_HEURISTIC]
+    options = [ENGINE_SEMANTIC]
     if trained_model is not None:
         label = f"{ENGINE_TRAINED} (précision validée : {trained_acc}%)" if trained_acc is not None else ENGINE_TRAINED
         options.append(label)
     else:
         options.append(f"{ENGINE_TRAINED} (pas encore entraîné - voir onglet 2)")
-
     choice = st.radio("Choisir le moteur", options, key="engine_choice_radio")
     if choice.startswith(ENGINE_TRAINED):
         engine = ENGINE_TRAINED
@@ -2061,12 +1730,9 @@ def render_engine_selector(df_scope):
             st.markdown('<div class="ai-warning">Aucun modèle entraîné pour le moment. Rendez-vous dans l\'onglet '
                         '« 2. Entraîner le modèle » après avoir validé quelques réponses.</div>', unsafe_allow_html=True)
     else:
-        engine = ENGINE_HEURISTIC
-
+        engine = ENGINE_SEMANTIC
     st.session_state["active_engine"] = engine
     return engine
-
-
 def render_training_tab(df_scope):
     st.subheader("2. Entraîner le modèle supervisé sur vos données validées")
     st.markdown("""
@@ -2078,9 +1744,7 @@ def render_training_tab(df_scope):
         plutôt qu'optimiste.
     </div>
     """, unsafe_allow_html=True)
-
     validated_df = st.session_state.get("validated_mapping_df", pd.DataFrame())
-
     st.markdown("#### Source des données d'entraînement")
     upload_extra = st.file_uploader(
         "Optionnel : ajouter un fichier de réponses déjà validées (Excel ou CSV, colonnes Final_Answer et Validated_Theme)",
@@ -2093,15 +1757,12 @@ def render_training_tab(df_scope):
         except Exception as e:
             st.error("Impossible de lire ce fichier.")
             st.exception(e)
-
     combined = pd.concat([validated_df, extra_df], ignore_index=True) if not extra_df.empty else validated_df
     train_df = prepare_training_dataset(combined)
-
     if train_df.empty:
         st.markdown('<div class="ai-warning">Aucune donnée validée disponible pour l\'instant. Allez dans '
                     'l\'onglet 1, classifiez et validez quelques réponses, puis revenez ici.</div>', unsafe_allow_html=True)
         return
-
     st.markdown("#### Aperçu des données d'entraînement")
     st.caption("Ce tableau se met à jour automatiquement : tout nouveau thème ajouté par un expert dans "
                "l'onglet 1 apparaît ici comme une nouvelle ligne dès qu'au moins une réponse lui est validée.")
@@ -2109,7 +1770,6 @@ def render_training_tab(df_scope):
     c1.metric("Réponses validées", len(train_df))
     c2.metric("Thèmes distincts", train_df["label"].nunique())
     c3.metric("Min. requis", MIN_TOTAL_TRAINING_EXAMPLES)
-
     counts = train_df["label"].value_counts().reset_index()
     counts.columns = ["Thème", "Nombre d'exemples validés"]
     st.dataframe(
@@ -2125,7 +1785,6 @@ def render_training_tab(df_scope):
     if not thin_themes.empty:
         st.caption(f"Thèmes avec moins de {MIN_EXAMPLES_PER_THEME} exemples validés (à renforcer en priorité) : "
                    + ", ".join(thin_themes["Thème"].tolist()))
-
     if st.button("Lancer l'entraînement et l'évaluation", key="run_training"):
         with st.spinner("Entraînement et validation croisée en cours..."):
             results_df, predictions_df, error = evaluate_theme_models(train_df)
@@ -2133,38 +1792,34 @@ def render_training_tab(df_scope):
         st.session_state["training_predictions_df"] = predictions_df
         st.session_state["training_error"] = error
         st.session_state["training_data_snapshot"] = train_df
-
     results_df = st.session_state.get("training_results_df", pd.DataFrame())
     error = st.session_state.get("training_error", "")
-
     if error:
         st.markdown(f'<div class="ai-warning">{esc(error)}</div>', unsafe_allow_html=True)
         return
-
     if not results_df.empty:
         st.markdown("#### Résultats — précision réelle par algorithme (validation croisée)")
         st.dataframe(results_df, use_container_width=True)
-
         best_row = results_df.iloc[0]
         best_algo = best_row["Algorithme"]
         best_acc = best_row["Accuracy (validation croisée)"]
-
         predictions_df = st.session_state.get("training_predictions_df", pd.DataFrame())
         if not predictions_df.empty:
             errors_df = predictions_df[(predictions_df["Algorithme"] == best_algo) & (~predictions_df["Correct"])]
             if not errors_df.empty:
                 with st.expander(f"Voir les erreurs de classification du meilleur modèle ({len(errors_df)} cas)"):
                     st.dataframe(errors_df[["Réponse", "Thème réel", "Thème prédit"]], use_container_width=True)
-
         st.markdown(f"""
         <div class="ai-info-box">
             Meilleur algorithme : <b>{esc(best_algo)}</b> — précision estimée : <b>{round(best_acc * 100, 1)}%</b>
             sur {len(st.session_state.get("training_data_snapshot", pd.DataFrame()))} réponses validées.
             Cette précision reflète vos données réelles : plus vous validez de réponses (en particulier pour
             les thèmes peu représentés ci-dessus), plus ce chiffre montera lors du prochain entraînement.
+            Pour les algorithmes à marge (SVM, SGD), la confiance affichée par réponse individuelle lors de
+            la classification reste une approximation dérivée de la distance à la frontière de décision, et
+            non une probabilité calibrée — seule l'accuracy ci-dessus est une mesure statistique validée.
         </div>
         """, unsafe_allow_html=True)
-
         chosen_algo = st.selectbox("Algorithme à activer", options=results_df["Algorithme"].tolist(),
                                     index=0, key="chosen_training_algo")
         if st.button("Activer ce modèle pour la classification", key="activate_trained_model"):
@@ -2175,14 +1830,12 @@ def render_training_tab(df_scope):
             st.session_state["trained_model_accuracy"] = round(chosen_acc * 100, 1)
             st.success(f"Modèle activé : {chosen_algo} (précision validée : {round(chosen_acc * 100, 1)}%). "
                        f"Retournez à l'onglet 1 et sélectionnez « Modèle supervisé entraîné » pour l'utiliser.")
-
             import pickle
             buf = BytesIO()
             pickle.dump(model, buf)
             st.download_button("Télécharger ce modèle entraîné (.pkl)", data=buf.getvalue(),
                                 file_name=f"modele_theme_{safe_filename(chosen_algo)}.pkl",
                                 mime="application/octet-stream")
-
     st.markdown("#### Réutiliser un modèle déjà entraîné")
     model_upload = st.file_uploader("Charger un fichier de modèle (.pkl)", type=["pkl"], key="model_pkl_upload")
     if model_upload is not None:
@@ -2195,8 +1848,6 @@ def render_training_tab(df_scope):
         except Exception as e:
             st.error("Impossible de charger ce fichier de modèle.")
             st.exception(e)
-
-
 def render_synthesis_tab():
     st.subheader("4. Synthèse thématique académique")
     st.caption("Analyse thématique rédigée par élément SWOT, avec extraits réels des réponses validées "
@@ -2206,21 +1857,17 @@ def render_synthesis_tab():
     if validated_df.empty:
         st.warning("Veuillez d'abord produire et valider le mapping SWOT dans l'onglet 1.")
         return
-
     col_a, col_b = st.columns(2)
     type_options = ["Tous les types confondus"] + sorted(validated_df["Respondent_Type"].dropna().unique().tolist())
     selected_type = col_a.selectbox("Type de participants", type_options, key="synthesis_type_filter")
-
     if selected_type == "Tous les types confondus":
         groupe_pool = validated_df["groupe"].dropna().unique().tolist()
     else:
         groupe_pool = validated_df[validated_df["Respondent_Type"] == selected_type]["groupe"].dropna().unique().tolist()
     groupe_options = ["Tous les sous-groupes"] + sorted(groupe_pool)
     selected_groupe = col_b.selectbox("Sous-groupe", groupe_options, key="synthesis_groupe_filter")
-
     st.markdown("#### Matrice SWOT dynamique")
     render_swot_matrix_html(validated_df, selected_type, selected_groupe)
-
     st.markdown("#### Analyse thématique par élément SWOT")
     for element in SWOT_ELEMENTS:
         paragraphs, n = build_swot_element_synthesis(validated_df, selected_type, selected_groupe, element)
@@ -2239,7 +1886,6 @@ def render_synthesis_tab():
                 f'</b><p style="margin-top:8px;line-height:1.55;">{item["paragraph"]}</p></div>',
                 unsafe_allow_html=True,
             )
-
     st.markdown("#### Priorités et conclusion")
     priorities, conclusion = build_priorities_and_conclusion(validated_df, selected_type, selected_groupe)
     for element in SWOT_ELEMENTS:
@@ -2247,7 +1893,6 @@ def render_synthesis_tab():
         if items:
             st.markdown(f"**{element}** : " + " · ".join([f"{t} ({c})" for t, c in items]))
     st.markdown(f'<div class="ai-info-box">{esc(conclusion)}</div>', unsafe_allow_html=True)
-
     st.markdown("#### Rapport PDF téléchargeable")
     report_scope = st.radio(
         "Portée du rapport",
@@ -2256,7 +1901,6 @@ def render_synthesis_tab():
          "Un rapport par sous-groupe"],
         key="pdf_report_scope",
     )
-
     def _offer_pdf(ptype_filter, groupe_filter, label, key_suffix):
         pdf_bytes, error = generate_pdf_report(validated_df, ptype_filter, groupe_filter, label)
         if error:
@@ -2265,7 +1909,6 @@ def render_synthesis_tab():
         st.download_button(f"Télécharger le rapport PDF — {label}", data=pdf_bytes,
                             file_name=f"rapport_{safe_filename(label)}.pdf", mime="application/pdf",
                             key=f"pdf_dl_{key_suffix}")
-
     if report_scope.startswith("Vue actuelle"):
         if st.button("Générer le rapport PDF de la vue actuelle", key="gen_pdf_current"):
             label = f"{selected_type} - {selected_groupe}" if selected_groupe != "Tous les sous-groupes" else selected_type
@@ -2279,7 +1922,6 @@ def render_synthesis_tab():
             for _, row in validated_df[["Respondent_Type", "groupe"]].drop_duplicates().iterrows():
                 label = f"{row['Respondent_Type']} - {row['groupe']}"
                 _offer_pdf(row["Respondent_Type"], row["groupe"], label, safe_filename(label))
-
     st.markdown("#### Tableau de synthèse complet (export)")
     st.caption("Toujours disponible en complément des paragraphes ci-dessus, pour la traçabilité et le travail en Excel.")
     synthesis_df = build_theme_synthesis(validated_df)
@@ -2290,8 +1932,6 @@ def render_synthesis_tab():
     st.download_button("Télécharger le tableau de synthèse (Excel)", data=output.getvalue(),
                         file_name="synthese_theme_SWOT.xlsx",
                         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-
-
 def ai_platform_page(df):
     html_block(APP_CSS)
     html_block("""
@@ -2301,26 +1941,21 @@ def ai_platform_page(df):
         détection de doublons et synthèse par thème.</p>
     </div>
     """)
-
     df_scope = df.copy()
     swot_df = df_scope[df_scope["swot_element"].isin(SWOT_ELEMENTS)]
-
     c1, c2, c3, c4 = st.columns(4)
     c1.markdown(f'<div class="ai-kpi"><div class="ai-kpi-number">{len(df_scope)}</div><div class="ai-kpi-label">Réponses importées</div></div>', unsafe_allow_html=True)
     c2.markdown(f'<div class="ai-kpi"><div class="ai-kpi-number">{len(swot_df)}</div><div class="ai-kpi-label">Réponses SWOT</div></div>', unsafe_allow_html=True)
     c3.markdown(f'<div class="ai-kpi"><div class="ai-kpi-number">{df_scope["Respondent_Type"].nunique()}</div><div class="ai-kpi-label">Types de participants</div></div>', unsafe_allow_html=True)
     trained_acc = st.session_state.get("trained_model_accuracy")
     c4.markdown(f'<div class="ai-kpi"><div class="ai-kpi-number">{trained_acc if trained_acc is not None else "—"}%</div><div class="ai-kpi-label">Précision du modèle entraîné</div></div>', unsafe_allow_html=True)
-
     tab_mapping, tab_training, tab_duplicates, tab_synthesis = st.tabs([
         "1. Classification et validation", "2. Entraîner le modèle", "3. Doublons", "4. Synthèse"
     ])
-
     with tab_mapping:
         st.subheader("1. Classification et validation experte")
         engine = render_engine_selector(df_scope)
         trained_model = st.session_state.get("trained_model") if engine == ENGINE_TRAINED else None
-
         # NOTE: previously this used `st.stop()` when the trained engine was
         # selected but no model existed yet. st.stop() halts the ENTIRE
         # script run, not just this tab, so it silently prevented tabs 2-4
@@ -2332,32 +1967,32 @@ def ai_platform_page(df):
         if not engine_ready:
             st.markdown(
                 '<div class="ai-warning">Ce moteur n\'est pas encore prêt : entraînez un modèle dans '
-                'l\'onglet « 2. Entraîner le modèle », ou sélectionnez l\'heuristique ci-dessus pour '
+                'l\'onglet « 2. Entraîner le modèle », ou sélectionnez le moteur sémantique ci-dessus pour '
                 'classifier dès maintenant.</div>',
                 unsafe_allow_html=True,
             )
-
         if engine_ready and st.button("Classifier les réponses SWOT", key="run_mapping"):
             with st.spinner("Classification en cours..."):
                 st.session_state["classified_df"] = build_classification_dataframe(df_scope, engine, trained_model)
-
+                st.session_state["classified_df_engine"] = engine
         classified_df = st.session_state.get("classified_df", pd.DataFrame())
+        classified_engine = st.session_state.get("classified_df_engine", ENGINE_SEMANTIC)
         if not classified_df.empty:
-            preview_cols = ["Respondent_Type", "groupe", "swot_element", "Final_Answer", "AI_Suggested_Theme", "Confidence"]
-            st.dataframe(classified_df[preview_cols], use_container_width=True)
-
-            validated_df_candidate = render_mapping_validation(classified_df)
-
+            conf_label = confidence_column_label(classified_engine)
+            preview_df = classified_df[
+                ["Respondent_Type", "groupe", "swot_element", "Final_Answer", "AI_Suggested_Theme", "Confidence"]
+            ].rename(columns={"Confidence": conf_label})
+            st.dataframe(preview_df, use_container_width=True)
+            validated_df_candidate = render_mapping_validation(classified_df, classified_engine)
             if st.button("Confirmer la validation experte", key="confirm_validated_mapping"):
                 st.session_state["validated_mapping_df"] = validated_df_candidate.copy()
                 st.success("Validation experte confirmée. Le mapping validé est maintenant utilisé dans la synthèse, la matrice SWOT et les exports.")
-
             validated_df = st.session_state.get("validated_mapping_df", pd.DataFrame())
-
             if not validated_df.empty:
                 export_cols = ["Respondent_Type", "groupe", "participants", "swot_element", "question",
                                 "Final_Answer", "AI_Suggested_Theme", "Confidence", "Validated_Theme", "New_Theme"]
                 export_df = validated_df[[c for c in export_cols if c in validated_df.columns]].copy()
+                export_df = export_df.rename(columns={"Confidence": conf_label})
                 output = BytesIO()
                 with pd.ExcelWriter(output, engine="openpyxl") as writer:
                     export_df.to_excel(writer, index=False, sheet_name="Mapping valide")
@@ -2367,14 +2002,15 @@ def ai_platform_page(df):
                                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
         else:
             st.caption("Cliquez sur « Classifier les réponses SWOT » pour lancer la classification.")
-
     with tab_training:
         render_training_tab(df_scope)
-
     with tab_duplicates:
         st.subheader("3. Détection stricte des doublons")
         st.caption("Règle stricte : même élément SWOT + même sujet central. Une structure grammaticale "
-                   "similaire avec un sujet différent n'est pas retenue.")
+                   "similaire avec un sujet différent n'est pas retenue. Les seuils utilisés sont "
+                   "heuristiques et n'ont pas été validés contre un jeu de doublons annotés manuellement : "
+                   "traitez les paires détectées comme des suggestions à vérifier, pas comme un résultat "
+                   "certain.")
         if st.button("Détecter les doublons", key="detect_duplicates"):
             st.session_state["duplicates_df"] = detect_duplicate_pairs(df_scope)
         dup_df = st.session_state.get("duplicates_df", pd.DataFrame())
@@ -2384,11 +2020,8 @@ def ai_platform_page(df):
                                 file_name="doublons_detectes.csv", mime="text/csv")
         else:
             st.caption("Aucun doublon affiché pour le moment.")
-
     with tab_synthesis:
         render_synthesis_tab()
-
-
 def main():
     st.set_page_config(page_title=APP_TITLE, layout="wide", initial_sidebar_state="collapsed")
     html_block(APP_CSS)
@@ -2415,19 +2048,16 @@ def main():
         <h3>Plateforme IA supervisée - Classification, doublons et synthèse</h3>
     </div>
     """)
-
     html_block("""
     <div class="usj-step-card">
         <div class="usj-step-title" style="color:#001F5B;font-size:19px;font-weight:900;">Uploader le fichier Excel corrigé</div>
         <div style="color:#667085;font-size:14px;">Le fichier sera utilisé pour la classification, la validation, les doublons et la synthèse.</div>
     </div>
     """)
-
     uploaded_file = st.file_uploader("Uploader le fichier Excel corrigé", type=["xlsx", "xls"], key="main_excel_upload")
     if uploaded_file is None:
         st.info(f"Veuillez uploader le fichier Excel contenant la feuille : {SHEET_NAME}")
         st.stop()
-
     df = read_corrected_excel(uploaded_file)
     html_block(f"""
     <div class="usj-status-box">
@@ -2435,9 +2065,6 @@ def main():
         {df["groupe"].nunique()} sous-groupes.
     </div>
     """)
-
     ai_platform_page(df)
-
-
 if __name__ == "__main__":
     main()
