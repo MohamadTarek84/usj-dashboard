@@ -47,6 +47,27 @@ heuristique, non calibré", et non plus comme une "confiance %", afin de ne pas 
 croire à une précision statistique qu'il n'a pas. Seul le score du modèle supervisé,
 mesuré par validation croisée, est présenté comme une confiance/précision au sens
 statistique.
+
+4. MODÈLE SUPERVISÉ ORGANISÉ PAR GROUPE D'ENTRAÎNEMENT (et non plus un modèle unique)
+   Avec 312 réponses SWOT réparties sur 5 types de participants x 4 éléments SWOT, un
+   unique modèle "global" diluerait ses données d'entraînement sur ~100 combinaisons
+   distinctes de thèmes officiels, la plupart avec 1-2 exemples validés : statistiquement
+   inexploitable. La taxonomie officielle (THEME_TAXONOMY) montre cependant que certains
+   types de participants partagent EXACTEMENT la même liste de thèmes officiels pour un
+   même élément SWOT. Regrouper l'entraînement uniquement là où la liste de thèmes est
+   identique est donc une mutualisation valide, pas une approximation :
+     - Interne (Forces/Faiblesses), 13 thèmes communs : PSG + Directeurs + Enseignants
+     - Externe (Opportunités/Menaces), 5 thèmes communs : PSG + Anciens + Enseignants
+     - Externe (Opportunités/Menaces), 5 thèmes communs : Directeurs + Étudiants
+   Les thèmes internes d'Anciens (8 thèmes) et d'Étudiants (12 thèmes) ne sont partagés
+   avec aucun autre type : ces deux combinaisons restent sur le moteur sémantique tant
+   qu'un volume suffisant de données validées n'est pas atteint indépendamment pour
+   chacune. Voir TRAINING_POOLS, get_training_group_key et resolve_effective_engine.
+   Un modèle entraîné est donc désormais un dictionnaire {groupe: modèle}, pas un objet
+   unique — et si le moteur "modèle entraîné" est sélectionné pour une combinaison sans
+   groupe éligible ou sans modèle encore entraîné pour son groupe, la classification
+   retombe automatiquement sur le moteur sémantique pour cette combinaison uniquement,
+   de façon visible (colonne "Moteur utilisé"), jamais silencieuse.
 """
 import re
 import os
@@ -75,6 +96,29 @@ ENGINE_TRAINED = "Modèle supervisé entraîné - recommandé pour la précision
 SWOT_ELEMENTS = ["Forces", "Faiblesses", "Opportunités", "Menaces"]
 MIN_EXAMPLES_PER_THEME = 3
 MIN_TOTAL_TRAINING_EXAMPLES = 15
+# Pooled training groups: valid ONLY where the official theme taxonomy is
+# identical across the listed participant types for the listed SWOT elements
+# (verified against THEME_TAXONOMY below, not assumed). Pooling across types
+# with different theme lists would silently corrupt the label space, so any
+# (participant type, swot element) combination not covered by a pool here
+# is never used for supervised training — see get_training_group_key.
+TRAINING_POOLS = {
+    "internal_psg_directeurs_enseignants": {
+        "participant_types": ["PSG", "Directeurs", "Enseignants"],
+        "swot_elements": ["Forces", "Faiblesses"],
+        "label": "Interne : PSG + Directeurs + Enseignants (Forces / Faiblesses, 13 thèmes)",
+    },
+    "external_psg_anciens_enseignants": {
+        "participant_types": ["PSG", "Anciens", "Enseignants"],
+        "swot_elements": ["Opportunités", "Menaces"],
+        "label": "Externe : PSG + Anciens + Enseignants (Opportunités / Menaces, 5 thèmes)",
+    },
+    "external_directeurs_etudiants": {
+        "participant_types": ["Directeurs", "Étudiants"],
+        "swot_elements": ["Opportunités", "Menaces"],
+        "label": "Externe : Directeurs + Étudiants (Opportunités / Menaces, 5 thèmes)",
+    },
+}
 # ============================================================
 # BASIC UTILITIES
 # ============================================================
@@ -325,6 +369,42 @@ def official_themes_for(participant_type, swot_element, include_autre=False):
     if include_autre:
         return themes
     return [t for t in themes if normalize(t) not in ["autre", "autres"]]
+def get_training_group_key(participant_type, swot_element):
+    """Return the pooled training-group key this (participant type, SWOT
+    element) combination belongs to, or None if it has no valid pooling
+    partner (its official theme list is not shared with any other type at
+    this SWOT element). Rows with no group key are never used for
+    supervised training — see resolve_effective_engine.
+    """
+    participant_type = canonical_participant_type(participant_type)
+    for key, pool in TRAINING_POOLS.items():
+        if participant_type in pool["participant_types"] and swot_element in pool["swot_elements"]:
+            return key
+    return None
+def resolve_effective_engine(participant_type, swot_element, requested_engine, trained_models):
+    """Determine which engine actually classifies this (participant type,
+    SWOT element) combination, given the engine requested in the UI.
+
+    The trained model is organized as one classifier per pooled training
+    group (TRAINING_POOLS), not a single global model, because the official
+    theme taxonomy differs across participant types and pooling is only
+    valid where two or more types share an identical theme list. If the
+    trained engine is requested but this combination has no eligible pool,
+    or its pool has not been trained yet, falling back to an untrained /
+    nonexistent model would be worse than falling back to the semantic
+    engine — so that fallback is deliberate here, and it is always recorded
+    (see the Engine_Used / Training_Group columns downstream), never silent.
+
+    Returns (effective_engine, group_key). group_key is None when this
+    combination has no pooling partner at all.
+    """
+    if requested_engine != ENGINE_TRAINED:
+        return ENGINE_SEMANTIC, None
+    group_key = get_training_group_key(participant_type, swot_element)
+    model = (trained_models or {}).get(group_key) if group_key else None
+    if model is not None:
+        return ENGINE_TRAINED, group_key
+    return ENGINE_SEMANTIC, group_key
 def _detect_swot_from_text(value):
     """Detect one SWOT element from a single field.
     This is intentionally applied field by field so that an exact category
@@ -843,6 +923,9 @@ def prepare_training_dataset(validated_df):
     })
     out["swot_element"] = validated_df[swot_col].apply(clean) if swot_col else ""
     out["Respondent_Type"] = validated_df[type_col].apply(clean) if type_col else ""
+    out["training_group"] = [
+        get_training_group_key(pt, se) for pt, se in zip(out["Respondent_Type"], out["swot_element"])
+    ]
     return out[(out["text"] != "") & (out["label"] != "")].reset_index(drop=True)
 def _build_pipeline(clf):
     from sklearn.pipeline import Pipeline, FeatureUnion
@@ -976,12 +1059,21 @@ def classify_with_trained_model(answer, model):
 # ============================================================
 # UNIFIED CLASSIFICATION DISPATCH
 # ============================================================
-def classify_answer(answer, participant_type, swot_element, engine, trained_model=None):
-    if engine == ENGINE_TRAINED and trained_model is not None:
-        theme, conf = classify_with_trained_model(answer, trained_model)
-        return theme, (conf if conf is not None else 0.0), "", "Modèle supervisé entraîné sur vos données validées"
+def classify_answer(answer, participant_type, swot_element, engine, trained_models=None):
+    """Classify one answer, routing to the correct pooled trained model when
+    eligible, or to the semantic engine otherwise. trained_models is a dict
+    of {group_key: fitted pipeline}, one entry per TRAINING_POOLS group that
+    has been trained and activated so far — see resolve_effective_engine for
+    how the fallback is decided.
+    """
+    effective_engine, group_key = resolve_effective_engine(participant_type, swot_element, engine, trained_models)
+    if effective_engine == ENGINE_TRAINED:
+        model = trained_models[group_key]
+        theme, conf = classify_with_trained_model(answer, model)
+        pool_label = TRAINING_POOLS[group_key]["label"]
+        return theme, (conf if conf is not None else 0.0), "", f"Modèle supervisé entraîné — groupe : {pool_label}"
     return classify_semantic_institutional(answer, participant_type, swot_element)
-def build_classification_dataframe(df_scope, engine, trained_model=None):
+def build_classification_dataframe(df_scope, engine, trained_models=None):
     rows = []
     for idx, row in df_scope.iterrows():
         swot_element = row.get("swot_element", "")
@@ -990,14 +1082,20 @@ def build_classification_dataframe(df_scope, engine, trained_model=None):
         answer = clean(row.get("Final_Answer", ""))
         if not answer:
             continue
-        theme, conf, top3, evidence = classify_answer(
-            answer, row.get("Respondent_Type", ""), swot_element, engine, trained_model
-        )
+        participant_type = row.get("Respondent_Type", "")
+        # Computed once here (rather than only inferred implicitly from the
+        # classification call) so the UI can display, per row, which engine
+        # actually produced the prediction — this never has to be guessed
+        # back out downstream, and it can never silently drift from what
+        # classify_answer actually did, since both call the same resolver.
+        effective_engine, group_key = resolve_effective_engine(participant_type, swot_element, engine, trained_models)
+        theme, conf, top3, evidence = classify_answer(answer, participant_type, swot_element, engine, trained_models)
         rows.append({
-            "row_id": idx, "Respondent_Type": row.get("Respondent_Type", ""), "groupe": row.get("groupe", ""),
+            "row_id": idx, "Respondent_Type": participant_type, "groupe": row.get("groupe", ""),
             "participants": row.get("participants", ""), "swot_element": swot_element,
             "question": row.get("question", ""), "Final_Answer": answer,
             "AI_Suggested_Theme": theme, "Confidence": conf, "Top_3_Themes": top3, "Evidence": evidence,
+            "Engine_Used": effective_engine, "Training_Group": group_key,
             "Validated_Theme": theme, "New_Theme": "",
         })
     return pd.DataFrame(rows)
@@ -1616,22 +1714,21 @@ def _resolve_validated_theme(selected, new_theme):
     if selected == "Autre (nouveau thème)":
         return ""
     return selected
-def render_mapping_validation(classified_df, active_engine):
+def render_mapping_validation(classified_df):
     if classified_df.empty:
         st.warning("Aucune réponse SWOT à classifier.")
         return classified_df
-    conf_label = confidence_column_label(active_engine)
     st.markdown("### Validation experte des classifications")
     st.caption("Groupé par type de participant et élément SWOT, pour que la liste de thèmes proposée "
                "reste toujours la bonne. Triez : les groupes avec le plus de réponses à faible confiance "
                "apparaissent en premier et sont ouverts par défaut. Tout nouveau thème saisi dans la colonne "
                "« Nouveau thème » est automatiquement enregistré et proposé dans la liste déroulante "
                "« Thème validé » pour toutes les réponses suivantes du même groupe.")
-    if active_engine != ENGINE_TRAINED:
-        st.caption(f"Note méthodologique : « {conf_label} » est un score de classement heuristique "
-                   "(taxonomie + ontologie + similarité sémantique), pas une probabilité statistique "
-                   "calibrée. Seule la précision du modèle supervisé entraîné (onglet 2) est mesurée par "
-                   "validation croisée sur vos données.")
+    st.caption("Note méthodologique : le libellé de la colonne de score varie selon le groupe ci-dessous. "
+               "« Confiance % (modèle entraîné, validation croisée) » indique une estimation statistique "
+               "réelle. « Score de pertinence % (heuristique, non calibré) » indique le moteur sémantique — "
+               "un classement indicatif, pas une probabilité. Le sous-titre de chaque groupe précise "
+               "toujours lequel des deux a été utilisé pour ces réponses.")
     group_order = (
         classified_df.groupby(["Respondent_Type", "swot_element"])["Confidence"]
         .mean().sort_values().index.tolist()
@@ -1652,7 +1749,20 @@ def render_mapping_validation(classified_df, active_engine):
         custom_themes = get_custom_themes(ptype, swot_element)
         theme_options = themes + [t for t in custom_themes if t not in themes] + ["Autre (nouveau thème)"]
         low_conf_count = int((subset["Confidence"] < 50).sum())
+        # All rows in this subset share the same (ptype, swot_element), so
+        # they all resolved to the same effective engine — see
+        # resolve_effective_engine, which depends only on those two values
+        # plus the currently active trained_models, never on the answer text.
+        group_engine = subset["Engine_Used"].iloc[0] if "Engine_Used" in subset.columns else ENGINE_SEMANTIC
+        group_pool_key = subset["Training_Group"].iloc[0] if "Training_Group" in subset.columns else None
+        conf_label = confidence_column_label(group_engine)
         header = f"{ptype} · {swot_element} — {len(subset)} réponses"
+        if group_engine == ENGINE_TRAINED and group_pool_key:
+            header += f" · 🎯 modèle entraîné ({TRAINING_POOLS[group_pool_key]['label']})"
+        elif group_pool_key is None:
+            header += " · moteur sémantique (aucun regroupement d'entraînement disponible pour ce type)"
+        else:
+            header += " · moteur sémantique (pool non encore entraîné)"
         if low_conf_count:
             header += f" · 🔴 {low_conf_count} à valider en priorité"
         if custom_themes:
@@ -1707,28 +1817,37 @@ def render_engine_selector(df_scope):
     st.markdown("""
     <div class="ai-card">
         <h3>Moteur de classification actif</h3>
-        <p>Le moteur par défaut est un moteur sémantique institutionnel, 100% local :
-        il filtre d'abord les thèmes officiels selon le type de participant et l'élément SWOT,
-        applique une ontologie de domaine, puis utilise des embeddings locaux si disponibles.
-        Les règles lexicales ne sont utilisées qu'en fallback lorsque le modèle sémantique local
-        n'est pas installé sur le serveur. Aucune donnée n'est jamais transmise à un service
-        externe par ce moteur.</p>
+        <p>Le moteur sémantique institutionnel (100% local) filtre d'abord les thèmes officiels selon le
+        type de participant et l'élément SWOT, applique une ontologie de domaine, puis utilise des
+        embeddings locaux si disponibles — TF-IDF en repli sinon. Aucune donnée n'est jamais transmise à
+        un service externe par ce moteur.</p>
+        <p>Le modèle supervisé entraîné n'est pas un modèle unique : il est organisé en trois groupes
+        d'entraînement mutualisés, définis uniquement là où plusieurs types de participants partagent
+        exactement la même liste de thèmes officiels (voir onglet 2). Pour toute combinaison type de
+        participant / élément SWOT dont le groupe n'a pas encore été entraîné — ou qui n'a aucun
+        partenaire de regroupement — la classification retombe automatiquement sur le moteur sémantique,
+        de façon visible (colonne « Moteur utilisé »), jamais silencieuse.</p>
     </div>
     """, unsafe_allow_html=True)
-    trained_model = st.session_state.get("trained_model")
-    trained_acc = st.session_state.get("trained_model_accuracy")
+    trained_models = st.session_state.get("trained_models", {})
+    n_pools = len(TRAINING_POOLS)
+    n_trained = len(trained_models)
     options = [ENGINE_SEMANTIC]
-    if trained_model is not None:
-        label = f"{ENGINE_TRAINED} (précision validée : {trained_acc}%)" if trained_acc is not None else ENGINE_TRAINED
-        options.append(label)
+    if n_trained > 0:
+        options.append(f"{ENGINE_TRAINED} (pools entraînés : {n_trained}/{n_pools})")
     else:
-        options.append(f"{ENGINE_TRAINED} (pas encore entraîné - voir onglet 2)")
+        options.append(f"{ENGINE_TRAINED} (aucun pool entraîné pour le moment - voir onglet 2)")
     choice = st.radio("Choisir le moteur", options, key="engine_choice_radio")
     if choice.startswith(ENGINE_TRAINED):
         engine = ENGINE_TRAINED
-        if trained_model is None:
-            st.markdown('<div class="ai-warning">Aucun modèle entraîné pour le moment. Rendez-vous dans l\'onglet '
-                        '« 2. Entraîner le modèle » après avoir validé quelques réponses.</div>', unsafe_allow_html=True)
+        if n_trained == 0:
+            st.markdown('<div class="ai-warning">Aucun pool n\'est encore entraîné. Toutes les réponses seront '
+                        'classifiées par le moteur sémantique jusqu\'à ce qu\'au moins un pool soit entraîné '
+                        'dans l\'onglet « 2. Entraîner le modèle ».</div>', unsafe_allow_html=True)
+        elif n_trained < n_pools:
+            missing = [p["label"] for k, p in TRAINING_POOLS.items() if k not in trained_models]
+            st.markdown('<div class="ai-info-box">Pools encore non entraînés (moteur sémantique utilisé pour '
+                        'eux en attendant) : ' + "; ".join(missing) + '</div>', unsafe_allow_html=True)
     else:
         engine = ENGINE_SEMANTIC
     st.session_state["active_engine"] = engine
@@ -1742,6 +1861,16 @@ def render_training_tab(df_scope):
         par validation croisée : les données sont divisées en plusieurs groupes, le modèle s'entraîne
         sur certains et est testé sur les autres, plusieurs fois, pour donner une estimation fiable
         plutôt qu'optimiste.
+    </div>
+    """, unsafe_allow_html=True)
+    st.markdown("""
+    <div class="ai-info-box">
+        Le modèle n'est pas entraîné globalement : il est entraîné séparément pour chacun des trois
+        groupes ci-dessous, définis uniquement là où plusieurs types de participants partagent
+        exactement la même liste de thèmes officiels. Entraîner un modèle unique sur l'ensemble des
+        ~312 réponses SWOT diluerait les données sur une centaine de combinaisons (type × élément ×
+        thème), la plupart avec 1-2 exemples : statistiquement inexploitable. Voir la documentation en
+        tête de fichier pour le détail de ce regroupement.
     </div>
     """, unsafe_allow_html=True)
     validated_df = st.session_state.get("validated_mapping_df", pd.DataFrame())
@@ -1758,93 +1887,120 @@ def render_training_tab(df_scope):
             st.error("Impossible de lire ce fichier.")
             st.exception(e)
     combined = pd.concat([validated_df, extra_df], ignore_index=True) if not extra_df.empty else validated_df
-    train_df = prepare_training_dataset(combined)
-    if train_df.empty:
+    full_train_df = prepare_training_dataset(combined)
+    if full_train_df.empty:
         st.markdown('<div class="ai-warning">Aucune donnée validée disponible pour l\'instant. Allez dans '
                     'l\'onglet 1, classifiez et validez quelques réponses, puis revenez ici.</div>', unsafe_allow_html=True)
         return
-    st.markdown("#### Aperçu des données d'entraînement")
-    st.caption("Ce tableau se met à jour automatiquement : tout nouveau thème ajouté par un expert dans "
-               "l'onglet 1 apparaît ici comme une nouvelle ligne dès qu'au moins une réponse lui est validée.")
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Réponses validées", len(train_df))
-    c2.metric("Thèmes distincts", train_df["label"].nunique())
-    c3.metric("Min. requis", MIN_TOTAL_TRAINING_EXAMPLES)
-    counts = train_df["label"].value_counts().reset_index()
-    counts.columns = ["Thème", "Nombre d'exemples validés"]
-    st.dataframe(
-        counts,
-        use_container_width=True,
-        hide_index=True,
-        column_config={
-            "Thème": st.column_config.TextColumn(width="large"),
-            "Nombre d'exemples validés": st.column_config.NumberColumn(width="small"),
-        },
-    )
-    thin_themes = counts[counts["Nombre d'exemples validés"] < MIN_EXAMPLES_PER_THEME]
-    if not thin_themes.empty:
-        st.caption(f"Thèmes avec moins de {MIN_EXAMPLES_PER_THEME} exemples validés (à renforcer en priorité) : "
-                   + ", ".join(thin_themes["Thème"].tolist()))
-    if st.button("Lancer l'entraînement et l'évaluation", key="run_training"):
-        with st.spinner("Entraînement et validation croisée en cours..."):
-            results_df, predictions_df, error = evaluate_theme_models(train_df)
-        st.session_state["training_results_df"] = results_df
-        st.session_state["training_predictions_df"] = predictions_df
-        st.session_state["training_error"] = error
-        st.session_state["training_data_snapshot"] = train_df
-    results_df = st.session_state.get("training_results_df", pd.DataFrame())
-    error = st.session_state.get("training_error", "")
-    if error:
-        st.markdown(f'<div class="ai-warning">{esc(error)}</div>', unsafe_allow_html=True)
-        return
-    if not results_df.empty:
-        st.markdown("#### Résultats — précision réelle par algorithme (validation croisée)")
+    trained_models = st.session_state.setdefault("trained_models", {})
+    trained_accuracies = st.session_state.setdefault("trained_model_accuracies", {})
+    for pool_key, pool in TRAINING_POOLS.items():
+        st.markdown(f"---\n#### {pool['label']}")
+        pool_train_df = full_train_df[full_train_df["training_group"] == pool_key].reset_index(drop=True)
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Réponses validées", len(pool_train_df))
+        c2.metric("Thèmes distincts", pool_train_df["label"].nunique() if not pool_train_df.empty else 0)
+        c3.metric("Min. requis", MIN_TOTAL_TRAINING_EXAMPLES)
+        if pool_train_df.empty:
+            st.caption("Aucune donnée validée pour ce groupe pour le moment.")
+            continue
+        counts = pool_train_df["label"].value_counts().reset_index()
+        counts.columns = ["Thème", "Nombre d'exemples validés"]
+        st.dataframe(counts, use_container_width=True, hide_index=True,
+                     column_config={
+                         "Thème": st.column_config.TextColumn(width="large"),
+                         "Nombre d'exemples validés": st.column_config.NumberColumn(width="small"),
+                     })
+        thin_themes = counts[counts["Nombre d'exemples validés"] < MIN_EXAMPLES_PER_THEME]
+        if not thin_themes.empty:
+            st.caption(f"Thèmes sous {MIN_EXAMPLES_PER_THEME} exemples validés (à renforcer en priorité) : "
+                       + ", ".join(thin_themes["Thème"].tolist()))
+        run_key = f"run_training_{pool_key}"
+        if st.button(f"Lancer l'entraînement et l'évaluation — {pool['label']}", key=run_key):
+            with st.spinner("Entraînement et validation croisée en cours..."):
+                results_df, predictions_df, error = evaluate_theme_models(pool_train_df)
+            st.session_state[f"training_results_{pool_key}"] = results_df
+            st.session_state[f"training_predictions_{pool_key}"] = predictions_df
+            st.session_state[f"training_error_{pool_key}"] = error
+            st.session_state[f"training_snapshot_{pool_key}"] = pool_train_df
+        results_df = st.session_state.get(f"training_results_{pool_key}", pd.DataFrame())
+        error = st.session_state.get(f"training_error_{pool_key}", "")
+        if error:
+            st.markdown(f'<div class="ai-warning">{esc(error)}</div>', unsafe_allow_html=True)
+            continue
+        if results_df.empty:
+            continue
+        st.markdown("Résultats — précision réelle par algorithme (validation croisée) :")
         st.dataframe(results_df, use_container_width=True)
         best_row = results_df.iloc[0]
         best_algo = best_row["Algorithme"]
         best_acc = best_row["Accuracy (validation croisée)"]
-        predictions_df = st.session_state.get("training_predictions_df", pd.DataFrame())
+        predictions_df = st.session_state.get(f"training_predictions_{pool_key}", pd.DataFrame())
         if not predictions_df.empty:
             errors_df = predictions_df[(predictions_df["Algorithme"] == best_algo) & (~predictions_df["Correct"])]
             if not errors_df.empty:
-                with st.expander(f"Voir les erreurs de classification du meilleur modèle ({len(errors_df)} cas)"):
+                with st.expander(f"Voir les erreurs du meilleur modèle ({len(errors_df)} cas) — {pool['label']}"):
                     st.dataframe(errors_df[["Réponse", "Thème réel", "Thème prédit"]], use_container_width=True)
         st.markdown(f"""
         <div class="ai-info-box">
-            Meilleur algorithme : <b>{esc(best_algo)}</b> — précision estimée : <b>{round(best_acc * 100, 1)}%</b>
-            sur {len(st.session_state.get("training_data_snapshot", pd.DataFrame()))} réponses validées.
-            Cette précision reflète vos données réelles : plus vous validez de réponses (en particulier pour
-            les thèmes peu représentés ci-dessus), plus ce chiffre montera lors du prochain entraînement.
-            Pour les algorithmes à marge (SVM, SGD), la confiance affichée par réponse individuelle lors de
-            la classification reste une approximation dérivée de la distance à la frontière de décision, et
-            non une probabilité calibrée — seule l'accuracy ci-dessus est une mesure statistique validée.
+            Meilleur algorithme pour ce groupe : <b>{esc(best_algo)}</b> — précision estimée :
+            <b>{round(best_acc * 100, 1)}%</b> sur {len(pool_train_df)} réponses validées.
+            Pour les algorithmes à marge (SVM, SGD), la confiance affichée par réponse individuelle lors
+            de la classification reste une approximation dérivée de la distance à la frontière de
+            décision, non une probabilité calibrée — seule l'accuracy ci-dessus est une mesure
+            statistique validée par validation croisée.
         </div>
         """, unsafe_allow_html=True)
-        chosen_algo = st.selectbox("Algorithme à activer", options=results_df["Algorithme"].tolist(),
-                                    index=0, key="chosen_training_algo")
-        if st.button("Activer ce modèle pour la classification", key="activate_trained_model"):
-            snapshot = st.session_state.get("training_data_snapshot", train_df)
+        chosen_algo = st.selectbox("Algorithme à activer pour ce groupe",
+                                    options=results_df["Algorithme"].tolist(), index=0,
+                                    key=f"chosen_algo_{pool_key}")
+        if st.button(f"Activer ce modèle — {pool['label']}", key=f"activate_{pool_key}"):
+            snapshot = st.session_state.get(f"training_snapshot_{pool_key}", pool_train_df)
             model = train_final_model(snapshot, chosen_algo)
-            st.session_state["trained_model"] = model
+            trained_models[pool_key] = model
             chosen_acc = results_df[results_df["Algorithme"] == chosen_algo]["Accuracy (validation croisée)"].iloc[0]
-            st.session_state["trained_model_accuracy"] = round(chosen_acc * 100, 1)
-            st.success(f"Modèle activé : {chosen_algo} (précision validée : {round(chosen_acc * 100, 1)}%). "
-                       f"Retournez à l'onglet 1 et sélectionnez « Modèle supervisé entraîné » pour l'utiliser.")
+            trained_accuracies[pool_key] = round(chosen_acc * 100, 1)
+            st.session_state["trained_models"] = trained_models
+            st.session_state["trained_model_accuracies"] = trained_accuracies
+            st.success(f"Modèle activé pour « {pool['label']} » (précision validée : "
+                       f"{round(chosen_acc * 100, 1)}%). Retournez à l'onglet 1 et sélectionnez "
+                       f"« Modèle supervisé entraîné » pour l'utiliser sur ce groupe.")
             import pickle
             buf = BytesIO()
             pickle.dump(model, buf)
-            st.download_button("Télécharger ce modèle entraîné (.pkl)", data=buf.getvalue(),
-                                file_name=f"modele_theme_{safe_filename(chosen_algo)}.pkl",
-                                mime="application/octet-stream")
-    st.markdown("#### Réutiliser un modèle déjà entraîné")
+            st.download_button(f"Télécharger ce modèle ({pool['label']})", data=buf.getvalue(),
+                                file_name=f"modele_{safe_filename(pool_key)}_{safe_filename(chosen_algo)}.pkl",
+                                mime="application/octet-stream", key=f"dl_model_{pool_key}")
+    st.markdown("---\n#### Groupes non éligibles au regroupement")
+    st.caption("Ces combinaisons type de participant / élément SWOT n'ont pas de partenaire de "
+               "regroupement — leur taxonomie officielle interne n'est partagée avec aucun autre type. "
+               "Elles restent classifiées par le moteur sémantique tant qu'un volume de données validées "
+               "suffisant n'est pas atteint indépendamment pour chacune. Ce n'est pas une limite du code, "
+               "c'est une contrainte réelle de vos données : forcer un entraînement ici équivaudrait à "
+               "ajuster un modèle sur trop peu d'exemples par thème pour être fiable.")
+    non_pooled = full_train_df[full_train_df["training_group"].isna()]
+    if not non_pooled.empty:
+        summary = non_pooled.groupby(["Respondent_Type", "swot_element"]).size().reset_index(name="Réponses validées")
+        st.dataframe(summary, use_container_width=True, hide_index=True)
+    else:
+        st.caption("Aucune donnée validée pour ces groupes pour le moment.")
+    st.markdown("---\n#### Réutiliser un modèle déjà entraîné")
+    pool_choice_for_upload = st.selectbox(
+        "À quel groupe ce modèle correspond-il ?",
+        options=list(TRAINING_POOLS.keys()),
+        format_func=lambda k: TRAINING_POOLS[k]["label"],
+        key="model_pkl_pool_choice",
+    )
     model_upload = st.file_uploader("Charger un fichier de modèle (.pkl)", type=["pkl"], key="model_pkl_upload")
     if model_upload is not None:
         import pickle
         try:
             loaded_model = pickle.load(model_upload)
-            st.session_state["trained_model"] = loaded_model
-            st.session_state["trained_model_accuracy"] = None
-            st.success("Modèle chargé et activé. Sélectionnez « Modèle supervisé entraîné » dans l'onglet 1.")
+            trained_models[pool_choice_for_upload] = loaded_model
+            trained_accuracies.pop(pool_choice_for_upload, None)
+            st.session_state["trained_models"] = trained_models
+            st.session_state["trained_model_accuracies"] = trained_accuracies
+            st.success(f"Modèle chargé et activé pour « {TRAINING_POOLS[pool_choice_for_upload]['label']} ».")
         except Exception as e:
             st.error("Impossible de charger ce fichier de modèle.")
             st.exception(e)
@@ -1947,52 +2103,41 @@ def ai_platform_page(df):
     c1.markdown(f'<div class="ai-kpi"><div class="ai-kpi-number">{len(df_scope)}</div><div class="ai-kpi-label">Réponses importées</div></div>', unsafe_allow_html=True)
     c2.markdown(f'<div class="ai-kpi"><div class="ai-kpi-number">{len(swot_df)}</div><div class="ai-kpi-label">Réponses SWOT</div></div>', unsafe_allow_html=True)
     c3.markdown(f'<div class="ai-kpi"><div class="ai-kpi-number">{df_scope["Respondent_Type"].nunique()}</div><div class="ai-kpi-label">Types de participants</div></div>', unsafe_allow_html=True)
-    trained_acc = st.session_state.get("trained_model_accuracy")
-    c4.markdown(f'<div class="ai-kpi"><div class="ai-kpi-number">{trained_acc if trained_acc is not None else "—"}%</div><div class="ai-kpi-label">Précision du modèle entraîné</div></div>', unsafe_allow_html=True)
+    trained_models_kpi = st.session_state.get("trained_models", {})
+    c4.markdown(f'<div class="ai-kpi"><div class="ai-kpi-number">{len(trained_models_kpi)}/{len(TRAINING_POOLS)}</div><div class="ai-kpi-label">Pools de thèmes entraînés</div></div>', unsafe_allow_html=True)
     tab_mapping, tab_training, tab_duplicates, tab_synthesis = st.tabs([
         "1. Classification et validation", "2. Entraîner le modèle", "3. Doublons", "4. Synthèse"
     ])
     with tab_mapping:
         st.subheader("1. Classification et validation experte")
         engine = render_engine_selector(df_scope)
-        trained_model = st.session_state.get("trained_model") if engine == ENGINE_TRAINED else None
-        # NOTE: previously this used `st.stop()` when the trained engine was
-        # selected but no model existed yet. st.stop() halts the ENTIRE
-        # script run, not just this tab, so it silently prevented tabs 2-4
-        # from rendering at all in that run (including the training tab the
-        # user would need to fix the problem). We now simply skip the
-        # classify action for this tab instead, leaving the rest of the app
-        # (and especially tab 2) fully usable.
-        engine_ready = not (engine == ENGINE_TRAINED and trained_model is None)
-        if not engine_ready:
-            st.markdown(
-                '<div class="ai-warning">Ce moteur n\'est pas encore prêt : entraînez un modèle dans '
-                'l\'onglet « 2. Entraîner le modèle », ou sélectionnez le moteur sémantique ci-dessus pour '
-                'classifier dès maintenant.</div>',
-                unsafe_allow_html=True,
-            )
-        if engine_ready and st.button("Classifier les réponses SWOT", key="run_mapping"):
+        trained_models = st.session_state.get("trained_models", {})
+        # No blocking gate here: resolve_effective_engine (used inside
+        # build_classification_dataframe) automatically and visibly falls
+        # back to the semantic engine, per (participant type, SWOT element),
+        # for any combination whose pool isn't trained yet or has no pooling
+        # partner at all. Classification is therefore always available.
+        if st.button("Classifier les réponses SWOT", key="run_mapping"):
             with st.spinner("Classification en cours..."):
-                st.session_state["classified_df"] = build_classification_dataframe(df_scope, engine, trained_model)
-                st.session_state["classified_df_engine"] = engine
+                st.session_state["classified_df"] = build_classification_dataframe(df_scope, engine, trained_models)
         classified_df = st.session_state.get("classified_df", pd.DataFrame())
-        classified_engine = st.session_state.get("classified_df_engine", ENGINE_SEMANTIC)
         if not classified_df.empty:
-            conf_label = confidence_column_label(classified_engine)
             preview_df = classified_df[
-                ["Respondent_Type", "groupe", "swot_element", "Final_Answer", "AI_Suggested_Theme", "Confidence"]
-            ].rename(columns={"Confidence": conf_label})
+                ["Respondent_Type", "groupe", "swot_element", "Final_Answer", "AI_Suggested_Theme",
+                 "Confidence", "Engine_Used"]
+            ].rename(columns={"Confidence": "Score / Confiance (%)", "Engine_Used": "Moteur utilisé"})
             st.dataframe(preview_df, use_container_width=True)
-            validated_df_candidate = render_mapping_validation(classified_df, classified_engine)
+            validated_df_candidate = render_mapping_validation(classified_df)
             if st.button("Confirmer la validation experte", key="confirm_validated_mapping"):
                 st.session_state["validated_mapping_df"] = validated_df_candidate.copy()
                 st.success("Validation experte confirmée. Le mapping validé est maintenant utilisé dans la synthèse, la matrice SWOT et les exports.")
             validated_df = st.session_state.get("validated_mapping_df", pd.DataFrame())
             if not validated_df.empty:
                 export_cols = ["Respondent_Type", "groupe", "participants", "swot_element", "question",
-                                "Final_Answer", "AI_Suggested_Theme", "Confidence", "Validated_Theme", "New_Theme"]
+                                "Final_Answer", "AI_Suggested_Theme", "Confidence", "Engine_Used",
+                                "Validated_Theme", "New_Theme"]
                 export_df = validated_df[[c for c in export_cols if c in validated_df.columns]].copy()
-                export_df = export_df.rename(columns={"Confidence": conf_label})
+                export_df = export_df.rename(columns={"Confidence": "Score / Confiance (%)", "Engine_Used": "Moteur utilisé"})
                 output = BytesIO()
                 with pd.ExcelWriter(output, engine="openpyxl") as writer:
                     export_df.to_excel(writer, index=False, sheet_name="Mapping valide")
