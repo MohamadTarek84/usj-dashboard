@@ -1199,119 +1199,6 @@ def register_custom_theme(participant_type, swot_element, theme):
     if theme not in existing:
         existing.append(theme)
 # ============================================================
-# DATA EDITOR STATE HELPERS
-# ------------------------------------------------------------
-# st.data_editor's `edited_rows` dict is keyed by POSITION (row order in the
-# displayed frame), not by the DataFrame's index label. `_resolve_row_id` is
-# the single, shared way to turn one of those positional keys back into our
-# real `row_id` (the original Excel row index), and every caller below goes
-# through it so there is exactly one place this logic can go wrong.
-#
-# Persistence itself also has a single source of truth: a session_state
-# "shadow store" (`_editor_value_store`) written by the `on_change` callback
-# (`persist_editor_changes_callback`) *before* Streamlit rebuilds the
-# selectbox options for newly typed themes. Reading straight from
-# `st.session_state[editor_key]["edited_rows"]` a second time in a separate
-# helper was redundant and could drift out of sync with the shadow store, so
-# that path has been removed in favor of this one.
-# ============================================================
-def _resolve_row_id(raw_key, row_ids):
-    """Resolve a data_editor `edited_rows` key to the underlying row_id.
-    `raw_key` is positional (0-based row order in the displayed frame) in
-    normal operation, so position is always checked first. The direct
-    membership fallback only covers the unusual case where the key already
-    equals a row_id (e.g. programmatic edits), and is intentionally tried
-    last so it can never shadow a legitimate positional match.
-    """
-    try:
-        pos = int(raw_key)
-    except (TypeError, ValueError):
-        pos = None
-    if pos is not None and 0 <= pos < len(row_ids):
-        return row_ids[pos]
-    if raw_key in row_ids:
-        return raw_key
-    return None
-def _editor_value_store():
-    """Persistent cell-level storage for manual edits in st.data_editor.
-    Streamlit keeps only deltas inside the data_editor widget state. When the
-    dropdown options are rebuilt after adding a new theme, those deltas can be
-    recalculated and the visual value of the text column may disappear. This
-    store keeps the expert-entered value independently from the widget, so the
-    column "Nouveau thème" remains visible and exportable.
-    """
-    return st.session_state.setdefault("editor_cell_values", {})
-def _editor_store_for(editor_key):
-    store = _editor_value_store()
-    return store.setdefault(editor_key, {})
-def apply_persistent_editor_values(edit_df, editor_key):
-    values = _editor_store_for(editor_key)
-    if not values:
-        return edit_df
-    out = edit_df.copy()
-    for row_id, row_values in values.items():
-        if row_id in out.index and isinstance(row_values, dict):
-            for col_name, value in row_values.items():
-                if col_name in out.columns:
-                    out.at[row_id, col_name] = value
-    return out
-def save_persistent_editor_values(edited_df, editor_key):
-    values = _editor_store_for(editor_key)
-    for row_id, row in edited_df.iterrows():
-        row_values = values.setdefault(row_id, {})
-        if "Nouveau thème" in edited_df.columns:
-            new_theme_value = clean(row.get("Nouveau thème", ""))
-            if new_theme_value:
-                row_values["Nouveau thème"] = new_theme_value
-            elif row_values.get("Nouveau thème"):
-                # Keep the previously typed theme visible unless the expert
-                # explicitly edits this same cell to another non-empty value.
-                pass
-            else:
-                row_values["Nouveau thème"] = ""
-        if "Thème validé" in edited_df.columns:
-            theme_value = clean(row.get("Thème validé", ""))
-            if theme_value:
-                row_values["Thème validé"] = theme_value
-def sync_custom_themes_from_persistent_values(editor_key, participant_type, swot_element):
-    values = _editor_store_for(editor_key)
-    for row_values in values.values():
-        if not isinstance(row_values, dict):
-            continue
-        new_theme = clean(row_values.get("Nouveau thème", ""))
-        if new_theme:
-            register_custom_theme(participant_type, swot_element, new_theme)
-def persist_editor_changes_callback(editor_key, participant_type, swot_element, row_ids):
-    """Save data_editor cell changes immediately when Streamlit triggers a rerun.
-    This is necessary because changing the selectbox options after adding a new
-    theme can reset the widget state. The callback captures the typed value
-    before the widget is rebuilt, so the value remains visible in the
-    "Nouveau thème" column and is also added to the dropdown list.
-    """
-    editor_state = st.session_state.get(editor_key, {})
-    if not isinstance(editor_state, dict):
-        return
-    edited_rows = editor_state.get("edited_rows", {})
-    if not isinstance(edited_rows, dict):
-        return
-    values = _editor_store_for(editor_key)
-    for raw_key, changes in edited_rows.items():
-        if not isinstance(changes, dict):
-            continue
-        row_id = _resolve_row_id(raw_key, row_ids)
-        if row_id is None:
-            continue
-        row_values = values.setdefault(row_id, {})
-        if "Nouveau thème" in changes:
-            new_theme_value = clean(changes.get("Nouveau thème", ""))
-            row_values["Nouveau thème"] = new_theme_value
-            if new_theme_value:
-                register_custom_theme(participant_type, swot_element, new_theme_value)
-        if "Thème validé" in changes:
-            theme_value = clean(changes.get("Thème validé", ""))
-            if theme_value:
-                row_values["Thème validé"] = theme_value
-# ============================================================
 # ACADEMIC SYNTHESIS TEXT (rule-based, no external API required)
 # ============================================================
 SWOT_ACADEMIC_FRAMING = {
@@ -1786,17 +1673,35 @@ def _resolve_validated_theme(selected, new_theme):
     return selected
 def render_mapping_validation(classified_df):
     """Single-table expert validation: one dropdown to pick the SWOT element,
-    one flat table underneath for every participant type at once.
+    one flat, wrapped, editable table underneath for every participant type
+    at once — built with streamlit-aggrid rather than the built-in
+    st.dataframe/st.data_editor grid.
 
-    Trade-off, stated explicitly rather than hidden: the official theme
-    taxonomy (THEME_TAXONOMY) differs by participant type, but one table
-    needs one shared dropdown per column. The "Thème validé" options here
-    are the UNION of official themes across every participant type present
-    for the selected SWOT element — not the strict per-type list. This is a
-    deliberate simplicity/rigor trade-off for a single-table UI; it does not
-    prevent picking a theme that isn't officially valid for a given row's
-    participant type. If that matters for your final coding scheme, spot-
-    check across participant types before treating a batch as final.
+    Why AgGrid and not the built-in grid: Streamlit's own grid
+    (glide-data-grid, canvas-rendered) has no text-wrap option in its public
+    API as of the current release — confirmed against Streamlit's docs and
+    open GitHub feature requests (#8240, #8632), not assumed. It cannot wrap
+    text and stay editable at the same time, full stop; two earlier attempts
+    in this codebase (per-answer cards, then column-width tuning) worked
+    around that limitation without resolving it. AgGrid (Community edition,
+    via the streamlit-aggrid package) supports wrapText + autoHeight on real
+    DOM cells alongside a genuine per-column dropdown editor, which is what
+    a single wrapped, editable table actually requires.
+
+    New dependency: streamlit-aggrid. Add it to requirements.txt for Azure
+    deployment. If it isn't installed, this falls back to the previous
+    built-in grid (no wrap) so the app doesn't break — the fallback is
+    visibly flagged in the UI, never silent.
+
+    Taxonomy trade-off (unchanged from the prior version, restated for
+    completeness): the official theme taxonomy differs by participant type,
+    but one shared table needs one shared dropdown list per column. The
+    "Thème validé" options are the UNION of official themes across whichever
+    participant types appear for the selected SWOT element, not the strict
+    per-type list. This does not prevent choosing a theme that isn't
+    officially valid for a specific row's participant type — spot-check
+    across types before treating a validated batch as final if that matters
+    for your coding scheme.
     """
     if classified_df.empty:
         st.warning("Aucune réponse SWOT à classifier.")
@@ -1826,62 +1731,47 @@ def render_mapping_validation(classified_df):
             st.caption(f"Types de participants dans ce tableau : {', '.join(present_types)}. La liste de "
                        "thèmes ci-dessous regroupe les thèmes officiels de tous ces types (voir docstring "
                        "de la fonction pour la justification) — vérifiez la cohérence type/thème au besoin.")
-        st.caption("Le texte de la colonne « Réponse » ne se met pas automatiquement à la ligne — "
-                   "limitation du composant tableau natif de Streamlit, pas un réglage manquant côté "
-                   "application. Deux options intégrées pour lire une réponse longue en entier : "
-                   "élargissez la colonne en tirant son bord, ou cliquez l'icône plein écran en haut à "
-                   "droite du tableau.")
         editor_key = f"editor_swot_{safe_filename(swot_choice)}"
-        edit_df = subset[["row_id", "Respondent_Type", "groupe", "Final_Answer", "AI_Suggested_Theme"]].copy()
-        edit_df["Thème validé"] = edit_df["AI_Suggested_Theme"]
-        edit_df = edit_df.rename(columns={
-            "Respondent_Type": "Type", "groupe": "Sous-groupe", "Final_Answer": "Réponse",
-            "AI_Suggested_Theme": "Proposé (IA)",
-        }).set_index("row_id")
-        edit_df = apply_persistent_editor_values(edit_df, editor_key)
-        row_ids_for_editor = list(edit_df.index)
-        edited = st.data_editor(
-            edit_df,
-            key=editor_key,
-            use_container_width=True,
-            hide_index=True,
-            on_change=persist_editor_changes_callback,
-            args=(editor_key, None, swot_choice, row_ids_for_editor),
-            height=560,
-            column_config={
-                "Type": st.column_config.TextColumn(disabled=True, width="small"),
-                "Sous-groupe": st.column_config.TextColumn(disabled=True, width="small"),
-                "Réponse": st.column_config.TextColumn(disabled=True, width="large"),
-                "Proposé (IA)": st.column_config.TextColumn(disabled=True, width="small"),
-                "Thème validé": st.column_config.SelectboxColumn(options=theme_options, required=True, width="medium"),
-            },
+        base_df = subset[["row_id", "Respondent_Type", "groupe", "Final_Answer", "AI_Suggested_Theme"]].copy()
+        base_df = base_df.rename(columns={
+            "row_id": "row_id", "Respondent_Type": "Type", "groupe": "Sous-groupe",
+            "Final_Answer": "Réponse", "AI_Suggested_Theme": "Proposé (IA)",
+        })
+        theme_values_store = st.session_state.setdefault(f"{editor_key}_theme_values", {})
+        new_theme_store = st.session_state.setdefault(f"{editor_key}_newtheme_values", {})
+        base_df["Thème validé"] = base_df.apply(
+            lambda r: theme_values_store.get(r["row_id"], r["Proposé (IA)"]), axis=1
         )
-        save_persistent_editor_values(edited, editor_key)
-        pending_new = edited[edited["Thème validé"] == "Autre (nouveau thème)"]
+        edited_df = _render_aggrid_validation_table(base_df, theme_options, editor_key, height=560)
+        if edited_df is None:
+            st.markdown('<div class="ai-warning">Le module <code>streamlit-aggrid</code> n\'est pas '
+                        'installé sur ce serveur (<code>pip install streamlit-aggrid</code>, puis '
+                        'l\'ajouter à requirements.txt). Repli temporaire sur le tableau natif Streamlit '
+                        '— le texte n\'y sera pas mis à la ligne.</div>', unsafe_allow_html=True)
+            edited_df = _render_builtin_validation_table(base_df, theme_options, editor_key)
+        for _, r in edited_df.iterrows():
+            theme_values_store[r["row_id"]] = r["Thème validé"]
+        pending_new = edited_df[edited_df["Thème validé"] == "Autre (nouveau thème)"]
         if not pending_new.empty:
             st.markdown(f"**Nouveaux thèmes à préciser** ({len(pending_new)} réponse(s) marquée(s) « Autre ») :")
-            for row_id, row in pending_new.iterrows():
-                orig = subset[subset["row_id"] == row_id].iloc[0]
-                preview = orig["Final_Answer"]
+            for _, row in pending_new.iterrows():
+                row_id = row["row_id"]
+                preview = row["Réponse"]
                 preview = preview[:80] + "…" if len(preview) > 80 else preview
-                stored_new = _editor_store_for(editor_key).get(row_id, {}).get("Nouveau thème", "")
                 new_val = st.text_input(
-                    f"« {preview} » — {orig['Respondent_Type']}",
-                    value=stored_new, key=f"newtheme_{editor_key}_{row_id}",
+                    f"« {preview} » — {row['Type']}",
+                    value=new_theme_store.get(row_id, ""), key=f"newtheme_{editor_key}_{row_id}",
                 )
-                row_values = _editor_store_for(editor_key).setdefault(row_id, {})
-                row_values["Nouveau thème"] = new_val
+                new_theme_store[row_id] = new_val
                 if new_val:
-                    register_custom_theme(orig["Respondent_Type"], swot_choice, new_val)
+                    register_custom_theme(row["Type"], swot_choice, new_val)
         if st.button(f"✅ Confirmer les validations — {swot_choice}", key=f"confirm_{editor_key}"):
-            store = _editor_store_for(editor_key)
             confirmed_rows = []
             for _, row in subset.iterrows():
                 row_id = row["row_id"]
                 out = row.to_dict()
-                stored_values = store.get(row_id, {})
-                selected_theme = stored_values.get("Thème validé", row["AI_Suggested_Theme"])
-                new_theme_input = clean(stored_values.get("Nouveau thème", ""))
+                selected_theme = theme_values_store.get(row_id, row["AI_Suggested_Theme"])
+                new_theme_input = clean(new_theme_store.get(row_id, ""))
                 final_theme = _resolve_validated_theme(selected_theme, new_theme_input)
                 out["Validated_Theme"] = final_theme if final_theme else selected_theme
                 out["New_Theme"] = new_theme_input
@@ -1892,6 +1782,64 @@ def render_mapping_validation(classified_df):
         st.caption("Validations confirmées jusqu'ici : " +
                    " · ".join(f"{k} ({len(v)})" for k, v in validated_store.items()))
     return pd.concat(validated_store.values(), ignore_index=True) if validated_store else pd.DataFrame()
+def _render_aggrid_validation_table(base_df, theme_options, editor_key, height=560):
+    """Wrapped + editable table via streamlit-aggrid. Returns None (signal
+    to fall back) if the package isn't installed — never raises, since a
+    missing optional dependency shouldn't crash the classification tab."""
+    try:
+        from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode, DataReturnMode
+    except ImportError:
+        return None
+    gb = GridOptionsBuilder.from_dataframe(base_df)
+    gb.configure_default_column(resizable=True, wrapText=True, autoHeight=True, editable=False)
+    gb.configure_column("row_id", hide=True)
+    gb.configure_column("Type", width=100, wrapText=False)
+    gb.configure_column("Sous-groupe", width=110, wrapText=False)
+    gb.configure_column("Réponse", flex=3, minWidth=320)
+    gb.configure_column("Proposé (IA)", flex=2, minWidth=200)
+    gb.configure_column(
+        "Thème validé", flex=2, minWidth=220, editable=True,
+        cellEditor="agSelectCellEditor", cellEditorParams={"values": theme_options},
+        cellStyle={"backgroundColor": "#EAF2F8"},
+    )
+    grid_options = gb.build()
+    grid_options["domLayout"] = "normal"
+    response = AgGrid(
+        base_df,
+        gridOptions=grid_options,
+        height=height,
+        update_mode=GridUpdateMode.VALUE_CHANGED,
+        data_return_mode=DataReturnMode.AS_INPUT,
+        fit_columns_on_grid_load=False,
+        allow_unsafe_jscode=False,
+        theme="alpine",
+        key=f"aggrid_{editor_key}",
+    )
+    return pd.DataFrame(response["data"])
+def _render_builtin_validation_table(base_df, theme_options, editor_key):
+    """Fallback used only when streamlit-aggrid is unavailable. Same
+    built-in st.data_editor grid as the previous revision — no text wrap,
+    flagged to the user above this call, not silently degraded."""
+    # Initial values already reflect any prior selection (base_df["Thème
+    # validé"] is pre-filled from theme_values_store by the caller), so no
+    # separate restore step is needed here.
+    edit_df = base_df.set_index("row_id")
+    edited = st.data_editor(
+        edit_df,
+        key=editor_key,
+        use_container_width=True,
+        hide_index=True,
+        height=560,
+        column_config={
+            "Type": st.column_config.TextColumn(disabled=True, width="small"),
+            "Sous-groupe": st.column_config.TextColumn(disabled=True, width="small"),
+            "Réponse": st.column_config.TextColumn(disabled=True, width="large"),
+            "Proposé (IA)": st.column_config.TextColumn(disabled=True, width="small"),
+            "Thème validé": st.column_config.SelectboxColumn(options=theme_options, required=True, width="medium"),
+        },
+    )
+    edited = edited.reset_index()
+    return edited
 
 def render_engine_selector(df_scope):
     st.markdown("""
