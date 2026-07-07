@@ -1814,7 +1814,7 @@ def render_survey_portal():
     as a polished entry point for senior university leadership.
     """
     if LANG == "Français":
-        portal_kicker = "PLATEFORME DÉCISIONNELLE CCAD"
+        portal_kicker = "PLATEFORME DÉCISIONNELLE UAQ"
         portal_title = "Un portail unique pour transformer les données institutionnelles en décisions"
         portal_subtitle = (
             "Une page d’accueil conçue pour la gouvernance universitaire : Recteur, Vice-recteurs, "
@@ -1822,6 +1822,15 @@ def render_survey_portal():
             "résultats essentiels pour comprendre, comparer, prioriser et agir."
         )
         portal_statement = "Des enquêtes mieux exploitées. Des indicateurs plus lisibles. Des décisions plus rapides."
+        ccad_label = "Préparé par le CCAD"
+        ccad_title = "De la donnée institutionnelle à l’intelligence stratégique"
+        ccad_text = (
+            "Ce portail est préparé par le CCAD. Son rôle dépasse la production de tableaux, de graphiques ou de rapports : "
+            "il transforme les données institutionnelles en intelligence stratégique au service de la gouvernance, de l’assurance qualité, "
+            "de la planification académique, de l’efficacité institutionnelle, de l’accréditation, des classements, de l’engagement des parties prenantes "
+            "et de l’amélioration continue. Il crée un pont entre les informations dispersées et des décisions fiables, cohérentes et actionnables."
+        )
+        ccad_tags = ["Gouvernance", "Assurance qualité", "Planification académique", "Accréditation", "Classements", "Amélioration continue"]
         modules_label = "Espaces analytiques institutionnels"
         modules_microcopy = "Sélectionnez un espace pour accéder aux analyses. Les prochains modules seront connectés progressivement dans la même expérience institutionnelle."
         button_open = "Ouvrir"
@@ -1843,6 +1852,15 @@ def render_survey_portal():
             "compare, prioritize and act."
         )
         portal_statement = "Better survey intelligence. Clearer indicators. Faster institutional decisions."
+        ccad_label = "Prepared by CCAD"
+        ccad_title = "From institutional data to strategic intelligence"
+        ccad_text = (
+            "This portal is prepared by CCAD. Its role extends beyond producing tables, figures or reports: "
+            "it transforms institutional data into strategic intelligence that supports governance, quality assurance, academic planning, "
+            "institutional effectiveness, accreditation, rankings, stakeholder engagement and continuous improvement. It bridges dispersed institutional "
+            "information and coherent, reliable, actionable evidence for university decision-makers."
+        )
+        ccad_tags = ["Governance", "Quality assurance", "Academic planning", "Accreditation", "Rankings", "Continuous improvement"]
         modules_label = "Institutional analytics spaces"
         modules_microcopy = "Select a space to access its analyses. Upcoming modules will be connected progressively within the same institutional experience."
         button_open = "Open"
@@ -1914,6 +1932,11 @@ def render_survey_portal():
         </div>
         """
         for title, text in value_cards
+    )
+
+    ccad_tags_html = "".join(
+        f"<span class='portal-v4-ccad-tag'>{html_escape(tag)}</span>"
+        for tag in ccad_tags
     )
 
     st.markdown(
@@ -2071,6 +2094,89 @@ def render_survey_portal():
             line-height:1.50;
             font-weight:650;
         }}
+        .portal-v4-ccad-panel {{
+            position:relative;
+            overflow:hidden;
+            background:linear-gradient(135deg,#FFFFFF 0%,#F8FAFE 52%,#EEF2FF 100%);
+            border:1px solid #DDE5F0;
+            border-radius:30px;
+            padding:30px 34px 28px 34px;
+            margin:0 0 22px 0;
+            box-shadow:0 18px 46px rgba(35,43,105,0.11);
+        }}
+        .portal-v4-ccad-panel:before {{
+            content:"";
+            position:absolute;
+            left:0;
+            top:0;
+            bottom:0;
+            width:8px;
+            background:linear-gradient(180deg,{USJ_BLUE},{USJ_RED},{USJ_GOLD});
+        }}
+        .portal-v4-ccad-panel:after {{
+            content:"";
+            position:absolute;
+            right:-80px;
+            top:-90px;
+            width:250px;
+            height:250px;
+            border-radius:999px;
+            background:rgba(35,43,105,0.055);
+        }}
+        .portal-v4-ccad-content {{
+            position:relative;
+            z-index:1;
+            max-width:1280px;
+        }}
+        .portal-v4-ccad-label {{
+            display:inline-flex;
+            align-items:center;
+            border:1px solid #D6DEEC;
+            background:#FFFFFF;
+            border-radius:999px;
+            padding:8px 14px;
+            color:{USJ_RED};
+            font-size:12px;
+            line-height:1;
+            font-weight:950;
+            letter-spacing:0.12em;
+            text-transform:uppercase;
+            margin-bottom:14px;
+            box-shadow:0 8px 18px rgba(35,43,105,0.06);
+        }}
+        .portal-v4-ccad-title {{
+            color:{USJ_BLUE};
+            font-size:31px;
+            line-height:1.15;
+            font-weight:950;
+            letter-spacing:-0.030em;
+            margin-bottom:12px;
+        }}
+        .portal-v4-ccad-text {{
+            color:#344054;
+            font-size:17px;
+            line-height:1.70;
+            font-weight:650;
+            max-width:1180px;
+        }}
+        .portal-v4-ccad-tags {{
+            display:flex;
+            flex-wrap:wrap;
+            gap:10px;
+            margin-top:18px;
+        }}
+        .portal-v4-ccad-tag {{
+            display:inline-flex;
+            align-items:center;
+            background:#FFFFFF;
+            border:1px solid #DDE5F0;
+            color:{USJ_BLUE};
+            border-radius:999px;
+            padding:9px 13px;
+            font-size:13px;
+            font-weight:900;
+            box-shadow:0 6px 16px rgba(35,43,105,0.055);
+        }}
         .portal-v4-leadership {{
             background:linear-gradient(135deg,#FFFFFF 0%,#F7F9FD 100%);
             border:1px solid #DDE5F0;
@@ -2210,6 +2316,14 @@ def render_survey_portal():
                 <div class="portal-v4-subtitle">{html_escape(portal_subtitle)}</div>
                 <div class="portal-v4-statement">{html_escape(portal_statement)}</div>
                 <div class="portal-v4-value-grid">{value_cards_html}</div>
+            </div>
+            <div class="portal-v4-ccad-panel">
+                <div class="portal-v4-ccad-content">
+                    <div class="portal-v4-ccad-label">{html_escape(ccad_label)}</div>
+                    <div class="portal-v4-ccad-title">{html_escape(ccad_title)}</div>
+                    <div class="portal-v4-ccad-text">{html_escape(ccad_text)}</div>
+                    <div class="portal-v4-ccad-tags">{ccad_tags_html}</div>
+                </div>
             </div>
             <div class="portal-v4-leadership">{html_escape(leadership_line)}</div>
             <div class="portal-v4-section-head">
