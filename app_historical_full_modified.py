@@ -1807,47 +1807,57 @@ SURVEY_PORTAL_ITEMS = [
 
 
 def render_survey_portal():
-    """Render the separate institutional portal before entering any dashboard.
+    """Render a separate, executive-level institutional portal.
 
-    This page is intentionally independent from the Exit Survey introduction.
-    Only Exit Students is currently active; the other modules remain visible as
-    institutional roadmap entries without descriptions.
+    This page is independent from the Exit Survey introduction and from the
+    analytical dashboard pages. It presents the institutional analytics suite
+    as a polished entry point for senior university leadership.
     """
     if LANG == "Français":
-        portal_title = "Portail institutionnel des enquêtes et tableaux de bord"
-        portal_kicker = "UNITÉ ASSURANCE QUALITÉ"
-        portal_subtitle = "Un point d’accès unique aux enquêtes, tableaux de bord et produits analytiques institutionnels."
-        portal_microcopy = "Sélectionnez un module pour ouvrir l’espace analytique correspondant."
-        active_label = "Disponible"
-        inactive_label = "À venir"
-        open_label = "Ouvrir le tableau de bord"
-        disabled_label = "Bientôt disponible"
-        modules_label = "Modules institutionnels"
-        active_metric = "Module actif"
-        total_metric = "Modules affichés"
-        language_metric = "Interface bilingue"
-        english_note = "Nom anglais"
+        portal_kicker = "PLATEFORME DÉCISIONNELLE UAQ"
+        portal_title = "Un portail unique pour transformer les données institutionnelles en décisions"
+        portal_subtitle = (
+            "Une page d’accueil conçue pour la gouvernance universitaire : Recteur, Vice-recteurs, "
+            "Doyens, Directeurs et responsables institutionnels. Chaque espace analytique rassemble les "
+            "résultats essentiels pour comprendre, comparer, prioriser et agir."
+        )
+        portal_statement = "Des enquêtes mieux exploitées. Des indicateurs plus lisibles. Des décisions plus rapides."
+        modules_label = "Espaces analytiques institutionnels"
+        modules_microcopy = "Sélectionnez un espace pour accéder aux analyses. Les prochains modules seront connectés progressivement dans la même expérience institutionnelle."
+        button_open = "Ouvrir"
+        button_disabled = "Consulter"
         name_key = "french"
         secondary_key = "english"
+        value_cards = [
+            ("Vision stratégique", "Centraliser les signaux clés pour piloter l’expérience étudiante, académique et institutionnelle."),
+            ("Lecture exécutive", "Passer des réponses brutes à une lecture claire, comparable et directement exploitable par les décideurs."),
+            ("Amélioration continue", "Identifier les forces, les priorités et les tendances qui orientent les plans d’action."),
+        ]
+        leadership_line = "Pensé pour le Rectorat, les Vice-rectorats, les Doyens, les Directions et les instances qualité."
     else:
-        portal_title = "Institutional Surveys and Dashboards Portal"
-        portal_kicker = "QUALITY ASSURANCE UNIT"
-        portal_subtitle = "A single access point for institutional surveys, dashboards and analytics products."
-        portal_microcopy = "Select a module to open the corresponding analytics workspace."
-        active_label = "Available"
-        inactive_label = "Coming soon"
-        open_label = "Open dashboard"
-        disabled_label = "Coming soon"
-        modules_label = "Institutional modules"
-        active_metric = "Active module"
-        total_metric = "Displayed modules"
-        language_metric = "Bilingual interface"
-        english_note = "French name"
+        portal_kicker = "UAQ DECISION-SUPPORT PLATFORM"
+        portal_title = "One institutional gateway to turn evidence into strategic decisions"
+        portal_subtitle = (
+            "A leadership-oriented home page for the Rector, Vice-Rectors, Deans, Directors and institutional "
+            "decision-makers. Each analytics space brings together the essential evidence needed to understand, "
+            "compare, prioritize and act."
+        )
+        portal_statement = "Better survey intelligence. Clearer indicators. Faster institutional decisions."
+        modules_label = "Institutional analytics spaces"
+        modules_microcopy = "Select a space to access its analyses. Upcoming modules will be connected progressively within the same institutional experience."
+        button_open = "Open"
+        button_disabled = "View"
         name_key = "english"
         secondary_key = "french"
+        value_cards = [
+            ("Strategic vision", "Centralize key signals to steer the student, academic and institutional experience."),
+            ("Executive reading", "Move from raw responses to clear, comparable and decision-ready evidence."),
+            ("Continuous improvement", "Identify strengths, priorities and trends that guide institutional action plans."),
+        ]
+        leadership_line = "Designed for the Rectorate, Vice-Rectorates, Deans, Directors and quality assurance bodies."
 
     def build_portal_logo_html(logo_path):
-        """Return a clean embedded logo. White margins are trimmed when Pillow is available."""
+        """Return an embedded institutional logo, centered without any side text."""
         try:
             from io import BytesIO
             from PIL import Image
@@ -1855,14 +1865,13 @@ def render_survey_portal():
             image = Image.open(logo_path).convert("RGBA")
             white_background = Image.new("RGBA", image.size, (255, 255, 255, 255))
             image_rgb = Image.alpha_composite(white_background, image).convert("RGB")
-            arr = np.asarray(image_rgb)
 
-            # Trim near-white empty margins. This improves the UAQ logo clarity when
-            # the source image contains a large white canvas around the logo.
-            non_white_mask = np.any(arr < 245, axis=2)
+            # Keep the logo visually clear by trimming only excessive white canvas.
+            arr = np.asarray(image_rgb)
+            non_white_mask = np.any(arr < 248, axis=2)
             if non_white_mask.any():
                 ys, xs = np.where(non_white_mask)
-                pad = 8
+                pad = 14
                 box = (
                     max(int(xs.min()) - pad, 0),
                     max(int(ys.min()) - pad, 0),
@@ -1874,14 +1883,14 @@ def render_survey_portal():
             buffer = BytesIO()
             image_rgb.save(buffer, format="PNG", optimize=True)
             encoded_logo = base64.b64encode(buffer.getvalue()).decode("utf-8")
-            return f"<img src='data:image/png;base64,{encoded_logo}' class='portal-v3-logo' alt='USJ UAQ logo' />"
+            return f"<img src='data:image/png;base64,{encoded_logo}' class='portal-v4-logo' alt='USJ UAQ logo' />"
         except Exception:
             try:
                 ext = os.path.splitext(logo_path)[1].lower().replace(".", "") or "png"
                 mime = "jpeg" if ext in {"jpg", "jpeg"} else "png"
                 with open(logo_path, "rb") as f:
                     encoded_logo = base64.b64encode(f.read()).decode("utf-8")
-                return f"<img src='data:image/{mime};base64,{encoded_logo}' class='portal-v3-logo' alt='USJ UAQ logo' />"
+                return f"<img src='data:image/{mime};base64,{encoded_logo}' class='portal-v4-logo' alt='USJ UAQ logo' />"
             except Exception:
                 return ""
 
@@ -1894,204 +1903,222 @@ def render_survey_portal():
                 break
 
     if not logo_html:
-        logo_html = "<div class='portal-v3-logo-fallback'>USJ <span>UAQ</span></div>"
+        logo_html = "<div class='portal-v4-logo-fallback'>USJ · UAQ</div>"
 
-    active_count = sum(1 for item in SURVEY_PORTAL_ITEMS if item.get("active"))
-    total_count = len(SURVEY_PORTAL_ITEMS)
-    active_module_name = next((item[name_key] for item in SURVEY_PORTAL_ITEMS if item.get("active")), "Exit Students")
+    value_cards_html = "".join(
+        f"""
+        <div class='portal-v4-value-card'>
+            <div class='portal-v4-value-line'></div>
+            <div class='portal-v4-value-title'>{html_escape(title)}</div>
+            <div class='portal-v4-value-text'>{html_escape(text)}</div>
+        </div>
+        """
+        for title, text in value_cards
+    )
 
     st.markdown(
         f"""
         <style>
         .block-container {{
             padding-top: 0.8rem !important;
+            padding-bottom: 2.2rem !important;
         }}
-        .portal-v3-shell {{
+        .portal-v4-shell {{
             font-family: Candara, Arial, sans-serif;
-            padding: 4px 0 26px 0;
+            padding: 2px 0 28px 0;
         }}
-        .portal-v3-brand-row {{
+        .portal-v4-logo-zone {{
             display:flex;
-            align-items:center;
-            justify-content:space-between;
-            gap:22px;
-            margin: 4px 0 18px 0;
-        }}
-        .portal-v3-logo-card {{
-            display:inline-flex;
-            align-items:center;
             justify-content:center;
+            align-items:center;
+            margin: 4px 0 22px 0;
+        }}
+        .portal-v4-logo-frame {{
+            display:flex;
+            justify-content:center;
+            align-items:center;
             background:#FFFFFF;
-            border:1px solid #E5EAF4;
-            border-radius:26px;
-            padding:18px 26px;
-            min-width:390px;
-            min-height:132px;
-            box-shadow:0 16px 40px rgba(35,43,105,0.10);
+            border:1px solid #E1E7F2;
+            border-radius:30px;
+            padding:20px 36px;
+            min-height:122px;
+            min-width:min(520px, 92vw);
+            box-shadow:0 16px 42px rgba(35,43,105,0.10);
         }}
-        .portal-v3-logo {{
-            width:360px;
-            max-width:38vw;
-            max-height:112px;
-            height:auto;
-            object-fit:contain;
+        .portal-v4-logo {{
             display:block;
-            image-rendering:auto;
+            width:auto;
+            max-width:min(430px, 80vw);
+            max-height:105px;
+            object-fit:contain;
         }}
-        .portal-v3-logo-fallback {{
+        .portal-v4-logo-fallback {{
             color:{USJ_BLUE};
-            font-size:42px;
-            line-height:1;
             font-weight:950;
-            letter-spacing:-0.03em;
-        }}
-        .portal-v3-logo-fallback span {{
-            color:{USJ_RED};
-            font-size:22px;
+            font-size:38px;
             letter-spacing:0.08em;
         }}
-        .portal-v3-unit {{
-            text-align:right;
-            color:{USJ_BLUE};
-            font-size:13px;
-            font-weight:950;
-            letter-spacing:0.12em;
-            text-transform:uppercase;
-        }}
-        .portal-v3-unit-line {{
-            width:140px;
-            height:4px;
-            border-radius:999px;
-            margin:10px 0 0 auto;
-            background:linear-gradient(90deg,{USJ_BLUE},{USJ_RED},{USJ_GOLD});
-        }}
-        .portal-v3-hero {{
+        .portal-v4-hero {{
             position:relative;
             overflow:hidden;
-            background:
-                radial-gradient(circle at 92% 10%, rgba(199,34,67,0.42), transparent 23%),
-                radial-gradient(circle at 8% 96%, rgba(169,151,134,0.33), transparent 28%),
-                linear-gradient(135deg, {USJ_BLUE} 0%, #202760 45%, #101641 100%);
-            border-radius:34px;
-            padding:46px 52px 44px 52px;
+            border-radius:36px;
+            padding:50px 58px 46px 58px;
+            margin:8px 0 24px 0;
             color:white;
-            box-shadow:0 24px 60px rgba(35,43,105,0.28);
-            margin-bottom:24px;
+            background:
+                radial-gradient(circle at 88% 6%, rgba(199,34,67,0.45), transparent 26%),
+                radial-gradient(circle at 74% 82%, rgba(169,151,134,0.28), transparent 30%),
+                linear-gradient(135deg, {USJ_BLUE} 0%, #262F74 44%, #12194D 100%);
+            box-shadow:0 24px 60px rgba(35,43,105,0.30);
         }}
-        .portal-v3-hero:before {{
+        .portal-v4-hero:before {{
             content:"";
             position:absolute;
-            right:-150px;
-            top:-150px;
+            inset:0;
+            background:linear-gradient(110deg, rgba(255,255,255,0.10), transparent 44%);
+            pointer-events:none;
+        }}
+        .portal-v4-hero:after {{
+            content:"";
+            position:absolute;
             width:420px;
             height:420px;
+            right:-118px;
+            top:-136px;
             border-radius:999px;
             border:1px solid rgba(255,255,255,0.16);
+            pointer-events:none;
         }}
-        .portal-v3-hero:after {{
-            content:"";
-            position:absolute;
-            left:46px;
-            bottom:0;
-            width:240px;
-            height:5px;
-            border-radius:999px 999px 0 0;
-            background:linear-gradient(90deg,{USJ_RED},{USJ_GOLD},#FFFFFF);
-            opacity:0.90;
-        }}
-        .portal-v3-kicker {{
+        .portal-v4-kicker {{
+            position:relative;
+            z-index:1;
             display:inline-flex;
             align-items:center;
             gap:10px;
-            background:rgba(255,255,255,0.13);
             border:1px solid rgba(255,255,255,0.26);
-            color:#F3E7DA;
+            background:rgba(255,255,255,0.12);
+            color:#F2E6D9;
             border-radius:999px;
-            padding:9px 15px;
+            padding:9px 16px;
             font-size:13px;
             font-weight:950;
-            letter-spacing:0.11em;
+            letter-spacing:0.10em;
             text-transform:uppercase;
+            margin-bottom:22px;
+        }}
+        .portal-v4-title {{
+            position:relative;
+            z-index:1;
+            color:white;
+            max-width:1120px;
+            font-size:50px;
+            line-height:1.06;
+            font-weight:950;
+            letter-spacing:-0.045em;
             margin-bottom:18px;
         }}
-        .portal-v3-title {{
+        .portal-v4-subtitle {{
             position:relative;
             z-index:1;
-            max-width:1050px;
-            color:white;
-            font-size:46px;
-            line-height:1.10;
-            font-weight:950;
-            letter-spacing:-0.035em;
-            margin:0 0 16px 0;
-        }}
-        .portal-v3-subtitle {{
-            position:relative;
-            z-index:1;
-            max-width:880px;
             color:rgba(255,255,255,0.92);
-            font-size:19px;
-            line-height:1.55;
-            margin-bottom:26px;
+            max-width:1180px;
+            font-size:20px;
+            line-height:1.58;
+            font-weight:600;
+            margin-bottom:22px;
         }}
-        .portal-v3-metrics {{
-            display:grid;
-            grid-template-columns:repeat(3,minmax(0,1fr));
-            gap:14px;
-            max-width:900px;
+        .portal-v4-statement {{
             position:relative;
             z-index:1;
-        }}
-        .portal-v3-metric {{
-            background:rgba(255,255,255,0.12);
-            border:1px solid rgba(255,255,255,0.22);
-            border-radius:20px;
-            padding:16px 18px;
-            backdrop-filter:blur(8px);
-        }}
-        .portal-v3-metric-value {{
             color:white;
-            font-size:28px;
+            max-width:1080px;
+            font-size:20px;
+            line-height:1.45;
             font-weight:950;
-            line-height:1.2;
+            margin:4px 0 26px 0;
         }}
-        .portal-v3-metric-label {{
-            color:rgba(255,255,255,0.80);
-            font-size:13px;
-            font-weight:800;
-            margin-top:5px;
+        .portal-v4-value-grid {{
+            position:relative;
+            z-index:1;
+            display:grid;
+            grid-template-columns:repeat(3, minmax(0, 1fr));
+            gap:14px;
+            max-width:1120px;
         }}
-        .portal-v3-section-head {{
+        .portal-v4-value-card {{
+            background:rgba(255,255,255,0.13);
+            border:1px solid rgba(255,255,255,0.23);
+            border-radius:22px;
+            padding:18px 20px 19px 20px;
+            backdrop-filter:blur(10px);
+        }}
+        .portal-v4-value-line {{
+            width:46px;
+            height:5px;
+            border-radius:999px;
+            background:linear-gradient(90deg,#FFFFFF,{USJ_GOLD},{USJ_RED});
+            margin-bottom:13px;
+        }}
+        .portal-v4-value-title {{
+            color:white;
+            font-size:18px;
+            font-weight:950;
+            margin-bottom:8px;
+        }}
+        .portal-v4-value-text {{
+            color:rgba(255,255,255,0.82);
+            font-size:14px;
+            line-height:1.50;
+            font-weight:650;
+        }}
+        .portal-v4-leadership {{
+            background:linear-gradient(135deg,#FFFFFF 0%,#F7F9FD 100%);
+            border:1px solid #DDE5F0;
+            border-left:7px solid {USJ_RED};
+            border-radius:24px;
+            padding:18px 24px;
+            color:{USJ_BLUE};
+            font-size:18px;
+            line-height:1.45;
+            font-weight:900;
+            box-shadow:0 12px 32px rgba(35,43,105,0.08);
+            margin:18px 0 24px 0;
+        }}
+        .portal-v4-section-head {{
             display:flex;
             align-items:flex-end;
             justify-content:space-between;
-            gap:18px;
-            margin:20px 0 12px 0;
+            gap:20px;
+            margin:22px 0 14px 0;
         }}
-        .portal-v3-section-title {{
+        .portal-v4-section-title {{
             color:{USJ_BLUE};
-            font-size:25px;
+            font-size:28px;
+            line-height:1.15;
             font-weight:950;
-            letter-spacing:-0.02em;
+            letter-spacing:-0.025em;
         }}
-        .portal-v3-section-text {{
+        .portal-v4-section-text {{
+            max-width:780px;
             color:#667085;
             font-size:15px;
+            line-height:1.50;
             font-weight:650;
+            text-align:right;
         }}
-        .portal-v3-card {{
-            min-height:136px;
+        .portal-v4-card {{
+            min-height:156px;
             background:#FFFFFF;
             border:1px solid #DDE5F0;
-            border-radius:26px;
-            padding:22px 24px 20px 24px;
-            margin:8px 0 10px 0;
-            box-shadow:0 12px 32px rgba(35,43,105,0.08);
+            border-radius:28px;
+            padding:24px 24px 20px 24px;
+            margin:9px 0 10px 0;
+            box-shadow:0 14px 34px rgba(35,43,105,0.08);
             transition:all 0.20s ease;
             position:relative;
             overflow:hidden;
         }}
-        .portal-v3-card:before {{
+        .portal-v4-card:before {{
             content:"";
             position:absolute;
             top:0;
@@ -2099,70 +2126,61 @@ def render_survey_portal():
             right:0;
             height:7px;
             background:linear-gradient(90deg,{USJ_BLUE},{USJ_RED},{USJ_GOLD});
-            opacity:0.88;
         }}
-        .portal-v3-card.active {{
-            border-color:#AFC0DE;
-            box-shadow:0 18px 42px rgba(35,43,105,0.17);
+        .portal-v4-card:after {{
+            content:"";
+            position:absolute;
+            right:-48px;
+            bottom:-58px;
+            width:150px;
+            height:150px;
+            border-radius:999px;
+            background:rgba(35,43,105,0.045);
         }}
-        .portal-v3-card.inactive {{
-            opacity:0.93;
-        }}
-        .portal-v3-card:hover {{
+        .portal-v4-card:hover {{
             transform:translateY(-4px);
-            box-shadow:0 18px 44px rgba(35,43,105,0.14);
+            border-color:#C6D2E6;
+            box-shadow:0 20px 46px rgba(35,43,105,0.13);
         }}
-        .portal-v3-card-top {{
-            display:flex;
-            align-items:center;
-            justify-content:space-between;
-            gap:14px;
-            margin-bottom:16px;
+        .portal-v4-card.enabled {{
+            border-color:#BAC8E2;
+            box-shadow:0 20px 48px rgba(35,43,105,0.15);
         }}
-        .portal-v3-code {{
+        .portal-v4-card-number {{
+            position:relative;
+            z-index:1;
             width:46px;
             height:46px;
             border-radius:16px;
             display:flex;
             align-items:center;
             justify-content:center;
-            background:#F3F6FB;
-            border:1px solid #E4EAF4;
+            background:#F4F6FB;
+            border:1px solid #E1E7F2;
             color:{USJ_BLUE};
-            font-size:14px;
+            font-size:15px;
             font-weight:950;
+            margin-bottom:24px;
         }}
-        .portal-v3-badge {{
-            padding:7px 12px;
-            border-radius:999px;
-            font-size:12px;
-            font-weight:950;
-            white-space:nowrap;
-        }}
-        .portal-v3-badge.active {{
-            background:#F3FAF5;
-            color:{USJ_GREEN};
-            border:1px solid #CFE8D6;
-        }}
-        .portal-v3-badge.inactive {{
-            background:#F7F8FC;
-            color:#667085;
-            border:1px solid #DDE5F0;
-        }}
-        .portal-v3-name {{
+        .portal-v4-card-name {{
+            position:relative;
+            z-index:1;
             color:{USJ_BLUE};
-            font-size:25px;
-            line-height:1.14;
+            font-size:27px;
+            line-height:1.10;
             font-weight:950;
-            letter-spacing:-0.02em;
+            letter-spacing:-0.025em;
             margin-bottom:8px;
         }}
-        .portal-v3-secondary {{
+        .portal-v4-card-secondary {{
+            position:relative;
+            z-index:1;
             color:{USJ_RED};
             font-size:12px;
+            line-height:1.35;
             font-weight:950;
             text-transform:uppercase;
-            letter-spacing:0.08em;
+            letter-spacing:0.11em;
         }}
         div[data-testid="stButton"] > button {{
             min-height:48px !important;
@@ -2172,47 +2190,31 @@ def render_survey_portal():
             box-shadow:0 8px 20px rgba(35,43,105,0.08) !important;
         }}
         @media (max-width: 900px) {{
-            .portal-v3-brand-row {{align-items:flex-start;flex-direction:column;}}
-            .portal-v3-unit {{text-align:left;}}
-            .portal-v3-unit-line {{margin-left:0;}}
-            .portal-v3-logo-card {{min-width:0;width:100%;padding:16px;}}
-            .portal-v3-logo {{max-width:100%;width:300px;}}
-            .portal-v3-title {{font-size:34px;}}
-            .portal-v3-hero {{padding:34px 28px;}}
-            .portal-v3-metrics {{grid-template-columns:1fr;}}
-            .portal-v3-section-head {{align-items:flex-start;flex-direction:column;}}
+            .portal-v4-logo-frame {{min-width:0;width:100%;padding:18px 22px;}}
+            .portal-v4-logo {{max-width:86vw;max-height:88px;}}
+            .portal-v4-hero {{padding:36px 28px;}}
+            .portal-v4-title {{font-size:35px;}}
+            .portal-v4-subtitle, .portal-v4-statement {{font-size:17px;}}
+            .portal-v4-value-grid {{grid-template-columns:1fr;}}
+            .portal-v4-section-head {{align-items:flex-start;flex-direction:column;}}
+            .portal-v4-section-text {{text-align:left;}}
         }}
         </style>
-        <div class="portal-v3-shell">
-            <div class="portal-v3-brand-row">
-                <div class="portal-v3-logo-card">{logo_html}</div>
-                <div class="portal-v3-unit">
-                    {html_escape(portal_kicker)}
-                    <div class="portal-v3-unit-line"></div>
-                </div>
+        <div class="portal-v4-shell">
+            <div class="portal-v4-logo-zone">
+                <div class="portal-v4-logo-frame">{logo_html}</div>
             </div>
-            <div class="portal-v3-hero">
-                <div class="portal-v3-kicker">{html_escape(portal_kicker)}</div>
-                <div class="portal-v3-title">{html_escape(portal_title)}</div>
-                <div class="portal-v3-subtitle">{html_escape(portal_subtitle)}</div>
-                <div class="portal-v3-metrics">
-                    <div class="portal-v3-metric">
-                        <div class="portal-v3-metric-value">{total_count}</div>
-                        <div class="portal-v3-metric-label">{html_escape(total_metric)}</div>
-                    </div>
-                    <div class="portal-v3-metric">
-                        <div class="portal-v3-metric-value">{active_count}</div>
-                        <div class="portal-v3-metric-label">{html_escape(active_metric)} · {html_escape(active_module_name)}</div>
-                    </div>
-                    <div class="portal-v3-metric">
-                        <div class="portal-v3-metric-value">FR / EN</div>
-                        <div class="portal-v3-metric-label">{html_escape(language_metric)}</div>
-                    </div>
-                </div>
+            <div class="portal-v4-hero">
+                <div class="portal-v4-kicker">{html_escape(portal_kicker)}</div>
+                <div class="portal-v4-title">{html_escape(portal_title)}</div>
+                <div class="portal-v4-subtitle">{html_escape(portal_subtitle)}</div>
+                <div class="portal-v4-statement">{html_escape(portal_statement)}</div>
+                <div class="portal-v4-value-grid">{value_cards_html}</div>
             </div>
-            <div class="portal-v3-section-head">
-                <div class="portal-v3-section-title">{html_escape(modules_label)}</div>
-                <div class="portal-v3-section-text">{html_escape(portal_microcopy)}</div>
+            <div class="portal-v4-leadership">{html_escape(leadership_line)}</div>
+            <div class="portal-v4-section-head">
+                <div class="portal-v4-section-title">{html_escape(modules_label)}</div>
+                <div class="portal-v4-section-text">{html_escape(modules_microcopy)}</div>
             </div>
         </div>
         """,
@@ -2224,9 +2226,8 @@ def render_survey_portal():
         row_items = SURVEY_PORTAL_ITEMS[start:start + cards_per_row]
         cols = st.columns(cards_per_row)
         for i, item in enumerate(row_items):
-            is_active = bool(item.get("active"))
-            status_class = "active" if is_active else "inactive"
-            status_text = active_label if is_active else inactive_label
+            is_enabled = bool(item.get("active")) and item["id"] == "exit_students"
+            card_class = "enabled" if is_enabled else "disabled"
             display_name = item[name_key]
             secondary_name = item[secondary_key]
             module_number = f"{start + i + 1:02d}"
@@ -2234,25 +2235,22 @@ def render_survey_portal():
             with cols[i]:
                 st.markdown(
                     f"""
-                    <div class="portal-v3-card {status_class}">
-                        <div class="portal-v3-card-top">
-                            <div class="portal-v3-code">{html_escape(module_number)}</div>
-                            <div class="portal-v3-badge {status_class}">{html_escape(status_text)}</div>
-                        </div>
-                        <div class="portal-v3-name">{html_escape(display_name)}</div>
-                        <div class="portal-v3-secondary">{html_escape(english_note)} · {html_escape(secondary_name)}</div>
+                    <div class="portal-v4-card {card_class}">
+                        <div class="portal-v4-card-number">{html_escape(module_number)}</div>
+                        <div class="portal-v4-card-name">{html_escape(display_name)}</div>
+                        <div class="portal-v4-card-secondary">{html_escape(secondary_name)}</div>
                     </div>
                     """,
                     unsafe_allow_html=True
                 )
 
-                if is_active and item["id"] == "exit_students":
-                    if st.button(open_label, key=f"open_{item['id']}", use_container_width=True, type="primary"):
+                if is_enabled:
+                    if st.button(button_open, key=f"open_{item['id']}", use_container_width=True, type="primary"):
                         st.session_state["selected_portal_app"] = "exit_students"
                         st.session_state["dashboard_started"] = False
                         st.rerun()
                 else:
-                    st.button(disabled_label, key=f"disabled_{item['id']}", use_container_width=True, disabled=True)
+                    st.button(button_disabled, key=f"disabled_{item['id']}", use_container_width=True, disabled=True)
 
 def render_landing_page():
     years_list = sorted(df_coded["Year"].dropna().astype(str).unique().tolist()) if "Year" in df_coded.columns else []
