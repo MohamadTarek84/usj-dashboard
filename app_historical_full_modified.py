@@ -1831,6 +1831,13 @@ def render_survey_portal():
         name_key = "english"
         description_key = "description_en"
 
+    logo_candidates = ["LogoUAQ.png", "USJ LOGO 150.png", "usj_logo.png"]
+    logo_path = next((lp for lp in logo_candidates if os.path.exists(lp)), None)
+    if logo_path:
+        logo_left, logo_right = st.columns([5.5, 1])
+        with logo_right:
+            st.image(logo_path, width=210)
+
     st.markdown(
         f"""
         <style>
@@ -1980,7 +1987,10 @@ def render_survey_portal():
 
                 if is_active and item["id"] == "exit_students":
                     if st.button(open_label, key=f"open_{item['id']}", use_container_width=True, type="primary"):
-                        st.session_state["dashboard_started"] = True
+                        # Route first to the Exit Survey space. The existing Exit Survey
+                        # introduction/dashboard flow remains unchanged after this point.
+                        st.session_state["selected_portal_app"] = "exit_students"
+                        st.session_state["dashboard_started"] = False
                         st.rerun()
                 else:
                     st.button(disabled_label, key=f"disabled_{item['id']}", use_container_width=True, disabled=True)
@@ -2234,10 +2244,34 @@ def render_landing_page():
     landing_html = re.sub(r"^[ \t]+<", "<", landing_html)
     st.markdown(landing_html, unsafe_allow_html=True)
 
-    render_survey_portal()
+    st.markdown("<br>", unsafe_allow_html=True)
+    action_cols = st.columns([1.2, 1.25, 3.8])
+    with action_cols[0]:
+        if st.button(enter_label, use_container_width=True, type="primary"):
+            st.session_state["dashboard_started"] = True
+            st.rerun()
+    with action_cols[1]:
+        back_label = "← Retour au portail" if LANG == "Français" else "← Back to portal"
+        if st.button(back_label, use_container_width=True, key="back_to_portal_from_exit_intro"):
+            st.session_state["selected_portal_app"] = None
+            st.session_state["dashboard_started"] = False
+            st.rerun()
+
+if "selected_portal_app" not in st.session_state:
+    st.session_state["selected_portal_app"] = None
 
 if "dashboard_started" not in st.session_state:
     st.session_state["dashboard_started"] = False
+
+# First screen: institutional portal. This is intentionally separate from the
+# Exit Survey introduction and from the analytical dashboard pages.
+if st.session_state["selected_portal_app"] is None:
+    render_survey_portal()
+    st.stop()
+
+if st.session_state["selected_portal_app"] != "exit_students":
+    st.warning("Ce module n’est pas encore connecté." if LANG == "Français" else "This module is not connected yet.")
+    st.stop()
 
 if not st.session_state["dashboard_started"]:
     render_landing_page()
@@ -2262,9 +2296,17 @@ with header_left:
         """,
         unsafe_allow_html=True
     )
-    if st.button(tr("review_intro"), use_container_width=False):
-        st.session_state["dashboard_started"] = False
-        st.rerun()
+    header_button_cols = st.columns([1.05, 1.1, 3.2])
+    with header_button_cols[0]:
+        if st.button(tr("review_intro"), use_container_width=True):
+            st.session_state["dashboard_started"] = False
+            st.rerun()
+    with header_button_cols[1]:
+        back_to_portal_label = "← Portail" if LANG == "Français" else "← Portal"
+        if st.button(back_to_portal_label, use_container_width=True, key="back_to_portal_from_dashboard"):
+            st.session_state["selected_portal_app"] = None
+            st.session_state["dashboard_started"] = False
+            st.rerun()
 
 with header_right:
     if os.path.exists("LogoUAQ.png"):
