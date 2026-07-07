@@ -1720,6 +1720,271 @@ def tr(key):
 def page_label(page_name):
     return PAGE_TRANSLATIONS.get(LANG, {}).get(page_name, page_name)
 
+
+SURVEY_PORTAL_ITEMS = [
+    {
+        "id": "new_students",
+        "english": "New Students",
+        "french": "Nouveaux étudiants",
+        "description_en": "Admissions, onboarding and early student-experience analytics.",
+        "description_fr": "Analyses de l’admission, de l’intégration et de l’expérience initiale des étudiants.",
+        "icon": "🎓",
+        "active": False,
+    },
+    {
+        "id": "alumni",
+        "english": "Alumni",
+        "french": "Anciens",
+        "description_en": "Graduate outcomes, alumni engagement and institutional community indicators.",
+        "description_fr": "Résultats des diplômés, engagement des anciens et indicateurs de communauté institutionnelle.",
+        "icon": "🤝",
+        "active": False,
+    },
+    {
+        "id": "exit_students",
+        "english": "Exit Students",
+        "french": "Étudiants sortants",
+        "description_en": "Active historical dashboard for graduating students and end-of-program experience.",
+        "description_fr": "Tableau de bord historique actif sur l’expérience des étudiants sortants et diplômés.",
+        "icon": "📊",
+        "active": True,
+    },
+    {
+        "id": "employers",
+        "english": "Employers",
+        "french": "Employeurs",
+        "description_en": "Employer feedback, employability signals and labor-market alignment.",
+        "description_fr": "Retours des employeurs, signaux d’employabilité et adéquation avec le marché du travail.",
+        "icon": "🏢",
+        "active": False,
+    },
+    {
+        "id": "teaching_staff",
+        "english": "Teaching Staff",
+        "french": "Enseignants",
+        "description_en": "Teaching staff survey analytics and academic environment indicators.",
+        "description_fr": "Analyses des enquêtes enseignants et indicateurs de l’environnement académique.",
+        "icon": "👩‍🏫",
+        "active": False,
+    },
+    {
+        "id": "psg",
+        "english": "PSG",
+        "french": "PSG",
+        "description_en": "PSG indicators and institutional monitoring dashboard.",
+        "description_fr": "Indicateurs PSG et tableau de bord de suivi institutionnel.",
+        "icon": "📌",
+        "active": False,
+    },
+    {
+        "id": "factbook",
+        "english": "Factbook",
+        "french": "Factbook",
+        "description_en": "Institutional facts, official indicators and annual reference data.",
+        "description_fr": "Données institutionnelles, indicateurs officiels et données annuelles de référence.",
+        "icon": "📘",
+        "active": False,
+    },
+    {
+        "id": "qs_ranking",
+        "english": "QS Ranking",
+        "french": "Classement QS",
+        "description_en": "QS ranking indicators, benchmarking and ranking-readiness monitoring.",
+        "description_fr": "Indicateurs QS, benchmark et suivi de la préparation au classement.",
+        "icon": "🏅",
+        "active": False,
+    },
+    {
+        "id": "course_unit_evaluation",
+        "english": "Course Unit Evaluation",
+        "french": "Évaluation des UE",
+        "description_en": "Course-unit evaluation analytics, teaching quality and continuous improvement signals.",
+        "description_fr": "Analyses des évaluations des UE, qualité de l’enseignement et signaux d’amélioration continue.",
+        "icon": "📝",
+        "active": False,
+    },
+]
+
+
+def render_survey_portal():
+    """Render the institutional portal cards on the landing page.
+
+    Only Exit Students is currently active. Additional dashboards can be activated
+    later by setting active=True and adding the appropriate routing action.
+    """
+    if LANG == "Français":
+        portal_title = "Portail institutionnel des enquêtes et tableaux de bord"
+        portal_subtitle = "Accédez aux enquêtes, analyses institutionnelles et tableaux de bord stratégiques depuis une page d’accueil unique. Les modules non encore connectés restent visibles afin de présenter la feuille de route analytique."
+        active_label = "Disponible"
+        inactive_label = "À venir"
+        open_label = "Ouvrir le tableau de bord"
+        disabled_label = "Bientôt disponible"
+        name_key = "french"
+        description_key = "description_fr"
+    else:
+        portal_title = "Institutional Surveys and Dashboards Portal"
+        portal_subtitle = "Access institutional surveys, analytics products and strategic dashboards from one executive landing page. Modules not yet connected remain visible to communicate the analytics roadmap."
+        active_label = "Available"
+        inactive_label = "Coming soon"
+        open_label = "Open dashboard"
+        disabled_label = "Coming soon"
+        name_key = "english"
+        description_key = "description_en"
+
+    st.markdown(
+        f"""
+        <style>
+        .portal-header {{
+            margin: 28px 0 16px 0;
+            padding: 26px 30px;
+            background: linear-gradient(135deg, #FFFFFF 0%, #F7F8FC 55%, #EEF2FF 100%);
+            border: 1px solid #DDE5F0;
+            border-left: 8px solid {USJ_BLUE};
+            border-radius: 28px;
+            box-shadow: 0 12px 32px rgba(35,43,105,0.09);
+            font-family: Candara, Arial, sans-serif;
+        }}
+        .portal-title {{
+            color: {USJ_BLUE};
+            font-size: 29px;
+            font-weight: 950;
+            margin-bottom: 8px;
+        }}
+        .portal-subtitle {{
+            color: #5F6B7A;
+            font-size: 16px;
+            line-height: 1.65;
+            max-width: 1180px;
+        }}
+        .portal-card {{
+            min-height: 232px;
+            background: #FFFFFF;
+            border: 1px solid #DDE5F0;
+            border-radius: 24px;
+            padding: 22px 22px 18px 22px;
+            margin: 8px 0 10px 0;
+            box-shadow: 0 10px 26px rgba(35,43,105,0.08);
+            font-family: Candara, Arial, sans-serif;
+            transition: all 0.18s ease;
+            position: relative;
+            overflow: hidden;
+        }}
+        .portal-card:before {{
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, {USJ_BLUE}, {USJ_RED}, {USJ_GOLD});
+        }}
+        .portal-card.active {{
+            border-color: #B9C7DE;
+            box-shadow: 0 14px 34px rgba(35,43,105,0.15);
+        }}
+        .portal-card.inactive {{
+            opacity: 0.76;
+        }}
+        .portal-card:hover {{
+            transform: translateY(-3px);
+            box-shadow: 0 16px 36px rgba(35,43,105,0.13);
+        }}
+        .portal-top-row {{
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: flex-start;
+        }}
+        .portal-icon {{
+            width: 48px;
+            height: 48px;
+            border-radius: 16px;
+            background: #F3F6FB;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 25px;
+            border: 1px solid #E4EAF4;
+        }}
+        .portal-status {{
+            padding: 7px 11px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 900;
+            white-space: nowrap;
+        }}
+        .portal-status.active {{
+            background: #F3FAF5;
+            color: {USJ_GREEN};
+            border: 1px solid #CFE8D6;
+        }}
+        .portal-status.inactive {{
+            background: #F7F8FC;
+            color: #667085;
+            border: 1px solid #DDE5F0;
+        }}
+        .portal-name {{
+            margin-top: 18px;
+            color: {USJ_BLUE};
+            font-size: 24px;
+            font-weight: 950;
+            line-height: 1.15;
+        }}
+        .portal-english-name {{
+            margin-top: 4px;
+            color: {USJ_RED};
+            font-size: 13px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }}
+        .portal-description {{
+            margin-top: 12px;
+            color: #5F6B7A;
+            font-size: 15px;
+            line-height: 1.55;
+        }}
+        </style>
+        <div class="portal-header">
+            <div class="portal-title">{html_escape(portal_title)}</div>
+            <div class="portal-subtitle">{html_escape(portal_subtitle)}</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    cards_per_row = 3
+    for start in range(0, len(SURVEY_PORTAL_ITEMS), cards_per_row):
+        row_items = SURVEY_PORTAL_ITEMS[start:start + cards_per_row]
+        cols = st.columns(cards_per_row)
+        for i, item in enumerate(row_items):
+            is_active = bool(item.get("active"))
+            status_class = "active" if is_active else "inactive"
+            status_text = active_label if is_active else inactive_label
+            display_name = item[name_key]
+            with cols[i]:
+                st.markdown(
+                    f"""
+                    <div class="portal-card {status_class}">
+                        <div class="portal-top-row">
+                            <div class="portal-icon">{html_escape(item['icon'])}</div>
+                            <div class="portal-status {status_class}">{html_escape(status_text)}</div>
+                        </div>
+                        <div class="portal-name">{html_escape(display_name)}</div>
+                        <div class="portal-english-name">{html_escape(item['english'])}</div>
+                        <div class="portal-description">{html_escape(item[description_key])}</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+                if is_active and item["id"] == "exit_students":
+                    if st.button(open_label, key=f"open_{item['id']}", use_container_width=True, type="primary"):
+                        st.session_state["dashboard_started"] = True
+                        st.rerun()
+                else:
+                    st.button(disabled_label, key=f"disabled_{item['id']}", use_container_width=True, disabled=True)
+
 def render_landing_page():
     years_list = sorted(df_coded["Year"].dropna().astype(str).unique().tolist()) if "Year" in df_coded.columns else []
     years_label = " | ".join(years_list) if years_list else "2022-2025"
@@ -1969,12 +2234,7 @@ def render_landing_page():
     landing_html = re.sub(r"^[ \t]+<", "<", landing_html)
     st.markdown(landing_html, unsafe_allow_html=True)
 
-    st.markdown("<br>", unsafe_allow_html=True)
-    start_col, _ = st.columns([1.2, 4])
-    with start_col:
-        if st.button(enter_label, use_container_width=True, type="primary"):
-            st.session_state["dashboard_started"] = True
-            st.rerun()
+    render_survey_portal()
 
 if "dashboard_started" not in st.session_state:
     st.session_state["dashboard_started"] = False
