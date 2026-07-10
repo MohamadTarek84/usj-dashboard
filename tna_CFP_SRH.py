@@ -10548,7 +10548,7 @@ def render_director_form(user):
             info_col, remove_col = st.columns([6, 1])
 
             with info_col:
-                # Employee code intentionally hidden from the director interface.
+                # Employee code hidden from the director interface.
                 pass
 
             with remove_col:
