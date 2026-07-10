@@ -10548,10 +10548,8 @@ def render_director_form(user):
             info_col, remove_col = st.columns([6, 1])
 
             with info_col:
-                st.markdown(
-                    f"<span class='pill'>Code : {emp['code']}</span>",
-                    unsafe_allow_html=True
-                )
+                # Employee code intentionally hidden from the director interface.
+                pass
 
             with remove_col:
                 if st.button(
@@ -10774,7 +10772,6 @@ def render_employee_visual_cards(employee_name, employee_code, employee_departme
         "<section class='employee-print-page'>"
         "<div class='card blue-card employee-main-card'>"
         f"<h3 style='margin-top:0;'>{employee_name}</h3>"
-        f"<span class='pill'>Code : {employee_code}</span>"
         "</div>"
         "<div class='card gold-card employee-summary-card'>"
         "<h3 style='margin-top:0; color:#001F5B;'>Synthèse visuelle</h3>"
@@ -11295,7 +11292,6 @@ def build_director_report_html(selected_director, df, overrides):
         rows_html += f"""
         <section class="employee-card">
             <h2>{emp['name']}</h2>
-            <p class="meta">Code : {emp['code']}</p>
             <div class="three-cols">
                 <div class="box employee">
                     <h3>Choix de l’employé</h3>
@@ -12279,5 +12275,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
