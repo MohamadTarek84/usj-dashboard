@@ -10436,8 +10436,7 @@ def render_psg_form(user):
     if saved_data or is_employee_validated(st.session_state["code"]):
         st.markdown("<br><br>", unsafe_allow_html=True)
         st.success(
-            "Vos réponses ont été soumises. Vous ne pouvez plus les modifier. "
-            "Votre Doyen / Directeur peut vous autoriser à remplir à nouveau le questionnaire si nécessaire."
+            "Vos réponses ont été soumises."
         )
         return
 
@@ -10548,8 +10547,7 @@ def render_director_form(user):
             info_col, remove_col = st.columns([6, 1])
 
             with info_col:
-                # Employee code hidden from the director interface.
-                pass
+                pass  # Code employé masqué dans la vue directeur
 
             with remove_col:
                 if st.button(
@@ -12275,3 +12273,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
