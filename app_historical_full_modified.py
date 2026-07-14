@@ -3972,17 +3972,16 @@ def render_factbook_section1_module():
                     x=campus_pivot.columns.tolist(),
                     y=campus_pivot.index.tolist(),
                     colorscale=[
-                        [0.00, "#FFFFFF"],
-                        [0.20, "#F4F7FF"],
-                        [0.45, "#E5EBFF"],
-                        [0.70, "#CCD7FF"],
-                        [1.00, "#AEBBEF"],
+                        [0.00, "#DCE6FF"],
+                        [0.20, "#B9C7F3"],
+                        [0.45, "#7F90D0"],
+                        [0.70, "#48569B"],
+                        [1.00, USJ_BLUE],
                     ],
-                    xgap=2,
-                    ygap=2,
+                    xgap=1,
+                    ygap=1,
                     text=campus_text.values,
-                    texttemplate="%{text}",
-                    textfont=dict(family="Candara, Arial", size=16, color=USJ_BLUE),
+                    texttemplate="",
                     hovertemplate="<b>%{y}</b><br>Année: %{x}<br>Effectifs: %{z:,.0f}<extra></extra>",
                     colorbar=dict(
                         title=dict(text="Effectifs", font=dict(family="Candara, Arial", color=USJ_BLUE, size=15)),
@@ -3992,6 +3991,27 @@ def render_factbook_section1_module():
                     ),
                 )
             )
+
+            campus_numeric = campus_pivot.apply(pd.to_numeric, errors="coerce")
+            campus_values_flat = campus_numeric.to_numpy(dtype=float)
+            campus_min = np.nanmin(campus_values_flat) if np.isfinite(campus_values_flat).any() else 0
+            campus_max = np.nanmax(campus_values_flat) if np.isfinite(campus_values_flat).any() else 1
+            campus_range = campus_max - campus_min if campus_max != campus_min else 1
+            for row_label in campus_numeric.index.tolist():
+                for col_label in campus_numeric.columns.tolist():
+                    value = campus_numeric.loc[row_label, col_label]
+                    if pd.isna(value):
+                        continue
+                    intensity = (float(value) - campus_min) / campus_range
+                    label_color = "#FFFFFF" if intensity >= 0.55 else USJ_BLUE
+                    campus_heatmap.add_annotation(
+                        x=col_label,
+                        y=row_label,
+                        text=f"<b>{fb_format_number(value)}</b>",
+                        showarrow=False,
+                        font=dict(family="Candara, Arial", size=15, color=label_color),
+                    )
+
             campus_heatmap.update_layout(
                 title=dict(
                     text="Évolution des effectifs semestre 1 par campus",
@@ -4005,7 +4025,7 @@ def render_factbook_section1_module():
                 yaxis_title="",
                 margin=dict(l=245, r=90, t=90, b=70),
                 paper_bgcolor="white",
-                plot_bgcolor="white",
+                plot_bgcolor="#D8E2F0",
             )
             campus_heatmap.update_xaxes(
                 side="bottom",
@@ -4459,17 +4479,16 @@ def render_factbook_section2_module():
                             x=heatmap_values.columns.tolist(),
                             y=heatmap_values.index.tolist(),
                             colorscale=[
-                                [0.00, "#FFFFFF"],
-                                [0.20, "#F4F7FF"],
-                                [0.45, "#E5EBFF"],
-                                [0.70, "#CCD7FF"],
-                                [1.00, "#AEBBEF"],
+                                [0.00, "#DCE6FF"],
+                                [0.20, "#B9C7F3"],
+                                [0.45, "#7F90D0"],
+                                [0.70, "#48569B"],
+                                [1.00, USJ_BLUE],
                             ],
-                            xgap=2,
-                            ygap=2,
+                            xgap=1,
+                            ygap=1,
                             text=heatmap_text.values,
-                            texttemplate="%{text}",
-                            textfont=dict(family="Candara, Arial", size=16, color=USJ_BLUE),
+                            texttemplate="",
                             hovertemplate="<b>%{y}</b><br>Année: %{x}<br>Diplômés: %{z:,.0f}<extra></extra>",
                             colorbar=dict(
                                 title=dict(text="Diplômés", font=dict(family="Candara, Arial", color=USJ_BLUE, size=15)),
@@ -4479,6 +4498,27 @@ def render_factbook_section2_module():
                             ),
                         )
                     )
+
+                    heatmap_numeric = heatmap_values.apply(pd.to_numeric, errors="coerce")
+                    heatmap_values_flat = heatmap_numeric.to_numpy(dtype=float)
+                    heatmap_min = np.nanmin(heatmap_values_flat) if np.isfinite(heatmap_values_flat).any() else 0
+                    heatmap_max = np.nanmax(heatmap_values_flat) if np.isfinite(heatmap_values_flat).any() else 1
+                    heatmap_range = heatmap_max - heatmap_min if heatmap_max != heatmap_min else 1
+                    for row_label in heatmap_numeric.index.tolist():
+                        for col_label in heatmap_numeric.columns.tolist():
+                            value = heatmap_numeric.loc[row_label, col_label]
+                            if pd.isna(value):
+                                continue
+                            intensity = (float(value) - heatmap_min) / heatmap_range
+                            label_color = "#FFFFFF" if intensity >= 0.55 else USJ_BLUE
+                            heatmap_fig.add_annotation(
+                                x=col_label,
+                                y=row_label,
+                                text=f"<b>{fb_format_number(value)}</b>",
+                                showarrow=False,
+                                font=dict(family="Candara, Arial", size=15, color=label_color),
+                            )
+
                     heatmap_fig.update_layout(
                         title=dict(
                             text="Comparaison annuelle des diplômés par niveau académique",
@@ -4492,7 +4532,7 @@ def render_factbook_section2_module():
                         yaxis_title="",
                         margin=dict(l=300, r=90, t=90, b=70),
                         paper_bgcolor="white",
-                        plot_bgcolor="white",
+                        plot_bgcolor="#D8E2F0",
                     )
                     heatmap_fig.update_xaxes(
                         side="bottom",
