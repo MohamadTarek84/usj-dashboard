@@ -649,7 +649,11 @@ def fb_format_number(value, digits=0):
 def fb_format_pct(value):
     if pd.isna(value):
         return "NA"
-    return f"{float(value) * 100:.1f}%"
+    pct_value = float(value) * 100
+    # Keep tiny variations readable: -0.02% should not become -0.0%.
+    if 0 < abs(pct_value) < 0.1:
+        return f"{pct_value:.2f}%"
+    return f"{pct_value:.1f}%"
 
 
 def fb_text_number(value, digits=0):
@@ -3337,6 +3341,19 @@ def render_factbook_module():
     def _sum_col(df, col):
         return pd.to_numeric(df[col], errors="coerce").sum() if col in df.columns else np.nan
 
+    def _pct_change_from_values(previous_value, current_value):
+        previous_value = pd.to_numeric(previous_value, errors="coerce")
+        current_value = pd.to_numeric(current_value, errors="coerce")
+        if pd.isna(previous_value) or pd.isna(current_value) or previous_value == 0:
+            return np.nan
+        return (current_value - previous_value) / previous_value
+
+    def _row_pct(row, pct_col, previous_col, current_col):
+        value = row.get(pct_col) if row is not None else np.nan
+        if pd.notna(value):
+            return value
+        return _pct_change_from_values(row.get(previous_col), row.get(current_col)) if row is not None else np.nan
+
     total_formations = _get_total_row(formations, "Total formations diplômantes")
     total_du_cert = _get_total_row(du_cert, "Total DU et Certificats")
     total_autres = _get_total_row(du_cert, "Total Autres entités/Inscriptions")
@@ -3353,6 +3370,22 @@ def render_factbook_module():
             "ETP semestre 1 2023-2024": _sum_col(formations, "ETP semestre 1 2023-2024"),
             "ETP semestre 1 2024-2025": _sum_col(formations, "ETP semestre 1 2024-2025"),
         }
+        total_formations_values["Effectifs annuel % Var"] = _pct_change_from_values(
+            total_formations_values["Effectifs annuel 2023-2024"],
+            total_formations_values["Effectifs annuel 2024-2025"],
+        )
+        total_formations_values["Effectifs semestre 1 % Var"] = _pct_change_from_values(
+            total_formations_values["Effectifs semestre 1 2023-2024"],
+            total_formations_values["Effectifs semestre 1 2024-2025"],
+        )
+        total_formations_values["ETP annuel % Var"] = _pct_change_from_values(
+            total_formations_values["ETP annuel 2023-2024"],
+            total_formations_values["ETP annuel 2024-2025"],
+        )
+        total_formations_values["ETP semestre 1 % Var"] = _pct_change_from_values(
+            total_formations_values["ETP semestre 1 2023-2024"],
+            total_formations_values["ETP semestre 1 2024-2025"],
+        )
         total_formations = pd.Series(total_formations_values)
 
     tab_synthese, tab_institutions, tab_campus, tab_niveau, tab_programmes, tab_donnees = st.tabs([
@@ -3421,10 +3454,10 @@ def render_factbook_module():
                 "Catégorie": label,
                 "Effectifs annuel 2023-2024": row.get("Effectifs annuel 2023-2024"),
                 "Effectifs annuel 2024-2025": row.get("Effectifs annuel 2024-2025"),
-                "% Var annuel": row.get("Effectifs annuel % Var"),
+                "% Var annuel": _row_pct(row, "Effectifs annuel % Var", "Effectifs annuel 2023-2024", "Effectifs annuel 2024-2025"),
                 "Effectifs S1 2023-2024": row.get("Effectifs semestre 1 2023-2024"),
                 "Effectifs S1 2024-2025": row.get("Effectifs semestre 1 2024-2025"),
-                "% Var S1": row.get("Effectifs semestre 1 % Var"),
+                "% Var S1": _row_pct(row, "Effectifs semestre 1 % Var", "Effectifs semestre 1 2023-2024", "Effectifs semestre 1 2024-2025"),
                 "ETP annuel 2024-2025": row.get("ETP annuel 2024-2025"),
                 "ETP S1 2024-2025": row.get("ETP semestre 1 2024-2025"),
             })
