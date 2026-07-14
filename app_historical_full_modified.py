@@ -384,6 +384,23 @@ FACTBOOK_SECTION1_FILE_CANDIDATES = [
 FACTBOOK_YEARS = ["2019-2020", "2020-2021", "2021-2022", "2022-2023", "2023-2024", "2024-2025"]
 
 
+FACTBOOK_SECTION1_TITLES = {
+    "1.1": "1.1. Effectifs étudiants et Équivalent Temps Plein (ETP) par Institution : Formations diplômantes",
+    "1.2": "1.2. Effectifs étudiants et Équivalent Temps Plein (ETP) par Institution : DU et Certificats",
+    "1.3": "1.3. Effectifs étudiants semestre 1 par campus",
+    "1.4": "1.4. Effectifs étudiants semestre 1 et ETP semestre 1 par niveau académique",
+    "1.5": "1.5. Effectifs étudiants semestre 1 par programme : 1er cycle d'une formation",
+    "1.6": "1.6. Effectifs étudiants semestre 1 par programme : Master",
+    "1.7": "1.7. Effectifs étudiants semestre 1 par programme : PhD",
+    "1.8": "1.8. Effectifs étudiants semestre 1 par programme : Autres programmes",
+    "1.9": "1.9. Effectifs étudiants semestre 1 des programmes en Arabe",
+    "1.10": "1.10. Effectifs étudiants semestre 1 des programmes en Anglais",
+    "1.11": "1.11. Effectifs nouveaux étudiants USJ par programme : 1er cycle d'une formation",
+    "1.12": "1.12. Effectifs nouveaux inscrits dans un programme de PhD",
+    "1.13": "1.13. Effectifs étudiants DU et Certificats par programme",
+}
+
+
 def find_factbook_section1_file():
     """Find the Section 1 Factbook Excel file without touching the Exit Survey file."""
     for file_name in FACTBOOK_SECTION1_FILE_CANDIDATES:
@@ -612,21 +629,21 @@ def load_factbook_section1(file_path, file_mtime, file_size):
     niveau = _fb_parse_level_sheet(file_path, "1.4.Eff. Ni")
 
     program_sheets = [
-        ("1.5. Effectif par prog 1er cycl", "1er cycle d'une formation"),
-        ("1.6. Master", "Master"),
-        ("1.7 Doctorat", "PhD"),
-        ("1.8 Eff", "Autres programmes"),
-        ("1.9 Ar", "Programmes en arabe"),
-        ("1.10 Ang", "Programmes en anglais"),
-        ("1.11 Eff Nouv ét 1er cycle", "Nouveaux étudiants - 1er cycle"),
-        ("1.12 Eff nouv. ét PhD", "Nouveaux inscrits - PhD"),
+        ("1.5. Effectif par prog 1er cycl", FACTBOOK_SECTION1_TITLES["1.5"]),
+        ("1.6. Master", FACTBOOK_SECTION1_TITLES["1.6"]),
+        ("1.7 Doctorat", FACTBOOK_SECTION1_TITLES["1.7"]),
+        ("1.8 Eff", FACTBOOK_SECTION1_TITLES["1.8"]),
+        ("1.9 Ar", FACTBOOK_SECTION1_TITLES["1.9"]),
+        ("1.10 Ang", FACTBOOK_SECTION1_TITLES["1.10"]),
+        ("1.11 Eff Nouv ét 1er cycle", FACTBOOK_SECTION1_TITLES["1.11"]),
+        ("1.12 Eff nouv. ét PhD", FACTBOOK_SECTION1_TITLES["1.12"]),
     ]
     programmes = pd.concat(
         [_fb_parse_program_sheet(file_path, sheet, label) for sheet, label in program_sheets],
         ignore_index=True
     )
     du_certificats_programmes = _fb_parse_two_row_header(file_path, "1.13. Effectif par prog Du Cer", header_row=1, data_start=3)
-    du_certificats_programmes["Type de programme"] = "DU et Certificats"
+    du_certificats_programmes["Type de programme"] = FACTBOOK_SECTION1_TITLES["1.13"]
 
     return {
         "formations_diplomantes": formations_diplomantes,
@@ -3264,14 +3281,6 @@ def render_factbook_module():
     """Render the connected Factbook module for Section 1 only."""
     factbook_file_path, factbook_file_mtime, factbook_file_size = find_factbook_section1_file()
 
-    top_cols = st.columns([1.2, 5.5])
-    with top_cols[0]:
-        back_label = "← Portail" if LANG == "Français" else "← Portal"
-        if st.button(back_label, key="back_to_portal_from_factbook", use_container_width=True):
-            st.session_state["selected_portal_app"] = None
-            st.session_state["dashboard_started"] = False
-            st.rerun()
-
     if factbook_file_path is None:
         st.error(
             "Fichier Excel de la Section 1 du Factbook introuvable. Ajoutez le fichier Excel dans le même dossier que l’application."
@@ -3294,24 +3303,38 @@ def render_factbook_module():
     last_update_label = pd.to_datetime(factbook_file_mtime, unit="s").strftime("%Y-%m-%d %H:%M:%S")
     file_size_mb = factbook_file_size / (1024 * 1024)
 
-    st.markdown(
-        f"""
-        <div style="margin-top:8px;margin-bottom:12px;">
+    # Factbook header aligned with the Exit Survey header: title on the left, institutional logo on the right.
+    header_left, header_right = st.columns([4.5, 1.5])
+
+    with header_left:
+        st.markdown(
+            f"""
             <h1 style="color:{USJ_BLUE}; margin-bottom:0; font-family:Candara, Arial, sans-serif;">
                 Factbook USJ 2024-2025
             </h1>
             <p style="font-size:18px; color:#555; margin-top:4px; font-family:Candara, Arial, sans-serif;">
                 Section 1 - Effectifs étudiants
             </p>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+            """,
+            unsafe_allow_html=True
+        )
+        header_button_cols = st.columns([1.1, 3.5])
+        with header_button_cols[0]:
+            back_label = "← Portail" if LANG == "Français" else "← Portal"
+            if st.button(back_label, key="back_to_portal_from_factbook", use_container_width=True):
+                st.session_state["selected_portal_app"] = None
+                st.session_state["dashboard_started"] = False
+                st.rerun()
 
-    if os.path.exists("LogoUAQ.png"):
-        st.image("LogoUAQ.png", width=300)
-    elif os.path.exists("usj_logo.png"):
-        st.image("usj_logo.png", width=220)
+    with header_right:
+        if os.path.exists("LogoUAQ.png"):
+            st.image("LogoUAQ.png", width=360)
+        elif os.path.exists("USJ LOGO 150.png"):
+            st.image("USJ LOGO 150.png", width=360)
+        elif os.path.exists("usj_logo.png"):
+            st.image("usj_logo.png", width=230)
+
+    st.divider()
 
     st.markdown(
         f"""
@@ -3511,15 +3534,18 @@ def render_factbook_module():
         )
 
     with tab_institutions:
-        section_header("Effectifs par institution", "Formations diplômantes et DU/Certificats par champ disciplinaire, acronyme et institution.")
+        section_header(
+            "Effectifs par institution",
+            f"{FACTBOOK_SECTION1_TITLES['1.1']} | {FACTBOOK_SECTION1_TITLES['1.2']}"
+        )
 
         dataset_choice = st.radio(
             "Jeu de données",
-            ["Formations diplômantes", "DU et Certificats / Autres inscriptions"],
-            horizontal=True,
+            [FACTBOOK_SECTION1_TITLES["1.1"], FACTBOOK_SECTION1_TITLES["1.2"]],
+            horizontal=False,
             key="fb_inst_dataset"
         )
-        inst_df = formations.copy() if dataset_choice == "Formations diplômantes" else du_cert.copy()
+        inst_df = formations.copy() if dataset_choice == FACTBOOK_SECTION1_TITLES["1.1"] else du_cert.copy()
 
         f1, f2, f3 = st.columns(3)
         with f1:
@@ -3568,7 +3594,7 @@ def render_factbook_module():
 
         render_factbook_table(
             filtered_inst,
-            "Tableau institutionnel filtré",
+            dataset_choice,
             note="Les lignes Total sont mises en évidence pour faciliter la lecture.",
             max_height=560
         )
@@ -3582,7 +3608,10 @@ def render_factbook_module():
         )
 
     with tab_campus:
-        section_header("Effectifs par campus", "Évolution des effectifs étudiants du semestre 1 entre 2019-2020 et 2024-2025.")
+        section_header(
+            FACTBOOK_SECTION1_TITLES["1.3"],
+            "Évolution des effectifs étudiants du semestre 1 entre 2019-2020 et 2024-2025."
+        )
 
         campus_options = filter_options(campus_df, "Campus")
         selected_campus = st.selectbox("Campus", campus_options, key="fb_campus_filter")
@@ -3637,7 +3666,10 @@ def render_factbook_module():
         )
 
     with tab_niveau:
-        section_header("Effectifs par niveau académique", "Lecture des effectifs et de l’ETP du semestre 1 par niveau académique.")
+        section_header(
+            FACTBOOK_SECTION1_TITLES["1.4"],
+            "Lecture des effectifs et de l’ETP du semestre 1 par niveau académique."
+        )
 
         indicator = st.radio(
             "Indicateur",
@@ -3700,7 +3732,10 @@ def render_factbook_module():
         )
 
     with tab_programmes:
-        section_header("Effectifs par programme", "Recherche et visualisation des programmes de la Section 1.")
+        section_header(
+            "Effectifs par programme",
+            " | ".join([FACTBOOK_SECTION1_TITLES[k] for k in ["1.5", "1.6", "1.7", "1.8", "1.9", "1.10", "1.11", "1.12", "1.13"]])
+        )
 
         programs_all = pd.concat([programmes_df, du_programmes_df], ignore_index=True, sort=False)
         if "Programme" not in programs_all.columns:
@@ -3784,15 +3819,15 @@ def render_factbook_module():
         )
 
     with tab_donnees:
-        section_header("Tables sources intégrées", "Contrôle des tableaux importés depuis l’Excel de la Section 1.")
+        section_header("Tables sources intégrées", "Contrôle des tableaux importés depuis l’Excel de la Section 1 avec les titres officiels des feuilles Factbook.")
 
         source_tables = {
-            "1.1 Formations diplômantes par institution": formations,
-            "1.2 DU, certificats et autres inscriptions": du_cert,
-            "1.3 Campus": campus_df,
-            "1.4 Niveau académique": niveau_df,
-            "1.5 à 1.12 Programmes": programmes_df,
-            "1.13 DU et certificats par programme": du_programmes_df,
+            FACTBOOK_SECTION1_TITLES["1.1"]: formations,
+            FACTBOOK_SECTION1_TITLES["1.2"]: du_cert,
+            FACTBOOK_SECTION1_TITLES["1.3"]: campus_df,
+            FACTBOOK_SECTION1_TITLES["1.4"]: niveau_df,
+            f"{FACTBOOK_SECTION1_TITLES['1.5']} à {FACTBOOK_SECTION1_TITLES['1.12']}": programmes_df,
+            FACTBOOK_SECTION1_TITLES["1.13"]: du_programmes_df,
         }
         selected_table_name = st.selectbox("Table", list(source_tables.keys()), key="fb_source_table")
         selected_table = source_tables[selected_table_name]
