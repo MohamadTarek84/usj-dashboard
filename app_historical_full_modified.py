@@ -4275,30 +4275,34 @@ def render_factbook_cover():
     ]
 
     value_cards_html = "".join(
-        f"""
-        <div class='fb-landing-value-card'>
-            <div class='fb-landing-value-dot'></div>
-            <div class='fb-landing-value-title'>{html_escape(title)}</div>
-            <div class='fb-landing-value-text'>{html_escape(text)}</div>
-        </div>
-        """
+        textwrap.dedent(
+            f"""
+            <div class='fb-landing-value-card'>
+                <div class='fb-landing-value-dot'></div>
+                <div class='fb-landing-value-title'>{html_escape(title)}</div>
+                <div class='fb-landing-value-text'>{html_escape(text)}</div>
+            </div>
+            """
+        ).strip()
         for title, text in value_items
     )
 
     content_modules_html = "".join(
-        f"""
-        <div class='fb-landing-module'>
-            <div class='fb-landing-module-number'>{html_escape(item['number'])}</div>
-            <div>
-                <div class='fb-landing-module-title'>{html_escape(item['label'] + ' - ' + item['title'])}</div>
-                <div class='fb-landing-module-text'>{html_escape(item['text'])}</div>
+        textwrap.dedent(
+            f"""
+            <div class='fb-landing-module'>
+                <div class='fb-landing-module-number'>{html_escape(item['number'])}</div>
+                <div>
+                    <div class='fb-landing-module-title'>{html_escape(item['label'] + ' - ' + item['title'])}</div>
+                    <div class='fb-landing-module-text'>{html_escape(item['text'])}</div>
+                </div>
             </div>
-        </div>
-        """
+            """
+        ).strip()
         for item in sections
     )
 
-    landing_html = f"""
+    landing_html = textwrap.dedent(f"""
     <style>
         .fb-landing-shell {{font-family:Candara, Arial, sans-serif;}}
         .fb-landing-logo-strip {{display:flex;justify-content:flex-end;align-items:center;margin:2px 2px 14px 0;}}
@@ -4405,8 +4409,8 @@ def render_factbook_cover():
         </div>
         <div class='fb-landing-heading'>Accéder aux sections</div>
     </div>
-    """
-    st.markdown(landing_html, unsafe_allow_html=True)
+    """).strip()
+    st.html(landing_html)
 
     # Navigation cards with real Streamlit buttons.
     for start in range(0, len(sections), 3):
@@ -4416,14 +4420,16 @@ def render_factbook_cover():
                 disabled_class = " disabled" if not item["enabled"] else ""
                 status = "Connectée" if item["enabled"] else "À connecter"
                 st.markdown(
-                    f"""
-                    <div class="fb-section-card{disabled_class}">
-                        <div class="fb-section-number">{html_escape(item['label'])}</div>
-                        <div class="fb-section-title">{html_escape(item['title'])}</div>
-                        <div class="fb-section-text">{html_escape(item['text'])}</div>
-                        <div class="fb-section-status">{html_escape(status)}</div>
-                    </div>
-                    """,
+                    textwrap.dedent(
+                        f"""
+                        <div class="fb-section-card{disabled_class}">
+                            <div class="fb-section-number">{html_escape(item['label'])}</div>
+                            <div class="fb-section-title">{html_escape(item['title'])}</div>
+                            <div class="fb-section-text">{html_escape(item['text'])}</div>
+                            <div class="fb-section-status">{html_escape(status)}</div>
+                        </div>
+                        """
+                    ).strip(),
                     unsafe_allow_html=True,
                 )
                 if st.button(item["button"], key=f"open_factbook_{item['id']}", use_container_width=True, disabled=not item["enabled"]):
