@@ -3466,8 +3466,7 @@ def render_factbook_module():
 
     with tab_synthese:
         section_header(
-            "Synthèse des effectifs étudiants",
-            "Vue consolidée des principaux totaux de la Section 1 du Factbook 2024-2025."
+            "Synthèse des effectifs étudiants"
         )
 
         kpi_cols = st.columns(5)
