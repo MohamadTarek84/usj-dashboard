@@ -657,6 +657,39 @@ def fb_text_number(value, digits=0):
     return "" if pd.isna(value) else fb_format_number(value, digits=digits)
 
 
+def fb_force_integer_trace_text(fig, orientation="v"):
+    """Force Factbook chart labels to display rounded whole numbers only.
+
+    Some Factbook values, especially ETP values, may be stored as decimal numbers
+    in the Excel file. The dashboard should display them as rounded counts in
+    labels, while keeping the underlying values unchanged for plotting.
+    """
+    for trace in fig.data:
+        values = None
+        if orientation == "h" and hasattr(trace, "x"):
+            values = trace.x
+        elif hasattr(trace, "y"):
+            values = trace.y
+        elif hasattr(trace, "x"):
+            values = trace.x
+
+        if values is None:
+            continue
+
+        labels = []
+        for value in values:
+            try:
+                numeric_value = pd.to_numeric(value, errors="coerce")
+            except Exception:
+                numeric_value = np.nan
+            labels.append("" if pd.isna(numeric_value) else fb_format_number(numeric_value, digits=0))
+
+        trace.text = labels
+
+    fig.update_traces(texttemplate="%{text}")
+    return fig
+
+
 def fb_add_value_padding(fig, data, value_col, orientation="h", extra_ratio=0.18):
     """Add visual padding so outside value labels are not clipped."""
     if value_col not in data.columns:
@@ -696,6 +729,7 @@ def fb_move_legend_below(fig, bottom_margin=130):
 
 def fb_polish_horizontal_bar(fig, data, value_col, left_margin=300, right_margin=110, bottom_margin=130, showlegend=True):
     """Improve Factbook horizontal bars: readable labels, no clipped values, no legend overlap."""
+    fb_force_integer_trace_text(fig, orientation="h")
     fb_add_value_padding(fig, data, value_col, orientation="h", extra_ratio=0.20)
     fig.update_yaxes(automargin=True)
     fig.update_xaxes(automargin=True)
@@ -714,6 +748,7 @@ def fb_polish_horizontal_bar(fig, data, value_col, left_margin=300, right_margin
 
 def fb_polish_vertical_bar(fig, data, value_col, bottom_margin=85):
     """Improve Factbook vertical bars and keep value labels visible."""
+    fb_force_integer_trace_text(fig, orientation="v")
     fb_add_value_padding(fig, data, value_col, orientation="v", extra_ratio=0.18)
     fig.update_xaxes(automargin=True)
     fig.update_yaxes(automargin=True)
@@ -723,6 +758,7 @@ def fb_polish_vertical_bar(fig, data, value_col, bottom_margin=85):
 
 def fb_polish_line(fig, data, value_col, bottom_margin=145):
     """Improve Factbook line charts: value labels visible and legend outside the plot area."""
+    fb_force_integer_trace_text(fig, orientation="v")
     fb_add_value_padding(fig, data, value_col, orientation="v", extra_ratio=0.16)
     fig.update_traces(
         mode="lines+markers+text",
