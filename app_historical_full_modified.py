@@ -5647,21 +5647,34 @@ def _fb_section6_row_value(global_df, indicator, year):
 
 
 def _fb_section6_global_table(global_df):
-    table = global_df.copy()
+    """Return a display-ready Section 6 global table without pandas dtype assignment issues."""
+    if global_df is None or global_df.empty:
+        return pd.DataFrame()
+
+    table = global_df.copy().astype(object)
     years = [year for year in FACTBOOK_SECTION6_YEARS if year in table.columns]
-    rate_mask = table["Indicateur"].astype(str).str.startswith("%", na=False)
+    if "Indicateur" in table.columns:
+        rate_mask = table["Indicateur"].astype(str).str.startswith("%", na=False)
+    else:
+        rate_mask = pd.Series(False, index=table.index)
+
     for col in years + ["% Var n:n-1"]:
         if col not in table.columns:
             continue
-        for idx in table.index:
-            value = table.at[idx, col]
-            if pd.isna(value):
-                table.at[idx, col] = ""
-            elif rate_mask.loc[idx] or col == "% Var n:n-1":
-                pct_value = float(value) * 100 if abs(float(value)) <= 1.5 else float(value)
-                table.at[idx, col] = f"{pct_value:.2f}%"
+
+        formatted_values = []
+        for idx, value in table[col].items():
+            numeric_value = pd.to_numeric(value, errors="coerce")
+            if pd.isna(numeric_value):
+                formatted_values.append("")
+            elif bool(rate_mask.loc[idx]) or col == "% Var n:n-1":
+                pct_value = float(numeric_value) * 100 if abs(float(numeric_value)) <= 1.5 else float(numeric_value)
+                formatted_values.append(f"{pct_value:.2f}%")
             else:
-                table.at[idx, col] = fb_format_number(value, digits=0)
+                formatted_values.append(fb_format_number(numeric_value, digits=0))
+
+        table.loc[:, col] = pd.Series(formatted_values, index=table.index, dtype=object)
+
     return table
 
 
@@ -5815,6 +5828,67 @@ def _fb_section6_top_bar(df, label_col, value_col, title, top_n=25):
     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
 
+def _fb_section6_single_line_chart(global_df, indicator, years, title, color):
+    """Clear full-width line chart for one Section 6 global indicator."""
+    if global_df is None or global_df.empty or not years:
+        return
+
+    chart_df = pd.DataFrame({
+        "Année": [str(year) for year in years],
+        "Valeur": [_fb_section6_row_value(global_df, indicator, year) for year in years],
+    })
+    chart_df["Valeur"] = pd.to_numeric(chart_df["Valeur"], errors="coerce")
+    chart_df = chart_df.dropna(subset=["Valeur"]).copy()
+    if chart_df.empty:
+        return
+
+    max_value = chart_df["Valeur"].max()
+    y_top = max_value * 1.16 if pd.notna(max_value) and max_value > 0 else 1
+
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(
+            x=chart_df["Année"],
+            y=chart_df["Valeur"],
+            mode="lines+markers+text",
+            line=dict(color=color, width=4, shape="spline"),
+            marker=dict(size=10, color=color, line=dict(color="white", width=2)),
+            text=[fb_format_number(value, digits=0) for value in chart_df["Valeur"]],
+            textposition="top center",
+            textfont=dict(size=14, color=USJ_TEXT, family="Candara, Arial"),
+            hovertemplate=f"<b>{title}</b><br>Année: %{{x}}<br>Effectif: %{{y:,.0f}}<extra></extra>",
+            showlegend=False,
+        )
+    )
+    fig.update_layout(
+        title=dict(text=title, x=0.01, font=dict(size=22, color=USJ_BLUE, family="Candara, Arial")),
+        template="plotly_white",
+        height=430,
+        margin=dict(l=65, r=45, t=80, b=70),
+        paper_bgcolor="white",
+        plot_bgcolor="white",
+        font=dict(family="Candara, Arial", size=14, color=USJ_TEXT),
+        hovermode="x unified",
+    )
+    fig.update_xaxes(
+        title="Année",
+        type="category",
+        tickangle=0,
+        automargin=True,
+        showgrid=False,
+        linecolor="#D9E1EC",
+    )
+    fig.update_yaxes(
+        title="Effectif",
+        range=[0, y_top],
+        automargin=True,
+        gridcolor="rgba(46,57,122,0.12)",
+        linecolor="#D9E1EC",
+        zeroline=False,
+    )
+    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+
+
 def render_factbook_section6_module():
     """Render the connected Factbook module for Section 6: admission commune."""
     factbook_file_path, factbook_file_mtime, factbook_file_size = find_factbook_section6_file()
@@ -5885,13 +5959,15 @@ def render_factbook_section6_module():
             insight_card("% inscrits / admis", fb_format_pct(enrollment_rate), f"Cohorte {latest_year}", color=USJ_GOLD)
 
         if not global_df.empty:
-            count_rows = global_df[global_df["Indicateur"].isin(["Candidats", "Candidats Admis", "Candidats Inscrits"])].copy()
-            count_matrix = count_rows.set_index("Indicateur")[[year for year in year_options if year in count_rows.columns]]
-            _fb_section6_admission_heatmap(
-                count_matrix,
-                "Évolution globale des candidats, admis et inscrits",
-                value_title="Effectif",
+            st.markdown(
+                f"""
+                <div style="font-family:Candara, Arial, sans-serif;color:{USJ_BLUE};font-weight:900;font-size:28px;line-height:1.2;margin:16px 0 8px 0;">Évolution globale des candidats, admis et inscrits</div>
+                """,
+                unsafe_allow_html=True,
             )
+            _fb_section6_single_line_chart(global_df, "Candidats", year_options, "Candidats", USJ_BLUE)
+            _fb_section6_single_line_chart(global_df, "Candidats Admis", year_options, "Candidats admis", USJ_BLUE_2)
+            _fb_section6_single_line_chart(global_df, "Candidats Inscrits", year_options, "Candidats inscrits", USJ_RED)
 
             rate_rows = global_df[global_df["Indicateur"].astype(str).str.startswith("%", na=False)].copy()
             rate_matrix = rate_rows.set_index("Indicateur")[[year for year in year_options if year in rate_rows.columns]]
