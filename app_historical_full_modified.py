@@ -3328,12 +3328,9 @@ def render_factbook_module():
     with header_left:
         st.markdown(
             f"""
-            <h1 style="color:{USJ_BLUE}; margin-bottom:0; font-family:Candara, Arial, sans-serif;">
+            <h1 style="color:{USJ_BLUE}; margin-bottom:18px; font-family:Candara, Arial, sans-serif;">
                 Factbook USJ 2024-2025
             </h1>
-            <p style="font-size:18px; color:#555; margin-top:4px; font-family:Candara, Arial, sans-serif;">
-                Section 1 - Effectifs étudiants
-            </p>
             """,
             unsafe_allow_html=True
         )
@@ -3352,6 +3349,23 @@ def render_factbook_module():
             st.image("USJ LOGO 150.png", width=360)
         elif os.path.exists("usj_logo.png"):
             st.image("usj_logo.png", width=230)
+
+    st.markdown(
+        f"""
+        <h2 style="
+            color:{USJ_BLUE};
+            margin-top:18px;
+            margin-bottom:8px;
+            font-family:Candara, Arial, sans-serif;
+            font-size:42px;
+            font-weight:900;
+            line-height:1.15;
+        ">
+            Section 1 - Effectifs étudiants
+        </h2>
+        """,
+        unsafe_allow_html=True
+    )
 
     st.divider()
 
