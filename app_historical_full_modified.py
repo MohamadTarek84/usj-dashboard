@@ -5709,6 +5709,42 @@ def render_factbook_section4_module():
             filtered = filtered[filtered["Programme"].astype(str).str.contains(search.strip(), case=False, na=False)]
         return filtered
 
+    def _is_diplomation_total_row(row_or_df):
+        """Identify Section 4 total rows so programme-level KPIs are not over-counted."""
+        if isinstance(row_or_df, pd.DataFrame):
+            text = (
+                row_or_df.get("Programme", pd.Series(index=row_or_df.index, dtype=object)).astype(str).str.lower().fillna("") + " " +
+                row_or_df.get("Champ disciplinaire", pd.Series(index=row_or_df.index, dtype=object)).astype(str).str.lower().fillna("") + " " +
+                row_or_df.get("Acronyme", pd.Series(index=row_or_df.index, dtype=object)).astype(str).str.lower().fillna("")
+            )
+            return text.str.contains("taux global", na=False) | row_or_df.get("Acronyme", pd.Series(index=row_or_df.index, dtype=object)).astype(str).str.upper().eq("USJ")
+
+        text = " ".join(str(row_or_df.get(col, "")) for col in ["Programme", "Champ disciplinaire", "Acronyme"]).lower()
+        return "taux global" in text or str(row_or_df.get("Acronyme", "")).upper() == "USJ"
+
+    def _diplomation_program_rows(data):
+        """Keep only real programme rows; exclude global rows used for official totals."""
+        if data is None or data.empty:
+            return pd.DataFrame()
+        mask_total = _is_diplomation_total_row(data)
+        return data.loc[~mask_total].copy()
+
+    def _diplomation_global_row(data):
+        """Return the official USJ global row when it exists in the Excel source."""
+        if data is None or data.empty:
+            return None
+        total_mask = _is_diplomation_total_row(data)
+        total_rows = data.loc[total_mask].copy()
+        if total_rows.empty:
+            return None
+        usj_rows = total_rows[total_rows.get("Acronyme", pd.Series(index=total_rows.index, dtype=object)).astype(str).str.upper().eq("USJ")]
+        if not usj_rows.empty:
+            return usj_rows.iloc[-1]
+        return total_rows.iloc[-1]
+
+    def _diplomation_display_label(title):
+        return "Taux à temps (100%)" if "100%" in str(title) or "temps" in str(title).lower() else "Taux à 150%"
+
     def _diplomation_kpis(data, title):
         years = _fb_diplomation_years(data)
         latest_year = years[-1] if years else None
@@ -5717,35 +5753,36 @@ def render_factbook_section4_module():
 
         rate_col = f"Taux {latest_year}"
         n_col = f"Cohorte {latest_year}"
-        temp = data.copy()
+        program_rows = _diplomation_program_rows(data)
+        temp = program_rows.copy()
         temp[rate_col] = pd.to_numeric(temp[rate_col], errors="coerce")
-        if n_col in temp.columns:
-            temp[n_col] = pd.to_numeric(temp[n_col], errors="coerce")
-        else:
-            temp[n_col] = np.nan
+        temp[n_col] = pd.to_numeric(temp[n_col], errors="coerce") if n_col in temp.columns else np.nan
         valid = temp.dropna(subset=[rate_col])
 
-        weighted_rate = np.nan
-        if not valid.empty and valid[n_col].notna().sum() > 0 and valid[n_col].sum() > 0:
+        global_row = _diplomation_global_row(data)
+        display_rate = np.nan
+        total_cohort = np.nan
+        if global_row is not None:
+            display_rate = pd.to_numeric(global_row.get(rate_col), errors="coerce")
+            display_rate = display_rate * 100 if pd.notna(display_rate) and abs(float(display_rate)) <= 1.5 else display_rate
+            total_cohort = pd.to_numeric(global_row.get(n_col), errors="coerce")
+        elif not valid.empty and valid[n_col].notna().sum() > 0 and valid[n_col].sum() > 0:
             rate_pct = valid[rate_col].map(lambda v: float(v) * 100 if abs(float(v)) <= 1.5 else float(v))
-            weighted_rate = (rate_pct * valid[n_col]).sum() / valid[n_col].sum()
-        elif not valid.empty:
-            rate_pct = valid[rate_col].map(lambda v: float(v) * 100 if abs(float(v)) <= 1.5 else float(v))
-            weighted_rate = rate_pct.mean()
+            display_rate = (rate_pct * valid[n_col]).sum() / valid[n_col].sum()
+            total_cohort = valid[n_col].sum()
 
         top_programmes = valid[valid[rate_col].map(lambda v: (float(v) * 100 if abs(float(v)) <= 1.5 else float(v)) >= 90)].shape[0] if not valid.empty else 0
         low_cohort = valid[valid[n_col] < 20].shape[0] if n_col in valid.columns else 0
-        total_cohort = valid[n_col].sum() if n_col in valid.columns else np.nan
 
         c1, c2, c3, c4 = st.columns(4)
         with c1:
-            insight_card("Taux pondéré", "NA" if pd.isna(weighted_rate) else f"{weighted_rate:.2f}%", latest_year, color=USJ_BLUE)
+            insight_card(_diplomation_display_label(title), "NA" if pd.isna(display_rate) else f"{display_rate:.2f}%", latest_year, color=USJ_BLUE)
         with c2:
             insight_card("Programmes ≥ 90%", fb_format_number(top_programmes), "Nombre de programmes", color=USJ_GREEN)
         with c3:
             insight_card("Cohortes < 20", fb_format_number(low_cohort), "Programmes à interpréter avec prudence", color=USJ_RED)
         with c4:
-            insight_card("Taille de cohorte", fb_format_number(total_cohort), f"Total {latest_year}", color=USJ_GOLD)
+            insight_card("Taille totale de cohorte", fb_format_number(total_cohort), f"Total {latest_year}", color=USJ_GOLD)
 
     def _render_diplomation_heatmap(data, title, key_prefix):
         years = _fb_diplomation_years(data)
@@ -5756,7 +5793,7 @@ def render_factbook_section4_module():
         latest_year = years[-1]
         latest_rate_col = f"Taux {latest_year}"
         latest_n_col = f"Cohorte {latest_year}"
-        heatmap_source = data.copy()
+        heatmap_source = _diplomation_program_rows(data)
         heatmap_source[latest_rate_col] = pd.to_numeric(heatmap_source[latest_rate_col], errors="coerce")
         if latest_n_col in heatmap_source.columns:
             heatmap_source[latest_n_col] = pd.to_numeric(heatmap_source[latest_n_col], errors="coerce")
@@ -5828,7 +5865,7 @@ def render_factbook_section4_module():
         selected_year = st.selectbox("Cohorte affichée", years[::-1], key=f"{key_prefix}_year")
         rate_col = f"Taux {selected_year}"
         n_col = f"Cohorte {selected_year}"
-        plot_data = data.copy()
+        plot_data = _diplomation_program_rows(data)
         plot_data[rate_col] = pd.to_numeric(plot_data[rate_col], errors="coerce")
         plot_data[n_col] = pd.to_numeric(plot_data[n_col], errors="coerce") if n_col in plot_data.columns else np.nan
         plot_data["Taux"] = plot_data[rate_col].map(lambda v: np.nan if pd.isna(v) else float(v) * 100 if abs(float(v)) <= 1.5 else float(v))
@@ -5913,35 +5950,32 @@ def render_factbook_section4_module():
 
         combined = []
         for label, df in [
-            ("Diplomation à temps", diplomation_100_df),
+            ("Diplomation à temps (100%)", diplomation_100_df),
             ("Diplomation à 150%", diplomation_150_df),
         ]:
+            global_row = _diplomation_global_row(df)
             for year in _fb_diplomation_years(df):
                 rate_col = f"Taux {year}"
                 n_col = f"Cohorte {year}"
-                temp = df[[rate_col, n_col]].copy() if n_col in df.columns else df[[rate_col]].copy()
-                temp[rate_col] = pd.to_numeric(temp[rate_col], errors="coerce")
-                temp[n_col] = pd.to_numeric(temp[n_col], errors="coerce") if n_col in temp.columns else np.nan
-                temp = temp.dropna(subset=[rate_col])
-                if temp.empty:
-                    continue
-                rate_pct = temp[rate_col].map(lambda v: float(v) * 100 if abs(float(v)) <= 1.5 else float(v))
-                if temp[n_col].notna().sum() > 0 and temp[n_col].sum() > 0:
-                    value = (rate_pct * temp[n_col]).sum() / temp[n_col].sum()
-                else:
-                    value = rate_pct.mean()
-                combined.append({"Type": label, "Cohorte": year, "Taux pondéré": value})
+                value = np.nan
+                cohort_value = np.nan
+                if global_row is not None:
+                    value = pd.to_numeric(global_row.get(rate_col), errors="coerce")
+                    cohort_value = pd.to_numeric(global_row.get(n_col), errors="coerce")
+                    value = value * 100 if pd.notna(value) and abs(float(value)) <= 1.5 else value
+                if pd.notna(value):
+                    combined.append({"Type": label, "Cohorte": year, "Taux global": value, "Taille de cohorte": cohort_value})
 
         combined_df = pd.DataFrame(combined)
         if not combined_df.empty:
             fig = px.line(
                 combined_df,
                 x="Cohorte",
-                y="Taux pondéré",
+                y="Taux global",
                 color="Type",
                 markers=True,
-                text="Taux pondéré",
-                title="Évolution comparative du taux de diplomation pondéré",
+                text="Taux global",
+                title="Évolution comparative du taux de diplomation",
                 color_discrete_sequence=[USJ_BLUE, USJ_RED],
             )
             fig.update_traces(
