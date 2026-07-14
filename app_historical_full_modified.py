@@ -3566,8 +3566,7 @@ def render_factbook_module():
 
     with tab_institutions:
         section_header(
-            "Effectifs par institution",
-            "Les sous-sections 1.1 et 1.2 sont présentées séparément, comme dans le fichier Excel."
+            "Effectifs par institution"
         )
 
         def _render_institution_dataset(inst_df, dataset_title, dataset_short, key_prefix):
