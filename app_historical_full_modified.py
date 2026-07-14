@@ -1335,13 +1335,14 @@ def _fb_table_is_total_row(row):
     return text.startswith("total") or " total " in f" {text} "
 
 
-def render_factbook_table(df, title, note=None, max_height=560, hide_columns=None):
+def render_factbook_table(df, title, note=None, max_height=560, hide_columns=None, percent_2_dec_cols=None):
     """Render Factbook tables with the same USJ-styled card/table design used in the Exit Survey pages."""
     if df is None or df.empty:
         st.info(f"Aucune donnée disponible pour {title}.")
         return
 
     table = df.copy()
+    percent_2_dec_cols = set(percent_2_dec_cols or [])
 
     # Columns used internally for filtering/section separation should not appear
     # in the visual Factbook tables.
@@ -1355,7 +1356,7 @@ def render_factbook_table(df, title, note=None, max_height=560, hide_columns=Non
         st.info(f"Aucune donnée disponible pour {title}.")
         return
 
-    numeric_cols = [col for col in table.columns if pd.to_numeric(table[col], errors="coerce").notna().mean() >= 0.55 or _fb_is_percent_column(col)]
+    numeric_cols = [col for col in table.columns if col in percent_2_dec_cols or pd.to_numeric(table[col], errors="coerce").notna().mean() >= 0.55 or _fb_is_percent_column(col)]
 
     header_html = "".join(
         f"<th class='{'num-col' if col in numeric_cols else 'text-col'}'>{html_escape(col)}</th>"
@@ -1371,7 +1372,11 @@ def render_factbook_table(df, title, note=None, max_height=560, hide_columns=Non
             if _fb_is_negative_percent_value(row[col], col):
                 cls_parts.append("negative-pct")
             cls = " ".join(cls_parts)
-            cells.append(f"<td class='{cls}'>{html_escape(_fb_table_value(row[col], col))}</td>")
+            if col in percent_2_dec_cols:
+                display_value = fb_format_rate(row[col], digits=2)
+            else:
+                display_value = _fb_table_value(row[col], col)
+            cells.append(f"<td class='{cls}'>{html_escape(display_value)}</td>")
         body_rows.append(f"<tr class='{row_class}'>" + "".join(cells) + "</tr>")
 
     note_html = f"<div class='fb-table-note'>{html_escape(note)}</div>" if note else ""
@@ -5319,9 +5324,10 @@ def render_factbook_section3_module():
         render_factbook_table(
             filtered,
             f"Tableau - {title}",
-            note="Les taux de rétention sont affichés en pourcentage.",
+            note="Les taux de rétention sont affichés en pourcentage avec deux décimales.",
             max_height=620,
             hide_columns=["Sous-section", "Programme graphique"],
+            percent_2_dec_cols=[year for year in FACTBOOK_YEARS if year in filtered.columns],
         )
 
     with tab_prog:
