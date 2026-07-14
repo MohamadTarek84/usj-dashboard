@@ -4578,6 +4578,36 @@ def render_factbook_section2_module():
                 fb_polish_vertical_bar(fig, latest, "2024-2025", bottom_margin=120)
                 st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
+            level_compare_long = level_no_total.melt(
+                id_vars=["Niveau académique"],
+                value_vars=[year_col for year_col in FACTBOOK_YEARS if year_col in level_no_total.columns],
+                var_name="Année",
+                value_name="Diplômés"
+            ).dropna(subset=["Diplômés"])
+
+            if not level_compare_long.empty:
+                fig_compare = px.line(
+                    level_compare_long,
+                    x="Année",
+                    y="Diplômés",
+                    color="Niveau académique",
+                    markers=True,
+                    text="Diplômés",
+                    title="Comparaison annuelle des diplômés par niveau académique",
+                    color_discrete_sequence=PLOTLY_SEQ,
+                )
+                fig_compare.update_layout(
+                    yaxis_title="Diplômés",
+                    xaxis_title="Année",
+                )
+                theme_layout(fig_compare, height=690)
+                fb_polish_line(fig_compare, level_compare_long, "Diplômés", bottom_margin=205)
+                fig_compare.update_traces(
+                    textfont=dict(size=15, color=USJ_TEXT),
+                    cliponaxis=False,
+                )
+                st.plotly_chart(fig_compare, use_container_width=True, config={"displayModeBar": False})
+
         render_factbook_table(
             niveau_df,
             FACTBOOK_SECTION2_TITLES["2.5"],
@@ -4791,6 +4821,22 @@ def render_factbook_section2_module():
                     fb_add_value_padding(fig_year, annual_totals, "Diplômés", orientation="v", extra_ratio=0.20)
                     fig_year.update_layout(margin=dict(l=70, r=90, t=105, b=90), uniformtext_minsize=13, uniformtext_mode="show")
                     st.plotly_chart(fig_year, use_container_width=True, config={"displayModeBar": False})
+
+            compare_fig = px.bar(
+                level_long,
+                x="Année",
+                y="Valeur",
+                color="Niveau académique",
+                barmode="group",
+                title="Comparaison par année et niveau académique",
+                color_discrete_sequence=PLOTLY_SEQ,
+            )
+            compare_fig.update_layout(yaxis_title="Diplômés", xaxis_title="Année")
+            theme_layout(compare_fig, height=620)
+            compare_fig.update_traces(cliponaxis=False)
+            fb_move_legend_below(compare_fig, bottom_margin=165)
+            compare_fig.update_layout(margin=dict(l=70, r=80, t=105, b=165))
+            st.plotly_chart(compare_fig, use_container_width=True, config={"displayModeBar": False})
         else:
             st.info("Aucune donnée disponible.")
 
