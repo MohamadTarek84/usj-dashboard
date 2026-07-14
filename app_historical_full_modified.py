@@ -5122,7 +5122,7 @@ def render_factbook_section3_module():
                 color_discrete_sequence=[USJ_GREEN, USJ_BLUE_2],
             )
             fig.update_traces(
-                texttemplate="%{text:.1f}%",
+                texttemplate="%{text:.2f}%",
                 textposition="outside",
                 cliponaxis=False,
                 textfont=dict(size=17, color=USJ_TEXT, family="Candara, Arial"),
@@ -5244,13 +5244,13 @@ def render_factbook_section3_module():
                     custom_data=["Hover cohort", "Cohorte faible"],
                 )
                 fig.update_traces(
-                    texttemplate="%{text:.1f}%",
+                    texttemplate="%{text:.2f}%",
                     textposition="outside",
                     cliponaxis=False,
                     textfont=dict(size=15, color=USJ_TEXT, family="Candara, Arial"),
                     hovertemplate=(
                         "<b>%{y}</b><br>"
-                        "Taux: %{x:.1f}%<br>"
+                        "Taux: %{x:.2f}%<br>"
                         "Cohorte S1 2024-2025: %{customdata[0]} étudiants"
                         "<extra></extra>"
                     ),
@@ -5843,7 +5843,7 @@ def page_indicators():
             color_discrete_sequence=[USJ_BLUE, "#7BC4FF"]
         )
 
-        fig.update_traces(texttemplate="%{text:.1f}%", textposition="top center", mode="lines+markers+text")
+        fig.update_traces(texttemplate="%{text:.2f}%", textposition="top center", mode="lines+markers+text")
         fig.update_layout(
             title="Évolution de la satisfaction globale et de la recommandation",
             yaxis_title="Pourcentage",
@@ -6147,7 +6147,7 @@ def page_historical_comparison():
             title=title
         )
         fig.update_traces(
-            texttemplate="%{text:.1f}%",
+            texttemplate="%{text:.2f}%",
             textposition="outside",
             marker_line_color="white",
             marker_line_width=1.1,
@@ -6290,7 +6290,7 @@ def page_historical_comparison():
                 hover_data={"N": True, "Pourcentage": ":.2f"},
                 title="Comparaison par tranches d’âge"
             )
-            fig_band.update_traces(texttemplate="%{text:.1f}%", textposition="outside", marker_line_color="white", marker_line_width=1.2)
+            fig_band.update_traces(texttemplate="%{text:.2f}%", textposition="outside", marker_line_color="white", marker_line_width=1.2)
             fig_band.update_layout(xaxis_title="Tranche d’âge", yaxis_title="Pourcentage des âges valides", legend_title="Année")
             fig_band.update_xaxes(tickangle=-20)
             theme_layout(fig_band, height=420, showlegend=True)
@@ -6456,7 +6456,7 @@ def page_importance():
             title="Importance relative des dimensions dans la satisfaction globale"
         )
 
-        fig_sat.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
+        fig_sat.update_traces(texttemplate="%{text:.2f}%", textposition="outside")
         fig_sat.update_layout(xaxis_title="Importance relative (%)", yaxis_title="")
         theme_layout(fig_sat, height=500, showlegend=False)
         st.plotly_chart(fig_sat, use_container_width=True, config={"displayModeBar": False})
@@ -6524,7 +6524,7 @@ def page_importance():
             title="Importance relative des dimensions dans la recommandation de l’USJ"
         )
 
-        fig_rec.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
+        fig_rec.update_traces(texttemplate="%{text:.2f}%", textposition="outside")
         fig_rec.update_layout(xaxis_title="Importance relative (%)", yaxis_title="")
         theme_layout(fig_rec, height=500, showlegend=False)
         st.plotly_chart(fig_rec, use_container_width=True, config={"displayModeBar": False})
@@ -6616,7 +6616,7 @@ def page_descriptive_sections():
         color_continuous_scale=PLOTLY_CONT,
         hover_data={"Question": True, "Moyenne /4": ":.2f", "N valide": True, "Taux de données manquantes (%)": ":.1f"}
     )
-    fig_rank.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
+    fig_rank.update_traces(texttemplate="%{text:.2f}%", textposition="outside")
     fig_rank.update_layout(
         title=f"Classement des questions – {selected_section}",
         xaxis_title="Résultat (%)",
@@ -7271,7 +7271,7 @@ def page_inferential_statistics():
                     title=f"Distribution des réponses selon {selected_group_label}"
                 )
                 fig.update_traces(
-                    texttemplate="%{text:.1f}%",
+                    texttemplate="%{text:.2f}%",
                     textposition="outside",
                     marker_line_color="white",
                     marker_line_width=1.1,
@@ -8119,7 +8119,7 @@ def demographic_bar_chart(freq, title, orientation="h", height=430):
             title=title
         )
         fig.update_layout(xaxis_title="", yaxis_title="Pourcentage")
-    fig.update_traces(texttemplate="%{text:.1f}%", textposition="outside", marker_line_color="white", marker_line_width=1)
+    fig.update_traces(texttemplate="%{text:.2f}%", textposition="outside", marker_line_color="white", marker_line_width=1)
     fig.update_layout(coloraxis_showscale=False, margin=dict(l=30, r=70, t=70, b=50))
     theme_layout(fig, height=height, showlegend=False)
     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
@@ -8204,7 +8204,7 @@ def page_demographics():
                 title="Distribution de l’âge des répondants"
             )
             fig_age.update_traces(
-                texttemplate="%{text:.1f}%",
+                texttemplate="%{text:.2f}%",
                 textposition="outside",
                 marker_line_color="white",
                 marker_line_width=1.2,
@@ -9021,7 +9021,7 @@ def page_other_questions():
             title="Modes de financement des études à l’USJ"
         )
 
-        fig_q44.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
+        fig_q44.update_traces(texttemplate="%{text:.2f}%", textposition="outside")
         fig_q44.update_layout(
             xaxis_title="Mode de financement",
             yaxis_title="Pourcentage des réponses valides",
@@ -9134,7 +9134,7 @@ def page_other_questions():
                 hover_data={"N": True, "Pourcentage": ":.2f"},
                 title="Évolution de la distribution par année"
             )
-            fig_stack.update_traces(texttemplate="%{text:.1f}%", textposition="inside", cliponaxis=False)
+            fig_stack.update_traces(texttemplate="%{text:.2f}%", textposition="inside", cliponaxis=False)
             fig_stack.update_layout(
                 yaxis_title="Pourcentage des réponses valides",
                 xaxis_title="Année",
