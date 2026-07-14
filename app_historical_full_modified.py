@@ -4592,20 +4592,73 @@ def render_factbook_section2_module():
                     y="Diplômés",
                     color="Niveau académique",
                     markers=True,
-                    text="Diplômés",
                     title="Comparaison annuelle des diplômés par niveau académique",
                     color_discrete_sequence=PLOTLY_SEQ,
                 )
                 fig_compare.update_layout(
                     yaxis_title="Diplômés",
                     xaxis_title="Année",
+                    hovermode="x unified",
                 )
-                theme_layout(fig_compare, height=690)
-                fb_polish_line(fig_compare, level_compare_long, "Diplômés", bottom_margin=205)
+                theme_layout(fig_compare, height=560)
                 fig_compare.update_traces(
-                    textfont=dict(size=15, color=USJ_TEXT),
-                    cliponaxis=False,
+                    mode="lines+markers",
+                    line=dict(width=3),
+                    marker=dict(size=8),
+                    hovertemplate="<b>%{fullData.name}</b><br>Année: %{x}<br>Diplômés: %{y:,.0f}<extra></extra>",
                 )
+                fig_compare.update_layout(
+                    margin=dict(l=55, r=130, t=70, b=65),
+                    legend=dict(
+                        orientation="h",
+                        yanchor="bottom",
+                        y=1.02,
+                        xanchor="left",
+                        x=0,
+                        title=None,
+                        font=dict(family="Candara, Arial", size=12, color=USJ_TEXT),
+                    ),
+                )
+                fig_compare.update_xaxes(automargin=True, tickangle=0)
+                fig_compare.update_yaxes(automargin=True)
+
+                # Show clear labels only at the latest year to avoid overlap while keeping the figure readable.
+                latest_year = FACTBOOK_YEARS[-1]
+                last_points = level_compare_long[level_compare_long["Année"].astype(str) == latest_year].copy()
+                if not last_points.empty:
+                    max_val = pd.to_numeric(last_points["Diplômés"], errors="coerce").max()
+                    min_val = pd.to_numeric(last_points["Diplômés"], errors="coerce").min()
+                    spread = (max_val - min_val) if pd.notna(max_val) and pd.notna(min_val) else 0
+                    threshold = max(35, spread * 0.07)
+                    last_points = last_points.sort_values("Diplômés", ascending=False).reset_index(drop=True)
+
+                    for i, row in last_points.iterrows():
+                        current_val = pd.to_numeric(row["Diplômés"], errors="coerce")
+                        if pd.isna(current_val):
+                            continue
+
+                        # Avoid overlapping labels for close end values.
+                        nearby = last_points[(last_points.index < i) & (abs(pd.to_numeric(last_points["Diplômés"], errors="coerce") - current_val) < threshold)]
+                        ay = 0
+                        if len(nearby) > 0:
+                            ay = 18 if i % 2 == 0 else -18
+
+                        fig_compare.add_annotation(
+                            x=row["Année"],
+                            y=current_val,
+                            text=f"{str(row['Niveau académique'])}<br><b>{fb_format_number(current_val)}</b>",
+                            showarrow=False,
+                            xanchor="left",
+                            xshift=10,
+                            yshift=ay,
+                            align="left",
+                            font=dict(family="Candara, Arial", size=12, color=USJ_TEXT),
+                            bgcolor="rgba(255,255,255,0.88)",
+                            bordercolor="#D8E2F0",
+                            borderwidth=1,
+                            borderpad=4,
+                        )
+
                 st.plotly_chart(fig_compare, use_container_width=True, config={"displayModeBar": False})
 
         render_factbook_table(
