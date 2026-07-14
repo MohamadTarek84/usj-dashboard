@@ -800,6 +800,94 @@ def fb_text_number(value, digits=0):
     return "" if pd.isna(value) else fb_format_number(value, digits=digits)
 
 
+def fb_heatmap_delta_info(current_value, previous_value):
+    """Return a compact colored delta label for heatmap cells.
+
+    The first displayed year has no previous value, so it stays blank.
+    Later years show the percentage change versus the previous year using:
+    ▲ positive, ▼ negative, = stable.
+    """
+    current_value = pd.to_numeric(current_value, errors="coerce")
+    previous_value = pd.to_numeric(previous_value, errors="coerce")
+
+    if pd.isna(current_value) or pd.isna(previous_value):
+        return "", USJ_TEXT
+
+    if abs(float(current_value) - float(previous_value)) < 0.000001:
+        return "= 0.0%", "#6B7280"
+
+    if abs(float(previous_value)) < 0.000001:
+        if current_value > previous_value:
+            return "▲", USJ_GREEN
+        return "▼", USJ_RED
+
+    pct_change = (float(current_value) - float(previous_value)) / abs(float(previous_value)) * 100
+    if pct_change > 0:
+        return f"▲ +{pct_change:.1f}%", USJ_GREEN
+    return f"▼ {pct_change:.1f}%", USJ_RED
+
+
+def fb_add_heatmap_value_annotations(fig, matrix, value_font_size=15, delta_font_size=12, dark_threshold=0.55):
+    """Add readable values and percentage-change indicators inside a heatmap.
+
+    Values are shown for every cell. From the second year onward, a second
+    line shows the evolution versus the previous year with a green up arrow,
+    red down arrow, or grey equality sign.
+    """
+    numeric = matrix.apply(pd.to_numeric, errors="coerce")
+    values_flat = numeric.to_numpy(dtype=float)
+    min_value = np.nanmin(values_flat) if np.isfinite(values_flat).any() else 0
+    max_value = np.nanmax(values_flat) if np.isfinite(values_flat).any() else 1
+    value_range = max_value - min_value if max_value != min_value else 1
+    columns = numeric.columns.tolist()
+
+    for row_label in numeric.index.tolist():
+        for col_index, col_label in enumerate(columns):
+            value = numeric.loc[row_label, col_label]
+            if pd.isna(value):
+                continue
+
+            intensity = (float(value) - min_value) / value_range
+            value_color = "#FFFFFF" if intensity >= dark_threshold else USJ_BLUE
+
+            if col_index == 0:
+                fig.add_annotation(
+                    x=col_label,
+                    y=row_label,
+                    text=f"<b>{fb_format_number(value)}</b>",
+                    showarrow=False,
+                    font=dict(family="Candara, Arial", size=value_font_size, color=value_color),
+                )
+                continue
+
+            previous_col = columns[col_index - 1]
+            previous_value = numeric.loc[row_label, previous_col]
+            delta_text, delta_color = fb_heatmap_delta_info(value, previous_value)
+
+            fig.add_annotation(
+                x=col_label,
+                y=row_label,
+                text=f"<b>{fb_format_number(value)}</b>",
+                showarrow=False,
+                yshift=9,
+                font=dict(family="Candara, Arial", size=value_font_size, color=value_color),
+            )
+            if delta_text:
+                fig.add_annotation(
+                    x=col_label,
+                    y=row_label,
+                    text=f"<b>{delta_text}</b>",
+                    showarrow=False,
+                    yshift=-12,
+                    font=dict(family="Candara, Arial", size=delta_font_size, color=delta_color),
+                    bgcolor="rgba(255,255,255,0.78)",
+                    bordercolor="rgba(216,226,240,0.85)",
+                    borderwidth=1,
+                    borderpad=2,
+                )
+    return fig
+
+
 def fb_force_integer_trace_text(fig, orientation="v"):
     """Force Factbook chart labels to display rounded whole numbers only.
 
@@ -3992,25 +4080,13 @@ def render_factbook_section1_module():
                 )
             )
 
-            campus_numeric = campus_pivot.apply(pd.to_numeric, errors="coerce")
-            campus_values_flat = campus_numeric.to_numpy(dtype=float)
-            campus_min = np.nanmin(campus_values_flat) if np.isfinite(campus_values_flat).any() else 0
-            campus_max = np.nanmax(campus_values_flat) if np.isfinite(campus_values_flat).any() else 1
-            campus_range = campus_max - campus_min if campus_max != campus_min else 1
-            for row_label in campus_numeric.index.tolist():
-                for col_label in campus_numeric.columns.tolist():
-                    value = campus_numeric.loc[row_label, col_label]
-                    if pd.isna(value):
-                        continue
-                    intensity = (float(value) - campus_min) / campus_range
-                    label_color = "#FFFFFF" if intensity >= 0.55 else USJ_BLUE
-                    campus_heatmap.add_annotation(
-                        x=col_label,
-                        y=row_label,
-                        text=f"<b>{fb_format_number(value)}</b>",
-                        showarrow=False,
-                        font=dict(family="Candara, Arial", size=15, color=label_color),
-                    )
+            fb_add_heatmap_value_annotations(
+                campus_heatmap,
+                campus_pivot,
+                value_font_size=15,
+                delta_font_size=12,
+                dark_threshold=0.55,
+            )
 
             campus_heatmap.update_layout(
                 title=dict(
@@ -4018,7 +4094,7 @@ def render_factbook_section1_module():
                     x=0.01,
                     font=dict(size=22, color=USJ_BLUE, family="Candara, Arial"),
                 ),
-                height=max(460, 50 * len(campus_pivot.index) + 155),
+                height=max(520, 64 * len(campus_pivot.index) + 165),
                 template="plotly_white",
                 font=dict(family="Candara, Arial", size=15, color=USJ_TEXT),
                 xaxis_title="Année",
@@ -4499,25 +4575,13 @@ def render_factbook_section2_module():
                         )
                     )
 
-                    heatmap_numeric = heatmap_values.apply(pd.to_numeric, errors="coerce")
-                    heatmap_values_flat = heatmap_numeric.to_numpy(dtype=float)
-                    heatmap_min = np.nanmin(heatmap_values_flat) if np.isfinite(heatmap_values_flat).any() else 0
-                    heatmap_max = np.nanmax(heatmap_values_flat) if np.isfinite(heatmap_values_flat).any() else 1
-                    heatmap_range = heatmap_max - heatmap_min if heatmap_max != heatmap_min else 1
-                    for row_label in heatmap_numeric.index.tolist():
-                        for col_label in heatmap_numeric.columns.tolist():
-                            value = heatmap_numeric.loc[row_label, col_label]
-                            if pd.isna(value):
-                                continue
-                            intensity = (float(value) - heatmap_min) / heatmap_range
-                            label_color = "#FFFFFF" if intensity >= 0.55 else USJ_BLUE
-                            heatmap_fig.add_annotation(
-                                x=col_label,
-                                y=row_label,
-                                text=f"<b>{fb_format_number(value)}</b>",
-                                showarrow=False,
-                                font=dict(family="Candara, Arial", size=15, color=label_color),
-                            )
+                    fb_add_heatmap_value_annotations(
+                        heatmap_fig,
+                        heatmap_values,
+                        value_font_size=15,
+                        delta_font_size=12,
+                        dark_threshold=0.55,
+                    )
 
                     heatmap_fig.update_layout(
                         title=dict(
@@ -4525,7 +4589,7 @@ def render_factbook_section2_module():
                             x=0.01,
                             font=dict(size=22, color=USJ_BLUE, family="Candara, Arial"),
                         ),
-                        height=max(460, 50 * len(heatmap_values.index) + 155),
+                        height=max(520, 64 * len(heatmap_values.index) + 165),
                         template="plotly_white",
                         font=dict(family="Candara, Arial", size=15, color=USJ_TEXT),
                         xaxis_title="Année",
