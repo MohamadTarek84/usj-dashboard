@@ -4327,7 +4327,7 @@ def render_factbook_section1_module():
                 yaxis_title="",
                 margin=dict(l=245, r=90, t=90, b=70),
                 paper_bgcolor="white",
-                plot_bgcolor="#D8E2F0",
+                plot_bgcolor="#F7F9FC",
             )
             campus_heatmap.update_xaxes(
                 side="bottom",
@@ -4823,7 +4823,7 @@ def render_factbook_section2_module():
                         yaxis_title="",
                         margin=dict(l=300, r=90, t=90, b=70),
                         paper_bgcolor="white",
-                        plot_bgcolor="#D8E2F0",
+                        plot_bgcolor="#F7F9FC",
                     )
                     heatmap_fig.update_xaxes(
                         side="bottom",
@@ -5147,9 +5147,10 @@ def render_factbook_section3_module():
                     x=heatmap_z.columns.tolist(),
                     y=heatmap_z.index.tolist(),
                     colorscale=[
-                        [0.00, "#F7D7D7"],
-                        [0.35, "#F4E0B8"],
-                        [0.65, "#B9C7F3"],
+                        [0.00, "#DCE6FF"],
+                        [0.20, "#B9C7F3"],
+                        [0.45, "#7F90D0"],
+                        [0.70, "#48569B"],
                         [1.00, USJ_BLUE],
                     ],
                     xgap=1,
@@ -5175,7 +5176,7 @@ def render_factbook_section3_module():
                 yaxis_title="",
                 margin=dict(l=220, r=90, t=90, b=70),
                 paper_bgcolor="white",
-                plot_bgcolor="#D8E2F0",
+                plot_bgcolor="#F7F9FC",
             )
             fig_heat.update_xaxes(side="bottom", tickfont=dict(size=13, color=USJ_TEXT, family="Candara, Arial"), automargin=True, showgrid=False, zeroline=False)
             fig_heat.update_yaxes(tickfont=dict(size=13, color=USJ_TEXT, family="Candara, Arial"), automargin=True, showgrid=False, zeroline=False)
@@ -5278,9 +5279,10 @@ def render_factbook_section3_module():
                         x=heatmap_z.columns.tolist(),
                         y=heatmap_z.index.tolist(),
                         colorscale=[
-                            [0.00, "#F7D7D7"],
-                            [0.35, "#F4E0B8"],
-                            [0.65, "#B9C7F3"],
+                            [0.00, "#DCE6FF"],
+                            [0.20, "#B9C7F3"],
+                            [0.45, "#7F90D0"],
+                            [0.70, "#48569B"],
                             [1.00, USJ_BLUE],
                         ],
                         xgap=1,
@@ -5306,7 +5308,7 @@ def render_factbook_section3_module():
                     yaxis_title="",
                     margin=dict(l=430, r=95, t=90, b=70),
                     paper_bgcolor="white",
-                    plot_bgcolor="#D8E2F0",
+                    plot_bgcolor="#F7F9FC",
                 )
                 fig_heat.update_xaxes(side="bottom", tickfont=dict(size=13, color=USJ_TEXT, family="Candara, Arial"), automargin=True, showgrid=False, zeroline=False)
                 fig_heat.update_yaxes(tickfont=dict(size=12, color=USJ_TEXT, family="Candara, Arial"), automargin=True, showgrid=False, zeroline=False)
