@@ -4565,17 +4565,24 @@ def render_factbook_section2_module():
             latest = level_no_total.dropna(subset=["2024-2025"]).sort_values("2024-2025", ascending=False)
             if not latest.empty:
                 fig = px.bar(
-                    latest,
-                    x="Niveau académique",
-                    y="2024-2025",
+                    latest.sort_values("2024-2025", ascending=True),
+                    x="2024-2025",
+                    y="Niveau académique",
+                    orientation="h",
                     text="2024-2025",
                     title="Diplômés 2024-2025 par niveau académique",
                     color_discrete_sequence=[USJ_BLUE],
                 )
-                fig.update_traces(texttemplate="%{text:,.0f}", textposition="outside", cliponaxis=False, textfont=dict(size=16, color=USJ_TEXT))
-                fig.update_layout(yaxis_title="Diplômés", xaxis_title="", xaxis_tickangle=-20)
-                theme_layout(fig, height=560, showlegend=False)
-                fb_polish_vertical_bar(fig, latest, "2024-2025", bottom_margin=120)
+                fig.update_traces(
+                    texttemplate="%{text:,.0f}",
+                    textposition="outside",
+                    cliponaxis=False,
+                    textfont=dict(size=16, color=USJ_TEXT, family="Candara, Arial"),
+                    hovertemplate="<b>%{y}</b><br>Diplômés 2024-2025: %{x:,.0f}<extra></extra>",
+                )
+                fig.update_layout(xaxis_title="Diplômés", yaxis_title="")
+                theme_layout(fig, height=440, showlegend=False)
+                fb_polish_horizontal_bar(fig, latest, "2024-2025", left_margin=280, right_margin=120, bottom_margin=55, showlegend=False)
                 st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
             level_compare_long = level_no_total.melt(
@@ -4586,79 +4593,91 @@ def render_factbook_section2_module():
             ).dropna(subset=["Diplômés"])
 
             if not level_compare_long.empty:
-                fig_compare = px.line(
-                    level_compare_long,
-                    x="Année",
-                    y="Diplômés",
-                    color="Niveau académique",
-                    markers=True,
-                    title="Comparaison annuelle des diplômés par niveau académique",
-                    color_discrete_sequence=PLOTLY_SEQ,
-                )
+                # Clear comparison figure: one value label for every year, placed away from lines.
+                compare_levels = [
+                    value for value in level_no_total["Niveau académique"].dropna().astype(str).tolist()
+                    if not value.lower().startswith("total")
+                ]
+                level_rank = {name: idx for idx, name in enumerate(compare_levels)}
+                fig_compare = go.Figure()
+                years_available = [year_col for year_col in FACTBOOK_YEARS if year_col in level_no_total.columns]
+
+                for idx, level_name in enumerate(compare_levels):
+                    row_df = level_no_total[level_no_total["Niveau académique"].astype(str) == level_name]
+                    if row_df.empty:
+                        continue
+                    row = row_df.iloc[0]
+                    y_values = [pd.to_numeric(row.get(year_col), errors="coerce") for year_col in years_available]
+                    if all(pd.isna(value) for value in y_values):
+                        continue
+
+                    label_positions = []
+                    for year_idx, value in enumerate(y_values):
+                        if pd.isna(value):
+                            label_positions.append("top center")
+                            continue
+                        # Alternate positions by series/year so labels are not sitting on the lines.
+                        if idx % 3 == 0:
+                            label_positions.append("top center" if year_idx % 2 == 0 else "bottom center")
+                        elif idx % 3 == 1:
+                            label_positions.append("bottom center" if year_idx % 2 == 0 else "top center")
+                        else:
+                            label_positions.append("middle right" if year_idx % 2 == 0 else "middle left")
+
+                    fig_compare.add_trace(go.Scatter(
+                        x=years_available,
+                        y=y_values,
+                        mode="lines+markers+text",
+                        name=level_name,
+                        text=["" if pd.isna(value) else fb_format_number(value) for value in y_values],
+                        textposition=label_positions,
+                        textfont=dict(size=14, color=USJ_TEXT, family="Candara, Arial"),
+                        marker=dict(size=8),
+                        line=dict(width=3),
+                        cliponaxis=False,
+                        hovertemplate=f"<b>{level_name}</b><br>Année: %{{x}}<br>Diplômés: %{{y:,.0f}}<extra></extra>",
+                    ))
+
+                y_numeric = pd.to_numeric(level_compare_long["Diplômés"], errors="coerce")
+                y_max = y_numeric.max()
+                y_min = y_numeric.min()
+                y_padding = (y_max - y_min) * 0.18 if pd.notna(y_max) and pd.notna(y_min) and y_max > y_min else 80
+
                 fig_compare.update_layout(
+                    title=dict(
+                        text="Comparaison annuelle des diplômés par niveau académique",
+                        x=0.01,
+                        y=0.98,
+                        font=dict(size=21, color=USJ_BLUE, family="Candara, Arial"),
+                    ),
+                    height=650,
+                    template="plotly_white",
+                    font=dict(family="Candara, Arial", size=13, color=USJ_TEXT),
                     yaxis_title="Diplômés",
                     xaxis_title="Année",
                     hovermode="x unified",
-                )
-                theme_layout(fig_compare, height=560)
-                fig_compare.update_traces(
-                    mode="lines+markers",
-                    line=dict(width=3),
-                    marker=dict(size=8),
-                    hovertemplate="<b>%{fullData.name}</b><br>Année: %{x}<br>Diplômés: %{y:,.0f}<extra></extra>",
-                )
-                fig_compare.update_layout(
-                    margin=dict(l=55, r=130, t=70, b=65),
+                    margin=dict(l=70, r=105, t=125, b=80),
                     legend=dict(
                         orientation="h",
-                        yanchor="bottom",
-                        y=1.02,
+                        yanchor="top",
+                        y=1.08,
                         xanchor="left",
                         x=0,
                         title=None,
                         font=dict(family="Candara, Arial", size=12, color=USJ_TEXT),
                     ),
+                    paper_bgcolor="white",
+                    plot_bgcolor="white",
+                    uniformtext_minsize=12,
+                    uniformtext_mode="show",
                 )
-                fig_compare.update_xaxes(automargin=True, tickangle=0)
-                fig_compare.update_yaxes(automargin=True)
-
-                # Show clear labels only at the latest year to avoid overlap while keeping the figure readable.
-                latest_year = FACTBOOK_YEARS[-1]
-                last_points = level_compare_long[level_compare_long["Année"].astype(str) == latest_year].copy()
-                if not last_points.empty:
-                    max_val = pd.to_numeric(last_points["Diplômés"], errors="coerce").max()
-                    min_val = pd.to_numeric(last_points["Diplômés"], errors="coerce").min()
-                    spread = (max_val - min_val) if pd.notna(max_val) and pd.notna(min_val) else 0
-                    threshold = max(35, spread * 0.07)
-                    last_points = last_points.sort_values("Diplômés", ascending=False).reset_index(drop=True)
-
-                    for i, row in last_points.iterrows():
-                        current_val = pd.to_numeric(row["Diplômés"], errors="coerce")
-                        if pd.isna(current_val):
-                            continue
-
-                        # Avoid overlapping labels for close end values.
-                        nearby = last_points[(last_points.index < i) & (abs(pd.to_numeric(last_points["Diplômés"], errors="coerce") - current_val) < threshold)]
-                        ay = 0
-                        if len(nearby) > 0:
-                            ay = 18 if i % 2 == 0 else -18
-
-                        fig_compare.add_annotation(
-                            x=row["Année"],
-                            y=current_val,
-                            text=f"{str(row['Niveau académique'])}<br><b>{fb_format_number(current_val)}</b>",
-                            showarrow=False,
-                            xanchor="left",
-                            xshift=10,
-                            yshift=ay,
-                            align="left",
-                            font=dict(family="Candara, Arial", size=12, color=USJ_TEXT),
-                            bgcolor="rgba(255,255,255,0.88)",
-                            bordercolor="#D8E2F0",
-                            borderwidth=1,
-                            borderpad=4,
-                        )
-
+                fig_compare.update_xaxes(showgrid=False, linecolor="#D9E1EC", automargin=True, tickangle=0)
+                fig_compare.update_yaxes(
+                    gridcolor="#E6ECF3",
+                    linecolor="#D9E1EC",
+                    automargin=True,
+                    range=[max(0, y_min - y_padding), y_max + y_padding] if pd.notna(y_max) and pd.notna(y_min) else None,
+                )
                 st.plotly_chart(fig_compare, use_container_width=True, config={"displayModeBar": False})
 
         render_factbook_table(
