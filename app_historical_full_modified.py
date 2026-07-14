@@ -5684,24 +5684,37 @@ def _fb_section6_label(row, name_col):
 
 
 def _fb_section6_admission_heatmap(matrix, title, value_title="Effectif"):
+    """Clear Section 6 heatmap for long admission time series.
+
+    Section 6 has 15 cohorts (2011-2025). The previous annotation-based
+    heatmap became unreadable because the year labels were interpreted as a
+    numeric axis and the annotations collapsed. This version forces a
+    categorical x-axis and uses Plotly native cell text, which is stable in
+    Streamlit.
+    """
     if matrix is None or matrix.empty:
         return
+
     matrix = matrix.apply(pd.to_numeric, errors="coerce").dropna(how="all")
     if matrix.empty:
         return
 
-    values = matrix.to_numpy(dtype=float)
+    text_matrix = matrix.map(lambda value: "" if pd.isna(value) else fb_format_number(value, digits=0))
+
     fig = go.Figure(
         data=go.Heatmap(
-            z=values,
-            x=matrix.columns.tolist(),
-            y=matrix.index.tolist(),
+            z=matrix.to_numpy(dtype=float),
+            x=[str(col) for col in matrix.columns.tolist()],
+            y=[str(idx) for idx in matrix.index.tolist()],
+            text=text_matrix.to_numpy(),
+            texttemplate="%{text}",
+            textfont=dict(family="Candara, Arial", size=12, color=USJ_BLUE),
             colorscale=[
-                [0.00, "#D6E0FF"],
-                [0.25, "#AEBCEE"],
-                [0.55, "#6F80C1"],
-                [0.78, USJ_BLUE_2],
-                [1.00, USJ_BLUE],
+                [0.00, "#E7EDFF"],
+                [0.25, "#D3DCF9"],
+                [0.55, "#B5C2EF"],
+                [0.78, "#8EA0DE"],
+                [1.00, "#6F80C1"],
             ],
             colorbar=dict(title=value_title),
             hovertemplate="%{y}<br>%{x}: %{z:,.0f}<extra></extra>",
@@ -5709,39 +5722,46 @@ def _fb_section6_admission_heatmap(matrix, title, value_title="Effectif"):
             ygap=1,
         )
     )
-    fb_add_heatmap_value_annotations(fig, matrix, value_font_size=13, delta_font_size=10, dark_threshold=0.50)
     fig.update_layout(
         title=dict(text=title, x=0.01, font=dict(size=20, color=USJ_BLUE, family="Candara, Arial")),
         template="plotly_white",
-        height=max(420, 52 * len(matrix.index) + 150),
-        margin=dict(l=260, r=80, t=85, b=55),
+        height=max(390, 58 * len(matrix.index) + 150),
+        margin=dict(l=230, r=80, t=100, b=50),
         font=dict(family="Candara, Arial", color=USJ_TEXT),
         paper_bgcolor="white",
         plot_bgcolor="white",
     )
-    fig.update_xaxes(side="top", title=None, automargin=True)
-    fig.update_yaxes(title=None, automargin=True)
+    fig.update_xaxes(type="category", side="top", title=None, automargin=True, tickangle=0)
+    fig.update_yaxes(type="category", title=None, automargin=True)
     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
 
 def _fb_section6_rate_heatmap(rate_df, title):
+    """Clear Section 6 rate heatmap for admission/conversion percentages."""
     if rate_df is None or rate_df.empty:
         return
+
     matrix = rate_df.apply(pd.to_numeric, errors="coerce").dropna(how="all")
     if matrix.empty:
         return
-    z = matrix.apply(lambda col: col.map(lambda v: np.nan if pd.isna(v) else float(v) * 100 if abs(float(v)) <= 1.5 else float(v)))
+
+    z = matrix.map(lambda value: np.nan if pd.isna(value) else (float(value) * 100 if abs(float(value)) <= 1.5 else float(value)))
+    text_matrix = z.map(lambda value: "" if pd.isna(value) else f"{float(value):.2f}%")
+
     fig = go.Figure(
         data=go.Heatmap(
-            z=z.values,
-            x=z.columns.tolist(),
-            y=z.index.tolist(),
+            z=z.to_numpy(dtype=float),
+            x=[str(col) for col in z.columns.tolist()],
+            y=[str(idx) for idx in z.index.tolist()],
+            text=text_matrix.to_numpy(),
+            texttemplate="%{text}",
+            textfont=dict(family="Candara, Arial", size=12, color=USJ_BLUE),
             colorscale=[
-                [0.00, "#D6E0FF"],
-                [0.25, "#AEBCEE"],
-                [0.55, "#6F80C1"],
-                [0.78, USJ_BLUE_2],
-                [1.00, USJ_BLUE],
+                [0.00, "#E7EDFF"],
+                [0.25, "#D3DCF9"],
+                [0.55, "#B5C2EF"],
+                [0.78, "#8EA0DE"],
+                [1.00, "#6F80C1"],
             ],
             colorbar=dict(title="Taux"),
             hovertemplate="%{y}<br>%{x}: %{z:.2f}%<extra></extra>",
@@ -5749,18 +5769,17 @@ def _fb_section6_rate_heatmap(rate_df, title):
             ygap=1,
         )
     )
-    fb_add_rate_heatmap_annotations(fig, matrix, value_font_size=15, delta_font_size=11, dark_threshold=0.50)
     fig.update_layout(
         title=dict(text=title, x=0.01, font=dict(size=20, color=USJ_BLUE, family="Candara, Arial")),
         template="plotly_white",
-        height=max(360, 74 * len(matrix.index) + 150),
-        margin=dict(l=190, r=80, t=85, b=55),
+        height=max(360, 70 * len(matrix.index) + 150),
+        margin=dict(l=190, r=80, t=100, b=50),
         font=dict(family="Candara, Arial", color=USJ_TEXT),
         paper_bgcolor="white",
         plot_bgcolor="white",
     )
-    fig.update_xaxes(side="top", title=None, automargin=True)
-    fig.update_yaxes(title=None, automargin=True)
+    fig.update_xaxes(type="category", side="top", title=None, automargin=True, tickangle=0)
+    fig.update_yaxes(type="category", title=None, automargin=True)
     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
 
