@@ -4579,6 +4579,853 @@ def render_factbook_section1_module():
 
 
 
+
+# =====================================================
+# Factbook Section 5 helpers
+# =====================================================
+
+FACTBOOK_SECTION5_FILE_CANDIDATES = [
+    "FB24-25 5. Profil démographique HS 27-1-2026.xlsx",
+    "FB24-25 5. Profil demographique HS 27-1-2026.xlsx",
+    "Factbook_Profil_Demographique_2024_2025.xlsx",
+    "Factbook_Section5_Profil_Demographique.xlsx",
+    "factbook_section5.xlsx",
+]
+
+FACTBOOK_SECTION5_TITLES = {
+    "5": "5. Profil démographique : Formations diplômantes",
+    "5.1": "5.1. Répartition genre",
+    "5.1.1": "5.1.1. Répartition genre par institution",
+    "5.1.2": "5.1.2. Répartition genre par campus",
+    "5.1.3": "5.1.3. Répartition genre par niveau académique",
+    "5.2": "5.2. Répartition des communautés religieuses",
+    "5.2.1": "5.2.1. Répartition des communautés religieuses par institution",
+    "5.2.2": "5.2.2. Répartition des communautés religieuses par campus",
+    "5.2.3": "5.2.3. Répartition des communautés religieuses par niveau académique",
+    "5.3": "5.3. Nationalité par institution",
+}
+
+FACTBOOK_PROFILE_YEARS = ["2023-2024", "2024-2025"]
+FACTBOOK_RELIGION_COLUMNS = [
+    "Maronite", "Grec Catho", "Armén Catho", "Latin", "Autre Catho",
+    "Grec Ortho", "Armén Ortho", "Autre Ortho", "Protes Évang", "Autre Chrét",
+    "Sunnite", "Chiite", "Druze", "Alaouite", "Autre Musul", "Autre", "N. indiqué"
+]
+
+
+def find_factbook_section5_file():
+    """Find the Section 5 Factbook Excel file without touching the other Factbook files."""
+    for file_name in FACTBOOK_SECTION5_FILE_CANDIDATES:
+        if os.path.exists(file_name):
+            stat = os.stat(file_name)
+            return file_name, stat.st_mtime, stat.st_size
+
+    for file_name in os.listdir("."):
+        lower = file_name.lower()
+        normalized = lower.replace("é", "e").replace("è", "e").replace("ê", "e")
+        if lower.endswith((".xlsx", ".xls")) and ("profil" in normalized or "demograph" in normalized or "demographique" in normalized):
+            stat = os.stat(file_name)
+            return file_name, stat.st_mtime, stat.st_size
+
+    return None, None, None
+
+
+def _fb_pct_to_number(value):
+    """Return a percentage value on a 0-100 scale for profile charts."""
+    numeric = pd.to_numeric(value, errors="coerce")
+    if pd.isna(numeric):
+        return np.nan
+    numeric = float(numeric)
+    return numeric * 100 if abs(numeric) <= 1.5 else numeric
+
+
+def _fb_parse_profile_gender_sheet(file_path, sheet_name, entity_col="Institution", header_hint="Champ disciplinaire"):
+    """Parse Section 5 gender tables with two yearly groups."""
+    raw = pd.read_excel(file_path, sheet_name=sheet_name, header=None)
+    raw = _fb_apply_cell_function(raw, _fb_clean_cell)
+
+    header_row = None
+    for i in range(len(raw)):
+        row_values = [str(v).strip() for v in raw.iloc[i].tolist() if not _fb_is_blank(v)]
+        if header_hint in row_values or entity_col in row_values:
+            if any(str(v).strip() in FACTBOOK_PROFILE_YEARS for v in raw.iloc[i].tolist() if not _fb_is_blank(v)) or entity_col in row_values:
+                header_row = i
+                break
+
+    if header_row is None:
+        return pd.DataFrame()
+
+    sub_row = header_row + 1
+    columns = []
+    current_year = None
+    metadata_labels = {"Champ disciplinaire", "Acronyme", "Institution", "Niveau académique"}
+
+    for j in range(raw.shape[1]):
+        top = raw.iat[header_row, j]
+        sub = raw.iat[sub_row, j] if sub_row < len(raw) else np.nan
+
+        if not _fb_is_blank(top):
+            top_label = str(top).strip()
+            if top_label in FACTBOOK_PROFILE_YEARS or any(year in top_label for year in FACTBOOK_PROFILE_YEARS):
+                current_year = next((year for year in FACTBOOK_PROFILE_YEARS if year in top_label), top_label)
+
+        sub_label = None if _fb_is_blank(sub) else str(sub).strip().lower()
+        top_label = None if _fb_is_blank(top) else str(top).strip()
+
+        if top_label in metadata_labels:
+            columns.append(top_label)
+        elif current_year and sub_label in {"n garçon", "n fille", "% garçon"}:
+            if sub_label == "n garçon":
+                columns.append(f"Garçons {current_year}")
+            elif sub_label == "n fille":
+                columns.append(f"Filles {current_year}")
+            else:
+                columns.append(f"% garçons {current_year}")
+        elif j == 1 and entity_col == "Niveau académique":
+            columns.append("Niveau académique")
+        else:
+            columns.append(f"Colonne {j + 1}")
+
+    df = raw.iloc[sub_row + 1:].copy()
+    df.columns = columns[:len(df.columns)]
+    df = _fb_clean_dataframe(df)
+    df = _fb_fix_total_rows(df)
+    df = _fb_fill_metadata(df, ["Champ disciplinaire"])
+
+    for year in FACTBOOK_PROFILE_YEARS:
+        for col in [f"Garçons {year}", f"Filles {year}", f"% garçons {year}"]:
+            if col in df.columns:
+                df[col] = pd.to_numeric(df[col], errors="coerce")
+        pct_col = f"% garçons {year}"
+        if pct_col in df.columns:
+            df[f"% filles {year}"] = 1 - df[pct_col]
+        if f"Garçons {year}" in df.columns and f"Filles {year}" in df.columns:
+            df[f"Total {year}"] = df[f"Garçons {year}"] + df[f"Filles {year}"]
+
+    return df
+
+
+def _fb_parse_profile_gender_campus_sheet(file_path, sheet_name):
+    """Parse repeated campus blocks for the gender-by-campus sheet."""
+    raw = pd.read_excel(file_path, sheet_name=sheet_name, header=None)
+    raw = _fb_apply_cell_function(raw, _fb_clean_cell)
+    rows = []
+    i = 0
+
+    while i < len(raw):
+        first = raw.iat[i, 0] if raw.shape[1] > 0 else np.nan
+        if not _fb_is_blank(first) and str(first).strip().startswith("Campus"):
+            campus = str(first).strip()
+            if i + 2 >= len(raw):
+                break
+            header_row = i + 1
+            sub_row = i + 2
+            i = i + 3
+
+            while i < len(raw):
+                first_cell = raw.iat[i, 0] if raw.shape[1] > 0 else np.nan
+                second_cell = raw.iat[i, 1] if raw.shape[1] > 1 else np.nan
+                if not _fb_is_blank(first_cell) and str(first_cell).strip().startswith("Campus"):
+                    break
+                if all(_fb_is_blank(value) for value in raw.iloc[i].tolist()):
+                    i += 1
+                    break
+                if str(first_cell).strip() == "Acronyme":
+                    i += 1
+                    continue
+
+                row = {
+                    "Campus": campus,
+                    "Acronyme": raw.iat[i, 0] if raw.shape[1] > 0 else np.nan,
+                    "Institution": second_cell,
+                    "Garçons 2023-2024": raw.iat[i, 2] if raw.shape[1] > 2 else np.nan,
+                    "Filles 2023-2024": raw.iat[i, 3] if raw.shape[1] > 3 else np.nan,
+                    "% garçons 2023-2024": raw.iat[i, 4] if raw.shape[1] > 4 else np.nan,
+                    "Garçons 2024-2025": raw.iat[i, 5] if raw.shape[1] > 5 else np.nan,
+                    "Filles 2024-2025": raw.iat[i, 6] if raw.shape[1] > 6 else np.nan,
+                    "% garçons 2024-2025": raw.iat[i, 7] if raw.shape[1] > 7 else np.nan,
+                }
+                if not all(_fb_is_blank(value) for value in row.values()):
+                    rows.append(row)
+                i += 1
+            continue
+        i += 1
+
+    df = pd.DataFrame(rows)
+    df = _fb_clean_dataframe(df)
+    for year in FACTBOOK_PROFILE_YEARS:
+        for col in [f"Garçons {year}", f"Filles {year}", f"% garçons {year}"]:
+            if col in df.columns:
+                df[col] = pd.to_numeric(df[col], errors="coerce")
+        if f"% garçons {year}" in df.columns:
+            df[f"% filles {year}"] = 1 - df[f"% garçons {year}"]
+        if f"Garçons {year}" in df.columns and f"Filles {year}" in df.columns:
+            df[f"Total {year}"] = df[f"Garçons {year}"] + df[f"Filles {year}"]
+    return df
+
+
+def _fb_parse_religion_simple_sheet(file_path, sheet_name, entity_col="Institution"):
+    raw = pd.read_excel(file_path, sheet_name=sheet_name, header=None)
+    raw = _fb_apply_cell_function(raw, _fb_clean_cell)
+
+    header_row = None
+    for i in range(len(raw)):
+        values = [str(v).strip() for v in raw.iloc[i].tolist() if not _fb_is_blank(v)]
+        if entity_col in values and "Total" in values:
+            header_row = i
+            break
+
+    if header_row is None:
+        return pd.DataFrame()
+
+    headers = [str(v).strip() if not _fb_is_blank(v) else f"Colonne {j + 1}" for j, v in enumerate(raw.iloc[header_row].tolist())]
+    df = raw.iloc[header_row + 1:].copy()
+    df.columns = headers[:len(df.columns)]
+    df = _fb_clean_dataframe(df)
+    df = _fb_fix_total_rows(df)
+    df = _fb_fill_metadata(df, ["Champ disciplinaire"])
+
+    for col in df.columns:
+        if col not in {"Champ disciplinaire", "Acronyme", "Institution", "Niveau académique"}:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+    return df
+
+
+def _fb_parse_religion_campus_sheet(file_path, sheet_name):
+    raw = pd.read_excel(file_path, sheet_name=sheet_name, header=None)
+    raw = _fb_apply_cell_function(raw, _fb_clean_cell)
+    rows = []
+    i = 0
+
+    while i < len(raw):
+        first = raw.iat[i, 0] if raw.shape[1] > 0 else np.nan
+        if not _fb_is_blank(first) and str(first).strip().startswith("Campus"):
+            campus = str(first).strip()
+            header_row = i + 1
+            if header_row >= len(raw):
+                break
+            headers = [str(v).strip() if not _fb_is_blank(v) else f"Colonne {j + 1}" for j, v in enumerate(raw.iloc[header_row].tolist())]
+            i = header_row + 1
+            while i < len(raw):
+                first_cell = raw.iat[i, 0] if raw.shape[1] > 0 else np.nan
+                if not _fb_is_blank(first_cell) and str(first_cell).strip().startswith("Campus"):
+                    break
+                if all(_fb_is_blank(value) for value in raw.iloc[i].tolist()):
+                    i += 1
+                    break
+                if str(first_cell).strip() == "Acronyme":
+                    i += 1
+                    continue
+                values = raw.iloc[i].tolist()[:len(headers)]
+                row = {headers[j]: values[j] for j in range(len(headers))}
+                row["Campus"] = campus
+                rows.append(row)
+                i += 1
+            continue
+        i += 1
+
+    df = pd.DataFrame(rows)
+    df = _fb_clean_dataframe(df)
+    for col in df.columns:
+        if col not in {"Campus", "Acronyme", "Institution"}:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+    return df
+
+
+def _fb_parse_nationality_sheet(file_path, sheet_name):
+    raw = pd.read_excel(file_path, sheet_name=sheet_name, header=None)
+    raw = _fb_apply_cell_function(raw, _fb_clean_cell)
+    header_row = None
+    for i in range(len(raw)):
+        values = [str(v).strip() for v in raw.iloc[i].tolist() if not _fb_is_blank(v)]
+        if "Champ disciplinaire" in values and "Acronyme" in values and "Institution" in values:
+            header_row = i
+            break
+    if header_row is None:
+        return pd.DataFrame()
+
+    sub_row = header_row + 1
+    df = raw.iloc[sub_row + 1:, :11].copy()
+    df.columns = [
+        "Champ disciplinaire", "Acronyme", "Institution",
+        "Libanais 2023-2024", "Double nationalité 2023-2024", "Étrangers 2023-2024", "% étrangers 2023-2024",
+        "Libanais 2024-2025", "Double nationalité 2024-2025", "Étrangers 2024-2025", "% étrangers 2024-2025",
+    ]
+    df = _fb_clean_dataframe(df)
+    df = _fb_fix_total_rows(df)
+    df = _fb_fill_metadata(df, ["Champ disciplinaire"])
+    for col in df.columns:
+        if col not in {"Champ disciplinaire", "Acronyme", "Institution"}:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+    return df
+
+
+@st.cache_data(show_spinner=False)
+def load_factbook_section5(file_path, file_mtime, file_size):
+    """Load only Section 5 of the Factbook from the provided Excel workbook."""
+    gender_institution = _fb_parse_profile_gender_sheet(file_path, "5. 5.1. 5.1.1. Genre par Inst", entity_col="Institution")
+    gender_campus = _fb_parse_profile_gender_campus_sheet(file_path, "5.1.2 Genre campus")
+    gender_level = _fb_parse_profile_gender_sheet(file_path, "5.1.3 Niveau", entity_col="Niveau académique", header_hint="Niveau académique")
+    religion_institution = _fb_parse_religion_simple_sheet(file_path, "5.2.1. Religion par Inst", entity_col="Institution")
+    religion_campus = _fb_parse_religion_campus_sheet(file_path, "5.2.2 Religion camp")
+    religion_level = _fb_parse_religion_simple_sheet(file_path, "5.2.3 Niveau", entity_col="Niveau académique")
+    nationality_institution = _fb_parse_nationality_sheet(file_path, "5.3. Nationalité par Inst")
+
+    return {
+        "gender_institution": gender_institution,
+        "gender_campus": gender_campus,
+        "gender_level": gender_level,
+        "religion_institution": religion_institution,
+        "religion_campus": religion_campus,
+        "religion_level": religion_level,
+        "nationality_institution": nationality_institution,
+    }
+
+
+def _fb_not_total_profile_rows(df, entity_col):
+    if df is None or df.empty or entity_col not in df.columns:
+        return pd.DataFrame()
+    text = df[entity_col].astype(str).str.strip().str.lower()
+    return df[~text.isin(["total", "total formations diplômantes", "pourcentage", "rappel 2023-2024", "nan", "none"]) & ~text.str.startswith("total", na=False)].copy()
+
+
+def _fb_profile_total_row(df, entity_col):
+    if df is None or df.empty or entity_col not in df.columns:
+        return None
+    text = df[entity_col].astype(str).str.strip().str.lower()
+    preferred = df[text.str.contains("total formations diplômantes", na=False)]
+    if not preferred.empty:
+        return preferred.iloc[-1]
+    total = df[text.eq("total") | text.str.startswith("total", na=False)]
+    if not total.empty:
+        return total.iloc[0]
+    return None
+
+
+def _fb_gender_summary_from_row(row, year="2024-2025"):
+    if row is None:
+        return pd.DataFrame()
+    male = pd.to_numeric(row.get(f"Garçons {year}"), errors="coerce")
+    female = pd.to_numeric(row.get(f"Filles {year}"), errors="coerce")
+    return pd.DataFrame([
+        {"Genre": "♂ Garçons", "Effectif": male, "Symbole": "♂"},
+        {"Genre": "♀ Filles", "Effectif": female, "Symbole": "♀"},
+    ]).dropna(subset=["Effectif"])
+
+
+def _fb_gender_symbol_card(symbol, title, value, pct, color):
+    st.markdown(
+        f"""
+        <div style="
+            background:linear-gradient(135deg,#FFFFFF 0%,#F7F9FC 100%);
+            border:1px solid #DDE5F0;
+            border-radius:22px;
+            padding:22px 22px 18px 22px;
+            min-height:150px;
+            box-shadow:0 8px 22px rgba(0,27,117,0.08);
+            font-family:Candara, Arial, sans-serif;
+        ">
+            <div style="display:flex;align-items:center;gap:14px;">
+                <div style="
+                    width:58px;height:58px;border-radius:50%;
+                    background:{color};color:white;display:flex;align-items:center;justify-content:center;
+                    font-size:34px;font-weight:900;box-shadow:0 6px 16px rgba(0,0,0,0.12);
+                ">{symbol}</div>
+                <div>
+                    <div style="font-size:15px;font-weight:900;color:{USJ_TEXT};">{html_escape(title)}</div>
+                    <div style="font-size:34px;font-weight:900;color:{color};margin-top:4px;">{fb_format_number(value)}</div>
+                </div>
+            </div>
+            <div style="margin-top:12px;font-size:15px;color:#667085;font-weight:800;">{pct:.2f}% du total</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def _fb_gender_long(data, entity_col, year="2024-2025"):
+    base = _fb_not_total_profile_rows(data, entity_col)
+    rows = []
+    for _, row in base.iterrows():
+        label = row.get(entity_col)
+        if _fb_is_blank(label):
+            continue
+        for gender_label, col in [("♂ Garçons", f"Garçons {year}"), ("♀ Filles", f"Filles {year}")]:
+            value = pd.to_numeric(row.get(col), errors="coerce")
+            if pd.notna(value):
+                rows.append({entity_col: label, "Genre": gender_label, "Effectif": value})
+    return pd.DataFrame(rows)
+
+
+def _fb_religion_total_distribution(df, entity_col):
+    row = _fb_profile_total_row(df, entity_col)
+    if row is None:
+        return pd.DataFrame()
+    records = []
+    for col in FACTBOOK_RELIGION_COLUMNS:
+        if col in df.columns:
+            value = pd.to_numeric(row.get(col), errors="coerce")
+            if pd.notna(value) and value > 0:
+                records.append({"Communauté": col, "Effectif": value})
+    return pd.DataFrame(records).sort_values("Effectif", ascending=False)
+
+
+def _fb_nationality_total_distribution(df, year="2024-2025"):
+    row = _fb_profile_total_row(df, "Institution")
+    if row is None:
+        return pd.DataFrame()
+    records = []
+    mapping = [
+        ("Libanais", f"Libanais {year}"),
+        ("Double nationalité", f"Double nationalité {year}"),
+        ("Étrangers", f"Étrangers {year}"),
+    ]
+    for label, col in mapping:
+        if col in df.columns:
+            value = pd.to_numeric(row.get(col), errors="coerce")
+            if pd.notna(value):
+                records.append({"Nationalité": label, "Effectif": value})
+    return pd.DataFrame(records)
+
+
+def _fb_render_gender_icon_comparison(total_row):
+    gender_df = _fb_gender_summary_from_row(total_row, "2024-2025")
+    if gender_df.empty:
+        return
+    total = gender_df["Effectif"].sum()
+    male = gender_df.loc[gender_df["Genre"].str.contains("Garçons"), "Effectif"].sum()
+    female = gender_df.loc[gender_df["Genre"].str.contains("Filles"), "Effectif"].sum()
+    c1, c2 = st.columns(2)
+    with c1:
+        _fb_gender_symbol_card("♂", "Garçons", male, male / total * 100 if total else np.nan, USJ_BLUE)
+    with c2:
+        _fb_gender_symbol_card("♀", "Filles", female, female / total * 100 if total else np.nan, USJ_RED)
+
+    fig = px.pie(
+        gender_df,
+        names="Genre",
+        values="Effectif",
+        hole=0.55,
+        title="Répartition genre 2024-2025",
+        color="Genre",
+        color_discrete_map={"♂ Garçons": USJ_BLUE, "♀ Filles": USJ_RED},
+    )
+    fig.update_traces(
+        textinfo="label+percent+value",
+        textfont=dict(family="Candara, Arial", size=16, color=USJ_TEXT),
+        hovertemplate="<b>%{label}</b><br>Effectif: %{value:,.0f}<br>Part: %{percent}<extra></extra>",
+    )
+    fig.update_layout(
+        template="plotly_white",
+        height=430,
+        font=dict(family="Candara, Arial", size=14, color=USJ_TEXT),
+        title=dict(font=dict(size=22, color=USJ_BLUE), x=0.01),
+        margin=dict(l=20, r=20, t=70, b=20),
+        showlegend=True,
+        legend=dict(orientation="h", y=-0.05, x=0.5, xanchor="center"),
+    )
+    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+
+
+def _fb_profile_bar_polish(fig, height=540):
+    fig.update_layout(
+        template="plotly_white",
+        height=height,
+        font=dict(family="Candara, Arial", size=14, color=USJ_TEXT),
+        title=dict(font=dict(size=22, color=USJ_BLUE), x=0.01),
+        margin=dict(l=65, r=95, t=85, b=80),
+        paper_bgcolor="white",
+        plot_bgcolor="white",
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        hoverlabel=dict(bgcolor="white", font_size=13, font_family="Candara, Arial"),
+    )
+    fig.update_xaxes(showgrid=False, linecolor="#D9E1EC", automargin=True)
+    fig.update_yaxes(gridcolor="#E6ECF3", linecolor="#D9E1EC", automargin=True)
+    return fig
+
+
+def _fb_profile_percentage_table(df, percent_cols):
+    return render_factbook_table(
+        df,
+        "Tableau filtré",
+        note="Les pourcentages sont affichés avec deux décimales.",
+        max_height=620,
+        percent_2_dec_cols=percent_cols,
+    )
+
+
+def render_factbook_section5_module():
+    """Render the connected Factbook module for Section 5: demographic profile."""
+    factbook_file_path, factbook_file_mtime, factbook_file_size = find_factbook_section5_file()
+
+    if factbook_file_path is None:
+        st.error("Fichier Excel de la Section 5 du Factbook introuvable. Ajoutez le fichier Excel dans le même dossier que l’application.")
+        st.code("FB24-25 5. Profil démographique HS 27-1-2026.xlsx")
+        st.stop()
+
+    with st.spinner("Chargement du Factbook - Section 5..."):
+        fb = load_factbook_section5(factbook_file_path, factbook_file_mtime, factbook_file_size)
+
+    gender_institution_df = fb["gender_institution"].copy()
+    gender_campus_df = fb["gender_campus"].copy()
+    gender_level_df = fb["gender_level"].copy()
+    religion_institution_df = fb["religion_institution"].copy()
+    religion_campus_df = fb["religion_campus"].copy()
+    religion_level_df = fb["religion_level"].copy()
+    nationality_df = fb["nationality_institution"].copy()
+
+    header_left, header_right = st.columns([4.5, 1.5])
+    with header_left:
+        st.markdown(
+            f"""
+            <h1 style="color:{USJ_BLUE}; margin-bottom:18px; font-family:Candara, Arial, sans-serif;">
+                Factbook USJ 2024-2025
+            </h1>
+            """,
+            unsafe_allow_html=True,
+        )
+        header_button_cols = st.columns([1.1, 3.5])
+        with header_button_cols[0]:
+            if st.button("← Sections Factbook", key="back_to_factbook_cover_from_section5", use_container_width=True):
+                st.session_state["selected_factbook_section"] = None
+                st.rerun()
+    with header_right:
+        st.markdown(_factbook_logo_html(width=350), unsafe_allow_html=True)
+
+    st.markdown(
+        f"""
+        <h2 style="
+            color:{USJ_BLUE};
+            margin-top:18px;
+            margin-bottom:8px;
+            font-family:Candara, Arial, sans-serif;
+            font-size:42px;
+            font-weight:900;
+            line-height:1.15;
+        ">
+            Section 5 - Profil démographique
+        </h2>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    tabs = st.tabs([
+        "Synthèse",
+        "5.1 Genre",
+        "5.2 Communautés religieuses",
+        "5.3 Nationalité",
+    ])
+
+    with tabs[0]:
+        section_header("Synthèse du profil démographique", "Vue institutionnelle des répartitions par genre, communauté religieuse et nationalité.")
+        total_row = _fb_profile_total_row(gender_institution_df, "Institution")
+        total_2025 = np.nan
+        male_2025 = np.nan
+        female_2025 = np.nan
+        if total_row is not None:
+            male_2025 = pd.to_numeric(total_row.get("Garçons 2024-2025"), errors="coerce")
+            female_2025 = pd.to_numeric(total_row.get("Filles 2024-2025"), errors="coerce")
+            total_2025 = male_2025 + female_2025
+
+        nat_total = _fb_profile_total_row(nationality_df, "Institution")
+        foreign_pct = _fb_pct_to_number(nat_total.get("% étrangers 2024-2025")) if nat_total is not None else np.nan
+        religion_dist = _fb_religion_total_distribution(religion_institution_df, "Institution")
+        top_religion = religion_dist.iloc[0]["Communauté"] if not religion_dist.empty else "NA"
+
+        k1, k2, k3, k4 = st.columns(4)
+        with k1:
+            insight_card("Total étudiants", fb_format_number(total_2025), "Formations diplômantes 2024-2025", color=USJ_BLUE)
+        with k2:
+            insight_card("Part filles", f"{(female_2025 / total_2025 * 100):.2f}%" if pd.notna(total_2025) and total_2025 else "NA", "♀ 2024-2025", color=USJ_RED)
+        with k3:
+            insight_card("Part garçons", f"{(male_2025 / total_2025 * 100):.2f}%" if pd.notna(total_2025) and total_2025 else "NA", "♂ 2024-2025", color=USJ_BLUE_2)
+        with k4:
+            insight_card("Part étrangers", "NA" if pd.isna(foreign_pct) else f"{foreign_pct:.2f}%", "Nationalité 2024-2025", color=USJ_GOLD)
+
+        st.markdown("<div style='height:12px;'></div>", unsafe_allow_html=True)
+        _fb_render_gender_icon_comparison(total_row)
+
+        c1, c2 = st.columns(2)
+        with c1:
+            if not religion_dist.empty:
+                rel = religion_dist.head(8).copy()
+                fig_rel = px.bar(
+                    rel.sort_values("Effectif", ascending=True),
+                    x="Effectif",
+                    y="Communauté",
+                    orientation="h",
+                    text="Effectif",
+                    title="Principales communautés religieuses - 2024-2025",
+                    color_discrete_sequence=[USJ_BLUE],
+                )
+                fig_rel.update_traces(texttemplate="%{text:,.0f}", textposition="outside", cliponaxis=False, textfont=dict(size=13, color=USJ_TEXT))
+                _fb_profile_bar_polish(fig_rel, height=440)
+                fig_rel.update_layout(showlegend=False, margin=dict(l=145, r=90, t=80, b=55))
+                st.plotly_chart(fig_rel, use_container_width=True, config={"displayModeBar": False})
+        with c2:
+            nat_dist = _fb_nationality_total_distribution(nationality_df, "2024-2025")
+            if not nat_dist.empty:
+                fig_nat = px.pie(
+                    nat_dist,
+                    names="Nationalité",
+                    values="Effectif",
+                    hole=0.52,
+                    title="Répartition par nationalité - 2024-2025",
+                    color_discrete_sequence=[USJ_BLUE, USJ_RED, USJ_GOLD],
+                )
+                fig_nat.update_traces(textinfo="label+percent+value", textfont=dict(family="Candara, Arial", size=14, color=USJ_TEXT))
+                fig_nat.update_layout(template="plotly_white", height=440, font=dict(family="Candara, Arial", color=USJ_TEXT), title=dict(font=dict(size=20, color=USJ_BLUE), x=0.01), margin=dict(l=20, r=20, t=80, b=40), legend=dict(orientation="h", y=-0.05))
+                st.plotly_chart(fig_nat, use_container_width=True, config={"displayModeBar": False})
+
+    with tabs[1]:
+        section_header(FACTBOOK_SECTION5_TITLES["5.1"], "Comparaison dynamique des étudiants par genre. Les symboles distinguent les étudiantes et les étudiants.")
+        sub_tabs = st.tabs(["Par institution", "Par campus", "Par niveau académique"])
+
+        with sub_tabs[0]:
+            filtered = gender_institution_df.copy()
+            f1, f2, f3 = st.columns([1.4, 1.2, 1])
+            with f1:
+                champ = st.selectbox("Champ disciplinaire", filter_options(filtered, "Champ disciplinaire"), key="fb_s5_gender_inst_champ")
+            if champ != "Tous":
+                filtered = filtered[filtered["Champ disciplinaire"].astype(str) == champ]
+            with f2:
+                acronyme = st.selectbox("Acronyme", filter_options(filtered, "Acronyme"), key="fb_s5_gender_inst_acr")
+            if acronyme != "Tous":
+                filtered = filtered[filtered["Acronyme"].astype(str) == acronyme]
+            with f3:
+                year = st.selectbox("Année", FACTBOOK_PROFILE_YEARS[::-1], key="fb_s5_gender_inst_year")
+
+            rows = _fb_not_total_profile_rows(filtered, "Institution")
+            if not rows.empty:
+                rows["Total"] = pd.to_numeric(rows.get(f"Total {year}"), errors="coerce")
+                top = rows.dropna(subset=["Total"]).sort_values("Total", ascending=False).head(15)
+                long_df = _fb_gender_long(top, "Institution", year)
+                if not long_df.empty:
+                    fig = px.bar(
+                        long_df,
+                        x="Effectif",
+                        y="Institution",
+                        color="Genre",
+                        orientation="h",
+                        text="Effectif",
+                        barmode="stack",
+                        title=f"Top institutions par genre - {year}",
+                        color_discrete_map={"♂ Garçons": USJ_BLUE, "♀ Filles": USJ_RED},
+                    )
+                    fig.update_traces(texttemplate="%{text:,.0f}", textposition="inside", insidetextanchor="middle", textfont=dict(size=13, color="white", family="Candara, Arial"))
+                    _fb_profile_bar_polish(fig, height=max(520, 34 * len(top) + 180))
+                    fig.update_layout(margin=dict(l=320, r=90, t=90, b=70))
+                    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+            _fb_profile_percentage_table(filtered, [f"% garçons {year}", f"% filles {year}"])
+
+        with sub_tabs[1]:
+            year = st.selectbox("Année", FACTBOOK_PROFILE_YEARS[::-1], key="fb_s5_gender_campus_year")
+            campus_totals = gender_campus_df[gender_campus_df["Institution"].astype(str).str.strip().eq("Total")].copy()
+            if not campus_totals.empty:
+                long_campus = _fb_gender_long(campus_totals, "Campus", year)
+                fig = px.bar(
+                    long_campus,
+                    x="Campus",
+                    y="Effectif",
+                    color="Genre",
+                    text="Effectif",
+                    barmode="group",
+                    title=f"Répartition genre par campus - {year}",
+                    color_discrete_map={"♂ Garçons": USJ_BLUE, "♀ Filles": USJ_RED},
+                )
+                fig.update_traces(texttemplate="%{text:,.0f}", textposition="outside", cliponaxis=False, textfont=dict(size=13, color=USJ_TEXT))
+                _fb_profile_bar_polish(fig, height=520)
+                fig.update_layout(xaxis_tickangle=-20, margin=dict(l=60, r=90, t=90, b=115))
+                st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+            _fb_profile_percentage_table(gender_campus_df, [f"% garçons {year}", f"% filles {year}"])
+
+        with sub_tabs[2]:
+            year = st.selectbox("Année", FACTBOOK_PROFILE_YEARS[::-1], key="fb_s5_gender_level_year")
+            level_rows = _fb_not_total_profile_rows(gender_level_df, "Niveau académique")
+            long_level = _fb_gender_long(level_rows, "Niveau académique", year)
+            if not long_level.empty:
+                fig = px.bar(
+                    long_level,
+                    x="Niveau académique",
+                    y="Effectif",
+                    color="Genre",
+                    text="Effectif",
+                    barmode="stack",
+                    title=f"Répartition genre par niveau académique - {year}",
+                    color_discrete_map={"♂ Garçons": USJ_BLUE, "♀ Filles": USJ_RED},
+                )
+                fig.update_traces(texttemplate="%{text:,.0f}", textposition="inside", textfont=dict(size=13, color="white", family="Candara, Arial"))
+                _fb_profile_bar_polish(fig, height=560)
+                fig.update_layout(xaxis_tickangle=-25, margin=dict(l=60, r=90, t=90, b=145))
+                st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+            _fb_profile_percentage_table(gender_level_df, [f"% garçons {year}", f"% filles {year}"])
+
+    with tabs[2]:
+        section_header(FACTBOOK_SECTION5_TITLES["5.2"], "Lecture des communautés religieuses par institution, campus et niveau académique.")
+        rel_tabs = st.tabs(["Par institution", "Par campus", "Par niveau académique"])
+
+        with rel_tabs[0]:
+            filtered = religion_institution_df.copy()
+            f1, f2 = st.columns(2)
+            with f1:
+                champ = st.selectbox("Champ disciplinaire", filter_options(filtered, "Champ disciplinaire"), key="fb_s5_rel_inst_champ")
+            if champ != "Tous":
+                filtered = filtered[filtered["Champ disciplinaire"].astype(str) == champ]
+            with f2:
+                acronyme = st.selectbox("Acronyme", filter_options(filtered, "Acronyme"), key="fb_s5_rel_inst_acr")
+            if acronyme != "Tous":
+                filtered = filtered[filtered["Acronyme"].astype(str) == acronyme]
+
+            rel_dist = _fb_religion_total_distribution(filtered, "Institution")
+            if not rel_dist.empty:
+                fig = px.bar(
+                    rel_dist.head(12).sort_values("Effectif", ascending=True),
+                    x="Effectif",
+                    y="Communauté",
+                    orientation="h",
+                    text="Effectif",
+                    title="Distribution des communautés religieuses - institutions filtrées",
+                    color_discrete_sequence=[USJ_BLUE],
+                )
+                fig.update_traces(texttemplate="%{text:,.0f}", textposition="outside", cliponaxis=False, textfont=dict(size=13, color=USJ_TEXT))
+                _fb_profile_bar_polish(fig, height=520)
+                fig.update_layout(showlegend=False, margin=dict(l=165, r=90, t=90, b=70))
+                st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+            render_factbook_table(filtered, FACTBOOK_SECTION5_TITLES["5.2.1"], max_height=620)
+
+        with rel_tabs[1]:
+            filtered = religion_campus_df.copy()
+            campus = st.selectbox("Campus", filter_options(filtered, "Campus"), key="fb_s5_rel_campus")
+            if campus != "Tous":
+                filtered = filtered[filtered["Campus"].astype(str) == campus]
+            rel_dist = _fb_religion_total_distribution(filtered, "Institution")
+            if not rel_dist.empty:
+                fig = px.bar(
+                    rel_dist.head(12).sort_values("Effectif", ascending=True),
+                    x="Effectif",
+                    y="Communauté",
+                    orientation="h",
+                    text="Effectif",
+                    title="Distribution des communautés religieuses - campus filtré",
+                    color_discrete_sequence=[USJ_BLUE_2],
+                )
+                fig.update_traces(texttemplate="%{text:,.0f}", textposition="outside", cliponaxis=False, textfont=dict(size=13, color=USJ_TEXT))
+                _fb_profile_bar_polish(fig, height=520)
+                fig.update_layout(showlegend=False, margin=dict(l=165, r=90, t=90, b=70))
+                st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+            render_factbook_table(filtered, FACTBOOK_SECTION5_TITLES["5.2.2"], max_height=620)
+
+        with rel_tabs[2]:
+            level_rows = _fb_not_total_profile_rows(religion_level_df, "Niveau académique")
+            matrix_cols = [col for col in FACTBOOK_RELIGION_COLUMNS if col in level_rows.columns]
+            if matrix_cols:
+                heatmap_data = level_rows.set_index("Niveau académique")[matrix_cols].apply(pd.to_numeric, errors="coerce")
+                heatmap_data = heatmap_data.loc[:, heatmap_data.sum(axis=0, skipna=True) > 0]
+                fig_heat = go.Figure(data=go.Heatmap(
+                    z=heatmap_data.values,
+                    x=heatmap_data.columns.tolist(),
+                    y=heatmap_data.index.tolist(),
+                    colorscale=[[0.0, "#DCE6FF"], [0.35, "#A8B8EA"], [0.70, "#4D5EA9"], [1.0, USJ_BLUE]],
+                    xgap=1,
+                    ygap=1,
+                    text=heatmap_data.apply(lambda col: col.map(lambda v: "" if pd.isna(v) else fb_format_number(v))).values,
+                    texttemplate="%{text}",
+                    hovertemplate="<b>%{y}</b><br>Communauté: %{x}<br>Effectif: %{z:,.0f}<extra></extra>",
+                    colorbar=dict(title="Effectifs"),
+                ))
+                fig_heat.update_layout(
+                    title=dict(text="Communautés religieuses par niveau académique", x=0.01, font=dict(size=22, color=USJ_BLUE, family="Candara, Arial")),
+                    height=560,
+                    template="plotly_white",
+                    font=dict(family="Candara, Arial", size=13, color=USJ_TEXT),
+                    margin=dict(l=270, r=90, t=90, b=115),
+                )
+                fig_heat.update_xaxes(tickangle=-35, automargin=True)
+                fig_heat.update_yaxes(automargin=True)
+                st.plotly_chart(fig_heat, use_container_width=True, config={"displayModeBar": False})
+            render_factbook_table(religion_level_df, FACTBOOK_SECTION5_TITLES["5.2.3"], max_height=620)
+
+    with tabs[3]:
+        section_header(FACTBOOK_SECTION5_TITLES["5.3"], "Lecture de la nationalité déclarée par institution et évolution de la part des étudiants étrangers.")
+        filtered = nationality_df.copy()
+        f1, f2, f3 = st.columns([1.4, 1.2, 1])
+        with f1:
+            champ = st.selectbox("Champ disciplinaire", filter_options(filtered, "Champ disciplinaire"), key="fb_s5_nat_champ")
+        if champ != "Tous":
+            filtered = filtered[filtered["Champ disciplinaire"].astype(str) == champ]
+        with f2:
+            acronyme = st.selectbox("Acronyme", filter_options(filtered, "Acronyme"), key="fb_s5_nat_acr")
+        if acronyme != "Tous":
+            filtered = filtered[filtered["Acronyme"].astype(str) == acronyme]
+        with f3:
+            year = st.selectbox("Année", FACTBOOK_PROFILE_YEARS[::-1], key="fb_s5_nat_year")
+
+        nat_dist = _fb_nationality_total_distribution(filtered, year)
+        if not nat_dist.empty:
+            fig = px.bar(
+                nat_dist,
+                x="Nationalité",
+                y="Effectif",
+                text="Effectif",
+                title=f"Répartition par nationalité - {year}",
+                color="Nationalité",
+                color_discrete_sequence=[USJ_BLUE, USJ_RED, USJ_GOLD],
+            )
+            fig.update_traces(texttemplate="%{text:,.0f}", textposition="outside", cliponaxis=False, textfont=dict(size=14, color=USJ_TEXT))
+            _fb_profile_bar_polish(fig, height=450)
+            fig.update_layout(showlegend=False, margin=dict(l=60, r=90, t=90, b=70))
+            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+
+        rows = _fb_not_total_profile_rows(filtered, "Institution")
+        pct_col = f"% étrangers {year}"
+        if pct_col in rows.columns:
+            rows["% étrangers"] = rows[pct_col].map(_fb_pct_to_number)
+            top_foreign = rows.dropna(subset=["% étrangers"]).sort_values(["% étrangers", f"Étrangers {year}"], ascending=[False, False]).head(20)
+            if not top_foreign.empty:
+                fig_top = px.bar(
+                    top_foreign.sort_values("% étrangers", ascending=True),
+                    x="% étrangers",
+                    y="Institution",
+                    orientation="h",
+                    text="% étrangers",
+                    title=f"Top institutions selon la part d’étudiants étrangers - {year}",
+                    color_discrete_sequence=[USJ_BLUE],
+                )
+                fig_top.update_traces(text=[f"{v:.2f}%" for v in top_foreign.sort_values("% étrangers", ascending=True)["% étrangers"]], texttemplate="%{text}", textposition="outside", cliponaxis=False, textfont=dict(size=13, color=USJ_TEXT))
+                fig_top.update_layout(xaxis=dict(ticksuffix="%", range=[0, max(5, top_foreign["% étrangers"].max() * 1.18)]), yaxis_title="", xaxis_title="% étrangers")
+                _fb_profile_bar_polish(fig_top, height=max(560, 32 * len(top_foreign) + 190))
+                fig_top.update_layout(showlegend=False, margin=dict(l=350, r=95, t=90, b=70))
+                st.plotly_chart(fig_top, use_container_width=True, config={"displayModeBar": False})
+
+        percent_cols = [col for col in nationality_df.columns if str(col).startswith("% étrangers")]
+        render_factbook_table(
+            filtered,
+            FACTBOOK_SECTION5_TITLES["5.3"],
+            note="LB = libanais; LB+Et = double nationalité; Et = étranger.",
+            max_height=620,
+            percent_2_dec_cols=percent_cols,
+        )
+
+    st.markdown(
+        f"""
+        <div style="
+            margin-top:35px;
+            padding:15px;
+            background-color:{USJ_BLUE};
+            color:white;
+            border-radius:14px;
+            text-align:center;
+            font-size:14px;
+            box-shadow:0 4px 14px rgba(0,0,0,0.08);
+            font-family:Candara, Arial, sans-serif;
+        ">
+            Université Saint-Joseph de Beyrouth – Factbook 2024-2025 – Section 5
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 def _factbook_logo_html(width=320):
     """Return a local logo as inline HTML, matching the Exit Survey header style."""
     candidates = ["LogoUAQ.png", "USJ LOGO 150.png", "usj_logo.png"]
@@ -4599,8 +5446,9 @@ def render_factbook_cover():
     section2_path, _, _ = find_factbook_section2_file()
     section3_path, _, _ = find_factbook_section3_file()
     section4_path, _, _ = find_factbook_section4_file()
+    section5_path, _, _ = find_factbook_section5_file()
 
-    active_sections = int(section1_path is not None) + int(section2_path is not None) + int(section3_path is not None) + int(section4_path is not None)
+    active_sections = int(section1_path is not None) + int(section2_path is not None) + int(section3_path is not None) + int(section4_path is not None) + int(section5_path is not None)
 
     sections = [
         {
@@ -4645,8 +5493,8 @@ def render_factbook_cover():
             "label": "Section 5",
             "title": "Profil démographique",
             "text": "Genre, communautés religieuses, nationalités, institutions, campus et niveaux académiques.",
-            "enabled": False,
-            "button": "Bientôt disponible",
+            "enabled": section5_path is not None,
+            "button": "Ouvrir la Section 5" if section5_path is not None else "Bientôt disponible",
         },
         {
             "id": "section6",
@@ -6035,6 +6883,9 @@ def render_factbook_module():
         return
     if st.session_state["selected_factbook_section"] == "section4":
         render_factbook_section4_module()
+        return
+    if st.session_state["selected_factbook_section"] == "section5":
+        render_factbook_section5_module()
         return
 
     render_factbook_cover()
