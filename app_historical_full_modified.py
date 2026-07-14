@@ -5177,13 +5177,19 @@ def render_factbook_section3_module():
                 height=340,
                 template="plotly_white",
                 font=dict(family="Candara, Arial", size=15, color=USJ_TEXT),
-                xaxis_title="Cohorte",
+                xaxis_title="",
                 yaxis_title="",
-                margin=dict(l=220, r=90, t=90, b=70),
+                margin=dict(l=220, r=90, t=120, b=45),
                 paper_bgcolor="white",
                 plot_bgcolor="#F7F9FC",
             )
-            fig_heat.update_xaxes(side="bottom", tickfont=dict(size=13, color=USJ_TEXT, family="Candara, Arial"), automargin=True, showgrid=False, zeroline=False)
+            fig_heat.update_xaxes(
+                side="top",
+                tickfont=dict(size=14, color=USJ_BLUE, family="Candara, Arial"),
+                automargin=True,
+                showgrid=False,
+                zeroline=False,
+            )
             fig_heat.update_yaxes(tickfont=dict(size=13, color=USJ_TEXT, family="Candara, Arial"), automargin=True, showgrid=False, zeroline=False)
             st.plotly_chart(fig_heat, use_container_width=True, config={"displayModeBar": False})
 
@@ -5363,13 +5369,19 @@ def render_factbook_section3_module():
                     height=max(620, 58 * len(heatmap_values.index) + 165),
                     template="plotly_white",
                     font=dict(family="Candara, Arial", size=14, color=USJ_TEXT),
-                    xaxis_title="Cohorte",
+                    xaxis_title="",
                     yaxis_title="",
-                    margin=dict(l=430, r=95, t=90, b=70),
+                    margin=dict(l=430, r=95, t=125, b=45),
                     paper_bgcolor="white",
                     plot_bgcolor="#F7F9FC",
                 )
-                fig_heat.update_xaxes(side="bottom", tickfont=dict(size=13, color=USJ_TEXT, family="Candara, Arial"), automargin=True, showgrid=False, zeroline=False)
+                fig_heat.update_xaxes(
+                side="top",
+                tickfont=dict(size=14, color=USJ_BLUE, family="Candara, Arial"),
+                automargin=True,
+                showgrid=False,
+                zeroline=False,
+            )
                 fig_heat.update_yaxes(tickfont=dict(size=12, color=USJ_TEXT, family="Candara, Arial"), automargin=True, showgrid=False, zeroline=False)
                 st.plotly_chart(fig_heat, use_container_width=True, config={"displayModeBar": False})
             else:
