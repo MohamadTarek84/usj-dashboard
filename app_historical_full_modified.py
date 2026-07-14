@@ -673,7 +673,7 @@ FACTBOOK_SECTION2_TITLES = {
     "2.2": "2.2. Effectifs diplômés par programme : Master",
     "2.3": "2.3. Effectifs diplômés par programme : PhD",
     "2.4": "2.4. Effectifs diplômés par programme : Autres programmes",
-    "2.5": "2.5. Effectifs diplômés par niveau académique",
+    "2.5": "Effectifs diplômés par niveau académique",
 }
 
 
@@ -4744,6 +4744,53 @@ def render_factbook_section2_module():
             theme_layout(fig2, height=540, showlegend=False)
             fb_polish_vertical_bar(fig2, latest, "2024-2025", bottom_margin=130)
             st.plotly_chart(fig2, use_container_width=True, config={"displayModeBar": False})
+
+            total_trend_row = total_row
+            if total_trend_row is None and "Niveau académique" in niveau_df.columns:
+                total_candidates = niveau_df[niveau_df["Niveau académique"].astype(str).str.startswith("Total", na=False)]
+                if not total_candidates.empty:
+                    total_trend_row = total_candidates.iloc[-1]
+
+            if total_trend_row is not None:
+                trend_years = [year_col for year_col in FACTBOOK_YEARS if year_col in niveau_df.columns]
+                annual_totals = pd.DataFrame({
+                    "Année": trend_years,
+                    "Diplômés": [pd.to_numeric(total_trend_row.get(year_col), errors="coerce") for year_col in trend_years],
+                }).dropna(subset=["Diplômés"])
+
+                if not annual_totals.empty:
+                    annual_totals["Libellé"] = annual_totals["Diplômés"].apply(lambda value: fb_format_number(value, digits=0))
+                    fig_year = go.Figure()
+                    fig_year.add_bar(
+                        x=annual_totals["Année"],
+                        y=annual_totals["Diplômés"],
+                        text=annual_totals["Libellé"],
+                        textposition="outside",
+                        marker_color=USJ_BLUE,
+                        name="Total diplômés USJ",
+                        cliponaxis=False,
+                    )
+                    fig_year.add_trace(
+                        go.Scatter(
+                            x=annual_totals["Année"],
+                            y=annual_totals["Diplômés"],
+                            mode="lines+markers",
+                            line=dict(width=3, color=USJ_RED),
+                            marker=dict(size=8),
+                            name="Tendance",
+                        )
+                    )
+                    fig_year.update_traces(textfont=dict(size=17, color=USJ_TEXT), selector=dict(type="bar"))
+                    fig_year.update_layout(
+                        title="Comparaison annuelle - Total diplômés USJ",
+                        yaxis_title="Diplômés",
+                        xaxis_title="Année",
+                        showlegend=False,
+                    )
+                    theme_layout(fig_year, height=500, showlegend=False)
+                    fb_add_value_padding(fig_year, annual_totals, "Diplômés", orientation="v", extra_ratio=0.20)
+                    fig_year.update_layout(margin=dict(l=70, r=90, t=105, b=90), uniformtext_minsize=13, uniformtext_mode="show")
+                    st.plotly_chart(fig_year, use_container_width=True, config={"displayModeBar": False})
         else:
             st.info("Aucune donnée disponible.")
 
