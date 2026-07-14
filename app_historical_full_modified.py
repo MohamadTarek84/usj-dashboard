@@ -888,7 +888,12 @@ def render_factbook_table(df, title, note=None, max_height=560, hide_columns=Non
         return
 
     table = df.copy()
-    hide_columns = set(hide_columns or [])
+
+    # Columns used internally for filtering/section separation should not appear
+    # in the visual Factbook tables.
+    default_hidden_columns = {"Type de programme", "Diplôme"}
+    hide_columns = default_hidden_columns.union(set(hide_columns or []))
+
     table = table[[col for col in table.columns if col not in hide_columns]]
     table = table.dropna(how="all").copy()
 
