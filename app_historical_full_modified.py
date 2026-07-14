@@ -939,6 +939,198 @@ def fb_rate_delta_info(current_value, previous_value):
     return f"▼ {delta:.1f} pts", USJ_RED
 
 
+
+# =====================================================
+# Factbook Section 4 helpers
+# =====================================================
+
+FACTBOOK_SECTION4_FILE_CANDIDATES = [
+    "FB24-25 4. Taux de diplomation HS 27-1-2026.xlsx",
+    "FB24-25 4. Taux diplomation HS 27-1-2026.xlsx",
+    "Factbook_Taux_Diplomation_2024_2025.xlsx",
+    "Factbook_Section4_Taux_Diplomation.xlsx",
+    "factbook_section4.xlsx",
+]
+
+FACTBOOK_SECTION4_TITLES = {
+    "4.1": "4.1. Taux de diplomation par programme : Diplomation à temps (100% de la durée du programme)",
+    "4.2": "4.2. Taux de diplomation par programme : Diplomation après 150% de la durée du programme",
+}
+
+FACTBOOK_DIPLOMATION_YEARS = [
+    "2014-2015",
+    "2015-2016",
+    "2016-2017",
+    "2017-2018",
+    "2018-2019",
+    "2019-2020",
+    "2020-2021",
+    "2021-2022",
+]
+
+
+def find_factbook_section4_file():
+    """Find the Section 4 Factbook Excel file without touching the other Factbook files."""
+    for file_name in FACTBOOK_SECTION4_FILE_CANDIDATES:
+        if os.path.exists(file_name):
+            stat = os.stat(file_name)
+            return file_name, stat.st_mtime, stat.st_size
+
+    for file_name in os.listdir("."):
+        lower = file_name.lower()
+        normalized = lower.replace("é", "e").replace("è", "e").replace("ê", "e")
+        if lower.endswith((".xlsx", ".xls")) and ("diplomation" in normalized or "diplome" in normalized):
+            stat = os.stat(file_name)
+            return file_name, stat.st_mtime, stat.st_size
+
+    return None, None, None
+
+
+def _fb_parse_diplomation_sheet(file_path, sheet_name, section_title):
+    """Parse Section 4 sheets with paired cohort size (n) and diplomation-rate (%) columns."""
+    raw = pd.read_excel(file_path, sheet_name=sheet_name, header=None)
+    raw = _fb_apply_cell_function(raw, _fb_clean_cell)
+
+    header_row = None
+    for i in range(len(raw)):
+        row_values = [str(v).strip() for v in raw.iloc[i].tolist() if not _fb_is_blank(v)]
+        if "Champ disciplinaire" in row_values and "Acronyme" in row_values and "Programme" in row_values:
+            header_row = i
+            break
+
+    if header_row is None:
+        return pd.DataFrame()
+
+    year_row = header_row + 1
+    metric_row = header_row + 2
+
+    columns = []
+    current_year = None
+    for j in range(raw.shape[1]):
+        top = raw.iat[header_row, j]
+        year_value = raw.iat[year_row, j] if year_row < len(raw) else np.nan
+        metric_value = raw.iat[metric_row, j] if metric_row < len(raw) else np.nan
+
+        if not _fb_is_blank(year_value) and str(year_value).strip() in FACTBOOK_DIPLOMATION_YEARS:
+            current_year = str(year_value).strip()
+
+        metric_label = None if _fb_is_blank(metric_value) else str(metric_value).strip().lower()
+        if current_year and metric_label in {"n", "%"}:
+            columns.append(f"Cohorte {current_year}" if metric_label == "n" else f"Taux {current_year}")
+        elif not _fb_is_blank(top):
+            label = str(top).strip()
+            if label.strip().lower() == "crédits" or label.strip().lower() == "crédits" or label.strip().lower() == "crédits":
+                label = "Crédits"
+            if label.strip().lower() == " crédits":
+                label = "Crédits"
+            columns.append(label)
+        else:
+            columns.append(f"Colonne {j + 1}")
+
+    df = raw.iloc[metric_row + 1:].copy()
+    df.columns = columns[:len(df.columns)]
+    df = _fb_clean_dataframe(df)
+    df = _fb_fix_total_rows(df)
+    df = _fb_fill_metadata(df, ["Champ disciplinaire"])
+
+    if "Programme" in df.columns:
+        df = df[~df["Programme"].astype(str).str.strip().str.startswith("*")].copy()
+
+    for col in df.columns:
+        if col == "Crédits" or str(col).startswith("Cohorte ") or str(col).startswith("Taux "):
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+
+    df["Sous-section"] = section_title
+    return df
+
+
+@st.cache_data(show_spinner=False)
+def load_factbook_section4(file_path, file_mtime, file_size):
+    """Load only Section 4 of the Factbook from the provided Excel workbook."""
+    diplomation_100 = _fb_parse_diplomation_sheet(
+        file_path,
+        "4.1 Evolution Taux à temps ",
+        FACTBOOK_SECTION4_TITLES["4.1"],
+    )
+    diplomation_150 = _fb_parse_diplomation_sheet(
+        file_path,
+        "4.2 Evolution Taux 150%",
+        FACTBOOK_SECTION4_TITLES["4.2"],
+    )
+
+    return {
+        "diplomation_100": diplomation_100,
+        "diplomation_150": diplomation_150,
+    }
+
+
+def _fb_diplomation_years(data):
+    return [year for year in FACTBOOK_DIPLOMATION_YEARS if f"Taux {year}" in data.columns]
+
+
+def _fb_diplomation_latest_year(data):
+    years = _fb_diplomation_years(data)
+    return years[-1] if years else None
+
+
+def _fb_add_diplomation_heatmap_annotations(fig, matrix, value_font_size=14, delta_font_size=10, dark_threshold=0.55):
+    """Add rate labels with two decimals and evolution indicators inside diplomation heatmaps."""
+    numeric = matrix.apply(pd.to_numeric, errors="coerce")
+    values_pct = numeric.apply(lambda col: col.map(lambda v: np.nan if pd.isna(v) else (float(v) * 100 if abs(float(v)) <= 1.5 else float(v))))
+    values_flat = values_pct.to_numpy(dtype=float)
+    min_value = np.nanmin(values_flat) if np.isfinite(values_flat).any() else 0
+    max_value = np.nanmax(values_flat) if np.isfinite(values_flat).any() else 100
+    value_range = max_value - min_value if max_value != min_value else 1
+    columns = numeric.columns.tolist()
+
+    for row_label in numeric.index.tolist():
+        for col_index, col_label in enumerate(columns):
+            value = numeric.loc[row_label, col_label]
+            if pd.isna(value):
+                continue
+
+            value_pct = float(value) * 100 if abs(float(value)) <= 1.5 else float(value)
+            intensity = (value_pct - min_value) / value_range
+            value_color = "#FFFFFF" if intensity >= dark_threshold else USJ_BLUE
+
+            if col_index == 0:
+                fig.add_annotation(
+                    x=col_label,
+                    y=row_label,
+                    text=f"<b>{fb_format_rate(value, digits=2)}</b>",
+                    showarrow=False,
+                    font=dict(family="Candara, Arial", size=value_font_size, color=value_color),
+                )
+                continue
+
+            previous_col = columns[col_index - 1]
+            previous_value = numeric.loc[row_label, previous_col]
+            delta_text, delta_color = fb_rate_delta_info(value, previous_value)
+
+            fig.add_annotation(
+                x=col_label,
+                y=row_label,
+                text=f"<b>{fb_format_rate(value, digits=2)}</b>",
+                showarrow=False,
+                yshift=9,
+                font=dict(family="Candara, Arial", size=value_font_size, color=value_color),
+            )
+            if delta_text:
+                fig.add_annotation(
+                    x=col_label,
+                    y=row_label,
+                    text=f"<b>{delta_text}</b>",
+                    showarrow=False,
+                    yshift=-12,
+                    font=dict(family="Candara, Arial", size=delta_font_size, color=delta_color),
+                    bgcolor="rgba(255,255,255,0.82)",
+                    bordercolor="rgba(216,226,240,0.85)",
+                    borderwidth=1,
+                    borderpad=2,
+                )
+    return fig
+
+
 def fb_add_rate_heatmap_annotations(fig, matrix, value_font_size=15, delta_font_size=12, dark_threshold=0.55):
     """Add readable retention-rate labels and point changes inside a heatmap."""
     numeric = matrix.apply(pd.to_numeric, errors="coerce")
@@ -4406,8 +4598,9 @@ def render_factbook_cover():
     section1_path, _, _ = find_factbook_section1_file()
     section2_path, _, _ = find_factbook_section2_file()
     section3_path, _, _ = find_factbook_section3_file()
+    section4_path, _, _ = find_factbook_section4_file()
 
-    active_sections = int(section1_path is not None) + int(section2_path is not None) + int(section3_path is not None)
+    active_sections = int(section1_path is not None) + int(section2_path is not None) + int(section3_path is not None) + int(section4_path is not None)
 
     sections = [
         {
@@ -4443,8 +4636,8 @@ def render_factbook_cover():
             "label": "Section 4",
             "title": "Taux de diplomation",
             "text": "Diplomation à temps, diplomation à 150% de la durée du programme et indicateurs d’achèvement.",
-            "enabled": False,
-            "button": "Bientôt disponible",
+            "enabled": section4_path is not None,
+            "button": "Ouvrir la Section 4" if section4_path is not None else "Bientôt disponible",
         },
         {
             "id": "section5",
@@ -5441,6 +5634,355 @@ def render_factbook_section3_module():
         unsafe_allow_html=True
     )
 
+
+
+def render_factbook_section4_module():
+    """Render the connected Factbook module for Section 4: diplomation rates."""
+    factbook_file_path, factbook_file_mtime, factbook_file_size = find_factbook_section4_file()
+
+    if factbook_file_path is None:
+        st.error("Fichier Excel de la Section 4 du Factbook introuvable. Ajoutez le fichier Excel dans le même dossier que l’application.")
+        st.code("FB24-25 4. Taux de diplomation HS 27-1-2026.xlsx")
+        st.stop()
+
+    with st.spinner("Chargement du Factbook - Section 4..."):
+        fb = load_factbook_section4(factbook_file_path, factbook_file_mtime, factbook_file_size)
+
+    diplomation_100_df = fb["diplomation_100"].copy()
+    diplomation_150_df = fb["diplomation_150"].copy()
+
+    header_left, header_right = st.columns([4.5, 1.5])
+    with header_left:
+        st.markdown(
+            f"""
+            <h1 style="color:{USJ_BLUE}; margin-bottom:18px; font-family:Candara, Arial, sans-serif;">
+                Factbook USJ 2024-2025
+            </h1>
+            """,
+            unsafe_allow_html=True,
+        )
+        header_button_cols = st.columns([1.1, 3.5])
+        with header_button_cols[0]:
+            if st.button("← Sections Factbook", key="back_to_factbook_cover_from_section4", use_container_width=True):
+                st.session_state["selected_factbook_section"] = None
+                st.rerun()
+    with header_right:
+        st.markdown(_factbook_logo_html(width=350), unsafe_allow_html=True)
+
+    st.markdown(
+        f"""
+        <h2 style="
+            color:{USJ_BLUE};
+            margin-top:18px;
+            margin-bottom:8px;
+            font-family:Candara, Arial, sans-serif;
+            font-size:42px;
+            font-weight:900;
+            line-height:1.15;
+        ">
+            Section 4 - Taux de diplomation
+        </h2>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    tabs = st.tabs([
+        "Synthèse",
+        "4.1 Diplomation à temps",
+        "4.2 Diplomation à 150%",
+    ])
+
+    def _filtered_diplomation_data(data, key_prefix):
+        filtered = data.copy()
+        f1, f2, f3 = st.columns([1.4, 1.2, 2.2])
+        with f1:
+            champ = st.selectbox("Champ disciplinaire", filter_options(filtered, "Champ disciplinaire"), key=f"{key_prefix}_champ")
+        if champ != "Tous":
+            filtered = filtered[filtered["Champ disciplinaire"].astype(str) == champ]
+        with f2:
+            acronyme = st.selectbox("Acronyme", filter_options(filtered, "Acronyme"), key=f"{key_prefix}_acronyme")
+        if acronyme != "Tous":
+            filtered = filtered[filtered["Acronyme"].astype(str) == acronyme]
+        with f3:
+            search = st.text_input("Recherche programme", value="", key=f"{key_prefix}_search")
+        if search.strip():
+            filtered = filtered[filtered["Programme"].astype(str).str.contains(search.strip(), case=False, na=False)]
+        return filtered
+
+    def _diplomation_kpis(data, title):
+        years = _fb_diplomation_years(data)
+        latest_year = years[-1] if years else None
+        if latest_year is None or data.empty:
+            return
+
+        rate_col = f"Taux {latest_year}"
+        n_col = f"Cohorte {latest_year}"
+        temp = data.copy()
+        temp[rate_col] = pd.to_numeric(temp[rate_col], errors="coerce")
+        if n_col in temp.columns:
+            temp[n_col] = pd.to_numeric(temp[n_col], errors="coerce")
+        else:
+            temp[n_col] = np.nan
+        valid = temp.dropna(subset=[rate_col])
+
+        weighted_rate = np.nan
+        if not valid.empty and valid[n_col].notna().sum() > 0 and valid[n_col].sum() > 0:
+            rate_pct = valid[rate_col].map(lambda v: float(v) * 100 if abs(float(v)) <= 1.5 else float(v))
+            weighted_rate = (rate_pct * valid[n_col]).sum() / valid[n_col].sum()
+        elif not valid.empty:
+            rate_pct = valid[rate_col].map(lambda v: float(v) * 100 if abs(float(v)) <= 1.5 else float(v))
+            weighted_rate = rate_pct.mean()
+
+        top_programmes = valid[valid[rate_col].map(lambda v: (float(v) * 100 if abs(float(v)) <= 1.5 else float(v)) >= 90)].shape[0] if not valid.empty else 0
+        low_cohort = valid[valid[n_col] < 20].shape[0] if n_col in valid.columns else 0
+        total_cohort = valid[n_col].sum() if n_col in valid.columns else np.nan
+
+        c1, c2, c3, c4 = st.columns(4)
+        with c1:
+            insight_card("Taux pondéré", "NA" if pd.isna(weighted_rate) else f"{weighted_rate:.2f}%", latest_year, color=USJ_BLUE)
+        with c2:
+            insight_card("Programmes ≥ 90%", fb_format_number(top_programmes), "Nombre de programmes", color=USJ_GREEN)
+        with c3:
+            insight_card("Cohortes < 20", fb_format_number(low_cohort), "Programmes à interpréter avec prudence", color=USJ_RED)
+        with c4:
+            insight_card("Taille de cohorte", fb_format_number(total_cohort), f"Total {latest_year}", color=USJ_GOLD)
+
+    def _render_diplomation_heatmap(data, title, key_prefix):
+        years = _fb_diplomation_years(data)
+        if not years or data.empty:
+            st.info("Aucune donnée disponible pour cette sous-section.")
+            return
+
+        latest_year = years[-1]
+        latest_rate_col = f"Taux {latest_year}"
+        latest_n_col = f"Cohorte {latest_year}"
+        heatmap_source = data.copy()
+        heatmap_source[latest_rate_col] = pd.to_numeric(heatmap_source[latest_rate_col], errors="coerce")
+        if latest_n_col in heatmap_source.columns:
+            heatmap_source[latest_n_col] = pd.to_numeric(heatmap_source[latest_n_col], errors="coerce")
+        else:
+            heatmap_source[latest_n_col] = np.nan
+
+        heatmap_source = heatmap_source.dropna(subset=[latest_rate_col]).copy()
+        heatmap_source["Taux tri"] = heatmap_source[latest_rate_col].map(lambda v: float(v) * 100 if abs(float(v)) <= 1.5 else float(v))
+        heatmap_source = heatmap_source.sort_values(["Taux tri", latest_n_col], ascending=[False, False]).head(25)
+
+        if heatmap_source.empty:
+            st.info("Aucune donnée disponible pour les filtres sélectionnés.")
+            return
+
+        heatmap_values = pd.DataFrame(index=heatmap_source["Programme"].astype(str))
+        for year in years:
+            heatmap_values[year] = pd.to_numeric(heatmap_source[f"Taux {year}"], errors="coerce").values
+        heatmap_values = heatmap_values.dropna(how="all")
+
+        heatmap_z = heatmap_values.apply(lambda col: col.map(lambda v: np.nan if pd.isna(v) else float(v) * 100 if abs(float(v)) <= 1.5 else float(v)))
+        fig_heat = go.Figure(
+            data=go.Heatmap(
+                z=heatmap_z.values,
+                x=heatmap_z.columns.tolist(),
+                y=heatmap_z.index.tolist(),
+                colorscale=[
+                    [0.00, "#DCE6FF"],
+                    [0.20, "#B9C7F3"],
+                    [0.45, "#7F90D0"],
+                    [0.70, "#48569B"],
+                    [1.00, USJ_BLUE],
+                ],
+                zmin=0,
+                zmax=100,
+                xgap=1,
+                ygap=1,
+                texttemplate="",
+                hovertemplate="<b>%{y}</b><br>Cohorte: %{x}<br>Taux: %{z:.2f}%<extra></extra>",
+                colorbar=dict(
+                    title=dict(text="Taux", font=dict(family="Candara, Arial", color=USJ_BLUE, size=15)),
+                    tickfont=dict(family="Candara, Arial", color=USJ_TEXT, size=13),
+                    ticksuffix="%",
+                    outlinecolor="#D8E2F0",
+                    outlinewidth=1,
+                ),
+            )
+        )
+        _fb_add_diplomation_heatmap_annotations(fig_heat, heatmap_values, value_font_size=13, delta_font_size=10, dark_threshold=0.58)
+        fig_heat.update_layout(
+            title=dict(text=f"{title} - Top programmes", x=0.01, font=dict(size=22, color=USJ_BLUE, family="Candara, Arial")),
+            height=max(620, 58 * len(heatmap_values.index) + 170),
+            template="plotly_white",
+            font=dict(family="Candara, Arial", size=14, color=USJ_TEXT),
+            xaxis_title="",
+            yaxis_title="",
+            margin=dict(l=430, r=95, t=130, b=45),
+            paper_bgcolor="white",
+            plot_bgcolor="#F7F9FC",
+        )
+        fig_heat.update_xaxes(side="top", tickfont=dict(size=14, color=USJ_BLUE, family="Candara, Arial"), automargin=True, showgrid=False, zeroline=False)
+        fig_heat.update_yaxes(tickfont=dict(size=12, color=USJ_TEXT, family="Candara, Arial"), automargin=True, showgrid=False, zeroline=False)
+        st.plotly_chart(fig_heat, use_container_width=True, config={"displayModeBar": False})
+
+    def _render_diplomation_latest_bar(data, title, key_prefix):
+        years = _fb_diplomation_years(data)
+        if not years or data.empty:
+            return
+
+        selected_year = st.selectbox("Cohorte affichée", years[::-1], key=f"{key_prefix}_year")
+        rate_col = f"Taux {selected_year}"
+        n_col = f"Cohorte {selected_year}"
+        plot_data = data.copy()
+        plot_data[rate_col] = pd.to_numeric(plot_data[rate_col], errors="coerce")
+        plot_data[n_col] = pd.to_numeric(plot_data[n_col], errors="coerce") if n_col in plot_data.columns else np.nan
+        plot_data["Taux"] = plot_data[rate_col].map(lambda v: np.nan if pd.isna(v) else float(v) * 100 if abs(float(v)) <= 1.5 else float(v))
+        plot_data["Cohorte"] = plot_data[n_col]
+        plot_data["Cohorte faible"] = plot_data["Cohorte"] < 20
+        plot_data = plot_data.dropna(subset=["Taux"]).sort_values(["Taux", "Cohorte"], ascending=[False, False]).head(25)
+
+        if plot_data.empty:
+            return
+
+        st.markdown(
+            f"<div style='font-family:Candara, Arial, sans-serif;color:#667085;font-size:13px;margin:6px 0 8px 0;'>Tri : taux décroissant, puis taille de cohorte. Les programmes en rouge correspondent aux cohortes inférieures à 20 étudiants.</div>",
+            unsafe_allow_html=True,
+        )
+
+        fig = px.bar(
+            plot_data,
+            x="Taux",
+            y="Programme",
+            orientation="h",
+            text="Taux",
+            custom_data=["Cohorte"],
+            title=f"Top programmes selon le taux de diplomation - {selected_year}",
+            color_discrete_sequence=[USJ_BLUE],
+        )
+        fig.update_layout(xaxis_title="Taux de diplomation", yaxis_title="", xaxis=dict(range=[0, 112], ticksuffix="%"))
+        theme_layout(fig, height=max(560, 34 * len(plot_data) + 190), showlegend=False)
+        fb_polish_horizontal_bar(fig, plot_data, "Taux", left_margin=500, right_margin=190, bottom_margin=70, showlegend=False)
+
+        tick_vals = plot_data["Programme"].astype(str).tolist()
+        tick_text = []
+        for _, row in plot_data.iterrows():
+            label = html_escape(row.get("Programme", ""))
+            if bool(row.get("Cohorte faible", False)):
+                tick_text.append(f"<span style='color:{USJ_RED}; font-weight:900;'>{label}</span>")
+            else:
+                tick_text.append(f"<span style='color:{USJ_TEXT};'>{label}</span>")
+
+        fig.update_traces(
+            text=["" if pd.isna(v) else f"{float(v):.2f}%" for v in plot_data["Taux"]],
+            texttemplate="%{text}",
+            textposition="outside",
+            textfont=dict(size=15, color=USJ_TEXT, family="Candara, Arial"),
+            hovertemplate=(
+                "<b>%{y}</b><br>"
+                "Taux: %{x:.2f}%<br>"
+                "Cohorte: %{customdata[0]} étudiants"
+                "<extra></extra>"
+            ),
+            cliponaxis=False,
+        )
+        fig.update_layout(
+            yaxis=dict(tickmode="array", tickvals=tick_vals, ticktext=tick_text),
+            margin=dict(l=500, r=190, t=100, b=70),
+        )
+        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+
+    def _render_diplomation_tab(data, title, key_prefix):
+        section_header(title, "Les taux de diplomation sont affichés en pourcentage avec deux décimales.")
+        filtered = _filtered_diplomation_data(data, key_prefix)
+        _diplomation_kpis(filtered, title)
+        st.markdown("<div style='height:12px;'></div>", unsafe_allow_html=True)
+        _render_diplomation_heatmap(filtered, title, key_prefix)
+        _render_diplomation_latest_bar(filtered, title, key_prefix)
+        percent_cols = [f"Taux {year}" for year in _fb_diplomation_years(filtered)]
+        render_factbook_table(
+            filtered,
+            f"Tableau - {title}",
+            note="Les colonnes Cohorte indiquent le nombre d'étudiants de la cohorte; les colonnes Taux sont affichées en pourcentage.",
+            max_height=620,
+            hide_columns=["Sous-section", "Taux tri", "Cohorte faible"],
+            percent_2_dec_cols=percent_cols,
+        )
+
+    with tabs[0]:
+        section_header("Synthèse du taux de diplomation", "Vue comparative entre la diplomation à temps et la diplomation à 150% de la durée du programme.")
+        s1, s2 = st.columns(2)
+        with s1:
+            _diplomation_kpis(diplomation_100_df, FACTBOOK_SECTION4_TITLES["4.1"])
+        with s2:
+            _diplomation_kpis(diplomation_150_df, FACTBOOK_SECTION4_TITLES["4.2"])
+
+        combined = []
+        for label, df in [
+            ("Diplomation à temps", diplomation_100_df),
+            ("Diplomation à 150%", diplomation_150_df),
+        ]:
+            for year in _fb_diplomation_years(df):
+                rate_col = f"Taux {year}"
+                n_col = f"Cohorte {year}"
+                temp = df[[rate_col, n_col]].copy() if n_col in df.columns else df[[rate_col]].copy()
+                temp[rate_col] = pd.to_numeric(temp[rate_col], errors="coerce")
+                temp[n_col] = pd.to_numeric(temp[n_col], errors="coerce") if n_col in temp.columns else np.nan
+                temp = temp.dropna(subset=[rate_col])
+                if temp.empty:
+                    continue
+                rate_pct = temp[rate_col].map(lambda v: float(v) * 100 if abs(float(v)) <= 1.5 else float(v))
+                if temp[n_col].notna().sum() > 0 and temp[n_col].sum() > 0:
+                    value = (rate_pct * temp[n_col]).sum() / temp[n_col].sum()
+                else:
+                    value = rate_pct.mean()
+                combined.append({"Type": label, "Cohorte": year, "Taux pondéré": value})
+
+        combined_df = pd.DataFrame(combined)
+        if not combined_df.empty:
+            fig = px.line(
+                combined_df,
+                x="Cohorte",
+                y="Taux pondéré",
+                color="Type",
+                markers=True,
+                text="Taux pondéré",
+                title="Évolution comparative du taux de diplomation pondéré",
+                color_discrete_sequence=[USJ_BLUE, USJ_RED],
+            )
+            fig.update_traces(
+                mode="lines+markers+text",
+                line=dict(width=3),
+                marker=dict(size=9),
+                texttemplate="%{text:.2f}%",
+                textposition="top center",
+                textfont=dict(size=14, color=USJ_TEXT, family="Candara, Arial"),
+                cliponaxis=False,
+            )
+            fig.update_layout(yaxis_title="Taux de diplomation", xaxis_title="Cohorte", yaxis=dict(ticksuffix="%", range=[0, 105]))
+            theme_layout(fig, height=500)
+            fig.update_layout(margin=dict(l=60, r=80, t=95, b=80))
+            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+
+    with tabs[1]:
+        _render_diplomation_tab(diplomation_100_df, FACTBOOK_SECTION4_TITLES["4.1"], "fb_s4_41")
+
+    with tabs[2]:
+        _render_diplomation_tab(diplomation_150_df, FACTBOOK_SECTION4_TITLES["4.2"], "fb_s4_42")
+
+    st.markdown(
+        f"""
+        <div style="
+            margin-top:35px;
+            padding:15px;
+            background-color:{USJ_BLUE};
+            color:white;
+            border-radius:14px;
+            text-align:center;
+            font-size:14px;
+            box-shadow:0 4px 14px rgba(0,0,0,0.08);
+            font-family:Candara, Arial, sans-serif;
+        ">
+            Université Saint-Joseph de Beyrouth – Factbook 2024-2025 – Section 4
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
 def render_factbook_module():
     """Factbook entry point: cover page first, then selected section."""
     if "selected_factbook_section" not in st.session_state:
@@ -5454,6 +5996,9 @@ def render_factbook_module():
         return
     if st.session_state["selected_factbook_section"] == "section3":
         render_factbook_section3_module()
+        return
+    if st.session_state["selected_factbook_section"] == "section4":
+        render_factbook_section4_module()
         return
 
     render_factbook_cover()
