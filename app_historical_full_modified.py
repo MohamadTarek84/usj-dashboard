@@ -421,9 +421,21 @@ def _fb_clean_cell(value):
     return value
 
 
+def _fb_apply_cell_function(df, func):
+    """Apply a function cell-by-cell with pandas 2.x/3.x compatibility.
+
+    DataFrame.applymap() is removed in recent pandas versions used by
+    Streamlit Cloud/Python 3.14. DataFrame.map() is the replacement.
+    The fallback keeps the app compatible with older pandas versions.
+    """
+    if hasattr(df, "map"):
+        return df.map(func)
+    return df.applymap(func)
+
+
 def _fb_clean_dataframe(df):
     df = df.copy()
-    df = df.applymap(_fb_clean_cell)
+    df = _fb_apply_cell_function(df, _fb_clean_cell)
     df = df.dropna(how="all").dropna(axis=1, how="all")
     return df
 
@@ -516,7 +528,7 @@ def _fb_parse_program_sheet(file_path, sheet_name, program_type):
 
 def _fb_parse_campus_sheet(file_path, sheet_name):
     raw = pd.read_excel(file_path, sheet_name=sheet_name, header=None)
-    raw = raw.applymap(_fb_clean_cell)
+    raw = _fb_apply_cell_function(raw, _fb_clean_cell)
     rows = []
     i = 0
 
@@ -563,7 +575,7 @@ def _fb_parse_campus_sheet(file_path, sheet_name):
 
 def _fb_parse_level_sheet(file_path, sheet_name):
     raw = pd.read_excel(file_path, sheet_name=sheet_name, header=None)
-    raw = raw.applymap(_fb_clean_cell)
+    raw = _fb_apply_cell_function(raw, _fb_clean_cell)
     rows = []
     i = 0
 
