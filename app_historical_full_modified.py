@@ -4200,163 +4200,215 @@ def _factbook_logo_html(width=320):
 
 
 def render_factbook_cover():
-    """Render the Factbook cover page with section-level navigation."""
+    """Render a professional Factbook landing page with section-level navigation."""
     section1_path, _, _ = find_factbook_section1_file()
     section2_path, _, _ = find_factbook_section2_file()
 
-    header_left, header_right = st.columns([4.5, 1.5])
-    with header_left:
-        st.markdown(
-            f"""
-            <h1 style="color:{USJ_BLUE}; margin-bottom:10px; font-family:Candara, Arial, sans-serif; font-size:48px; font-weight:900;">
-                Factbook USJ 2024-2025
-            </h1>
-            <div style="color:#4E5A6E; font-family:Candara, Arial, sans-serif; font-size:20px; margin-bottom:18px;">
-                Accès dynamique aux sections du Factbook institutionnel
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-        btn_cols = st.columns([1.1, 3.8])
-        with btn_cols[0]:
-            if st.button("← Portail", key="back_to_main_portal_from_factbook_cover", use_container_width=True):
-                st.session_state["selected_portal_app"] = None
-                st.session_state["selected_factbook_section"] = None
-                st.session_state["dashboard_started"] = False
-                st.rerun()
-    with header_right:
-        st.markdown(_factbook_logo_html(width=350), unsafe_allow_html=True)
-
-    st.markdown(
-        f"""
-        <style>
-            .fb-cover-section-title {{
-                color:{USJ_BLUE};
-                font-family:Candara, Arial, sans-serif;
-                font-size:34px;
-                font-weight:900;
-                margin:24px 0 8px 0;
-            }}
-            .fb-cover-section-subtitle {{
-                color:#5F6B7A;
-                font-family:Candara, Arial, sans-serif;
-                font-size:16px;
-                margin-bottom:18px;
-                line-height:1.5;
-            }}
-            .fb-cover-card {{
-                background:linear-gradient(135deg, #FFFFFF 0%, #F7FAFF 100%);
-                border:1px solid #DDE7F6;
-                border-radius:22px;
-                padding:22px 22px 18px 22px;
-                min-height:205px;
-                box-shadow:0 10px 28px rgba(0,27,117,0.08);
-                font-family:Candara, Arial, sans-serif;
-                margin-bottom:12px;
-                position:relative;
-                overflow:hidden;
-            }}
-            .fb-cover-card:before {{
-                content:"";
-                position:absolute;
-                top:0;
-                left:0;
-                width:8px;
-                height:100%;
-                background:{USJ_BLUE};
-            }}
-            .fb-cover-card.disabled {{ opacity:0.62; }}
-            .fb-cover-card-number {{
-                color:{USJ_RED};
-                font-size:15px;
-                font-weight:900;
-                letter-spacing:0.04em;
-                text-transform:uppercase;
-                margin-bottom:8px;
-            }}
-            .fb-cover-card-title {{
-                color:{USJ_BLUE};
-                font-size:23px;
-                font-weight:900;
-                line-height:1.18;
-                margin-bottom:8px;
-            }}
-            .fb-cover-card-text {{
-                color:#4E5A6E;
-                font-size:14px;
-                line-height:1.45;
-            }}
-            .fb-cover-status {{
-                display:inline-flex;
-                margin-top:12px;
-                background:{USJ_LIGHT_BLUE};
-                color:{USJ_BLUE};
-                border:1px solid #D8E2F0;
-                border-radius:999px;
-                padding:7px 12px;
-                font-size:12px;
-                font-weight:900;
-            }}
-        </style>
-        <div class="fb-cover-section-title">Choisir une section du Factbook</div>
-        <div class="fb-cover-section-subtitle">
-            Les sections sont ajoutées progressivement au tableau de bord. Les données restent structurées par section, comme dans les fichiers Excel source.
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+    active_sections = int(section1_path is not None) + int(section2_path is not None)
 
     sections = [
         {
             "id": "section1",
-            "number": "Section 1",
+            "number": "01",
+            "label": "Section 1",
             "title": "Effectifs étudiants",
-            "text": "Effectifs étudiants, ETP, campus, niveaux académiques et programmes.",
+            "text": "Effectifs étudiants, ETP, campus, niveaux académiques, programmes, nouveaux étudiants, langues d’enseignement, DU et certificats.",
             "enabled": section1_path is not None,
-            "button": "Ouvrir Section 1",
+            "button": "Ouvrir la Section 1",
         },
         {
             "id": "section2",
-            "number": "Section 2",
+            "number": "02",
+            "label": "Section 2",
             "title": "Effectifs diplômés",
-            "text": "Diplômés par programme, par niveau académique et évolution annuelle.",
+            "text": "Diplômés par programme, par niveau académique et évolution des diplômés selon les catégories du Factbook.",
             "enabled": section2_path is not None,
-            "button": "Ouvrir Section 2",
+            "button": "Ouvrir la Section 2",
         },
         {
             "id": "section3",
-            "number": "Section 3",
+            "number": "03",
+            "label": "Section 3",
             "title": "Taux de rétention",
-            "text": "Section prévue pour la prochaine intégration.",
+            "text": "Suivi des cohortes, maintien des étudiants dans les programmes et évolution du taux de rétention.",
             "enabled": False,
             "button": "Bientôt disponible",
         },
         {
             "id": "section4",
-            "number": "Section 4",
+            "number": "04",
+            "label": "Section 4",
             "title": "Taux de diplomation",
-            "text": "Section prévue pour la prochaine intégration.",
+            "text": "Diplomation à temps, diplomation à 150% de la durée du programme et indicateurs d’achèvement.",
             "enabled": False,
             "button": "Bientôt disponible",
         },
         {
             "id": "section5",
-            "number": "Section 5",
+            "number": "05",
+            "label": "Section 5",
             "title": "Profil démographique",
-            "text": "Section prévue pour la prochaine intégration.",
+            "text": "Genre, communautés religieuses, nationalités, institutions, campus et niveaux académiques.",
             "enabled": False,
             "button": "Bientôt disponible",
         },
         {
             "id": "section6",
-            "number": "Section 6",
+            "number": "06",
+            "label": "Section 6",
             "title": "Admission commune",
-            "text": "Section prévue pour la prochaine intégration.",
+            "text": "Statistiques globales, candidats inscrits, programmes, langues d’enseignement et campus.",
             "enabled": False,
             "button": "Bientôt disponible",
         },
     ]
 
+    logo_html = _factbook_logo_html(width=360)
+
+    value_items = [
+        ("Pilotage institutionnel", "Transformer les tableaux du Factbook en indicateurs lisibles pour la gouvernance, l’assurance qualité et les responsables académiques."),
+        ("Lecture par section", "Organiser les résultats selon la structure officielle du Factbook afin de garder une lecture fidèle au document source."),
+        ("Comparaison temporelle", "Visualiser les évolutions annuelles et détecter les tendances, stabilités et ruptures importantes."),
+        ("Analyse par programme", "Explorer les résultats par institution, campus, niveau académique, programme et catégorie de formation."),
+        ("Aide à la décision", "Identifier rapidement les zones de croissance, de baisse ou de concentration des effectifs pour orienter les décisions."),
+        ("Communication qualité", "Préparer des résultats clairs et homogènes pour les réunions, rapports, comités qualité et discussions institutionnelles."),
+    ]
+
+    value_cards_html = "".join(
+        f"""
+        <div class='fb-landing-value-card'>
+            <div class='fb-landing-value-dot'></div>
+            <div class='fb-landing-value-title'>{html_escape(title)}</div>
+            <div class='fb-landing-value-text'>{html_escape(text)}</div>
+        </div>
+        """
+        for title, text in value_items
+    )
+
+    content_modules_html = "".join(
+        f"""
+        <div class='fb-landing-module'>
+            <div class='fb-landing-module-number'>{html_escape(item['number'])}</div>
+            <div>
+                <div class='fb-landing-module-title'>{html_escape(item['label'] + ' - ' + item['title'])}</div>
+                <div class='fb-landing-module-text'>{html_escape(item['text'])}</div>
+            </div>
+        </div>
+        """
+        for item in sections
+    )
+
+    landing_html = f"""
+    <style>
+        .fb-landing-shell {{font-family:Candara, Arial, sans-serif;}}
+        .fb-landing-logo-strip {{display:flex;justify-content:flex-end;align-items:center;margin:2px 2px 14px 0;}}
+        .fb-landing-logo-strip img {{height:auto;max-height:98px;object-fit:contain;}}
+        .fb-landing-hero {{
+            position:relative;
+            overflow:hidden;
+            background:
+                radial-gradient(circle at 90% 8%, rgba(199,34,67,0.30), transparent 23%),
+                radial-gradient(circle at 73% 82%, rgba(184,164,139,0.32), transparent 31%),
+                linear-gradient(135deg, {USJ_BLUE} 0%, #232B69 47%, #151B4F 100%);
+            border-radius:34px;
+            padding:48px 52px;
+            color:white;
+            box-shadow:0 22px 52px rgba(35,43,105,0.28);
+            margin-top:8px;
+            margin-bottom:26px;
+        }}
+        .fb-landing-hero:after {{content:"";position:absolute;right:-160px;top:-160px;width:420px;height:420px;border-radius:999px;border:1px solid rgba(255,255,255,0.14);}}
+        .fb-landing-hero-content {{position:relative;z-index:1;max-width:1160px;}}
+        .fb-landing-badge {{display:inline-block;background:rgba(255,255,255,0.14);border:1px solid rgba(255,255,255,0.28);color:white;padding:9px 16px;border-radius:999px;font-size:14px;font-weight:900;margin-bottom:18px;}}
+        .fb-landing-kicker {{font-size:15px;font-weight:950;letter-spacing:0.11em;text-transform:uppercase;color:#E8D9C7;margin-bottom:10px;}}
+        .fb-landing-title {{font-size:50px;line-height:1.10;font-weight:950;margin:0 0 18px 0;color:white;max-width:1120px;}}
+        .fb-landing-subtitle {{font-size:20px;line-height:1.65;max-width:1150px;color:rgba(255,255,255,0.94);margin-bottom:12px;}}
+        .fb-landing-strategic-line {{font-size:16px;line-height:1.55;color:#F3E7DA;font-weight:850;margin-bottom:26px;max-width:1080px;}}
+        .fb-landing-stat-grid {{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;max-width:900px;}}
+        .fb-landing-stat {{background:rgba(255,255,255,0.13);border:1px solid rgba(255,255,255,0.23);border-radius:20px;padding:16px 18px;backdrop-filter:blur(8px);}}
+        .fb-landing-stat-value {{font-size:28px;font-weight:950;color:white;line-height:1.25;}}
+        .fb-landing-stat-label {{font-size:13px;color:rgba(255,255,255,0.84);margin-top:6px;font-weight:750;}}
+        .fb-landing-section-grid {{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:22px 0;}}
+        .fb-landing-info-panel {{background:#FFFFFF;border:1px solid #DDE5F0;border-radius:26px;padding:27px 30px;box-shadow:0 10px 28px rgba(35,43,105,0.08);}}
+        .fb-landing-info-panel.gold {{border-left:8px solid {USJ_GOLD};}}
+        .fb-landing-info-panel.red {{border-left:8px solid {USJ_RED};}}
+        .fb-landing-panel-title {{font-size:25px;font-weight:950;color:{USJ_BLUE};margin-bottom:12px;}}
+        .fb-landing-panel-text {{font-size:16px;line-height:1.78;color:{USJ_TEXT};}}
+        .fb-landing-heading {{color:{USJ_BLUE};font-size:28px;font-weight:950;margin:26px 0 12px 0;}}
+        .fb-landing-value-grid {{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:18px 0 24px 0;}}
+        .fb-landing-value-card {{background:#FFFFFF;border:1px solid #DDE5F0;border-radius:22px;padding:22px;min-height:170px;box-shadow:0 8px 22px rgba(35,43,105,0.07);transition:all 0.18s ease;}}
+        .fb-landing-value-card:hover {{transform:translateY(-3px);box-shadow:0 14px 30px rgba(35,43,105,0.12);}}
+        .fb-landing-value-dot {{width:34px;height:6px;border-radius:999px;background:linear-gradient(90deg,{USJ_BLUE},{USJ_RED},{USJ_GOLD});margin-bottom:16px;}}
+        .fb-landing-value-title {{color:{USJ_BLUE};font-size:20px;font-weight:950;margin-bottom:9px;}}
+        .fb-landing-value-text {{color:#5F6B7A;font-size:15px;line-height:1.58;}}
+        .fb-landing-module-panel {{background:linear-gradient(135deg,#FFFFFF 0%,#F8FAFE 100%);border:1px solid #DDE5F0;border-left:8px solid {USJ_BLUE};border-radius:26px;padding:27px 30px;box-shadow:0 10px 28px rgba(35,43,105,0.08);margin:22px 0;}}
+        .fb-landing-module-grid {{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:16px;}}
+        .fb-landing-module {{display:flex;gap:14px;background:#FFFFFF;border:1px solid #E4EAF4;border-radius:18px;padding:17px 18px;}}
+        .fb-landing-module-number {{width:40px;height:40px;border-radius:12px;background:{USJ_BLUE};color:white;font-weight:950;display:flex;align-items:center;justify-content:center;flex:0 0 40px;}}
+        .fb-landing-module-title {{font-size:17px;font-weight:950;color:{USJ_BLUE};margin-bottom:5px;}}
+        .fb-landing-module-text {{font-size:14px;line-height:1.52;color:#5F6B7A;}}
+        .fb-section-card {{
+            background:linear-gradient(135deg,#FFFFFF 0%,#F7FAFF 100%);
+            border:1px solid #DDE7F6;
+            border-radius:22px;
+            padding:22px 22px 18px 22px;
+            min-height:215px;
+            box-shadow:0 10px 28px rgba(0,27,117,0.08);
+            font-family:Candara, Arial, sans-serif;
+            margin-bottom:12px;
+            position:relative;
+            overflow:hidden;
+        }}
+        .fb-section-card:before {{content:"";position:absolute;top:0;left:0;width:8px;height:100%;background:{USJ_BLUE};}}
+        .fb-section-card.disabled {{opacity:0.62;}}
+        .fb-section-number {{color:{USJ_RED};font-size:15px;font-weight:950;letter-spacing:0.04em;text-transform:uppercase;margin-bottom:8px;}}
+        .fb-section-title {{color:{USJ_BLUE};font-size:23px;font-weight:950;line-height:1.18;margin-bottom:8px;}}
+        .fb-section-text {{color:#4E5A6E;font-size:14px;line-height:1.45;}}
+        .fb-section-status {{display:inline-flex;margin-top:12px;background:{USJ_LIGHT_BLUE};color:{USJ_BLUE};border:1px solid #D8E2F0;border-radius:999px;padding:7px 12px;font-size:12px;font-weight:950;}}
+        @media (max-width:900px) {{
+            .fb-landing-section-grid, .fb-landing-value-grid, .fb-landing-module-grid, .fb-landing-stat-grid {{grid-template-columns:1fr;}}
+            .fb-landing-title {{font-size:36px;}}
+        }}
+    </style>
+    <div class='fb-landing-shell'>
+        <div class='fb-landing-logo-strip'>{logo_html}</div>
+        <div class='fb-landing-hero'>
+            <div class='fb-landing-hero-content'>
+                <div class='fb-landing-badge'>Université Saint-Joseph de Beyrouth · Unité Assurance qualité</div>
+                <div class='fb-landing-kicker'>FACTBOOK INSTITUTIONNEL 2024-2025</div>
+                <div class='fb-landing-title'>Transformez le Factbook USJ en tableau de bord stratégique</div>
+                <div class='fb-landing-subtitle'>Une lecture dynamique des données institutionnelles pour suivre les effectifs, les diplômés, la rétention, la diplomation, les profils démographiques et l’admission commune.</div>
+                <div class='fb-landing-strategic-line'>Cette interface permet de passer d’un document statique à une exploration claire, filtrable et visuelle des indicateurs clés du Factbook.</div>
+                <div class='fb-landing-stat-grid'>
+                    <div class='fb-landing-stat'><div class='fb-landing-stat-value'>2024-2025</div><div class='fb-landing-stat-label'>Année du Factbook</div></div>
+                    <div class='fb-landing-stat'><div class='fb-landing-stat-value'>6</div><div class='fb-landing-stat-label'>Sections institutionnelles</div></div>
+                    <div class='fb-landing-stat'><div class='fb-landing-stat-value'>{active_sections}</div><div class='fb-landing-stat-label'>Sections connectées actuellement</div></div>
+                </div>
+            </div>
+        </div>
+        <div class='fb-landing-section-grid'>
+            <div class='fb-landing-info-panel gold'>
+                <div class='fb-landing-panel-title'>Pourquoi le Factbook est stratégique ?</div>
+                <div class='fb-landing-panel-text'>Le Factbook consolide les données essentielles de l’Université. En version dynamique, il facilite la lecture des tendances, la comparaison entre années, campus, niveaux et programmes, et la préparation des décisions institutionnelles fondées sur des indicateurs vérifiables.</div>
+            </div>
+            <div class='fb-landing-info-panel red'>
+                <div class='fb-landing-panel-title'>Ce qu’il permet de décider</div>
+                <div class='fb-landing-panel-text'>Il aide à identifier les progressions, les baisses, les concentrations d’effectifs, les évolutions des diplômés et les indicateurs nécessitant un suivi. Les résultats deviennent directement exploitables pour les réunions, les rapports qualité et le pilotage académique.</div>
+            </div>
+        </div>
+        <div class='fb-landing-heading'>Valeur ajoutée pour l’USJ</div>
+        <div class='fb-landing-value-grid'>{value_cards_html}</div>
+        <div class='fb-landing-module-panel'>
+            <div class='fb-landing-panel-title'>Ce que contient le Factbook</div>
+            <div class='fb-landing-panel-text'>Les six sections du Factbook sont intégrées progressivement. Chaque section sera accessible séparément afin de garder une lecture claire, proche de la structure du fichier Excel source.</div>
+            <div class='fb-landing-module-grid'>{content_modules_html}</div>
+        </div>
+        <div class='fb-landing-heading'>Accéder aux sections</div>
+    </div>
+    """
+    st.markdown(landing_html, unsafe_allow_html=True)
+
+    # Navigation cards with real Streamlit buttons.
     for start in range(0, len(sections), 3):
         cols = st.columns(3)
         for col, item in zip(cols, sections[start:start + 3]):
@@ -4365,19 +4417,27 @@ def render_factbook_cover():
                 status = "Connectée" if item["enabled"] else "À connecter"
                 st.markdown(
                     f"""
-                    <div class="fb-cover-card{disabled_class}">
-                        <div class="fb-cover-card-number">{html_escape(item['number'])}</div>
-                        <div class="fb-cover-card-title">{html_escape(item['title'])}</div>
-                        <div class="fb-cover-card-text">{html_escape(item['text'])}</div>
-                        <div class="fb-cover-status">{html_escape(status)}</div>
+                    <div class="fb-section-card{disabled_class}">
+                        <div class="fb-section-number">{html_escape(item['label'])}</div>
+                        <div class="fb-section-title">{html_escape(item['title'])}</div>
+                        <div class="fb-section-text">{html_escape(item['text'])}</div>
+                        <div class="fb-section-status">{html_escape(status)}</div>
                     </div>
                     """,
-                    unsafe_allow_html=True
+                    unsafe_allow_html=True,
                 )
                 if st.button(item["button"], key=f"open_factbook_{item['id']}", use_container_width=True, disabled=not item["enabled"]):
                     st.session_state["selected_factbook_section"] = item["id"]
                     st.rerun()
 
+    st.markdown("<div style='height:18px;'></div>", unsafe_allow_html=True)
+    portal_cols = st.columns([1.2, 4.8])
+    with portal_cols[0]:
+        if st.button("← Portail", key="back_to_main_portal_from_factbook_cover", use_container_width=True):
+            st.session_state["selected_portal_app"] = None
+            st.session_state["selected_factbook_section"] = None
+            st.session_state["dashboard_started"] = False
+            st.rerun()
 
 def render_factbook_section2_module():
     """Render the connected Factbook module for Section 2."""
