@@ -5197,33 +5197,45 @@ def render_factbook_section5_module():
         c1, c2 = st.columns(2)
         with c1:
             if not religion_dist.empty:
-                rel = religion_dist.head(8).copy()
+                rel = religion_dist.copy()
+                religion_height = max(520, 34 * len(rel) + 160)
                 fig_rel = px.bar(
                     rel.sort_values("Effectif", ascending=True),
                     x="Effectif",
                     y="Communauté",
                     orientation="h",
                     text="Effectif",
-                    title="Principales communautés religieuses - 2024-2025",
+                    title="Toutes les communautés religieuses - 2024-2025",
                     color_discrete_sequence=[USJ_BLUE],
                 )
                 fig_rel.update_traces(texttemplate="%{text:,.0f}", textposition="outside", cliponaxis=False, textfont=dict(size=13, color=USJ_TEXT))
-                _fb_profile_bar_polish(fig_rel, height=440)
-                fig_rel.update_layout(showlegend=False, margin=dict(l=145, r=90, t=80, b=55))
+                _fb_profile_bar_polish(fig_rel, height=religion_height)
+                fig_rel.update_layout(showlegend=False, margin=dict(l=165, r=95, t=85, b=55))
                 st.plotly_chart(fig_rel, use_container_width=True, config={"displayModeBar": False})
         with c2:
             nat_dist = _fb_nationality_total_distribution(nationality_df, "2024-2025")
             if not nat_dist.empty:
                 _fb_chart_title("Répartition par nationalité - 2024-2025")
-                fig_nat = px.pie(
-                    nat_dist,
-                    names="Nationalité",
-                    values="Effectif",
-                    hole=0.60,
+                nat_chart = nat_dist.copy()
+                nat_total = pd.to_numeric(nat_chart["Effectif"], errors="coerce").sum()
+                nat_chart["Part"] = np.where(nat_total > 0, pd.to_numeric(nat_chart["Effectif"], errors="coerce") / nat_total * 100, np.nan)
+                nat_chart["Libellé"] = nat_chart.apply(
+                    lambda row: f"{fb_format_number(row['Effectif'])} ({row['Part']:.1f}%)" if pd.notna(row.get("Part")) else fb_format_number(row.get("Effectif")),
+                    axis=1,
+                )
+                fig_nat = px.bar(
+                    nat_chart.sort_values("Effectif", ascending=True),
+                    x="Effectif",
+                    y="Nationalité",
+                    orientation="h",
+                    text="Libellé",
                     color="Nationalité",
                     color_discrete_map={"Libanais": USJ_BLUE, "Double nationalité": USJ_RED, "Étrangers": USJ_GOLD},
+                    title=None,
                 )
-                _fb_polish_donut(fig_nat, total_value=nat_dist["Effectif"].sum(), center_label="Total", height=500, legend_y=-0.10)
+                fig_nat.update_traces(textposition="outside", cliponaxis=False, textfont=dict(size=15, color=USJ_TEXT), hovertemplate="<b>%{y}</b><br>Effectif: %{x:,.0f}<extra></extra>")
+                _fb_profile_bar_polish(fig_nat, height=430)
+                fig_nat.update_layout(showlegend=False, margin=dict(l=150, r=140, t=30, b=65), xaxis_title="Effectif", yaxis_title="")
                 st.plotly_chart(fig_nat, use_container_width=True, config={"displayModeBar": False})
 
     with tabs[1]:
@@ -5328,7 +5340,7 @@ def render_factbook_section5_module():
             rel_dist = _fb_religion_total_distribution(filtered, "Institution")
             if not rel_dist.empty:
                 fig = px.bar(
-                    rel_dist.head(12).sort_values("Effectif", ascending=True),
+                    rel_dist.sort_values("Effectif", ascending=True),
                     x="Effectif",
                     y="Communauté",
                     orientation="h",
@@ -5337,8 +5349,8 @@ def render_factbook_section5_module():
                     color_discrete_sequence=[USJ_BLUE],
                 )
                 fig.update_traces(texttemplate="%{text:,.0f}", textposition="outside", cliponaxis=False, textfont=dict(size=13, color=USJ_TEXT))
-                _fb_profile_bar_polish(fig, height=520)
-                fig.update_layout(showlegend=False, margin=dict(l=165, r=90, t=90, b=70))
+                _fb_profile_bar_polish(fig, height=max(520, 34 * len(rel_dist) + 170))
+                fig.update_layout(showlegend=False, margin=dict(l=170, r=95, t=90, b=70))
                 st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
             render_factbook_table(filtered, FACTBOOK_SECTION5_TITLES["5.2.1"], max_height=620)
 
@@ -5350,7 +5362,7 @@ def render_factbook_section5_module():
             rel_dist = _fb_religion_total_distribution(filtered, "Institution")
             if not rel_dist.empty:
                 fig = px.bar(
-                    rel_dist.head(12).sort_values("Effectif", ascending=True),
+                    rel_dist.sort_values("Effectif", ascending=True),
                     x="Effectif",
                     y="Communauté",
                     orientation="h",
@@ -5359,8 +5371,8 @@ def render_factbook_section5_module():
                     color_discrete_sequence=[USJ_BLUE_2],
                 )
                 fig.update_traces(texttemplate="%{text:,.0f}", textposition="outside", cliponaxis=False, textfont=dict(size=13, color=USJ_TEXT))
-                _fb_profile_bar_polish(fig, height=520)
-                fig.update_layout(showlegend=False, margin=dict(l=165, r=90, t=90, b=70))
+                _fb_profile_bar_polish(fig, height=max(520, 34 * len(rel_dist) + 170))
+                fig.update_layout(showlegend=False, margin=dict(l=170, r=95, t=90, b=70))
                 st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
             render_factbook_table(filtered, FACTBOOK_SECTION5_TITLES["5.2.2"], max_height=620)
 
