@@ -4988,6 +4988,68 @@ def _fb_nationality_total_distribution(df, year="2024-2025"):
     return pd.DataFrame(records)
 
 
+def _fb_chart_title(title):
+    """Render a clean Factbook chart title outside Plotly to prevent overlap with labels."""
+    st.markdown(
+        f"""
+        <div style="
+            color:{USJ_BLUE};
+            font-family:Candara, Arial, sans-serif;
+            font-size:22px;
+            font-weight:900;
+            margin:4px 0 8px 0;
+            line-height:1.25;
+        ">
+            {html_escape(title)}
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def _fb_polish_donut(fig, total_value=None, center_label="Total", height=500, legend_y=-0.12):
+    """Make demographic donut charts readable: labels outside, strong borders, and clear center total."""
+    fig.update_traces(
+        textposition="outside",
+        texttemplate="<b>%{label}</b><br>%{value:,.0f}<br>%{percent:.1%}",
+        textfont=dict(family="Candara, Arial", size=15, color=USJ_TEXT),
+        marker=dict(line=dict(color="white", width=2.2)),
+        hovertemplate="<b>%{label}</b><br>Effectif: %{value:,.0f}<br>Part: %{percent:.2%}<extra></extra>",
+        sort=False,
+        pull=0.015,
+    )
+    fig.update_layout(
+        template="plotly_white",
+        height=height,
+        font=dict(family="Candara, Arial", size=14, color=USJ_TEXT),
+        margin=dict(l=90, r=110, t=20, b=90),
+        showlegend=True,
+        legend=dict(
+            orientation="h",
+            y=legend_y,
+            x=0.5,
+            xanchor="center",
+            font=dict(family="Candara, Arial", size=13, color=USJ_TEXT),
+        ),
+        uniformtext_minsize=13,
+        uniformtext_mode="show",
+        paper_bgcolor="white",
+        plot_bgcolor="white",
+    )
+    if total_value is not None and pd.notna(total_value):
+        fig.add_annotation(
+            text=f"<b>{center_label}</b><br>{fb_format_number(total_value)}",
+            x=0.5,
+            y=0.5,
+            xref="paper",
+            yref="paper",
+            showarrow=False,
+            align="center",
+            font=dict(family="Candara, Arial", size=16, color=USJ_BLUE),
+        )
+    return fig
+
+
 def _fb_render_gender_icon_comparison(total_row):
     gender_df = _fb_gender_summary_from_row(total_row, "2024-2025")
     if gender_df.empty:
@@ -5001,29 +5063,16 @@ def _fb_render_gender_icon_comparison(total_row):
     with c2:
         _fb_gender_symbol_card("♀", "Filles", female, female / total * 100 if total else np.nan, USJ_RED)
 
+    _fb_chart_title("Répartition genre 2024-2025")
     fig = px.pie(
         gender_df,
         names="Genre",
         values="Effectif",
-        hole=0.55,
-        title="Répartition genre 2024-2025",
+        hole=0.60,
         color="Genre",
         color_discrete_map={"♂ Garçons": USJ_BLUE, "♀ Filles": USJ_RED},
     )
-    fig.update_traces(
-        textinfo="label+percent+value",
-        textfont=dict(family="Candara, Arial", size=16, color=USJ_TEXT),
-        hovertemplate="<b>%{label}</b><br>Effectif: %{value:,.0f}<br>Part: %{percent}<extra></extra>",
-    )
-    fig.update_layout(
-        template="plotly_white",
-        height=430,
-        font=dict(family="Candara, Arial", size=14, color=USJ_TEXT),
-        title=dict(font=dict(size=22, color=USJ_BLUE), x=0.01),
-        margin=dict(l=20, r=20, t=70, b=20),
-        showlegend=True,
-        legend=dict(orientation="h", y=-0.05, x=0.5, xanchor="center"),
-    )
+    _fb_polish_donut(fig, total_value=total, center_label="Total", height=500, legend_y=-0.10)
     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
 
@@ -5165,16 +5214,16 @@ def render_factbook_section5_module():
         with c2:
             nat_dist = _fb_nationality_total_distribution(nationality_df, "2024-2025")
             if not nat_dist.empty:
+                _fb_chart_title("Répartition par nationalité - 2024-2025")
                 fig_nat = px.pie(
                     nat_dist,
                     names="Nationalité",
                     values="Effectif",
-                    hole=0.52,
-                    title="Répartition par nationalité - 2024-2025",
-                    color_discrete_sequence=[USJ_BLUE, USJ_RED, USJ_GOLD],
+                    hole=0.60,
+                    color="Nationalité",
+                    color_discrete_map={"Libanais": USJ_BLUE, "Double nationalité": USJ_RED, "Étrangers": USJ_GOLD},
                 )
-                fig_nat.update_traces(textinfo="label+percent+value", textfont=dict(family="Candara, Arial", size=14, color=USJ_TEXT))
-                fig_nat.update_layout(template="plotly_white", height=440, font=dict(family="Candara, Arial", color=USJ_TEXT), title=dict(font=dict(size=20, color=USJ_BLUE), x=0.01), margin=dict(l=20, r=20, t=80, b=40), legend=dict(orientation="h", y=-0.05))
+                _fb_polish_donut(fig_nat, total_value=nat_dist["Effectif"].sum(), center_label="Total", height=500, legend_y=-0.10)
                 st.plotly_chart(fig_nat, use_container_width=True, config={"displayModeBar": False})
 
     with tabs[1]:
