@@ -1535,8 +1535,10 @@ def _fb_table_is_total_row(row):
 
 def render_factbook_table(df, title, note=None, max_height=560, hide_columns=None, percent_2_dec_cols=None):
     """Render Factbook tables with the same USJ-styled card/table design used in the Exit Survey pages."""
+    display_title = fbt(title)
+    display_note = fbt(note) if note else note
     if df is None or df.empty:
-        st.info(f"Aucune donnée disponible pour {title}.")
+        st.info(fbt("Aucune donnée disponible pour") + f" {display_title}.")
         return
 
     table = df.copy()
@@ -1558,13 +1560,13 @@ def render_factbook_table(df, title, note=None, max_height=560, hide_columns=Non
     table = table.dropna(how="all").copy()
 
     if table.empty:
-        st.info(f"Aucune donnée disponible pour {title}.")
+        st.info(fbt("Aucune donnée disponible pour") + f" {display_title}.")
         return
 
     numeric_cols = [col for col in table.columns if col in percent_2_dec_cols or pd.to_numeric(table[col], errors="coerce").notna().mean() >= 0.55 or _fb_is_percent_column(col)]
 
     header_html = "".join(
-        f"<th class='{'num-col' if col in numeric_cols else 'text-col'}'>{html_escape(col)}</th>"
+        f"<th class='{'num-col' if col in numeric_cols else 'text-col'}'>{html_escape(fbt(col))}</th>"
         for col in table.columns
     )
 
@@ -1584,9 +1586,9 @@ def render_factbook_table(df, title, note=None, max_height=560, hide_columns=Non
             cells.append(f"<td class='{cls}'>{html_escape(display_value)}</td>")
         body_rows.append(f"<tr class='{row_class}'>" + "".join(cells) + "</tr>")
 
-    note_html = f"<div class='fb-table-note'>{html_escape(note)}</div>" if note else ""
+    note_html = f"<div class='fb-table-note'>{html_escape(display_note)}</div>" if display_note else ""
     row_count = len(table)
-    row_label = "1 ligne" if row_count == 1 else f"{row_count} lignes"
+    row_label = fbt("1 ligne") if row_count == 1 else f"{row_count} {fbt('lignes')}"
 
     # For very small filtered tables, do not create an internal scrollbar.
     # A one-row table should appear as a complete professional card, not as a cropped scroll box.
@@ -1741,7 +1743,7 @@ def render_factbook_table(df, title, note=None, max_height=560, hide_columns=Non
         <div class='fb-table-card'>
             <div class='fb-table-titlebar'>
                 <div>
-                    <div class='fb-table-title'>{html_escape(title)}</div>
+                    <div class='fb-table-title'>{html_escape(display_title)}</div>
                     {note_html}
                 </div>
                 <div class='fb-table-pill'>{row_label}</div>
@@ -1860,6 +1862,8 @@ def summary_box(text, color=USJ_BLUE, background="#F7F9FC"):
 
 
 def section_header(title, subtitle=None):
+    title = fbt(title)
+    subtitle = fbt(subtitle) if subtitle else subtitle
     subtitle_html = f"<p style='margin-top:4px;color:#5F6B7A;font-size:16px;'>{subtitle}</p>" if subtitle else ""
     st.markdown(
         f"""
@@ -1942,6 +1946,8 @@ def percent_card(title, value, subtitle="Pourcentage", delta=None):
 
 
 def insight_card(title, value, subtitle, color=USJ_BLUE):
+    title = fbt(title)
+    subtitle = fbt(subtitle)
     st.markdown(
         f"""
         <div style="
@@ -3108,6 +3114,323 @@ TXT = TEXTS[LANG]
 
 def tr(key):
     return TXT.get(key, key)
+
+
+# =====================================================
+# Factbook bilingual helpers
+# =====================================================
+# The Factbook data itself stays faithful to the Excel source, but the interface
+# labels, titles, captions, chart titles, axis titles, buttons and table headers
+# must follow the selected interface language.
+
+FB_TRANSLATIONS_EXACT = {
+    "← Portail": "← Portal",
+    "← Retour au portail": "← Back to portal",
+    "← Sections Factbook": "← Factbook sections",
+    "← Factbook sections": "← Factbook sections",
+    "Connectée": "Connected",
+    "À connecter": "To connect",
+    "Bientôt disponible": "Coming soon",
+    "1 ligne": "1 row",
+    "lignes": "rows",
+    "Aucune donnée disponible pour": "No data available for",
+    "Ouvrir la Section 1": "Open Section 1",
+    "Ouvrir la Section 2": "Open Section 2",
+    "Ouvrir la Section 3": "Open Section 3",
+    "Ouvrir la Section 4": "Open Section 4",
+    "Ouvrir la Section 5": "Open Section 5",
+    "Ouvrir la Section 6": "Open Section 6",
+    "Synthèse": "Summary",
+    "Par institution": "By institution",
+    "Par campus": "By campus",
+    "Par niveau académique": "By academic level",
+    "Par programme": "By program",
+    "Données": "Data",
+    "Année": "Year",
+    "Cohorte": "Cohort",
+    "Programme": "Program",
+    "Programmes": "Programs",
+    "Institution": "Institution",
+    "Campus": "Campus",
+    "Acronyme": "Acronym",
+    "Champ disciplinaire": "Disciplinary field",
+    "Niveau académique": "Academic level",
+    "Crédits": "Credits",
+    "Indicateur": "Indicator",
+    "Effectifs": "Headcount",
+    "Effectif": "Headcount",
+    "Taux": "Rate",
+    "Valeur": "Value",
+    "Total USJ": "USJ total",
+    "Total étudiants": "Total students",
+    "Total diplômés USJ": "Total USJ graduates",
+    "Variation": "Change",
+    "Formations diplômantes": "Degree-granting programs",
+    "DU et Certificats": "University diplomas and certificates",
+    "Autres programmes": "Other programs",
+    "1er cycle": "Undergraduate",
+    "Master": "Master",
+    "PhD": "PhD",
+    "Genre": "Gender",
+    "Filles": "Female students",
+    "Garçons": "Male students",
+    "Part filles": "Share of female students",
+    "Part garçons": "Share of male students",
+    "Part étrangers": "Share of foreign students",
+    "Nationalité": "Nationality",
+    "Libanais": "Lebanese",
+    "Double nationalité": "Dual nationality",
+    "Étrangers": "Foreign students",
+    "Communauté": "Community",
+    "Communautés religieuses": "Religious communities",
+    "Candidats": "Applicants",
+    "Candidats admis": "Admitted applicants",
+    "Candidats inscrits": "Enrolled applicants",
+    "% admis / candidats": "% admitted / applicants",
+    "% inscrits / admis": "% enrolled / admitted",
+    "Diplomation à temps (100%)": "On-time graduation rate (100%)",
+    "Diplomation à 150%": "Graduation rate at 150%",
+    "Taux à temps (100%)": "On-time rate (100%)",
+    "Taux à 150%": "Rate at 150%",
+    "Taux de rétention": "Retention rate",
+    "Rétention programme": "Program retention",
+    "Rétention Programme": "Program retention",
+    "Rétention USJ": "USJ retention",
+    "Taille totale de cohorte": "Total cohort size",
+    "Cohortes < 20": "Cohorts < 20",
+    "Programmes ≥ 90%": "Programs ≥ 90%",
+    "Nombre de programmes": "Number of programs",
+    "Nombre de questions": "Number of questions",
+    "Tableau de synthèse": "Summary table",
+    "Tableau campus filtré": "Filtered campus table",
+}
+
+FB_TRANSLATIONS_PHRASE = {
+    "Université Saint-Joseph de Beyrouth · Unité Assurance qualité": "Saint Joseph University of Beirut · Quality Assurance Unit",
+    "FACTBOOK INSTITUTIONNEL 2024-2025": "INSTITUTIONAL FACTBOOK 2024-2025",
+    "Transformez le Factbook USJ en tableau de bord stratégique": "Turn the USJ Factbook into a strategic dashboard",
+    "Une lecture dynamique des données institutionnelles pour suivre les effectifs, les diplômés, la rétention, la diplomation, les profils démographiques et l’admission commune.": "A dynamic view of institutional data to monitor enrolment, graduates, retention, graduation rates, demographic profiles and common admission.",
+    "Cette interface permet de passer d’un document statique à une exploration claire, filtrable et visuelle des indicateurs clés du Factbook.": "This interface turns a static document into a clear, filterable and visual exploration of the Factbook’s key indicators.",
+    "Année du Factbook": "Factbook year",
+    "Sections institutionnelles": "Institutional sections",
+    "Sections connectées actuellement": "Currently connected sections",
+    "Pourquoi le Factbook est stratégique ?": "Why is the Factbook strategic?",
+    "Le Factbook consolide les données essentielles de l’Université. En version dynamique, il facilite la lecture des tendances, la comparaison entre années, campus, niveaux et programmes, et la préparation des décisions institutionnelles fondées sur des indicateurs vérifiables.": "The Factbook consolidates the University’s essential data. In dynamic form, it makes it easier to read trends, compare years, campuses, levels and programs, and prepare institutional decisions based on verifiable indicators.",
+    "Ce qu’il permet de décider": "What it helps decide",
+    "Il aide à identifier les progressions, les baisses, les concentrations d’effectifs, les évolutions des diplômés et les indicateurs nécessitant un suivi. Les résultats deviennent directement exploitables pour les réunions, les rapports qualité et le pilotage académique.": "It helps identify increases, decreases, concentration areas, changes in graduate outputs and indicators requiring follow-up. Results become directly usable for meetings, quality reports and academic steering.",
+    "Valeur ajoutée pour l’USJ": "Added value for USJ",
+    "Ce que contient le Factbook": "What the Factbook contains",
+    "Les six sections du Factbook sont intégrées progressivement. Chaque section sera accessible séparément afin de garder une lecture claire, proche de la structure du fichier Excel source.": "The six Factbook sections are integrated progressively. Each section is accessible separately to keep a clear reading close to the source Excel structure.",
+    "Accéder aux sections": "Access sections",
+    "Pilotage institutionnel": "Institutional steering",
+    "Transformer les tableaux du Factbook en indicateurs lisibles pour la gouvernance, l’assurance qualité et les responsables académiques.": "Transform Factbook tables into readable indicators for governance, quality assurance and academic leaders.",
+    "Lecture par section": "Section-based reading",
+    "Organiser les résultats selon la structure officielle du Factbook afin de garder une lecture fidèle au document source.": "Organize results according to the official Factbook structure to preserve a reading faithful to the source document.",
+    "Comparaison temporelle": "Time comparison",
+    "Visualiser les évolutions annuelles et détecter les tendances, stabilités et ruptures importantes.": "Visualize annual changes and detect important trends, stability patterns and breaks.",
+    "Analyse par programme": "Program-level analysis",
+    "Explorer les résultats par institution, campus, niveau académique, programme et catégorie de formation.": "Explore results by institution, campus, academic level, program and training category.",
+    "Aide à la décision": "Decision support",
+    "Identifier rapidement les zones de croissance, de baisse ou de concentration des effectifs pour orienter les décisions.": "Quickly identify areas of growth, decline or concentration in enrolment to guide decisions.",
+    "Communication qualité": "Quality communication",
+    "Préparer des résultats clairs et homogènes pour les réunions, rapports, comités qualité et discussions institutionnelles.": "Prepare clear and consistent results for meetings, reports, quality committees and institutional discussions.",
+    "Effectifs étudiants": "Student enrolment",
+    "Effectifs diplômés": "Graduates",
+    "Taux de rétention": "Retention rate",
+    "Taux de diplomation": "Graduation rate",
+    "Profil démographique": "Demographic profile",
+    "Admission commune": "Common admission",
+    "Effectifs étudiants, ETP, campus, niveaux académiques, programmes, nouveaux étudiants, langues d’enseignement, DU et certificats.": "Student enrolment, FTE, campuses, academic levels, programs, new students, languages of instruction, university diplomas and certificates.",
+    "Diplômés par programme, par niveau académique et évolution des diplômés selon les catégories du Factbook.": "Graduates by program, academic level and graduate trends by Factbook category.",
+    "Suivi des cohortes, maintien des étudiants dans les programmes et évolution du taux de rétention.": "Cohort monitoring, student continuation in programs and retention-rate trends.",
+    "Diplomation à temps, diplomation à 150% de la durée du programme et indicateurs d’achèvement.": "On-time graduation, graduation at 150% of program duration and completion indicators.",
+    "Genre, communautés religieuses, nationalités, institutions, campus et niveaux académiques.": "Gender, religious communities, nationalities, institutions, campuses and academic levels.",
+    "Statistiques globales, candidats admis, candidats inscrits, institutions, programmes, langues d’enseignement et campus.": "Global statistics, admitted applicants, enrolled applicants, institutions, programs, languages of instruction and campuses.",
+    "Section 1 - Effectifs étudiants": "Section 1 - Student enrolment",
+    "Section 2 - Effectifs diplômés": "Section 2 - Graduates",
+    "Section 3 - Taux de rétention": "Section 3 - Retention rate",
+    "Section 4 - Taux de diplomation": "Section 4 - Graduation rate",
+    "Section 5 - Profil démographique": "Section 5 - Demographic profile",
+    "Section 6 - Admission commune": "Section 6 - Common admission",
+    "Synthèse des effectifs étudiants": "Summary of student enrolment",
+    "Synthèse des effectifs diplômés": "Summary of graduates",
+    "Synthèse du taux de rétention": "Retention-rate summary",
+    "Synthèse du taux de diplomation": "Graduation-rate summary",
+    "Synthèse du profil démographique": "Demographic profile summary",
+    "Synthèse de l’admission commune": "Common admission summary",
+    "Évolution des effectifs semestre 1 par campus": "Semester 1 enrolment trend by campus",
+    "Évolution globale du taux de rétention": "Overall retention-rate trend",
+    "Évolution comparative du taux de diplomation": "Comparative graduation-rate trend",
+    "Évolution globale des candidats, admis et inscrits": "Overall trend for applicants, admitted and enrolled applicants",
+    "Évolution des taux d’admission et de conversion": "Admission and conversion-rate trend",
+    "Répartition genre": "Gender distribution",
+    "Répartition par nationalité": "Distribution by nationality",
+    "Répartition des communautés religieuses": "Distribution by religious community",
+    "Principales communautés religieuses": "Religious communities",
+    "Top institutions selon les candidats inscrits": "Top institutions by enrolled applicants",
+    "Top programmes selon les candidats inscrits": "Top programs by enrolled applicants",
+    "Top programmes selon le taux de diplomation": "Top programs by graduation rate",
+    "Top programmes selon": "Top programs by",
+    "Top institutions selon": "Top institutions by",
+    "Tableau -": "Table -",
+    "Les lignes Total sont mises en évidence pour faciliter la lecture.": "Total rows are highlighted to facilitate reading.",
+    "Les taux de rétention sont affichés en pourcentage.": "Retention rates are displayed as percentages.",
+    "Les taux de diplomation sont affichés en pourcentage avec deux décimales.": "Graduation rates are displayed as percentages with two decimals.",
+    "Les taux de rétention sont affichés en pourcentage avec deux décimales.": "Retention rates are displayed as percentages with two decimals.",
+    "Les colonnes Cohorte indiquent le nombre d'étudiants de la cohorte; les colonnes Taux sont affichées en pourcentage.": "Cohort columns indicate the number of students in the cohort; rate columns are displayed as percentages.",
+    "Nombre de programmes": "Number of programs",
+    "Nombre d’institutions": "Number of institutions",
+    "Effectifs annuels": "Annual headcount",
+    "Effectifs annuel": "Annual headcount",
+    "Effectifs semestre 1": "Semester 1 headcount",
+    "ETP annuel": "Annual FTE",
+    "ETP semestre 1": "Semester 1 FTE",
+    "% Var annuel": "% annual change",
+    "% Var S1": "% S1 change",
+    "% Var": "% change",
+    "Taille de cohorte": "Cohort size",
+    "Cohorte S1": "S1 cohort",
+    "Rechercher un programme": "Search program",
+    "Recherche programme": "Search program",
+    "Tous": "All",
+}
+
+# Longer phrases must be replaced first to avoid partial collisions.
+FB_TRANSLATIONS_PHRASE_ORDERED = sorted(FB_TRANSLATIONS_PHRASE.items(), key=lambda kv: len(kv[0]), reverse=True)
+
+
+def fbt(value):
+    """Translate Factbook/interface strings when English is selected."""
+    if LANG != "English" or value is None:
+        return value
+    text = str(value)
+    if text in FB_TRANSLATIONS_EXACT:
+        return FB_TRANSLATIONS_EXACT[text]
+    if text in FB_TRANSLATIONS_PHRASE:
+        return FB_TRANSLATIONS_PHRASE[text]
+    translated = text
+    for fr, en in FB_TRANSLATIONS_PHRASE_ORDERED:
+        translated = translated.replace(fr, en)
+    return translated
+
+
+def fb_translate_figure(fig):
+    """Translate Plotly figure titles and axis/colorbar labels without changing the data."""
+    if LANG != "English" or fig is None:
+        return fig
+    try:
+        if fig.layout.title and fig.layout.title.text:
+            fig.update_layout(title=dict(text=fbt(fig.layout.title.text)))
+    except Exception:
+        pass
+
+    for axis_name in ["xaxis", "yaxis", "xaxis2", "yaxis2", "xaxis3", "yaxis3"]:
+        try:
+            axis = fig.layout[axis_name]
+            if axis and axis.title and axis.title.text:
+                axis.title.text = fbt(axis.title.text)
+        except Exception:
+            pass
+
+    try:
+        if fig.layout.legend and fig.layout.legend.title and fig.layout.legend.title.text:
+            fig.layout.legend.title.text = fbt(fig.layout.legend.title.text)
+    except Exception:
+        pass
+
+    for trace in getattr(fig, "data", []):
+        try:
+            if getattr(trace, "name", None):
+                trace.name = fbt(trace.name)
+        except Exception:
+            pass
+        try:
+            marker = getattr(trace, "marker", None)
+            colorbar = getattr(marker, "colorbar", None) if marker is not None else None
+            if colorbar is not None and colorbar.title and colorbar.title.text:
+                colorbar.title.text = fbt(colorbar.title.text)
+        except Exception:
+            pass
+    return fig
+
+# Translate common Streamlit UI labels after the language selector is set.
+_ORIGINAL_ST_BUTTON = st.button
+_ORIGINAL_ST_TABS = st.tabs
+_ORIGINAL_ST_SELECTBOX = st.selectbox
+_ORIGINAL_ST_RADIO = st.radio
+_ORIGINAL_ST_MARKDOWN = st.markdown
+_ORIGINAL_ST_HTML = st.html
+_ORIGINAL_ST_INFO = st.info
+_ORIGINAL_ST_ERROR = st.error
+_ORIGINAL_ST_WARNING = st.warning
+_ORIGINAL_ST_SUCCESS = st.success
+_ORIGINAL_ST_CAPTION = st.caption
+_ORIGINAL_ST_PLOTLY_CHART = st.plotly_chart
+
+
+def _fb_button(label, *args, **kwargs):
+    return _ORIGINAL_ST_BUTTON(fbt(label), *args, **kwargs)
+
+
+def _fb_tabs(tabs, *args, **kwargs):
+    try:
+        tabs = [fbt(tab) if isinstance(tab, str) else tab for tab in tabs]
+    except Exception:
+        pass
+    return _ORIGINAL_ST_TABS(tabs, *args, **kwargs)
+
+
+def _fb_selectbox(label, options, *args, **kwargs):
+    return _ORIGINAL_ST_SELECTBOX(fbt(label), options, *args, **kwargs)
+
+
+def _fb_radio(label, options, *args, **kwargs):
+    return _ORIGINAL_ST_RADIO(fbt(label), options, *args, **kwargs)
+
+
+def _fb_markdown(body, *args, **kwargs):
+    return _ORIGINAL_ST_MARKDOWN(fbt(body) if isinstance(body, str) else body, *args, **kwargs)
+
+
+def _fb_html(body, *args, **kwargs):
+    return _ORIGINAL_ST_HTML(fbt(body) if isinstance(body, str) else body, *args, **kwargs)
+
+
+def _fb_info(body, *args, **kwargs):
+    return _ORIGINAL_ST_INFO(fbt(body) if isinstance(body, str) else body, *args, **kwargs)
+
+
+def _fb_error(body, *args, **kwargs):
+    return _ORIGINAL_ST_ERROR(fbt(body) if isinstance(body, str) else body, *args, **kwargs)
+
+
+def _fb_warning(body, *args, **kwargs):
+    return _ORIGINAL_ST_WARNING(fbt(body) if isinstance(body, str) else body, *args, **kwargs)
+
+
+def _fb_success(body, *args, **kwargs):
+    return _ORIGINAL_ST_SUCCESS(fbt(body) if isinstance(body, str) else body, *args, **kwargs)
+
+
+def _fb_caption(body, *args, **kwargs):
+    return _ORIGINAL_ST_CAPTION(fbt(body) if isinstance(body, str) else body, *args, **kwargs)
+
+
+def _fb_plotly_chart(fig, *args, **kwargs):
+    return _ORIGINAL_ST_PLOTLY_CHART(fb_translate_figure(fig), *args, **kwargs)
+
+st.button = _fb_button
+st.tabs = _fb_tabs
+st.selectbox = _fb_selectbox
+st.radio = _fb_radio
+st.markdown = _fb_markdown
+st.html = _fb_html
+st.info = _fb_info
+st.error = _fb_error
+st.warning = _fb_warning
+st.success = _fb_success
+st.caption = _fb_caption
+st.plotly_chart = _fb_plotly_chart
 
 def page_label(page_name):
     return PAGE_TRANSLATIONS.get(LANG, {}).get(page_name, page_name)
