@@ -913,11 +913,17 @@ def load_factbook_section3(file_path, file_mtime, file_size):
 
 
 def fb_format_rate(value, digits=1):
-    """Format a retention-rate value stored either as a proportion or as a percentage."""
-    value = pd.to_numeric(value, errors="coerce")
-    if pd.isna(value):
+    """Format a rate/percentage value stored either as a proportion, percentage, or percent string."""
+    if _fb_is_blank(value):
+        return ""
+    raw_value = str(value).replace("\u00a0", " ").strip()
+    has_percent_symbol = raw_value.endswith("%")
+    numeric = pd.to_numeric(raw_value.replace("%", "").replace(" ", "").replace(",", "."), errors="coerce")
+    if pd.isna(numeric):
         return "NA"
-    pct_value = float(value) * 100 if abs(float(value)) <= 1.5 else float(value)
+    pct_value = float(numeric)
+    if not has_percent_symbol and abs(pct_value) <= 1.5:
+        pct_value *= 100
     return f"{pct_value:.{digits}f}%"
 
 
@@ -1535,6 +1541,13 @@ def render_factbook_table(df, title, note=None, max_height=560, hide_columns=Non
 
     table = df.copy()
     percent_2_dec_cols = set(percent_2_dec_cols or [])
+
+    # Section 5 demographic percentage columns must always be shown with 2 decimals.
+    # This covers gender and nationality tables even when they are rendered through
+    # the generic Factbook table function.
+    section5_title_tokens = ["5.", "Répartition genre", "Nationalité", "Profil démographique"]
+    if any(token in str(title) for token in section5_title_tokens):
+        percent_2_dec_cols.update([col for col in table.columns if _fb_is_percent_column(col)])
 
     # Columns used internally for filtering/section separation should not appear
     # in the visual Factbook tables.
@@ -5094,6 +5107,9 @@ def _fb_profile_bar_polish(fig, height=540):
 
 
 def _fb_profile_percentage_table(df, percent_cols):
+    percent_cols = set(percent_cols or [])
+    if df is not None and not df.empty:
+        percent_cols.update([col for col in df.columns if _fb_is_percent_column(col)])
     return render_factbook_table(
         df,
         "Tableau filtré",
