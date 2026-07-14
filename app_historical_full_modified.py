@@ -367,6 +367,279 @@ def load_data(file_path, file_mtime, file_size):
     return df
 
 
+
+
+# =====================================================
+# Factbook Section 1 helpers
+# =====================================================
+
+FACTBOOK_SECTION1_FILE_CANDIDATES = [
+    "FB24-25 1. Effectifs étudiants HS 27-1-2026.xlsx",
+    "FB24-25 1. Effectifs etudiants HS 27-1-2026.xlsx",
+    "Factbook_Effectifs_Etudiants_2024_2025.xlsx",
+    "Factbook_Section1_Effectifs_Etudiants.xlsx",
+    "factbook_section1.xlsx",
+]
+
+FACTBOOK_YEARS = ["2019-2020", "2020-2021", "2021-2022", "2022-2023", "2023-2024", "2024-2025"]
+
+
+def find_factbook_section1_file():
+    """Find the Section 1 Factbook Excel file without touching the Exit Survey file."""
+    for file_name in FACTBOOK_SECTION1_FILE_CANDIDATES:
+        if os.path.exists(file_name):
+            stat = os.stat(file_name)
+            return file_name, stat.st_mtime, stat.st_size
+
+    # Fallback: look for a likely local Excel file containing the Section 1 title.
+    for file_name in os.listdir("."):
+        lower = file_name.lower()
+        if lower.endswith((".xlsx", ".xls")) and "effectifs" in lower and ("étudiants" in lower or "etudiants" in lower):
+            stat = os.stat(file_name)
+            return file_name, stat.st_mtime, stat.st_size
+
+    return None, None, None
+
+
+def _fb_is_blank(value):
+    if value is None:
+        return True
+    try:
+        if pd.isna(value):
+            return True
+    except Exception:
+        pass
+    return str(value).replace("\u00a0", " ").strip() in {"", "nan", "None", "NaT", "<NA>"}
+
+
+def _fb_clean_cell(value):
+    if _fb_is_blank(value):
+        return np.nan
+    if isinstance(value, str):
+        cleaned = value.replace("\u00a0", " ").strip()
+        return np.nan if cleaned == "" else cleaned
+    return value
+
+
+def _fb_clean_dataframe(df):
+    df = df.copy()
+    df = df.applymap(_fb_clean_cell)
+    df = df.dropna(how="all").dropna(axis=1, how="all")
+    return df
+
+
+def _fb_numeric_columns(df):
+    df = df.copy()
+    for col in df.columns:
+        col_label = str(col).strip()
+        if (
+            col_label in FACTBOOK_YEARS
+            or col_label == "% Var"
+            or "% Var" in col_label
+            or "2023-2024" in col_label
+            or "2024-2025" in col_label
+            or col_label == "Crédits"
+        ):
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+    return df
+
+
+def _fb_fill_metadata(df, columns):
+    df = df.copy()
+    for col in columns:
+        if col in df.columns:
+            df[col] = df[col].ffill()
+    return df
+
+
+def _fb_fix_total_rows(df):
+    df = df.copy()
+    if "Institution" in df.columns and "Champ disciplinaire" in df.columns:
+        total_mask = df["Institution"].isna() & df["Champ disciplinaire"].astype(str).str.startswith("Total", na=False)
+        df.loc[total_mask, "Institution"] = df.loc[total_mask, "Champ disciplinaire"]
+    if "Programme" in df.columns and "Champ disciplinaire" in df.columns:
+        total_mask = df["Programme"].isna() & df["Champ disciplinaire"].astype(str).str.startswith("Total", na=False)
+        df.loc[total_mask, "Programme"] = df.loc[total_mask, "Champ disciplinaire"]
+    return df
+
+
+def _fb_parse_two_row_header(file_path, sheet_name, header_row=0, data_start=2):
+    raw = pd.read_excel(file_path, sheet_name=sheet_name, header=None)
+    raw = _fb_clean_dataframe(raw)
+
+    top = list(raw.iloc[header_row])
+    sub = list(raw.iloc[header_row + 1])
+
+    groups = []
+    current = None
+    for value in top:
+        if not _fb_is_blank(value):
+            current = str(value).strip()
+        groups.append(current)
+
+    columns = []
+    base_columns = {"Champ disciplinaire", "Acronyme", "Institution", "Programme", "Diplôme", "Crédits"}
+    for group, sub_value in zip(groups, sub):
+        group_label = None if _fb_is_blank(group) else str(group).strip()
+        sub_label = None if _fb_is_blank(sub_value) else str(sub_value).strip()
+        if group_label in base_columns:
+            columns.append(group_label)
+        elif sub_label:
+            columns.append(f"{group_label} {sub_label}" if group_label else sub_label)
+        elif group_label:
+            columns.append(group_label)
+        else:
+            columns.append(f"Colonne {len(columns) + 1}")
+
+    df = raw.iloc[data_start:].copy()
+    df.columns = columns[:len(df.columns)]
+    df = _fb_clean_dataframe(df)
+    df = _fb_fix_total_rows(df)
+    df = _fb_fill_metadata(df, ["Champ disciplinaire"])
+    df = _fb_numeric_columns(df)
+    return df
+
+
+def _fb_parse_program_sheet(file_path, sheet_name, program_type):
+    raw = pd.read_excel(file_path, sheet_name=sheet_name, header=None)
+    raw = _fb_clean_dataframe(raw)
+    headers = [str(value).strip() if not _fb_is_blank(value) else f"Colonne {i + 1}" for i, value in enumerate(raw.iloc[1])]
+    df = raw.iloc[2:].copy()
+    df.columns = headers[:len(df.columns)]
+    df = _fb_clean_dataframe(df)
+    df = _fb_fix_total_rows(df)
+    df = _fb_fill_metadata(df, ["Champ disciplinaire"])
+    df = _fb_numeric_columns(df)
+    df["Type de programme"] = program_type
+    return df
+
+
+def _fb_parse_campus_sheet(file_path, sheet_name):
+    raw = pd.read_excel(file_path, sheet_name=sheet_name, header=None)
+    raw = raw.applymap(_fb_clean_cell)
+    rows = []
+    i = 0
+
+    while i < len(raw):
+        first = raw.iat[i, 0] if raw.shape[1] > 0 else np.nan
+        if not _fb_is_blank(first) and str(first).strip().startswith("Campus"):
+            campus = str(first).strip()
+            if i + 1 >= len(raw):
+                break
+            headers = [_fb_clean_cell(value) for value in raw.iloc[i + 1].tolist()]
+            i += 2
+
+            while i < len(raw):
+                first_cell = raw.iat[i, 0] if raw.shape[1] > 0 else np.nan
+                if not _fb_is_blank(first_cell) and str(first_cell).strip().startswith("Campus"):
+                    break
+                if all(_fb_is_blank(value) for value in raw.iloc[i].tolist()):
+                    i += 1
+                    break
+                if not _fb_is_blank(first_cell) and str(first_cell).strip() == "Acronyme":
+                    i += 1
+                    continue
+
+                values = raw.iloc[i].tolist()[:len(headers)]
+                row = {headers[j]: values[j] for j in range(len(headers)) if not _fb_is_blank(headers[j])}
+                if not all(_fb_is_blank(value) for value in row.values()):
+                    if _fb_is_blank(row.get("Institution")) and not _fb_is_blank(row.get("Acronyme")) and str(row.get("Acronyme")).startswith("Total"):
+                        total_label = str(row.get("Acronyme")).strip()
+                        row["Institution"] = total_label
+                        row["Acronyme"] = np.nan
+                        if "Beyrouth" in total_label:
+                            campus = total_label
+                    row["Campus"] = campus
+                    rows.append(row)
+                i += 1
+            continue
+        i += 1
+
+    df = pd.DataFrame(rows)
+    df = _fb_clean_dataframe(df)
+    df = _fb_numeric_columns(df)
+    return df
+
+
+def _fb_parse_level_sheet(file_path, sheet_name):
+    raw = pd.read_excel(file_path, sheet_name=sheet_name, header=None)
+    raw = raw.applymap(_fb_clean_cell)
+    rows = []
+    i = 0
+
+    while i < len(raw):
+        label = raw.iat[i, 1] if raw.shape[1] > 1 else np.nan
+        if not _fb_is_blank(label) and str(label).strip() in {"Effectifs étudiants semestre 1", "ETP semestre 1"}:
+            indicator = str(label).strip()
+            headers = [_fb_clean_cell(value) for value in raw.iloc[i + 1, 1:9].tolist()]
+            i += 2
+            while i < len(raw):
+                name = raw.iat[i, 1] if raw.shape[1] > 1 else np.nan
+                if _fb_is_blank(name):
+                    break
+                values = raw.iloc[i, 1:9].tolist()
+                row = {headers[j]: values[j] for j in range(len(headers)) if not _fb_is_blank(headers[j])}
+                row["Indicateur"] = indicator
+                rows.append(row)
+                i += 1
+            continue
+        i += 1
+
+    df = pd.DataFrame(rows)
+    df = _fb_clean_dataframe(df)
+    df = _fb_numeric_columns(df)
+    return df
+
+
+@st.cache_data(show_spinner=False)
+def load_factbook_section1(file_path, file_mtime, file_size):
+    """Load only Section 1 of the Factbook from the provided Excel workbook."""
+    formations_diplomantes = _fb_parse_two_row_header(file_path, "1.1. Eff Prog Dip", header_row=0, data_start=2)
+    du_certificats = _fb_parse_two_row_header(file_path, "1.2. Eff DU-Cert", header_row=1, data_start=3)
+    campus = _fb_parse_campus_sheet(file_path, "1.3. Eff Campus")
+    niveau = _fb_parse_level_sheet(file_path, "1.4.Eff. Ni")
+
+    program_sheets = [
+        ("1.5. Effectif par prog 1er cycl", "1er cycle d'une formation"),
+        ("1.6. Master", "Master"),
+        ("1.7 Doctorat", "PhD"),
+        ("1.8 Eff", "Autres programmes"),
+        ("1.9 Ar", "Programmes en arabe"),
+        ("1.10 Ang", "Programmes en anglais"),
+        ("1.11 Eff Nouv ét 1er cycle", "Nouveaux étudiants - 1er cycle"),
+        ("1.12 Eff nouv. ét PhD", "Nouveaux inscrits - PhD"),
+    ]
+    programmes = pd.concat(
+        [_fb_parse_program_sheet(file_path, sheet, label) for sheet, label in program_sheets],
+        ignore_index=True
+    )
+    du_certificats_programmes = _fb_parse_two_row_header(file_path, "1.13. Effectif par prog Du Cer", header_row=1, data_start=3)
+    du_certificats_programmes["Type de programme"] = "DU et Certificats"
+
+    return {
+        "formations_diplomantes": formations_diplomantes,
+        "du_certificats": du_certificats,
+        "campus": campus,
+        "niveau": niveau,
+        "programmes": programmes,
+        "du_certificats_programmes": du_certificats_programmes,
+    }
+
+
+def fb_format_number(value, digits=0):
+    if pd.isna(value):
+        return "NA"
+    if abs(float(value) - round(float(value))) < 0.000001 and digits == 0:
+        return f"{int(round(float(value))):,}".replace(",", " ")
+    return f"{float(value):,.{digits}f}".replace(",", " ")
+
+
+def fb_format_pct(value):
+    if pd.isna(value):
+        return "NA"
+    return f"{float(value) * 100:.1f}%"
+
+
 def recode_series(series, mapping):
     return (
         series.astype(str)
@@ -1783,7 +2056,7 @@ SURVEY_PORTAL_ITEMS = [
         "description_en": "Institutional facts, official indicators and annual reference data.",
         "description_fr": "Données institutionnelles, indicateurs officiels et données annuelles de référence.",
         "icon": "📘",
-        "active": False,
+        "active": True,
     },
     {
         "id": "qs_ranking",
@@ -2340,7 +2613,7 @@ def render_survey_portal():
         row_items = SURVEY_PORTAL_ITEMS[start:start + cards_per_row]
         cols = st.columns(cards_per_row)
         for i, item in enumerate(row_items):
-            is_enabled = bool(item.get("active")) and item["id"] == "exit_students"
+            is_enabled = bool(item.get("active"))
             card_class = "enabled" if is_enabled else "disabled"
             display_name = item[name_key]
             secondary_name = item[secondary_key]
@@ -2360,7 +2633,7 @@ def render_survey_portal():
 
                 if is_enabled:
                     if st.button(button_open, key=f"open_{item['id']}", use_container_width=True, type="primary"):
-                        st.session_state["selected_portal_app"] = "exit_students"
+                        st.session_state["selected_portal_app"] = item["id"]
                         st.session_state["dashboard_started"] = False
                         st.rerun()
                 else:
@@ -2628,6 +2901,493 @@ def render_landing_page():
             st.session_state["dashboard_started"] = False
             st.rerun()
 
+
+
+def render_factbook_module():
+    """Render the connected Factbook module for Section 1 only."""
+    factbook_file_path, factbook_file_mtime, factbook_file_size = find_factbook_section1_file()
+
+    top_cols = st.columns([1.2, 5.5])
+    with top_cols[0]:
+        back_label = "← Portail" if LANG == "Français" else "← Portal"
+        if st.button(back_label, key="back_to_portal_from_factbook", use_container_width=True):
+            st.session_state["selected_portal_app"] = None
+            st.session_state["dashboard_started"] = False
+            st.rerun()
+
+    if factbook_file_path is None:
+        st.error(
+            "Fichier Excel de la Section 1 du Factbook introuvable. Ajoutez le fichier Excel dans le même dossier que l’application."
+            if LANG == "Français"
+            else "Factbook Section 1 Excel file not found. Add the Excel file to the same folder as the application."
+        )
+        st.code("FB24-25 1. Effectifs étudiants HS 27-1-2026.xlsx")
+        st.stop()
+
+    with st.spinner("Chargement du Factbook - Section 1..." if LANG == "Français" else "Loading Factbook - Section 1..."):
+        fb = load_factbook_section1(factbook_file_path, factbook_file_mtime, factbook_file_size)
+
+    formations = fb["formations_diplomantes"].copy()
+    du_cert = fb["du_certificats"].copy()
+    campus_df = fb["campus"].copy()
+    niveau_df = fb["niveau"].copy()
+    programmes_df = fb["programmes"].copy()
+    du_programmes_df = fb["du_certificats_programmes"].copy()
+
+    last_update_label = pd.to_datetime(factbook_file_mtime, unit="s").strftime("%Y-%m-%d %H:%M:%S")
+    file_size_mb = factbook_file_size / (1024 * 1024)
+
+    st.markdown(
+        f"""
+        <div style="margin-top:8px;margin-bottom:12px;">
+            <h1 style="color:{USJ_BLUE}; margin-bottom:0; font-family:Candara, Arial, sans-serif;">
+                Factbook USJ 2024-2025
+            </h1>
+            <p style="font-size:18px; color:#555; margin-top:4px; font-family:Candara, Arial, sans-serif;">
+                Section 1 - Effectifs étudiants
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    if os.path.exists("LogoUAQ.png"):
+        st.image("LogoUAQ.png", width=300)
+    elif os.path.exists("usj_logo.png"):
+        st.image("usj_logo.png", width=220)
+
+    st.markdown(
+        f"""
+        <div class="control-panel">
+            <div class="control-title">Données Factbook intégrées</div>
+            <div class="control-subtitle">
+                Module dynamique construit uniquement sur la Section 1 : effectifs étudiants, ETP, campus, niveaux académiques et programmes.
+            </div>
+            <div class="data-chip-row">
+                <span class="data-chip">📁 <strong>Fichier actif</strong> {html_escape(factbook_file_path)}</span>
+                <span class="data-chip">💾 <strong>Taille</strong> {file_size_mb:.2f} Mo</span>
+                <span class="data-chip">🕒 <strong>Dernière modification</strong> {last_update_label}</span>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    def _get_total_row(df, label, label_cols=("Institution", "Programme", "Champ disciplinaire")):
+        for col in label_cols:
+            if col in df.columns:
+                mask = df[col].astype(str).str.contains(label, case=False, na=False, regex=False)
+                if mask.any():
+                    return df.loc[mask].iloc[-1]
+        return None
+
+    def _sum_col(df, col):
+        return pd.to_numeric(df[col], errors="coerce").sum() if col in df.columns else np.nan
+
+    total_formations = _get_total_row(formations, "Total formations diplômantes")
+    total_du_cert = _get_total_row(du_cert, "Total DU et Certificats")
+    total_autres = _get_total_row(du_cert, "Total Autres entités/Inscriptions")
+    total_usj = _get_total_row(du_cert, "Total USJ")
+
+    if total_formations is None:
+        total_formations_values = {
+            "Effectifs annuel 2023-2024": _sum_col(formations, "Effectifs annuel 2023-2024"),
+            "Effectifs annuel 2024-2025": _sum_col(formations, "Effectifs annuel 2024-2025"),
+            "Effectifs semestre 1 2023-2024": _sum_col(formations, "Effectifs semestre 1 2023-2024"),
+            "Effectifs semestre 1 2024-2025": _sum_col(formations, "Effectifs semestre 1 2024-2025"),
+            "ETP annuel 2023-2024": _sum_col(formations, "ETP annuel 2023-2024"),
+            "ETP annuel 2024-2025": _sum_col(formations, "ETP annuel 2024-2025"),
+            "ETP semestre 1 2023-2024": _sum_col(formations, "ETP semestre 1 2023-2024"),
+            "ETP semestre 1 2024-2025": _sum_col(formations, "ETP semestre 1 2024-2025"),
+        }
+        total_formations = pd.Series(total_formations_values)
+
+    tab_synthese, tab_institutions, tab_campus, tab_niveau, tab_programmes, tab_donnees = st.tabs([
+        "Synthèse",
+        "Par institution",
+        "Par campus",
+        "Par niveau académique",
+        "Par programme",
+        "Données"
+    ])
+
+    with tab_synthese:
+        section_header(
+            "Synthèse des effectifs étudiants",
+            "Vue consolidée des principaux totaux de la Section 1 du Factbook 2024-2025."
+        )
+
+        kpi_cols = st.columns(5)
+        with kpi_cols[0]:
+            insight_card(
+                "Formations diplômantes",
+                fb_format_number(total_formations.get("Effectifs annuel 2024-2025")),
+                "Effectifs annuels 2024-2025",
+                color=USJ_BLUE
+            )
+        with kpi_cols[1]:
+            insight_card(
+                "DU et Certificats",
+                fb_format_number(total_du_cert.get("Effectifs annuel 2024-2025") if total_du_cert is not None else np.nan),
+                "Effectifs annuels 2024-2025",
+                color=USJ_RED
+            )
+        with kpi_cols[2]:
+            insight_card(
+                "Total USJ",
+                fb_format_number(total_usj.get("Effectifs annuel 2024-2025") if total_usj is not None else np.nan),
+                "Toutes inscriptions incluses",
+                color=USJ_BLUE_2
+            )
+        with kpi_cols[3]:
+            insight_card(
+                "ETP annuel",
+                fb_format_number(total_usj.get("ETP annuel 2024-2025") if total_usj is not None else total_formations.get("ETP annuel 2024-2025"), digits=0),
+                "Équivalent temps plein 2024-2025",
+                color=USJ_GREEN
+            )
+        with kpi_cols[4]:
+            insight_card(
+                "Variation Total USJ",
+                fb_format_pct(total_usj.get("Effectifs annuel % Var") if total_usj is not None else np.nan),
+                "2023-2024 vs 2024-2025",
+                color=USJ_ORANGE
+            )
+
+        summary_rows = []
+        summary_sources = [
+            ("Formations diplômantes", total_formations),
+            ("DU et Certificats", total_du_cert),
+            ("Autres entités/Inscriptions", total_autres),
+            ("Total USJ", total_usj),
+        ]
+        for label, row in summary_sources:
+            if row is None:
+                continue
+            summary_rows.append({
+                "Catégorie": label,
+                "Effectifs annuel 2023-2024": row.get("Effectifs annuel 2023-2024"),
+                "Effectifs annuel 2024-2025": row.get("Effectifs annuel 2024-2025"),
+                "% Var annuel": row.get("Effectifs annuel % Var"),
+                "Effectifs S1 2023-2024": row.get("Effectifs semestre 1 2023-2024"),
+                "Effectifs S1 2024-2025": row.get("Effectifs semestre 1 2024-2025"),
+                "% Var S1": row.get("Effectifs semestre 1 % Var"),
+                "ETP annuel 2024-2025": row.get("ETP annuel 2024-2025"),
+                "ETP S1 2024-2025": row.get("ETP semestre 1 2024-2025"),
+            })
+        summary_df = pd.DataFrame(summary_rows)
+
+        if not summary_df.empty:
+            chart_df = summary_df.melt(
+                id_vars="Catégorie",
+                value_vars=["Effectifs annuel 2023-2024", "Effectifs annuel 2024-2025"],
+                var_name="Année",
+                value_name="Effectifs"
+            )
+            chart_df["Année"] = chart_df["Année"].str.extract(r"(2023-2024|2024-2025)")
+            fig = px.bar(
+                chart_df,
+                x="Catégorie",
+                y="Effectifs",
+                color="Année",
+                barmode="group",
+                text="Effectifs",
+                title="Comparaison des effectifs annuels par catégorie",
+                color_discrete_sequence=PLOTLY_SEQ,
+            )
+            fig.update_traces(texttemplate="%{text:,.0f}", textposition="outside", cliponaxis=False)
+            fig.update_layout(yaxis_title="Effectifs", xaxis_title="")
+            theme_layout(fig, height=460)
+            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+
+            display_summary = summary_df.copy()
+            for col in [c for c in display_summary.columns if "% Var" in c]:
+                display_summary[col] = display_summary[col].map(fb_format_pct)
+            for col in [c for c in display_summary.columns if c != "Catégorie" and "% Var" not in c]:
+                display_summary[col] = display_summary[col].map(lambda x: fb_format_number(x, digits=0))
+            st.dataframe(display_summary, use_container_width=True, hide_index=True)
+
+        summary_box(
+            """
+            <b>Lecture :</b> cette page n’utilise que la Section 1 du Factbook. Les autres sections du document ne sont pas chargées dans ce module.
+            Les tableaux restent filtrables et téléchargeables afin de faciliter les contrôles avant publication ou présentation institutionnelle.
+            """,
+            color=USJ_BLUE,
+            background="#F7F9FC"
+        )
+
+    with tab_institutions:
+        section_header("Effectifs par institution", "Formations diplômantes et DU/Certificats par champ disciplinaire, acronyme et institution.")
+
+        dataset_choice = st.radio(
+            "Jeu de données",
+            ["Formations diplômantes", "DU et Certificats / Autres inscriptions"],
+            horizontal=True,
+            key="fb_inst_dataset"
+        )
+        inst_df = formations.copy() if dataset_choice == "Formations diplômantes" else du_cert.copy()
+
+        f1, f2, f3 = st.columns(3)
+        with f1:
+            champ = st.selectbox("Champ disciplinaire", filter_options(inst_df, "Champ disciplinaire"), key="fb_inst_champ")
+        filtered_inst = inst_df.copy()
+        if champ != "Tous":
+            filtered_inst = filtered_inst[filtered_inst["Champ disciplinaire"].astype(str) == champ]
+        with f2:
+            acronyme = st.selectbox("Acronyme", filter_options(filtered_inst, "Acronyme"), key="fb_inst_acronyme")
+        if acronyme != "Tous":
+            filtered_inst = filtered_inst[filtered_inst["Acronyme"].astype(str) == acronyme]
+        with f3:
+            metric = st.selectbox(
+                "Indicateur",
+                [
+                    "Effectifs annuel 2024-2025",
+                    "Effectifs semestre 1 2024-2025",
+                    "ETP annuel 2024-2025",
+                    "ETP semestre 1 2024-2025",
+                ],
+                key="fb_inst_metric"
+            )
+
+        chart_inst = filtered_inst.dropna(subset=[metric]).copy() if metric in filtered_inst.columns else pd.DataFrame()
+        if not chart_inst.empty:
+            chart_inst = chart_inst[~chart_inst["Institution"].astype(str).str.startswith("Total", na=False)]
+            chart_inst = chart_inst.sort_values(metric, ascending=False).head(25)
+            fig = px.bar(
+                chart_inst,
+                x=metric,
+                y="Institution",
+                orientation="h",
+                color="Champ disciplinaire" if "Champ disciplinaire" in chart_inst.columns else None,
+                text=metric,
+                title=f"Top institutions selon {metric}",
+                color_discrete_sequence=PLOTLY_SEQ,
+            )
+            fig.update_traces(texttemplate="%{text:,.0f}", textposition="outside", cliponaxis=False)
+            fig.update_layout(xaxis_title=metric, yaxis_title="", yaxis={"categoryorder": "total ascending"})
+            theme_layout(fig, height=max(460, 26 * len(chart_inst) + 120))
+            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+        else:
+            st.info("Aucune donnée disponible pour les filtres sélectionnés.")
+
+        st.dataframe(filtered_inst, use_container_width=True, hide_index=True)
+        st.download_button(
+            "Télécharger les données institutionnelles filtrées (CSV)",
+            data=filtered_inst.to_csv(index=False).encode("utf-8-sig"),
+            file_name="factbook_section1_institutions_filtrees.csv",
+            mime="text/csv",
+            use_container_width=True,
+            key="fb_download_inst"
+        )
+
+    with tab_campus:
+        section_header("Effectifs par campus", "Évolution des effectifs étudiants du semestre 1 entre 2019-2020 et 2024-2025.")
+
+        campus_options = filter_options(campus_df, "Campus")
+        selected_campus = st.selectbox("Campus", campus_options, key="fb_campus_filter")
+        filtered_campus = campus_df.copy()
+        if selected_campus != "Tous":
+            filtered_campus = filtered_campus[filtered_campus["Campus"].astype(str) == selected_campus]
+
+        campus_totals = filtered_campus[filtered_campus["Institution"].astype(str).str.startswith("Total", na=False)].copy()
+        if campus_totals.empty:
+            campus_totals = filtered_campus.copy()
+
+        campus_long = campus_totals.melt(
+            id_vars=[col for col in ["Campus", "Acronyme", "Institution"] if col in campus_totals.columns],
+            value_vars=[year_col for year_col in FACTBOOK_YEARS if year_col in campus_totals.columns],
+            var_name="Année",
+            value_name="Effectifs"
+        ).dropna(subset=["Effectifs"])
+
+        if not campus_long.empty:
+            fig = px.line(
+                campus_long,
+                x="Année",
+                y="Effectifs",
+                color="Institution",
+                markers=True,
+                text="Effectifs",
+                title="Évolution des effectifs semestre 1 par campus",
+                color_discrete_sequence=PLOTLY_SEQ,
+            )
+            fig.update_traces(texttemplate="%{text:,.0f}", textposition="top center")
+            fig.update_layout(yaxis_title="Effectifs", xaxis_title="Année")
+            theme_layout(fig, height=500)
+            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+        else:
+            st.info("Aucune donnée disponible pour les filtres sélectionnés.")
+
+        st.dataframe(filtered_campus, use_container_width=True, hide_index=True)
+        st.download_button(
+            "Télécharger les données campus filtrées (CSV)",
+            data=filtered_campus.to_csv(index=False).encode("utf-8-sig"),
+            file_name="factbook_section1_campus_filtres.csv",
+            mime="text/csv",
+            use_container_width=True,
+            key="fb_download_campus"
+        )
+
+    with tab_niveau:
+        section_header("Effectifs par niveau académique", "Lecture des effectifs et de l’ETP du semestre 1 par niveau académique.")
+
+        indicator = st.radio(
+            "Indicateur",
+            sorted(niveau_df["Indicateur"].dropna().astype(str).unique().tolist()),
+            horizontal=True,
+            key="fb_niveau_indicator"
+        )
+        filtered_level = niveau_df[niveau_df["Indicateur"].astype(str) == indicator].copy()
+        show_total = st.checkbox("Inclure Total USJ", value=False, key="fb_niveau_total")
+        if not show_total:
+            filtered_level = filtered_level[~filtered_level["Niveau académique"].astype(str).str.startswith("Total", na=False)]
+
+        level_long = filtered_level.melt(
+            id_vars=["Niveau académique", "Indicateur"],
+            value_vars=[year_col for year_col in FACTBOOK_YEARS if year_col in filtered_level.columns],
+            var_name="Année",
+            value_name="Valeur"
+        ).dropna(subset=["Valeur"])
+
+        if not level_long.empty:
+            fig = px.line(
+                level_long,
+                x="Année",
+                y="Valeur",
+                color="Niveau académique",
+                markers=True,
+                title=f"Évolution - {indicator}",
+                color_discrete_sequence=PLOTLY_SEQ,
+            )
+            fig.update_layout(yaxis_title="Valeur", xaxis_title="Année")
+            theme_layout(fig, height=520)
+            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+
+            last_year = filtered_level[["Niveau académique", "2024-2025", "% Var"]].dropna(subset=["2024-2025"]).copy()
+            last_year = last_year.sort_values("2024-2025", ascending=False)
+            fig2 = px.bar(
+                last_year,
+                x="Niveau académique",
+                y="2024-2025",
+                text="2024-2025",
+                title="Répartition 2024-2025 par niveau académique",
+                color_discrete_sequence=[USJ_BLUE],
+            )
+            fig2.update_traces(texttemplate="%{text:,.0f}", textposition="outside", cliponaxis=False)
+            fig2.update_layout(yaxis_title="Valeur", xaxis_title="", xaxis_tickangle=-25)
+            theme_layout(fig2, height=460, showlegend=False)
+            st.plotly_chart(fig2, use_container_width=True, config={"displayModeBar": False})
+        else:
+            st.info("Aucune donnée disponible pour l’indicateur sélectionné.")
+
+        st.dataframe(filtered_level, use_container_width=True, hide_index=True)
+
+    with tab_programmes:
+        section_header("Effectifs par programme", "Recherche et visualisation des programmes de la Section 1.")
+
+        programs_all = pd.concat([programmes_df, du_programmes_df], ignore_index=True, sort=False)
+        if "Programme" not in programs_all.columns:
+            programs_all["Programme"] = np.nan
+        if "Diplôme" not in programs_all.columns:
+            programs_all["Diplôme"] = np.nan
+        programs_all["Programme affiché"] = programs_all["Programme"].where(programs_all["Programme"].notna(), programs_all["Diplôme"])
+        pf1, pf2, pf3, pf4 = st.columns([1.4, 1.4, 1.4, 2.2])
+        with pf1:
+            type_programme = st.selectbox("Type de programme", filter_options(programs_all, "Type de programme"), key="fb_prog_type")
+        filtered_programs = programs_all.copy()
+        if type_programme != "Tous":
+            filtered_programs = filtered_programs[filtered_programs["Type de programme"].astype(str) == type_programme]
+        with pf2:
+            champ_programme = st.selectbox("Champ disciplinaire", filter_options(filtered_programs, "Champ disciplinaire"), key="fb_prog_champ")
+        if champ_programme != "Tous":
+            filtered_programs = filtered_programs[filtered_programs["Champ disciplinaire"].astype(str) == champ_programme]
+        with pf3:
+            acronyme_programme = st.selectbox("Acronyme", filter_options(filtered_programs, "Acronyme"), key="fb_prog_acronyme")
+        if acronyme_programme != "Tous":
+            filtered_programs = filtered_programs[filtered_programs["Acronyme"].astype(str) == acronyme_programme]
+        with pf4:
+            search_program = st.text_input("Recherche programme", value="", key="fb_prog_search")
+        if search_program.strip():
+            label_col = "Programme" if "Programme" in filtered_programs.columns else "Diplôme"
+            filtered_programs = filtered_programs[filtered_programs[label_col].astype(str).str.contains(search_program.strip(), case=False, na=False)]
+
+        program_label_col = "Programme affiché"
+
+        if "2024-2025" in filtered_programs.columns and program_label_col in filtered_programs.columns:
+            top_programs = filtered_programs.dropna(subset=["2024-2025"]).copy()
+            top_programs = top_programs[~top_programs[program_label_col].astype(str).str.startswith("Total", na=False)]
+            top_programs = top_programs.sort_values("2024-2025", ascending=False).head(30)
+            if not top_programs.empty:
+                fig = px.bar(
+                    top_programs,
+                    x="2024-2025",
+                    y=program_label_col,
+                    orientation="h",
+                    color="Type de programme",
+                    text="2024-2025",
+                    title="Top programmes selon les effectifs 2024-2025",
+                    color_discrete_sequence=PLOTLY_SEQ,
+                )
+                fig.update_traces(texttemplate="%{text:,.0f}", textposition="outside", cliponaxis=False)
+                fig.update_layout(xaxis_title="Effectifs 2024-2025", yaxis_title="", yaxis={"categoryorder": "total ascending"})
+                theme_layout(fig, height=max(520, 22 * len(top_programs) + 140))
+                st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+            else:
+                st.info("Aucun programme disponible pour les filtres sélectionnés.")
+
+        st.dataframe(filtered_programs, use_container_width=True, hide_index=True)
+        st.download_button(
+            "Télécharger les programmes filtrés (CSV)",
+            data=filtered_programs.to_csv(index=False).encode("utf-8-sig"),
+            file_name="factbook_section1_programmes_filtres.csv",
+            mime="text/csv",
+            use_container_width=True,
+            key="fb_download_programs"
+        )
+
+    with tab_donnees:
+        section_header("Tables sources intégrées", "Contrôle des tableaux importés depuis l’Excel de la Section 1.")
+
+        source_tables = {
+            "1.1 Formations diplômantes par institution": formations,
+            "1.2 DU, certificats et autres inscriptions": du_cert,
+            "1.3 Campus": campus_df,
+            "1.4 Niveau académique": niveau_df,
+            "1.5 à 1.12 Programmes": programmes_df,
+            "1.13 DU et certificats par programme": du_programmes_df,
+        }
+        selected_table_name = st.selectbox("Table", list(source_tables.keys()), key="fb_source_table")
+        selected_table = source_tables[selected_table_name]
+        st.dataframe(selected_table, use_container_width=True, hide_index=True)
+        st.download_button(
+            "Télécharger cette table (CSV)",
+            data=selected_table.to_csv(index=False).encode("utf-8-sig"),
+            file_name=f"{selected_table_name.replace(' ', '_').replace('/', '_')}.csv",
+            mime="text/csv",
+            use_container_width=True,
+            key="fb_download_source_table"
+        )
+
+    st.markdown(
+        f"""
+        <div style="
+            margin-top:35px;
+            padding:15px;
+            background-color:{USJ_BLUE};
+            color:white;
+            border-radius:14px;
+            text-align:center;
+            font-size:14px;
+            box-shadow:0 4px 14px rgba(0,0,0,0.08);
+            font-family:Candara, Arial, sans-serif;
+        ">
+            Université Saint-Joseph de Beyrouth – Factbook 2024-2025 – Section 1
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
 if "selected_portal_app" not in st.session_state:
     st.session_state["selected_portal_app"] = None
 
@@ -2638,6 +3398,10 @@ if "dashboard_started" not in st.session_state:
 # Exit Survey introduction and from the analytical dashboard pages.
 if st.session_state["selected_portal_app"] is None:
     render_survey_portal()
+    st.stop()
+
+if st.session_state["selected_portal_app"] == "factbook":
+    render_factbook_module()
     st.stop()
 
 if st.session_state["selected_portal_app"] != "exit_students":
