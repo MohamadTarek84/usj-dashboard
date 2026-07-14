@@ -5521,6 +5521,451 @@ def _factbook_logo_html(width=320):
     return f"<div style='font-family:Candara, Arial, sans-serif;color:{USJ_BLUE};font-weight:900;font-size:30px;'>USJ · UAQ</div>"
 
 
+
+# =====================================================
+# Factbook Section 6 helpers
+# =====================================================
+
+FACTBOOK_SECTION6_FILE_CANDIDATES = [
+    "FB24-25 6. Admission commune HS 27-1-2026 No Figure.xlsx",
+    "FB24-25 6. Admission commune HS 27-1-2026.xlsx",
+    "Factbook_Admission_Commune_2024_2025.xlsx",
+    "Factbook_Section6_Admission_Commune.xlsx",
+]
+
+FACTBOOK_SECTION6_YEARS = [str(year) for year in range(2011, 2026)]
+
+FACTBOOK_SECTION6_TITLES = {
+    "6": "6. Admission commune : 1er cycle d'une formation",
+    "6.1": "6.1. Statistiques globales USJ",
+    "6.2": "6.2. Statistiques par institution : Candidats inscrits",
+    "6.3": "6.3. Statistiques par programme / Langue d'enseignement / Campus : Candidats inscrits",
+}
+
+
+def find_factbook_section6_file():
+    """Find the Section 6 Factbook Excel file without touching the other Factbook files."""
+    for file_name in FACTBOOK_SECTION6_FILE_CANDIDATES:
+        if os.path.exists(file_name):
+            stat = os.stat(file_name)
+            return file_name, stat.st_mtime, stat.st_size
+
+    for file_name in os.listdir("."):
+        lower = file_name.lower()
+        if lower.endswith((".xlsx", ".xls")) and "admission" in lower and "commune" in lower:
+            stat = os.stat(file_name)
+            return file_name, stat.st_mtime, stat.st_size
+
+    return None, None, None
+
+
+def _fb_year_label(value):
+    if _fb_is_blank(value):
+        return None
+    try:
+        return str(int(float(value)))
+    except Exception:
+        return str(value).strip()
+
+
+def _fb_parse_section6_global(file_path):
+    raw = pd.read_excel(file_path, sheet_name="6.1. Statistiques USJ", header=None)
+    raw = _fb_apply_cell_function(raw, _fb_clean_cell)
+
+    years = [_fb_year_label(v) for v in raw.iloc[2, 1:16].tolist()]
+    years = [year for year in years if year]
+    columns = ["Indicateur"] + years + ["% Var n:n-1"]
+
+    df = raw.iloc[4:9, 0:len(columns)].copy()
+    df.columns = columns
+    df = _fb_clean_dataframe(df)
+    for col in years + ["% Var n:n-1"]:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+    return df
+
+
+def _fb_parse_section6_by_institution(file_path):
+    raw = pd.read_excel(file_path, sheet_name="6.2. Statistiques par Inst", header=None)
+    raw = _fb_apply_cell_function(raw, _fb_clean_cell)
+
+    years = [_fb_year_label(v) for v in raw.iloc[1, 3:18].tolist()]
+    years = [year for year in years if year]
+    columns = ["Champ disciplinaire", "Acronyme", "Institution"] + years
+
+    df = raw.iloc[4:, 0:len(columns)].copy()
+    df.columns = columns
+    df = _fb_clean_dataframe(df)
+    if "Institution" in df.columns:
+        df = df[~df["Institution"].astype(str).str.startswith("*", na=False)].copy()
+    df = _fb_fill_metadata(df, ["Champ disciplinaire"])
+    for col in years:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+    return df
+
+
+def _fb_parse_section6_by_programme(file_path):
+    raw = pd.read_excel(file_path, sheet_name="6.3. Statistiques par programme", header=None)
+    raw = _fb_apply_cell_function(raw, _fb_clean_cell)
+
+    years = [_fb_year_label(v) for v in raw.iloc[1, 4:19].tolist()]
+    years = [year for year in years if year]
+    columns = ["Champ disciplinaire", "Acronyme", "Programme", "Crédits"] + years
+
+    df = raw.iloc[4:, 0:len(columns)].copy()
+    df.columns = columns
+    df = _fb_clean_dataframe(df)
+    if "Programme" in df.columns:
+        df = df[~df["Programme"].astype(str).str.startswith("*", na=False)].copy()
+    df = _fb_fill_metadata(df, ["Champ disciplinaire"])
+    if "Crédits" in df.columns:
+        df["Crédits"] = pd.to_numeric(df["Crédits"], errors="coerce")
+    for col in years:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+    return df
+
+
+@st.cache_data(show_spinner=False)
+def load_factbook_section6(file_path, file_mtime, file_size):
+    """Load only Section 6 of the Factbook from the provided Excel workbook."""
+    return {
+        "global": _fb_parse_section6_global(file_path),
+        "institution": _fb_parse_section6_by_institution(file_path),
+        "programme": _fb_parse_section6_by_programme(file_path),
+    }
+
+
+def _fb_section6_row_value(global_df, indicator, year):
+    if global_df is None or global_df.empty or "Indicateur" not in global_df.columns or year not in global_df.columns:
+        return np.nan
+    mask = global_df["Indicateur"].astype(str).str.strip().eq(indicator)
+    if not mask.any():
+        return np.nan
+    return pd.to_numeric(global_df.loc[mask, year].iloc[0], errors="coerce")
+
+
+def _fb_section6_global_table(global_df):
+    table = global_df.copy()
+    years = [year for year in FACTBOOK_SECTION6_YEARS if year in table.columns]
+    rate_mask = table["Indicateur"].astype(str).str.startswith("%", na=False)
+    for col in years + ["% Var n:n-1"]:
+        if col not in table.columns:
+            continue
+        for idx in table.index:
+            value = table.at[idx, col]
+            if pd.isna(value):
+                table.at[idx, col] = ""
+            elif rate_mask.loc[idx] or col == "% Var n:n-1":
+                pct_value = float(value) * 100 if abs(float(value)) <= 1.5 else float(value)
+                table.at[idx, col] = f"{pct_value:.2f}%"
+            else:
+                table.at[idx, col] = fb_format_number(value, digits=0)
+    return table
+
+
+def _fb_section6_is_total(label):
+    return str(label).strip().upper().replace("\u00a0", " ") == "TOTAL"
+
+
+def _fb_section6_non_total_rows(df, label_col):
+    if df is None or df.empty or label_col not in df.columns:
+        return pd.DataFrame()
+    return df[~df[label_col].astype(str).map(_fb_section6_is_total)].copy()
+
+
+def _fb_section6_label(row, name_col):
+    acronym = row.get("Acronyme", np.nan)
+    name = row.get(name_col, "")
+    if _fb_is_blank(acronym):
+        return str(name)
+    return f"{name} - {acronym}"
+
+
+def _fb_section6_admission_heatmap(matrix, title, value_title="Effectif"):
+    if matrix is None or matrix.empty:
+        return
+    matrix = matrix.apply(pd.to_numeric, errors="coerce").dropna(how="all")
+    if matrix.empty:
+        return
+
+    values = matrix.to_numpy(dtype=float)
+    fig = go.Figure(
+        data=go.Heatmap(
+            z=values,
+            x=matrix.columns.tolist(),
+            y=matrix.index.tolist(),
+            colorscale=[
+                [0.00, "#D6E0FF"],
+                [0.25, "#AEBCEE"],
+                [0.55, "#6F80C1"],
+                [0.78, USJ_BLUE_2],
+                [1.00, USJ_BLUE],
+            ],
+            colorbar=dict(title=value_title),
+            hovertemplate="%{y}<br>%{x}: %{z:,.0f}<extra></extra>",
+            xgap=1,
+            ygap=1,
+        )
+    )
+    fb_add_heatmap_value_annotations(fig, matrix, value_font_size=13, delta_font_size=10, dark_threshold=0.50)
+    fig.update_layout(
+        title=dict(text=title, x=0.01, font=dict(size=20, color=USJ_BLUE, family="Candara, Arial")),
+        template="plotly_white",
+        height=max(420, 52 * len(matrix.index) + 150),
+        margin=dict(l=260, r=80, t=85, b=55),
+        font=dict(family="Candara, Arial", color=USJ_TEXT),
+        paper_bgcolor="white",
+        plot_bgcolor="white",
+    )
+    fig.update_xaxes(side="top", title=None, automargin=True)
+    fig.update_yaxes(title=None, automargin=True)
+    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+
+
+def _fb_section6_rate_heatmap(rate_df, title):
+    if rate_df is None or rate_df.empty:
+        return
+    matrix = rate_df.apply(pd.to_numeric, errors="coerce").dropna(how="all")
+    if matrix.empty:
+        return
+    z = matrix.apply(lambda col: col.map(lambda v: np.nan if pd.isna(v) else float(v) * 100 if abs(float(v)) <= 1.5 else float(v)))
+    fig = go.Figure(
+        data=go.Heatmap(
+            z=z.values,
+            x=z.columns.tolist(),
+            y=z.index.tolist(),
+            colorscale=[
+                [0.00, "#D6E0FF"],
+                [0.25, "#AEBCEE"],
+                [0.55, "#6F80C1"],
+                [0.78, USJ_BLUE_2],
+                [1.00, USJ_BLUE],
+            ],
+            colorbar=dict(title="Taux"),
+            hovertemplate="%{y}<br>%{x}: %{z:.2f}%<extra></extra>",
+            xgap=1,
+            ygap=1,
+        )
+    )
+    fb_add_rate_heatmap_annotations(fig, matrix, value_font_size=15, delta_font_size=11, dark_threshold=0.50)
+    fig.update_layout(
+        title=dict(text=title, x=0.01, font=dict(size=20, color=USJ_BLUE, family="Candara, Arial")),
+        template="plotly_white",
+        height=max(360, 74 * len(matrix.index) + 150),
+        margin=dict(l=190, r=80, t=85, b=55),
+        font=dict(family="Candara, Arial", color=USJ_TEXT),
+        paper_bgcolor="white",
+        plot_bgcolor="white",
+    )
+    fig.update_xaxes(side="top", title=None, automargin=True)
+    fig.update_yaxes(title=None, automargin=True)
+    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+
+
+def _fb_section6_top_bar(df, label_col, value_col, title, top_n=25):
+    if df is None or df.empty or value_col not in df.columns or label_col not in df.columns:
+        return
+    chart_df = df.copy()
+    chart_df = chart_df.dropna(subset=[value_col]).copy()
+    if chart_df.empty:
+        return
+    chart_df[value_col] = pd.to_numeric(chart_df[value_col], errors="coerce")
+    chart_df = chart_df.dropna(subset=[value_col])
+    if chart_df.empty:
+        return
+    chart_df["Libellé"] = chart_df.apply(lambda row: _fb_section6_label(row, label_col), axis=1)
+    chart_df = chart_df.sort_values(value_col, ascending=False).head(top_n).sort_values(value_col, ascending=True)
+    fig = px.bar(
+        chart_df,
+        x=value_col,
+        y="Libellé",
+        orientation="h",
+        text=value_col,
+        color="Champ disciplinaire" if "Champ disciplinaire" in chart_df.columns else None,
+        color_discrete_sequence=PLOTLY_SEQ,
+        title=title,
+        hover_data={"Champ disciplinaire": True, "Acronyme": True, value_col: ":,.0f"} if "Champ disciplinaire" in chart_df.columns else None,
+    )
+    fig.update_traces(texttemplate="%{text:,.0f}", textposition="outside", cliponaxis=False, textfont=dict(size=14, color=USJ_TEXT))
+    theme_layout(fig, height=max(520, 28 * len(chart_df) + 190), showlegend=True)
+    fb_polish_horizontal_bar(fig, chart_df, value_col, left_margin=420, right_margin=130, bottom_margin=120, showlegend=True)
+    fig.update_xaxes(title="Candidats inscrits")
+    fig.update_yaxes(title=None, automargin=True)
+    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+
+
+def render_factbook_section6_module():
+    """Render the connected Factbook module for Section 6: admission commune."""
+    factbook_file_path, factbook_file_mtime, factbook_file_size = find_factbook_section6_file()
+
+    if factbook_file_path is None:
+        st.error("Fichier Excel de la Section 6 du Factbook introuvable. Ajoutez le fichier Excel dans le même dossier que l’application.")
+        return
+
+    with st.spinner("Chargement du Factbook - Section 6..."):
+        fb = load_factbook_section6(factbook_file_path, factbook_file_mtime, factbook_file_size)
+
+    global_df = fb.get("global", pd.DataFrame())
+    institution_df = fb.get("institution", pd.DataFrame())
+    programme_df = fb.get("programme", pd.DataFrame())
+    year_options = [year for year in FACTBOOK_SECTION6_YEARS if year in global_df.columns]
+    latest_year = year_options[-1] if year_options else "2025"
+
+    header_cols = st.columns([4.7, 1.3])
+    with header_cols[0]:
+        st.markdown(
+            f"""
+            <div style="font-family:Candara, Arial, sans-serif; color:{USJ_BLUE}; font-size:46px; font-weight:900; line-height:1.05; margin-bottom:10px;">
+                Factbook USJ 2024-2025
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    with header_cols[1]:
+        st.markdown(_factbook_logo_html(width=280), unsafe_allow_html=True)
+
+    if st.button("← Sections Factbook", key="back_to_factbook_cover_from_section6", use_container_width=True):
+        st.session_state["selected_factbook_section"] = None
+        st.rerun()
+
+    st.markdown(
+        f"""
+        <div style="font-family:Candara, Arial, sans-serif;color:{USJ_BLUE};font-weight:900;font-size:38px;line-height:1.15;margin:22px 0 18px 0;">
+            Section 6 - Admission commune
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    tab_synthese, tab_institution, tab_programme = st.tabs([
+        "Synthèse",
+        "6.2 Par institution",
+        "6.3 Par programme",
+    ])
+
+    with tab_synthese:
+        section_header(FACTBOOK_SECTION6_TITLES["6.1"], "Vue dynamique des candidatures, admissions et inscriptions au 1er cycle.")
+        candidates = _fb_section6_row_value(global_df, "Candidats", latest_year)
+        admitted = _fb_section6_row_value(global_df, "Candidats Admis", latest_year)
+        enrolled = _fb_section6_row_value(global_df, "Candidats Inscrits", latest_year)
+        admission_rate = _fb_section6_row_value(global_df, "% Admis / Candidats", latest_year)
+        enrollment_rate = _fb_section6_row_value(global_df, "% Inscrits / Admis", latest_year)
+
+        kpi_cols = st.columns(5)
+        with kpi_cols[0]:
+            insight_card("Candidats", fb_format_number(candidates), f"Cohorte {latest_year}", color=USJ_BLUE)
+        with kpi_cols[1]:
+            insight_card("Candidats admis", fb_format_number(admitted), f"Cohorte {latest_year}", color=USJ_BLUE_2)
+        with kpi_cols[2]:
+            insight_card("Candidats inscrits", fb_format_number(enrolled), f"Cohorte {latest_year}", color=USJ_RED)
+        with kpi_cols[3]:
+            insight_card("% admis / candidats", fb_format_pct(admission_rate), f"Cohorte {latest_year}", color=USJ_GREEN)
+        with kpi_cols[4]:
+            insight_card("% inscrits / admis", fb_format_pct(enrollment_rate), f"Cohorte {latest_year}", color=USJ_GOLD)
+
+        if not global_df.empty:
+            count_rows = global_df[global_df["Indicateur"].isin(["Candidats", "Candidats Admis", "Candidats Inscrits"])].copy()
+            count_matrix = count_rows.set_index("Indicateur")[[year for year in year_options if year in count_rows.columns]]
+            _fb_section6_admission_heatmap(
+                count_matrix,
+                "Évolution globale des candidats, admis et inscrits",
+                value_title="Effectif",
+            )
+
+            rate_rows = global_df[global_df["Indicateur"].astype(str).str.startswith("%", na=False)].copy()
+            rate_matrix = rate_rows.set_index("Indicateur")[[year for year in year_options if year in rate_rows.columns]]
+            _fb_section6_rate_heatmap(rate_matrix, "Évolution des taux d’admission et de conversion")
+
+        render_factbook_table(
+            _fb_section6_global_table(global_df),
+            FACTBOOK_SECTION6_TITLES["6.1"],
+            note="Les taux sont affichés en pourcentage. La cohorte 2025-2026 est indiquée sans l’admission au semestre 2.",
+            max_height=420,
+        )
+
+    with tab_institution:
+        section_header(FACTBOOK_SECTION6_TITLES["6.2"], "Lecture des candidats inscrits par institution et champ disciplinaire.")
+        filtered = _fb_section6_non_total_rows(institution_df, "Institution")
+        filter_cols = st.columns(3)
+        with filter_cols[0]:
+            champ = st.selectbox("Champ disciplinaire", filter_options(filtered, "Champ disciplinaire"), key="fb6_inst_champ")
+        with filter_cols[1]:
+            acronyme = st.selectbox("Acronyme", filter_options(filtered, "Acronyme"), key="fb6_inst_acronyme")
+        with filter_cols[2]:
+            year_selected = st.selectbox("Année", year_options, index=len(year_options) - 1 if year_options else 0, key="fb6_inst_year")
+
+        if champ != "Tous":
+            filtered = filtered[filtered["Champ disciplinaire"].astype(str) == champ]
+        if acronyme != "Tous":
+            filtered = filtered[filtered["Acronyme"].astype(str) == acronyme]
+
+        _fb_section6_top_bar(
+            filtered,
+            "Institution",
+            year_selected,
+            f"Top institutions selon les candidats inscrits - {year_selected}",
+            top_n=25,
+        )
+
+        heatmap_source = filtered.dropna(subset=[year_selected]).copy() if year_selected in filtered.columns else filtered.copy()
+        if not heatmap_source.empty:
+            heatmap_source[year_selected] = pd.to_numeric(heatmap_source[year_selected], errors="coerce")
+            heatmap_source["Libellé"] = heatmap_source.apply(lambda row: _fb_section6_label(row, "Institution"), axis=1)
+            heatmap_source = heatmap_source.sort_values(year_selected, ascending=False).head(20)
+            matrix = heatmap_source.set_index("Libellé")[[year for year in year_options if year in heatmap_source.columns]]
+            _fb_section6_admission_heatmap(matrix, "Évolution des candidats inscrits - Top institutions", value_title="Inscrits")
+
+        render_factbook_table(filtered, FACTBOOK_SECTION6_TITLES["6.2"], max_height=620)
+
+    with tab_programme:
+        section_header(FACTBOOK_SECTION6_TITLES["6.3"], "Lecture par programme, langue d’enseignement et campus.")
+        filtered = _fb_section6_non_total_rows(programme_df, "Programme")
+        filter_cols = st.columns(4)
+        with filter_cols[0]:
+            champ = st.selectbox("Champ disciplinaire", filter_options(filtered, "Champ disciplinaire"), key="fb6_prog_champ")
+        with filter_cols[1]:
+            acronyme = st.selectbox("Acronyme", filter_options(filtered, "Acronyme"), key="fb6_prog_acronyme")
+        with filter_cols[2]:
+            year_selected = st.selectbox("Année", year_options, index=len(year_options) - 1 if year_options else 0, key="fb6_prog_year")
+        with filter_cols[3]:
+            search_text = st.text_input("Recherche programme", key="fb6_prog_search")
+
+        if champ != "Tous":
+            filtered = filtered[filtered["Champ disciplinaire"].astype(str) == champ]
+        if acronyme != "Tous":
+            filtered = filtered[filtered["Acronyme"].astype(str) == acronyme]
+        if search_text:
+            filtered = filtered[filtered["Programme"].astype(str).str.contains(search_text, case=False, na=False)]
+
+        _fb_section6_top_bar(
+            filtered,
+            "Programme",
+            year_selected,
+            f"Top programmes selon les candidats inscrits - {year_selected}",
+            top_n=30,
+        )
+
+        heatmap_source = filtered.dropna(subset=[year_selected]).copy() if year_selected in filtered.columns else filtered.copy()
+        if not heatmap_source.empty:
+            heatmap_source[year_selected] = pd.to_numeric(heatmap_source[year_selected], errors="coerce")
+            heatmap_source["Libellé"] = heatmap_source.apply(lambda row: _fb_section6_label(row, "Programme"), axis=1)
+            heatmap_source = heatmap_source.sort_values(year_selected, ascending=False).head(25)
+            matrix = heatmap_source.set_index("Libellé")[[year for year in year_options if year in heatmap_source.columns]]
+            _fb_section6_admission_heatmap(matrix, "Évolution des candidats inscrits - Top programmes", value_title="Inscrits")
+
+        render_factbook_table(filtered, FACTBOOK_SECTION6_TITLES["6.3"], max_height=650)
+
+    st.markdown(
+        f"""
+        <div style='margin-top:26px;color:#667085;font-family:Candara, Arial, sans-serif;font-size:13px;text-align:right;'>
+            Université Saint-Joseph de Beyrouth – Factbook 2024-2025 – Section 6
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
 def render_factbook_cover():
     """Render a professional Factbook landing page with section-level navigation."""
     section1_path, _, _ = find_factbook_section1_file()
@@ -5528,8 +5973,9 @@ def render_factbook_cover():
     section3_path, _, _ = find_factbook_section3_file()
     section4_path, _, _ = find_factbook_section4_file()
     section5_path, _, _ = find_factbook_section5_file()
+    section6_path, _, _ = find_factbook_section6_file()
 
-    active_sections = int(section1_path is not None) + int(section2_path is not None) + int(section3_path is not None) + int(section4_path is not None) + int(section5_path is not None)
+    active_sections = int(section1_path is not None) + int(section2_path is not None) + int(section3_path is not None) + int(section4_path is not None) + int(section5_path is not None) + int(section6_path is not None)
 
     sections = [
         {
@@ -5582,9 +6028,9 @@ def render_factbook_cover():
             "number": "06",
             "label": "Section 6",
             "title": "Admission commune",
-            "text": "Statistiques globales, candidats inscrits, programmes, langues d’enseignement et campus.",
-            "enabled": False,
-            "button": "Bientôt disponible",
+            "text": "Statistiques globales, candidats admis, candidats inscrits, institutions, programmes, langues d’enseignement et campus.",
+            "enabled": section6_path is not None,
+            "button": "Ouvrir la Section 6" if section6_path is not None else "Bientôt disponible",
         },
     ]
 
@@ -6967,6 +7413,9 @@ def render_factbook_module():
         return
     if st.session_state["selected_factbook_section"] == "section5":
         render_factbook_section5_module()
+        return
+    if st.session_state["selected_factbook_section"] == "section6":
+        render_factbook_section6_module()
         return
 
     render_factbook_cover()
