@@ -3567,7 +3567,24 @@ def render_factbook_module():
     with tab_institutions:
         section_header(
             "Effectifs par institution",
-            f"{FACTBOOK_SECTION1_TITLES['1.1']} | {FACTBOOK_SECTION1_TITLES['1.2']}"
+            None
+        )
+        st.markdown(
+            f"""
+            <div style="
+                color:{USJ_BLUE};
+                font-family:Candara, Arial, sans-serif;
+                font-size:20px;
+                font-weight:900;
+                line-height:1.2;
+                margin:2px 0 14px 0;
+            ">
+                {html_escape(FACTBOOK_SECTION1_TITLES['1.1'])}
+                <span style="padding:0 6px;color:{USJ_BLUE};font-weight:900;">|</span>
+                {html_escape(FACTBOOK_SECTION1_TITLES['1.2'])}
+            </div>
+            """,
+            unsafe_allow_html=True
         )
 
         dataset_choice = st.radio(
