@@ -5808,7 +5808,9 @@ def _fb_section6_top_bar(df, label_col, value_col, title, top_n=25):
     if chart_df.empty:
         return
     chart_df["Libellé"] = chart_df.apply(lambda row: _fb_section6_label(row, label_col), axis=1)
-    chart_df = chart_df.sort_values(value_col, ascending=False).head(top_n).sort_values(value_col, ascending=True)
+    # Keep the Top N highest values, then order the horizontal axis so the highest item appears first/top.
+    chart_df = chart_df.sort_values([value_col, "Libellé"], ascending=[False, True]).head(top_n).copy()
+    y_order = chart_df.sort_values([value_col, "Libellé"], ascending=[True, False])["Libellé"].tolist()
     fig = px.bar(
         chart_df,
         x=value_col,
@@ -5824,7 +5826,12 @@ def _fb_section6_top_bar(df, label_col, value_col, title, top_n=25):
     theme_layout(fig, height=max(520, 28 * len(chart_df) + 190), showlegend=True)
     fb_polish_horizontal_bar(fig, chart_df, value_col, left_margin=420, right_margin=130, bottom_margin=120, showlegend=True)
     fig.update_xaxes(title="Candidats inscrits")
-    fig.update_yaxes(title=None, automargin=True)
+    fig.update_yaxes(
+        title=None,
+        automargin=True,
+        categoryorder="array",
+        categoryarray=y_order,
+    )
     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
 
