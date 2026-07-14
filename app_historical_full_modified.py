@@ -3567,107 +3567,133 @@ def render_factbook_module():
     with tab_institutions:
         section_header(
             "Effectifs par institution",
-            None
-        )
-        st.markdown(
-            f"""
-            <div style="
-                color:{USJ_BLUE};
-                font-family:Candara, Arial, sans-serif;
-                font-size:20px;
-                font-weight:900;
-                line-height:1.2;
-                margin:2px 0 14px 0;
-            ">
-                {html_escape(FACTBOOK_SECTION1_TITLES['1.1'])}
-                <span style="padding:0 6px;color:{USJ_BLUE};font-weight:900;">|</span>
-                {html_escape(FACTBOOK_SECTION1_TITLES['1.2'])}
-            </div>
-            """,
-            unsafe_allow_html=True
+            "Les sous-sections 1.1 et 1.2 sont présentées séparément, comme dans le fichier Excel."
         )
 
-        dataset_choice = st.radio(
-            "Jeu de données",
-            [FACTBOOK_SECTION1_TITLES["1.1"], FACTBOOK_SECTION1_TITLES["1.2"]],
-            horizontal=False,
-            key="fb_inst_dataset",
-            label_visibility="collapsed"
-        )
-        inst_df = formations.copy() if dataset_choice == FACTBOOK_SECTION1_TITLES["1.1"] else du_cert.copy()
-
-        f1, f2, f3 = st.columns(3)
-        with f1:
-            champ = st.selectbox("Champ disciplinaire", filter_options(inst_df, "Champ disciplinaire"), key="fb_inst_champ")
-        filtered_inst = inst_df.copy()
-        if champ != "Tous":
-            filtered_inst = filtered_inst[filtered_inst["Champ disciplinaire"].astype(str) == champ]
-        with f2:
-            acronyme = st.selectbox("Acronyme", filter_options(filtered_inst, "Acronyme"), key="fb_inst_acronyme")
-        if acronyme != "Tous":
-            filtered_inst = filtered_inst[filtered_inst["Acronyme"].astype(str) == acronyme]
-        with f3:
-            metric = st.selectbox(
-                "Indicateur",
-                [
-                    "Effectifs annuel 2024-2025",
-                    "Effectifs semestre 1 2024-2025",
-                    "ETP annuel 2024-2025",
-                    "ETP semestre 1 2024-2025",
-                ],
-                key="fb_inst_metric"
+        def _render_institution_dataset(inst_df, dataset_title, dataset_short, key_prefix):
+            st.markdown(
+                f"""
+                <div style="
+                    color:{USJ_BLUE};
+                    font-family:Candara, Arial, sans-serif;
+                    font-size:20px;
+                    font-weight:900;
+                    line-height:1.25;
+                    margin:6px 0 16px 0;
+                ">
+                    {html_escape(dataset_title)}
+                </div>
+                """,
+                unsafe_allow_html=True
             )
 
-        chart_inst = filtered_inst.dropna(subset=[metric]).copy() if metric in filtered_inst.columns else pd.DataFrame()
-        if not chart_inst.empty:
-            chart_inst = chart_inst[~chart_inst["Institution"].astype(str).str.startswith("Total", na=False)]
-            chart_inst = chart_inst.sort_values(metric, ascending=False).head(25)
-            if dataset_choice == FACTBOOK_SECTION1_TITLES["1.2"] and "Champ disciplinaire" in chart_inst.columns:
-                chart_inst["Catégorie graphique"] = np.where(
-                    chart_inst["Champ disciplinaire"].astype(str).str.contains("Autres entités", case=False, na=False),
-                    "Autres entités / formations",
-                    "DU et Certificats"
+            f1, f2, f3 = st.columns(3)
+            with f1:
+                champ = st.selectbox(
+                    "Champ disciplinaire",
+                    filter_options(inst_df, "Champ disciplinaire"),
+                    key=f"{key_prefix}_champ"
                 )
-            else:
-                chart_inst["Catégorie graphique"] = "Formations diplômantes"
-            chart_inst, institution_axis_col = _fb_make_unique_axis_labels(
-                chart_inst,
-                "Institution",
-                context_cols=["Catégorie graphique", "Acronyme"]
-            )
-            fig = px.bar(
-                chart_inst,
-                x=metric,
-                y=institution_axis_col,
-                orientation="h",
-                color="Champ disciplinaire" if "Champ disciplinaire" in chart_inst.columns else None,
-                text=metric,
-                title=f"Top institutions selon {metric}",
-                color_discrete_sequence=PLOTLY_SEQ,
-            )
-            chart_inst["Valeur affichée"] = chart_inst[metric].map(fb_text_number)
-            fig.update_traces(texttemplate="%{text:,.0f}", textposition="outside", cliponaxis=False)
-            fig.update_layout(xaxis_title=metric, yaxis_title="", yaxis={"categoryorder": "total ascending"})
-            theme_layout(fig, height=max(560, 32 * len(chart_inst) + 170))
-            fb_polish_horizontal_bar(fig, chart_inst, metric, left_margin=330, right_margin=130, bottom_margin=150, showlegend=True)
-            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
-        else:
-            st.info("Aucune donnée disponible pour les filtres sélectionnés.")
 
-        render_factbook_table(
-            filtered_inst,
-            dataset_choice,
-            note="Les lignes Total sont mises en évidence pour faciliter la lecture.",
-            max_height=560
-        )
-        st.download_button(
-            "Télécharger les données institutionnelles filtrées (CSV)",
-            data=filtered_inst.to_csv(index=False).encode("utf-8-sig"),
-            file_name="factbook_section1_institutions_filtrees.csv",
-            mime="text/csv",
-            use_container_width=True,
-            key="fb_download_inst"
-        )
+            filtered_inst = inst_df.copy()
+            if champ != "Tous":
+                filtered_inst = filtered_inst[filtered_inst["Champ disciplinaire"].astype(str) == champ]
+
+            with f2:
+                acronyme = st.selectbox(
+                    "Acronyme",
+                    filter_options(filtered_inst, "Acronyme"),
+                    key=f"{key_prefix}_acronyme"
+                )
+            if acronyme != "Tous":
+                filtered_inst = filtered_inst[filtered_inst["Acronyme"].astype(str) == acronyme]
+
+            with f3:
+                metric = st.selectbox(
+                    "Indicateur",
+                    [
+                        "Effectifs annuel 2024-2025",
+                        "Effectifs semestre 1 2024-2025",
+                        "ETP annuel 2024-2025",
+                        "ETP semestre 1 2024-2025",
+                    ],
+                    key=f"{key_prefix}_metric"
+                )
+
+            chart_inst = filtered_inst.dropna(subset=[metric]).copy() if metric in filtered_inst.columns else pd.DataFrame()
+            if not chart_inst.empty:
+                chart_inst = chart_inst[~chart_inst["Institution"].astype(str).str.startswith("Total", na=False)]
+                chart_inst = chart_inst.sort_values(metric, ascending=False).head(25)
+
+                if key_prefix == "fb_inst_du_cert" and "Champ disciplinaire" in chart_inst.columns:
+                    chart_inst["Catégorie graphique"] = np.where(
+                        chart_inst["Champ disciplinaire"].astype(str).str.contains("Autres entités", case=False, na=False),
+                        "Autres entités / formations",
+                        "DU et Certificats"
+                    )
+                else:
+                    chart_inst["Catégorie graphique"] = "Formations diplômantes"
+
+                chart_inst, institution_axis_col = _fb_make_unique_axis_labels(
+                    chart_inst,
+                    "Institution",
+                    context_cols=["Catégorie graphique", "Acronyme"]
+                )
+
+                fig = px.bar(
+                    chart_inst,
+                    x=metric,
+                    y=institution_axis_col,
+                    orientation="h",
+                    color="Champ disciplinaire" if "Champ disciplinaire" in chart_inst.columns else None,
+                    text=metric,
+                    title=f"Top institutions selon {metric} - {dataset_short}",
+                    color_discrete_sequence=PLOTLY_SEQ,
+                )
+                chart_inst["Valeur affichée"] = chart_inst[metric].map(fb_text_number)
+                fig.update_traces(texttemplate="%{text:,.0f}", textposition="outside", cliponaxis=False)
+                fig.update_layout(xaxis_title=metric, yaxis_title="", yaxis={"categoryorder": "total ascending"})
+                theme_layout(fig, height=max(560, 32 * len(chart_inst) + 170))
+                fb_polish_horizontal_bar(fig, chart_inst, metric, left_margin=330, right_margin=130, bottom_margin=150, showlegend=True)
+                st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+            else:
+                st.info("Aucune donnée disponible pour les filtres sélectionnés.")
+
+            render_factbook_table(
+                filtered_inst,
+                dataset_title,
+                note="Les lignes Total sont mises en évidence pour faciliter la lecture.",
+                max_height=560
+            )
+            st.download_button(
+                f"Télécharger les données filtrées - {dataset_short} (CSV)",
+                data=filtered_inst.to_csv(index=False).encode("utf-8-sig"),
+                file_name=f"factbook_section1_{key_prefix}_filtre.csv",
+                mime="text/csv",
+                use_container_width=True,
+                key=f"{key_prefix}_download"
+            )
+
+        inst_tab_11, inst_tab_12 = st.tabs([
+            "1.1 Formations diplômantes",
+            "1.2 DU et Certificats"
+        ])
+
+        with inst_tab_11:
+            _render_institution_dataset(
+                formations.copy(),
+                FACTBOOK_SECTION1_TITLES["1.1"],
+                "Formations diplômantes",
+                "fb_inst_formations"
+            )
+
+        with inst_tab_12:
+            _render_institution_dataset(
+                du_cert.copy(),
+                FACTBOOK_SECTION1_TITLES["1.2"],
+                "DU et Certificats",
+                "fb_inst_du_cert"
+            )
 
     with tab_campus:
         section_header(
