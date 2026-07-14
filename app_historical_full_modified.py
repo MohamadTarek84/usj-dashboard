@@ -738,6 +738,225 @@ def fb_polish_line(fig, data, value_col, bottom_margin=145):
     return fig
 
 
+def _fb_is_percent_column(column_name):
+    label = str(column_name).lower()
+    return "%" in label or "pourcentage" in label or "percent" in label
+
+
+def _fb_is_numeric_like(value):
+    if _fb_is_blank(value):
+        return False
+    try:
+        float(str(value).replace(" ", "").replace("%", "").replace(",", "."))
+        return True
+    except Exception:
+        return False
+
+
+def _fb_table_value(value, column_name):
+    """Format Factbook table values with the same polished presentation logic used in the dashboard."""
+    if _fb_is_blank(value):
+        return ""
+
+    if isinstance(value, str):
+        raw = value.replace("\u00a0", " ").strip()
+        if raw in {"NA", "N/A", ""} or raw.endswith("%"):
+            return raw
+    else:
+        raw = value
+
+    if _fb_is_percent_column(column_name):
+        try:
+            numeric = float(str(raw).replace(" ", "").replace("%", "").replace(",", "."))
+            # Factbook variation columns are stored as proportions in the Excel.
+            if abs(numeric) <= 1.5:
+                numeric *= 100
+            return f"{numeric:.1f}%"
+        except Exception:
+            return str(raw)
+
+    if _fb_is_numeric_like(raw):
+        try:
+            numeric = float(str(raw).replace(" ", "").replace("%", "").replace(",", "."))
+            if abs(numeric - round(numeric)) < 0.000001:
+                return f"{int(round(numeric)):,}".replace(",", " ")
+            return f"{numeric:,.2f}".replace(",", " ")
+        except Exception:
+            pass
+
+    return str(raw)
+
+
+def _fb_table_is_total_row(row):
+    text = " ".join(str(v) for v in row.values if not _fb_is_blank(v)).strip().lower()
+    return text.startswith("total") or " total " in f" {text} "
+
+
+def render_factbook_table(df, title, note=None, max_height=560, hide_columns=None):
+    """Render Factbook tables with the same USJ-styled card/table design used in the Exit Survey pages."""
+    if df is None or df.empty:
+        st.info(f"Aucune donnée disponible pour {title}.")
+        return
+
+    table = df.copy()
+    hide_columns = set(hide_columns or [])
+    table = table[[col for col in table.columns if col not in hide_columns]]
+    table = table.dropna(how="all").copy()
+
+    if table.empty:
+        st.info(f"Aucune donnée disponible pour {title}.")
+        return
+
+    numeric_cols = [col for col in table.columns if pd.to_numeric(table[col], errors="coerce").notna().mean() >= 0.55 or _fb_is_percent_column(col)]
+
+    header_html = "".join(
+        f"<th class='{'num-col' if col in numeric_cols else 'text-col'}'>{html_escape(col)}</th>"
+        for col in table.columns
+    )
+
+    body_rows = []
+    for _, row in table.iterrows():
+        row_class = "total-row" if _fb_table_is_total_row(row) else ""
+        cells = []
+        for col in table.columns:
+            cls = "num-cell" if col in numeric_cols else "text-cell"
+            cells.append(f"<td class='{cls}'>{html_escape(_fb_table_value(row[col], col))}</td>")
+        body_rows.append(f"<tr class='{row_class}'>" + "".join(cells) + "</tr>")
+
+    note_html = f"<div class='fb-table-note'>{html_escape(note)}</div>" if note else ""
+    scroll_height = min(max_height, 44 * len(table) + 52)
+    component_height = min(max_height + 145, scroll_height + 150)
+
+    table_html = f"""
+    <html>
+    <head>
+    <style>
+        body {{
+            margin:0;
+            background:white;
+            font-family:Candara, Arial, sans-serif;
+            color:{USJ_TEXT};
+        }}
+        .fb-table-card {{
+            background:#FFFFFF;
+            border:1px solid #DDE5F0;
+            border-radius:18px;
+            overflow:hidden;
+            box-shadow:0 8px 22px rgba(0,27,117,0.08);
+            margin:4px 0 0 0;
+        }}
+        .fb-table-titlebar {{
+            display:flex;
+            justify-content:space-between;
+            align-items:flex-end;
+            gap:12px;
+            padding:16px 18px 12px 18px;
+            background:linear-gradient(135deg, #FFFFFF 0%, #F7F9FC 100%);
+            border-bottom:1px solid #E6ECF3;
+        }}
+        .fb-table-title {{
+            color:{USJ_BLUE};
+            font-size:20px;
+            font-weight:900;
+            line-height:1.2;
+        }}
+        .fb-table-note {{
+            color:#667085;
+            font-size:13px;
+            margin-top:5px;
+            line-height:1.35;
+        }}
+        .fb-table-pill {{
+            background:{USJ_LIGHT_BLUE};
+            color:{USJ_BLUE};
+            border:1px solid #D8E2F0;
+            border-radius:999px;
+            padding:7px 12px;
+            font-size:13px;
+            font-weight:900;
+            white-space:nowrap;
+        }}
+        .fb-table-scroll {{
+            max-height:{scroll_height}px;
+            overflow:auto;
+            background:white;
+        }}
+        table {{
+            width:100%;
+            min-width:{max(900, min(1900, 135 * len(table.columns)))}px;
+            border-collapse:separate;
+            border-spacing:0;
+            font-size:14px;
+        }}
+        thead th {{
+            position:sticky;
+            top:0;
+            z-index:3;
+            background:{USJ_BLUE};
+            color:white;
+            padding:10px 12px;
+            border-right:1px solid rgba(255,255,255,0.22);
+            border-bottom:1px solid {USJ_BLUE};
+            font-weight:900;
+            vertical-align:bottom;
+            white-space:normal;
+            line-height:1.25;
+        }}
+        thead th:first-child {{
+            left:0;
+            z-index:4;
+        }}
+        tbody td {{
+            padding:9px 12px;
+            border-bottom:1px solid #E6ECF3;
+            border-right:1px solid #EEF2F8;
+            vertical-align:top;
+            background:#FFFFFF;
+            line-height:1.25;
+        }}
+        tbody tr:nth-child(even) td {{ background:#FBFCFE; }}
+        tbody tr:hover td {{ background:#F3F6FF; }}
+        tbody td:first-child {{
+            position:sticky;
+            left:0;
+            z-index:2;
+            background:inherit;
+            font-weight:900;
+            color:{USJ_BLUE};
+        }}
+        .text-col, .text-cell {{ text-align:left; }}
+        .num-col, .num-cell {{ text-align:right; white-space:nowrap; font-weight:800; }}
+        .total-row td {{
+            background:#EEF2FF !important;
+            color:{USJ_BLUE};
+            font-weight:900;
+            border-top:2px solid #D8E2F0;
+        }}
+        .total-row td:first-child {{ background:#EEF2FF !important; }}
+    </style>
+    </head>
+    <body>
+        <div class='fb-table-card'>
+            <div class='fb-table-titlebar'>
+                <div>
+                    <div class='fb-table-title'>{html_escape(title)}</div>
+                    {note_html}
+                </div>
+                <div class='fb-table-pill'>{len(table)} lignes</div>
+            </div>
+            <div class='fb-table-scroll'>
+                <table>
+                    <thead><tr>{header_html}</tr></thead>
+                    <tbody>{''.join(body_rows)}</tbody>
+                </table>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    st_components.html(table_html, height=component_height, scrolling=False)
+
+
 def recode_series(series, mapping):
     return (
         series.astype(str)
@@ -3206,7 +3425,12 @@ def render_factbook_module():
                 display_summary[col] = display_summary[col].map(fb_format_pct)
             for col in [c for c in display_summary.columns if c != "Catégorie" and "% Var" not in c]:
                 display_summary[col] = display_summary[col].map(lambda x: fb_format_number(x, digits=0))
-            st.dataframe(display_summary, use_container_width=True, hide_index=True)
+            render_factbook_table(
+                display_summary,
+                "Tableau de synthèse",
+                note="Présentation consolidée selon le style institutionnel utilisé dans les pages Exit Survey.",
+                max_height=360
+            )
 
         summary_box(
             """
@@ -3273,7 +3497,12 @@ def render_factbook_module():
         else:
             st.info("Aucune donnée disponible pour les filtres sélectionnés.")
 
-        st.dataframe(filtered_inst, use_container_width=True, hide_index=True)
+        render_factbook_table(
+            filtered_inst,
+            "Tableau institutionnel filtré",
+            note="Les lignes Total sont mises en évidence pour faciliter la lecture.",
+            max_height=560
+        )
         st.download_button(
             "Télécharger les données institutionnelles filtrées (CSV)",
             data=filtered_inst.to_csv(index=False).encode("utf-8-sig"),
@@ -3323,7 +3552,12 @@ def render_factbook_module():
         else:
             st.info("Aucune donnée disponible pour les filtres sélectionnés.")
 
-        st.dataframe(filtered_campus, use_container_width=True, hide_index=True)
+        render_factbook_table(
+            filtered_campus,
+            "Tableau campus filtré",
+            note="Évolution des effectifs du semestre 1 par campus et institution.",
+            max_height=560
+        )
         st.download_button(
             "Télécharger les données campus filtrées (CSV)",
             data=filtered_campus.to_csv(index=False).encode("utf-8-sig"),
@@ -3389,7 +3623,12 @@ def render_factbook_module():
         else:
             st.info("Aucune donnée disponible pour l’indicateur sélectionné.")
 
-        st.dataframe(filtered_level, use_container_width=True, hide_index=True)
+        render_factbook_table(
+            filtered_level,
+            "Tableau par niveau académique",
+            note=f"Indicateur sélectionné : {indicator}.",
+            max_height=500
+        )
 
     with tab_programmes:
         section_header("Effectifs par programme", "Recherche et visualisation des programmes de la Section 1.")
@@ -3459,7 +3698,13 @@ def render_factbook_module():
             else:
                 st.info("Aucun programme disponible pour les filtres sélectionnés.")
 
-        st.dataframe(filtered_programs, use_container_width=True, hide_index=True)
+        render_factbook_table(
+            filtered_programs,
+            "Tableau des programmes filtrés",
+            note="Les colonnes techniques utilisées uniquement pour les graphiques sont masquées dans l’affichage.",
+            max_height=620,
+            hide_columns=["Programme graphique", "Programme affiché"]
+        )
         st.download_button(
             "Télécharger les programmes filtrés (CSV)",
             data=filtered_programs.to_csv(index=False).encode("utf-8-sig"),
@@ -3482,7 +3727,12 @@ def render_factbook_module():
         }
         selected_table_name = st.selectbox("Table", list(source_tables.keys()), key="fb_source_table")
         selected_table = source_tables[selected_table_name]
-        st.dataframe(selected_table, use_container_width=True, hide_index=True)
+        render_factbook_table(
+            selected_table,
+            selected_table_name,
+            note="Table source importée depuis l’Excel Factbook - Section 1.",
+            max_height=620
+        )
         st.download_button(
             "Télécharger cette table (CSV)",
             data=selected_table.to_csv(index=False).encode("utf-8-sig"),
