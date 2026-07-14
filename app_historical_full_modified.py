@@ -5288,11 +5288,31 @@ def render_factbook_section3_module():
                     ],
                 )
                 theme_layout(fig, height=max(560, 34 * len(plot_data) + 190), showlegend=False)
-                fb_polish_horizontal_bar(fig, plot_data, "Taux", left_margin=500, right_margin=170, bottom_margin=70, showlegend=False)
+                fb_polish_horizontal_bar(fig, plot_data, "Taux", left_margin=500, right_margin=190, bottom_margin=70, showlegend=False)
+
+                # fb_polish_horizontal_bar is shared with count charts and rounds labels to integers.
+                # For retention charts, restore percentage labels with two decimals after polishing.
+                retention_label_text = [
+                    "" if pd.isna(value) else f"{float(value):.2f}%"
+                    for value in plot_data["Taux"].tolist()
+                ]
+                fig.update_traces(
+                    text=retention_label_text,
+                    texttemplate="%{text}",
+                    textposition="outside",
+                    textfont=dict(size=15, color=USJ_TEXT, family="Candara, Arial"),
+                    hovertemplate=(
+                        "<b>%{y}</b><br>"
+                        "Taux: %{x:.2f}%<br>"
+                        "Cohorte S1 2024-2025: %{customdata[0]} étudiants"
+                        "<extra></extra>"
+                    ),
+                    cliponaxis=False,
+                )
                 fig.update_layout(
-                    xaxis=dict(range=[0, 108], ticksuffix="%"),
+                    xaxis=dict(range=[0, 112], ticksuffix="%"),
                     yaxis=dict(tickmode="array", tickvals=tick_vals, ticktext=tick_text),
-                    margin=dict(l=500, r=170, t=125, b=70),
+                    margin=dict(l=500, r=190, t=125, b=70),
                 )
                 st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
             else:
