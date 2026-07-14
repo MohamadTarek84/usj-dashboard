@@ -5780,7 +5780,7 @@ def render_factbook_section4_module():
         with c2:
             insight_card("Programmes ≥ 90%", fb_format_number(top_programmes), "Nombre de programmes", color=USJ_GREEN)
         with c3:
-            insight_card("Cohortes < 20", fb_format_number(low_cohort), "Programmes à interpréter avec prudence", color=USJ_RED)
+            insight_card("Cohortes < 20", fb_format_number(low_cohort), "Cohortes inférieures à 20 étudiants", color=USJ_RED)
         with c4:
             insight_card("Taille totale de cohorte", fb_format_number(total_cohort), f"Total {latest_year}", color=USJ_GOLD)
 
@@ -5876,11 +5876,6 @@ def render_factbook_section4_module():
         if plot_data.empty:
             return
 
-        st.markdown(
-            f"<div style='font-family:Candara, Arial, sans-serif;color:#667085;font-size:13px;margin:6px 0 8px 0;'>Tri : taux décroissant, puis taille de cohorte. Les programmes en rouge correspondent aux cohortes inférieures à 20 étudiants.</div>",
-            unsafe_allow_html=True,
-        )
-
         fig = px.bar(
             plot_data,
             x="Taux",
@@ -5918,7 +5913,14 @@ def render_factbook_section4_module():
             cliponaxis=False,
         )
         fig.update_layout(
-            yaxis=dict(tickmode="array", tickvals=tick_vals, ticktext=tick_text),
+            yaxis=dict(
+                tickmode="array",
+                tickvals=tick_vals,
+                ticktext=tick_text,
+                categoryorder="array",
+                categoryarray=tick_vals,
+                autorange="reversed",
+            ),
             margin=dict(l=500, r=190, t=100, b=70),
         )
         st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
