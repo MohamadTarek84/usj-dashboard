@@ -3367,33 +3367,46 @@ def render_factbook_module():
         return pd.to_numeric(df[col], errors="coerce").sum() if col in df.columns else np.nan
 
     def _fb_make_unique_axis_labels(df, label_col, context_cols=None, output_col=None):
-        """Create unique chart labels so duplicate institutions/programmes are not drawn on top of each other."""
+        """Create internal unique axis values while showing only Institution - Acronyme labels.
+
+        Plotly merges bars that have exactly the same categorical y-axis value. Some
+        Factbook rows repeat the same institution/acronym in different blocks. To keep
+        the bars separated without adding category text to the visible label, this
+        function uses an internal unique key and a clean tick label.
+        """
         output_col = output_col or f"{label_col} graphique"
-        context_cols = context_cols or []
-        chart_df = df.copy()
+        display_col = f"{output_col} affiché"
+        chart_df = df.copy().reset_index(drop=True)
+
         if label_col not in chart_df.columns:
-            chart_df[output_col] = chart_df.index.astype(str)
-            return chart_df, output_col
+            chart_df[display_col] = chart_df.index.astype(str)
+            chart_df[output_col] = chart_df.index.map(lambda i: f"{i:03d} - {chart_df.loc[i, display_col]}")
+            return chart_df, output_col, display_col
 
-        labels = chart_df[label_col].astype(str).str.strip()
-        chart_df[output_col] = labels
-        duplicate_mask = labels.duplicated(keep=False)
+        def _clean_label_part(value):
+            if pd.isna(value):
+                return ""
+            value = str(value).replace(" ", " ").strip()
+            if value.lower() in {"", "nan", "none", "nat", "<na>"}:
+                return ""
+            return value
 
-        if duplicate_mask.any():
-            def _context(row):
-                parts = []
-                for col in context_cols:
-                    if col in chart_df.columns and pd.notna(row.get(col)):
-                        value = str(row.get(col)).strip()
-                        if value and value.lower() not in {"nan", "none", "nat", "<na>"}:
-                            parts.append(value)
-                return " / ".join(parts)
+        labels = []
+        for _, row in chart_df.iterrows():
+            institution = _clean_label_part(row.get(label_col))
+            acronyme = _clean_label_part(row.get("Acronyme"))
+            if institution and acronyme:
+                labels.append(f"{institution} - {acronyme}")
+            elif institution:
+                labels.append(institution)
+            elif acronyme:
+                labels.append(acronyme)
+            else:
+                labels.append("")
 
-            chart_df.loc[duplicate_mask, output_col] = chart_df.loc[duplicate_mask].apply(
-                lambda row: f"{row[label_col]} — {_context(row)}" if _context(row) else str(row[label_col]),
-                axis=1
-            )
-        return chart_df, output_col
+        chart_df[display_col] = labels
+        chart_df[output_col] = [f"{i:03d} - {label}" for i, label in enumerate(labels)]
+        return chart_df, output_col, display_col
 
     def _pct_change_from_values(previous_value, current_value):
         previous_value = pd.to_numeric(previous_value, errors="coerce")
@@ -3566,7 +3579,8 @@ def render_factbook_module():
 
     with tab_institutions:
         section_header(
-            "Effectifs par institution"
+            "Effectifs par institution",
+            "Les sous-sections 1.1 et 1.2 sont présentées séparément, comme dans le fichier Excel."
         )
 
         def _render_institution_dataset(inst_df, dataset_title, dataset_short, key_prefix):
@@ -3633,10 +3647,10 @@ def render_factbook_module():
                 else:
                     chart_inst["Catégorie graphique"] = "Formations diplômantes"
 
-                chart_inst, institution_axis_col = _fb_make_unique_axis_labels(
+                chart_inst, institution_axis_col, institution_display_col = _fb_make_unique_axis_labels(
                     chart_inst,
                     "Institution",
-                    context_cols=["Catégorie graphique", "Acronyme"]
+                    context_cols=["Acronyme"]
                 )
 
                 fig = px.bar(
@@ -3650,10 +3664,19 @@ def render_factbook_module():
                     color_discrete_sequence=PLOTLY_SEQ,
                 )
                 chart_inst["Valeur affichée"] = chart_inst[metric].map(fb_text_number)
+                y_values = chart_inst[institution_axis_col].tolist()
+                y_labels = chart_inst[institution_display_col].tolist()
                 fig.update_traces(texttemplate="%{text:,.0f}", textposition="outside", cliponaxis=False)
-                fig.update_layout(xaxis_title=metric, yaxis_title="", yaxis={"categoryorder": "total ascending"})
+                fig.update_yaxes(
+                    tickmode="array",
+                    tickvals=y_values,
+                    ticktext=y_labels,
+                    categoryorder="array",
+                    categoryarray=y_values[::-1],
+                )
+                fig.update_layout(xaxis_title=metric, yaxis_title="")
                 theme_layout(fig, height=max(560, 32 * len(chart_inst) + 170))
-                fb_polish_horizontal_bar(fig, chart_inst, metric, left_margin=330, right_margin=130, bottom_margin=150, showlegend=True)
+                fb_polish_horizontal_bar(fig, chart_inst, metric, left_margin=360, right_margin=130, bottom_margin=150, showlegend=True)
                 st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
             else:
                 st.info("Aucune donnée disponible pour les filtres sélectionnés.")
