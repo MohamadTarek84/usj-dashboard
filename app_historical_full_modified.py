@@ -5339,6 +5339,13 @@ def render_factbook_section5_module():
 
     with tabs[2]:
         section_header(FACTBOOK_SECTION5_TITLES["5.2"], "Lecture des communautés religieuses par institution, campus et niveau académique.")
+
+        # The religion sheets in the current Factbook contain the 2024-2025 distribution.
+        # A year selector is still displayed for consistency with the other Section 5 tabs
+        # and to make the selected reference year explicit to users.
+        religion_year_options = ["2024-2025"]
+        religion_year = st.selectbox("Année", religion_year_options, key="fb_s5_religion_year")
+
         rel_tabs = st.tabs(["Par institution", "Par campus", "Par niveau académique"])
 
         with rel_tabs[0]:
@@ -5361,7 +5368,7 @@ def render_factbook_section5_module():
                     y="Communauté",
                     orientation="h",
                     text="Effectif",
-                    title="Distribution des communautés religieuses - institutions filtrées",
+                    title=f"Distribution des communautés religieuses - institutions filtrées - {religion_year}",
                     color_discrete_sequence=[USJ_BLUE],
                 )
                 fig.update_traces(texttemplate="%{text:,.0f}", textposition="outside", cliponaxis=False, textfont=dict(size=13, color=USJ_TEXT))
@@ -5383,7 +5390,7 @@ def render_factbook_section5_module():
                     y="Communauté",
                     orientation="h",
                     text="Effectif",
-                    title="Distribution des communautés religieuses - campus filtré",
+                    title=f"Distribution des communautés religieuses - campus filtré - {religion_year}",
                     color_discrete_sequence=[USJ_BLUE_2],
                 )
                 fig.update_traces(texttemplate="%{text:,.0f}", textposition="outside", cliponaxis=False, textfont=dict(size=13, color=USJ_TEXT))
@@ -5411,7 +5418,7 @@ def render_factbook_section5_module():
                     colorbar=dict(title="Effectifs"),
                 ))
                 fig_heat.update_layout(
-                    title=dict(text="Communautés religieuses par niveau académique", x=0.01, font=dict(size=22, color=USJ_BLUE, family="Candara, Arial")),
+                    title=dict(text=f"Communautés religieuses par niveau académique - {religion_year}", x=0.01, font=dict(size=22, color=USJ_BLUE, family="Candara, Arial")),
                     height=560,
                     template="plotly_white",
                     font=dict(family="Candara, Arial", size=13, color=USJ_TEXT),
