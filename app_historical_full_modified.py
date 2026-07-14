@@ -3972,16 +3972,24 @@ def render_factbook_section1_module():
                     x=campus_pivot.columns.tolist(),
                     y=campus_pivot.index.tolist(),
                     colorscale=[
-                        [0.00, "#F7F9FC"],
-                        [0.35, "#D8DEFF"],
-                        [0.70, "#8FA0E2"],
-                        [1.00, USJ_BLUE],
+                        [0.00, "#FFFFFF"],
+                        [0.20, "#F4F7FF"],
+                        [0.45, "#E5EBFF"],
+                        [0.70, "#CCD7FF"],
+                        [1.00, "#AEBBEF"],
                     ],
+                    xgap=2,
+                    ygap=2,
                     text=campus_text.values,
                     texttemplate="%{text}",
-                    textfont=dict(family="Candara, Arial", size=15, color=USJ_TEXT),
+                    textfont=dict(family="Candara, Arial", size=16, color=USJ_BLUE),
                     hovertemplate="<b>%{y}</b><br>Année: %{x}<br>Effectifs: %{z:,.0f}<extra></extra>",
-                    colorbar=dict(title="Effectifs", tickfont=dict(family="Candara, Arial", color=USJ_TEXT)),
+                    colorbar=dict(
+                        title=dict(text="Effectifs", font=dict(family="Candara, Arial", color=USJ_BLUE, size=15)),
+                        tickfont=dict(family="Candara, Arial", color=USJ_TEXT, size=13),
+                        outlinecolor="#D8E2F0",
+                        outlinewidth=1,
+                    ),
                 )
             )
             campus_heatmap.update_layout(
@@ -3990,17 +3998,28 @@ def render_factbook_section1_module():
                     x=0.01,
                     font=dict(size=22, color=USJ_BLUE, family="Candara, Arial"),
                 ),
-                height=max(430, 46 * len(campus_pivot.index) + 145),
+                height=max(460, 50 * len(campus_pivot.index) + 155),
                 template="plotly_white",
-                font=dict(family="Candara, Arial", size=14, color=USJ_TEXT),
+                font=dict(family="Candara, Arial", size=15, color=USJ_TEXT),
                 xaxis_title="Année",
                 yaxis_title="",
-                margin=dict(l=230, r=70, t=85, b=65),
+                margin=dict(l=245, r=90, t=90, b=70),
                 paper_bgcolor="white",
                 plot_bgcolor="white",
             )
-            campus_heatmap.update_xaxes(side="bottom", tickfont=dict(size=13), automargin=True)
-            campus_heatmap.update_yaxes(tickfont=dict(size=13), automargin=True)
+            campus_heatmap.update_xaxes(
+                side="bottom",
+                tickfont=dict(size=13, color=USJ_TEXT, family="Candara, Arial"),
+                automargin=True,
+                showgrid=False,
+                zeroline=False,
+            )
+            campus_heatmap.update_yaxes(
+                tickfont=dict(size=13, color=USJ_TEXT, family="Candara, Arial"),
+                automargin=True,
+                showgrid=False,
+                zeroline=False,
+            )
             st.plotly_chart(campus_heatmap, use_container_width=True, config={"displayModeBar": False})
         else:
             st.info("Aucune donnée disponible pour les filtres sélectionnés.")
@@ -4440,16 +4459,24 @@ def render_factbook_section2_module():
                             x=heatmap_values.columns.tolist(),
                             y=heatmap_values.index.tolist(),
                             colorscale=[
-                                [0.00, "#F7F8FC"],
-                                [0.25, "#D8DEFF"],
-                                [0.55, USJ_BLUE_2],
-                                [1.00, USJ_BLUE],
+                                [0.00, "#FFFFFF"],
+                                [0.20, "#F4F7FF"],
+                                [0.45, "#E5EBFF"],
+                                [0.70, "#CCD7FF"],
+                                [1.00, "#AEBBEF"],
                             ],
+                            xgap=2,
+                            ygap=2,
                             text=heatmap_text.values,
                             texttemplate="%{text}",
-                            textfont=dict(family="Candara, Arial", size=16, color="white"),
+                            textfont=dict(family="Candara, Arial", size=16, color=USJ_BLUE),
                             hovertemplate="<b>%{y}</b><br>Année: %{x}<br>Diplômés: %{z:,.0f}<extra></extra>",
-                            colorbar=dict(title="Diplômés", tickfont=dict(family="Candara, Arial", color=USJ_TEXT)),
+                            colorbar=dict(
+                                title=dict(text="Diplômés", font=dict(family="Candara, Arial", color=USJ_BLUE, size=15)),
+                                tickfont=dict(family="Candara, Arial", color=USJ_TEXT, size=13),
+                                outlinecolor="#D8E2F0",
+                                outlinewidth=1,
+                            ),
                         )
                     )
                     heatmap_fig.update_layout(
@@ -4458,17 +4485,28 @@ def render_factbook_section2_module():
                             x=0.01,
                             font=dict(size=22, color=USJ_BLUE, family="Candara, Arial"),
                         ),
-                        height=max(430, 48 * len(heatmap_values.index) + 150),
+                        height=max(460, 50 * len(heatmap_values.index) + 155),
                         template="plotly_white",
-                        font=dict(family="Candara, Arial", size=14, color=USJ_TEXT),
+                        font=dict(family="Candara, Arial", size=15, color=USJ_TEXT),
                         xaxis_title="Année",
                         yaxis_title="",
-                        margin=dict(l=300, r=80, t=85, b=70),
+                        margin=dict(l=300, r=90, t=90, b=70),
                         paper_bgcolor="white",
                         plot_bgcolor="white",
                     )
-                    heatmap_fig.update_xaxes(side="bottom", tickfont=dict(size=13), automargin=True)
-                    heatmap_fig.update_yaxes(tickfont=dict(size=13), automargin=True)
+                    heatmap_fig.update_xaxes(
+                        side="bottom",
+                        tickfont=dict(size=13, color=USJ_TEXT, family="Candara, Arial"),
+                        automargin=True,
+                        showgrid=False,
+                        zeroline=False,
+                    )
+                    heatmap_fig.update_yaxes(
+                        tickfont=dict(size=13, color=USJ_TEXT, family="Candara, Arial"),
+                        automargin=True,
+                        showgrid=False,
+                        zeroline=False,
+                    )
                     st.plotly_chart(heatmap_fig, use_container_width=True, config={"displayModeBar": False})
 
         render_factbook_table(
