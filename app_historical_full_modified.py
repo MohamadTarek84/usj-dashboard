@@ -652,6 +652,92 @@ def fb_format_pct(value):
     return f"{float(value) * 100:.1f}%"
 
 
+def fb_text_number(value, digits=0):
+    """Readable number label for Plotly text."""
+    return "" if pd.isna(value) else fb_format_number(value, digits=digits)
+
+
+def fb_add_value_padding(fig, data, value_col, orientation="h", extra_ratio=0.18):
+    """Add visual padding so outside value labels are not clipped."""
+    if value_col not in data.columns:
+        return fig
+    values = pd.to_numeric(data[value_col], errors="coerce")
+    max_value = values.max()
+    min_value = values.min()
+    if pd.isna(max_value):
+        return fig
+    if orientation == "h":
+        right = max_value * (1 + extra_ratio) if max_value > 0 else max_value + 1
+        left = min(0, min_value * (1 + extra_ratio)) if pd.notna(min_value) else 0
+        fig.update_xaxes(range=[left, right], automargin=True)
+    else:
+        top = max_value * (1 + extra_ratio) if max_value > 0 else max_value + 1
+        bottom = min(0, min_value * (1 + extra_ratio)) if pd.notna(min_value) else 0
+        fig.update_yaxes(range=[bottom, top], automargin=True)
+    return fig
+
+
+def fb_move_legend_below(fig, bottom_margin=130):
+    """Place long legends below the plot to avoid covering bars/lines."""
+    fig.update_layout(
+        legend=dict(
+            orientation="h",
+            yanchor="top",
+            y=-0.24,
+            xanchor="left",
+            x=0,
+            title=None,
+            font=dict(family="Candara, Arial", size=12, color=USJ_TEXT),
+        ),
+        margin=dict(l=70, r=80, t=95, b=bottom_margin),
+    )
+    return fig
+
+
+def fb_polish_horizontal_bar(fig, data, value_col, left_margin=300, right_margin=110, bottom_margin=130, showlegend=True):
+    """Improve Factbook horizontal bars: readable labels, no clipped values, no legend overlap."""
+    fb_add_value_padding(fig, data, value_col, orientation="h", extra_ratio=0.20)
+    fig.update_yaxes(automargin=True)
+    fig.update_xaxes(automargin=True)
+    fig.update_layout(
+        margin=dict(l=left_margin, r=right_margin, t=105, b=bottom_margin if showlegend else 65),
+        uniformtext_minsize=10,
+        uniformtext_mode="show",
+    )
+    if showlegend:
+        fb_move_legend_below(fig, bottom_margin=bottom_margin)
+        fig.update_layout(margin=dict(l=left_margin, r=right_margin, t=105, b=bottom_margin))
+    else:
+        fig.update_layout(showlegend=False)
+    return fig
+
+
+def fb_polish_vertical_bar(fig, data, value_col, bottom_margin=85):
+    """Improve Factbook vertical bars and keep value labels visible."""
+    fb_add_value_padding(fig, data, value_col, orientation="v", extra_ratio=0.18)
+    fig.update_xaxes(automargin=True)
+    fig.update_yaxes(automargin=True)
+    fig.update_layout(margin=dict(l=70, r=80, t=105, b=bottom_margin), uniformtext_minsize=10, uniformtext_mode="show")
+    return fig
+
+
+def fb_polish_line(fig, data, value_col, bottom_margin=145):
+    """Improve Factbook line charts: value labels visible and legend outside the plot area."""
+    fb_add_value_padding(fig, data, value_col, orientation="v", extra_ratio=0.16)
+    fig.update_traces(
+        mode="lines+markers+text",
+        texttemplate="%{text}",
+        textposition="top center",
+        textfont=dict(size=10),
+        cliponaxis=False,
+    )
+    fig.update_xaxes(automargin=True)
+    fig.update_yaxes(automargin=True)
+    fb_move_legend_below(fig, bottom_margin=bottom_margin)
+    fig.update_layout(margin=dict(l=70, r=90, t=105, b=bottom_margin))
+    return fig
+
+
 def recode_series(series, mapping):
     return (
         series.astype(str)
@@ -3107,9 +3193,12 @@ def render_factbook_module():
                 title="Comparaison des effectifs annuels par catégorie",
                 color_discrete_sequence=PLOTLY_SEQ,
             )
-            fig.update_traces(texttemplate="%{text:,.0f}", textposition="outside", cliponaxis=False)
-            fig.update_layout(yaxis_title="Effectifs", xaxis_title="")
-            theme_layout(fig, height=460)
+            chart_df["Effectifs_label"] = chart_df["Effectifs"].map(fb_text_number)
+            fig.update_traces(texttemplate="%{text}", textposition="outside", cliponaxis=False)
+            fig.update_layout(yaxis_title="Effectifs", xaxis_title="", bargap=0.18)
+            theme_layout(fig, height=500)
+            fb_polish_vertical_bar(fig, chart_df, "Effectifs", bottom_margin=105)
+            fb_move_legend_below(fig, bottom_margin=125)
             st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
             display_summary = summary_df.copy()
@@ -3175,9 +3264,11 @@ def render_factbook_module():
                 title=f"Top institutions selon {metric}",
                 color_discrete_sequence=PLOTLY_SEQ,
             )
+            chart_inst["Valeur affichée"] = chart_inst[metric].map(fb_text_number)
             fig.update_traces(texttemplate="%{text:,.0f}", textposition="outside", cliponaxis=False)
             fig.update_layout(xaxis_title=metric, yaxis_title="", yaxis={"categoryorder": "total ascending"})
-            theme_layout(fig, height=max(460, 26 * len(chart_inst) + 120))
+            theme_layout(fig, height=max(560, 32 * len(chart_inst) + 170))
+            fb_polish_horizontal_bar(fig, chart_inst, metric, left_margin=330, right_margin=130, bottom_margin=150, showlegend=True)
             st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
         else:
             st.info("Aucune donnée disponible pour les filtres sélectionnés.")
@@ -3223,9 +3314,11 @@ def render_factbook_module():
                 title="Évolution des effectifs semestre 1 par campus",
                 color_discrete_sequence=PLOTLY_SEQ,
             )
-            fig.update_traces(texttemplate="%{text:,.0f}", textposition="top center")
+            campus_long["Effectifs_label"] = campus_long["Effectifs"].map(fb_text_number)
+            fig.update_traces(texttemplate="%{text:,.0f}", textposition="top center", cliponaxis=False)
             fig.update_layout(yaxis_title="Effectifs", xaxis_title="Année")
-            theme_layout(fig, height=500)
+            theme_layout(fig, height=620)
+            fb_polish_line(fig, campus_long, "Effectifs", bottom_margin=170)
             st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
         else:
             st.info("Aucune donnée disponible pour les filtres sélectionnés.")
@@ -3262,17 +3355,20 @@ def render_factbook_module():
         ).dropna(subset=["Valeur"])
 
         if not level_long.empty:
+            level_long["Valeur_label"] = level_long["Valeur"].map(fb_text_number)
             fig = px.line(
                 level_long,
                 x="Année",
                 y="Valeur",
                 color="Niveau académique",
                 markers=True,
+                text="Valeur",
                 title=f"Évolution - {indicator}",
                 color_discrete_sequence=PLOTLY_SEQ,
             )
             fig.update_layout(yaxis_title="Valeur", xaxis_title="Année")
-            theme_layout(fig, height=520)
+            theme_layout(fig, height=650)
+            fb_polish_line(fig, level_long, "Valeur", bottom_margin=180)
             st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
             last_year = filtered_level[["Niveau académique", "2024-2025", "% Var"]].dropna(subset=["2024-2025"]).copy()
@@ -3287,7 +3383,8 @@ def render_factbook_module():
             )
             fig2.update_traces(texttemplate="%{text:,.0f}", textposition="outside", cliponaxis=False)
             fig2.update_layout(yaxis_title="Valeur", xaxis_title="", xaxis_tickangle=-25)
-            theme_layout(fig2, height=460, showlegend=False)
+            theme_layout(fig2, height=520, showlegend=False)
+            fb_polish_vertical_bar(fig2, last_year, "2024-2025", bottom_margin=125)
             st.plotly_chart(fig2, use_container_width=True, config={"displayModeBar": False})
         else:
             st.info("Aucune donnée disponible pour l’indicateur sélectionné.")
@@ -3324,8 +3421,17 @@ def render_factbook_module():
             filtered_programs = filtered_programs[filtered_programs[label_col].astype(str).str.contains(search_program.strip(), case=False, na=False)]
 
         program_label_col = "Programme affiché"
+        program_graph_col = "Programme graphique"
+        if program_label_col in filtered_programs.columns:
+            duplicated_programs = filtered_programs[program_label_col].duplicated(keep=False)
+            filtered_programs[program_graph_col] = filtered_programs[program_label_col].astype(str)
+            filtered_programs.loc[duplicated_programs, program_graph_col] = (
+                filtered_programs.loc[duplicated_programs, program_label_col].astype(str)
+                + " — "
+                + filtered_programs.loc[duplicated_programs, "Type de programme"].astype(str)
+            )
 
-        if "2024-2025" in filtered_programs.columns and program_label_col in filtered_programs.columns:
+        if "2024-2025" in filtered_programs.columns and program_graph_col in filtered_programs.columns:
             top_programs = filtered_programs.dropna(subset=["2024-2025"]).copy()
             top_programs = top_programs[~top_programs[program_label_col].astype(str).str.startswith("Total", na=False)]
             top_programs = top_programs.sort_values("2024-2025", ascending=False).head(30)
@@ -3333,7 +3439,7 @@ def render_factbook_module():
                 fig = px.bar(
                     top_programs,
                     x="2024-2025",
-                    y=program_label_col,
+                    y=program_graph_col,
                     orientation="h",
                     color="Type de programme",
                     text="2024-2025",
@@ -3341,8 +3447,14 @@ def render_factbook_module():
                     color_discrete_sequence=PLOTLY_SEQ,
                 )
                 fig.update_traces(texttemplate="%{text:,.0f}", textposition="outside", cliponaxis=False)
-                fig.update_layout(xaxis_title="Effectifs 2024-2025", yaxis_title="", yaxis={"categoryorder": "total ascending"})
-                theme_layout(fig, height=max(520, 22 * len(top_programs) + 140))
+                fig.update_layout(
+                    xaxis_title="Effectifs 2024-2025",
+                    yaxis_title="",
+                    yaxis={"categoryorder": "total ascending"},
+                    barmode="group",
+                )
+                theme_layout(fig, height=max(620, 31 * len(top_programs) + 190))
+                fb_polish_horizontal_bar(fig, top_programs, "2024-2025", left_margin=390, right_margin=130, bottom_margin=155, showlegend=True)
                 st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
             else:
                 st.info("Aucun programme disponible pour les filtres sélectionnés.")
