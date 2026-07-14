@@ -918,8 +918,27 @@ def render_factbook_table(df, title, note=None, max_height=560, hide_columns=Non
         body_rows.append(f"<tr class='{row_class}'>" + "".join(cells) + "</tr>")
 
     note_html = f"<div class='fb-table-note'>{html_escape(note)}</div>" if note else ""
-    scroll_height = min(max_height, 44 * len(table) + 52)
-    component_height = min(max_height + 145, scroll_height + 150)
+    row_count = len(table)
+    row_label = "1 ligne" if row_count == 1 else f"{row_count} lignes"
+
+    # For very small filtered tables, do not create an internal scrollbar.
+    # A one-row table should appear as a complete professional card, not as a cropped scroll box.
+    if row_count <= 3:
+        estimated_row_height = 88 if len(table.columns) >= 8 else 70
+        component_height = min(430, 120 + 62 + estimated_row_height * row_count + 45)
+        scroll_css = """
+            max-height:none;
+            overflow-y:visible;
+            overflow-x:hidden;
+        """
+    else:
+        scroll_height = min(max_height, max(260, 58 * row_count + 62))
+        component_height = min(max_height + 145, scroll_height + 150)
+        scroll_css = f"""
+            max-height:{scroll_height}px;
+            overflow-y:auto;
+            overflow-x:hidden;
+        """
 
     table_html = f"""
     <html>
@@ -971,9 +990,7 @@ def render_factbook_table(df, title, note=None, max_height=560, hide_columns=Non
             white-space:nowrap;
         }}
         .fb-table-scroll {{
-            max-height:{scroll_height}px;
-            overflow-y:auto;
-            overflow-x:hidden;
+            {scroll_css}
             background:white;
         }}
         table {{
@@ -1056,7 +1073,7 @@ def render_factbook_table(df, title, note=None, max_height=560, hide_columns=Non
                     <div class='fb-table-title'>{html_escape(title)}</div>
                     {note_html}
                 </div>
-                <div class='fb-table-pill'>{len(table)} lignes</div>
+                <div class='fb-table-pill'>{row_label}</div>
             </div>
             <div class='fb-table-scroll'>
                 <table>
