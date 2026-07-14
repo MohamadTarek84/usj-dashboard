@@ -778,20 +778,30 @@ def fb_polish_vertical_bar(fig, data, value_col, bottom_margin=85):
 
 
 def fb_polish_line(fig, data, value_col, bottom_margin=145):
-    """Improve Factbook line charts: value labels visible and legend outside the plot area."""
+    """Improve Factbook line charts: readable labels, less overlap, and legend outside the plot area."""
     fb_force_integer_trace_text(fig, orientation="v")
-    fb_add_value_padding(fig, data, value_col, orientation="v", extra_ratio=0.16)
-    fig.update_traces(
-        mode="lines+markers+text",
-        texttemplate="%{text}",
-        textposition="top center",
-        textfont=dict(size=10),
-        cliponaxis=False,
-    )
+    fb_add_value_padding(fig, data, value_col, orientation="v", extra_ratio=0.22)
+
+    label_positions = [
+        "top center", "bottom center", "middle right", "middle left",
+        "top right", "bottom right", "top left", "bottom left",
+    ]
+    for trace_index, trace in enumerate(fig.data):
+        try:
+            n_points = len(trace.x)
+        except Exception:
+            n_points = 0
+        if n_points:
+            trace.textposition = [label_positions[(trace_index + i) % len(label_positions)] for i in range(n_points)]
+        trace.mode = "lines+markers+text"
+        trace.texttemplate = "%{text}"
+        trace.textfont = dict(size=9, family="Candara, Arial", color=USJ_TEXT)
+        trace.cliponaxis = False
+
     fig.update_xaxes(automargin=True)
     fig.update_yaxes(automargin=True)
     fb_move_legend_below(fig, bottom_margin=bottom_margin)
-    fig.update_layout(margin=dict(l=70, r=90, t=105, b=bottom_margin))
+    fig.update_layout(margin=dict(l=70, r=100, t=115, b=bottom_margin), hovermode="x unified")
     return fig
 
 
@@ -825,9 +835,9 @@ def _fb_table_value(value, column_name):
     if _fb_is_percent_column(column_name):
         try:
             numeric = float(str(raw).replace(" ", "").replace("%", "").replace(",", "."))
-            # Factbook variation columns are stored as proportions in the Excel.
+            # Factbook variation columns are usually stored as proportions in the Excel.
             if abs(numeric) <= 1.5:
-                numeric *= 100
+                return fb_format_pct(numeric)
             return f"{numeric:.1f}%"
         except Exception:
             return str(raw)
@@ -835,9 +845,7 @@ def _fb_table_value(value, column_name):
     if _fb_is_numeric_like(raw):
         try:
             numeric = float(str(raw).replace(" ", "").replace("%", "").replace(",", "."))
-            if abs(numeric - round(numeric)) < 0.000001:
-                return f"{int(round(numeric)):,}".replace(",", " ")
-            return f"{numeric:,.2f}".replace(",", " ")
+            return f"{int(round(numeric)):,}".replace(",", " ")
         except Exception:
             pass
 
@@ -957,7 +965,8 @@ def render_factbook_table(df, title, note=None, max_height=560, hide_columns=Non
             border-right:1px solid rgba(255,255,255,0.22);
             border-bottom:1px solid {USJ_BLUE};
             font-weight:900;
-            vertical-align:bottom;
+            vertical-align:middle;
+            text-align:center;
             white-space:normal;
             overflow-wrap:anywhere;
             word-break:normal;
@@ -971,7 +980,7 @@ def render_factbook_table(df, title, note=None, max_height=560, hide_columns=Non
             padding:8px 10px;
             border-bottom:1px solid #E6ECF3;
             border-right:1px solid #EEF2F8;
-            vertical-align:top;
+            vertical-align:middle;
             background:#FFFFFF;
             line-height:1.24;
             white-space:normal;
@@ -988,7 +997,7 @@ def render_factbook_table(df, title, note=None, max_height=560, hide_columns=Non
             font-weight:900;
             color:{USJ_BLUE};
         }}
-        .text-col, .text-cell {{ text-align:left; }}
+        .text-col, .text-cell {{ text-align:left; vertical-align:middle; }}
         .num-col, .num-cell {{
             text-align:center;
             vertical-align:middle;
@@ -3766,8 +3775,8 @@ def render_factbook_module():
             campus_long["Effectifs_label"] = campus_long["Effectifs"].map(fb_text_number)
             fig.update_traces(texttemplate="%{text:,.0f}", textposition="top center", cliponaxis=False)
             fig.update_layout(yaxis_title="Effectifs", xaxis_title="Année")
-            theme_layout(fig, height=620)
-            fb_polish_line(fig, campus_long, "Effectifs", bottom_margin=170)
+            theme_layout(fig, height=760)
+            fb_polish_line(fig, campus_long, "Effectifs", bottom_margin=190)
             st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
         else:
             st.info("Aucune donnée disponible pour les filtres sélectionnés.")
@@ -3824,8 +3833,8 @@ def render_factbook_module():
                 color_discrete_sequence=PLOTLY_SEQ,
             )
             fig.update_layout(yaxis_title="Valeur", xaxis_title="Année")
-            theme_layout(fig, height=650)
-            fb_polish_line(fig, level_long, "Valeur", bottom_margin=180)
+            theme_layout(fig, height=760)
+            fb_polish_line(fig, level_long, "Valeur", bottom_margin=190)
             st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
             last_year = filtered_level[["Niveau académique", "2024-2025", "% Var"]].dropna(subset=["2024-2025"]).copy()
@@ -3888,18 +3897,19 @@ def render_factbook_module():
         program_label_col = "Programme affiché"
         program_graph_col = "Programme graphique"
         if program_label_col in filtered_programs.columns:
-            duplicated_programs = filtered_programs[program_label_col].duplicated(keep=False)
+            # Keep the visual label clean: programme name only, without adding the subsection title.
             filtered_programs[program_graph_col] = filtered_programs[program_label_col].astype(str)
-            filtered_programs.loc[duplicated_programs, program_graph_col] = (
-                filtered_programs.loc[duplicated_programs, program_label_col].astype(str)
-                + " — "
-                + filtered_programs.loc[duplicated_programs, "Type de programme"].astype(str)
-            )
 
         if "2024-2025" in filtered_programs.columns and program_graph_col in filtered_programs.columns:
             top_programs = filtered_programs.dropna(subset=["2024-2025"]).copy()
             top_programs = top_programs[~top_programs[program_label_col].astype(str).str.startswith("Total", na=False)]
-            top_programs = top_programs.sort_values("2024-2025", ascending=False).head(30)
+            top_programs = (
+                top_programs
+                .groupby([program_graph_col, "Type de programme"], as_index=False)["2024-2025"]
+                .sum()
+                .sort_values("2024-2025", ascending=False)
+                .head(30)
+            )
             if not top_programs.empty:
                 fig = px.bar(
                     top_programs,
