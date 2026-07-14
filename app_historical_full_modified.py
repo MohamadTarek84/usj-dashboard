@@ -935,15 +935,17 @@ def render_factbook_table(df, title, note=None, max_height=560, hide_columns=Non
         }}
         .fb-table-scroll {{
             max-height:{scroll_height}px;
-            overflow:auto;
+            overflow-y:auto;
+            overflow-x:hidden;
             background:white;
         }}
         table {{
             width:100%;
-            min-width:{max(900, min(1900, 135 * len(table.columns)))}px;
+            min-width:100%;
+            table-layout:fixed;
             border-collapse:separate;
             border-spacing:0;
-            font-size:14px;
+            font-size:13px;
         }}
         thead th {{
             position:sticky;
@@ -951,25 +953,30 @@ def render_factbook_table(df, title, note=None, max_height=560, hide_columns=Non
             z-index:3;
             background:{USJ_BLUE};
             color:white;
-            padding:10px 12px;
+            padding:9px 10px;
             border-right:1px solid rgba(255,255,255,0.22);
             border-bottom:1px solid {USJ_BLUE};
             font-weight:900;
             vertical-align:bottom;
             white-space:normal;
-            line-height:1.25;
+            overflow-wrap:anywhere;
+            word-break:normal;
+            line-height:1.22;
         }}
         thead th:first-child {{
             left:0;
             z-index:4;
         }}
         tbody td {{
-            padding:9px 12px;
+            padding:8px 10px;
             border-bottom:1px solid #E6ECF3;
             border-right:1px solid #EEF2F8;
             vertical-align:top;
             background:#FFFFFF;
-            line-height:1.25;
+            line-height:1.24;
+            white-space:normal;
+            overflow-wrap:anywhere;
+            word-break:normal;
         }}
         tbody tr:nth-child(even) td {{ background:#FBFCFE; }}
         tbody tr:hover td {{ background:#F3F6FF; }}
@@ -982,13 +989,21 @@ def render_factbook_table(df, title, note=None, max_height=560, hide_columns=Non
             color:{USJ_BLUE};
         }}
         .text-col, .text-cell {{ text-align:left; }}
-        .num-col, .num-cell {{ text-align:right; white-space:nowrap; font-weight:800; }}
+        .num-col, .num-cell {{
+            text-align:right;
+            white-space:normal;
+            overflow-wrap:anywhere;
+            font-weight:800;
+        }}
         .total-row td {{
             background:#EEF2FF !important;
             color:{USJ_BLUE};
             font-weight:900;
             border-top:2px solid #D8E2F0;
         }}
+        th:nth-child(1), td:nth-child(1) {{ width:11%; }}
+        th:nth-child(2), td:nth-child(2) {{ width:6%; }}
+        th:nth-child(3), td:nth-child(3) {{ width:13%; }}
         .total-row td:first-child {{ background:#EEF2FF !important; }}
     </style>
     </head>
@@ -3336,23 +3351,6 @@ def render_factbook_module():
 
     st.divider()
 
-    st.markdown(
-        f"""
-        <div class="control-panel">
-            <div class="control-title">Données Factbook intégrées</div>
-            <div class="control-subtitle">
-                Module dynamique construit uniquement sur la Section 1 : effectifs étudiants, ETP, campus, niveaux académiques et programmes.
-            </div>
-            <div class="data-chip-row">
-                <span class="data-chip">📁 <strong>Fichier actif</strong> {html_escape(factbook_file_path)}</span>
-                <span class="data-chip">💾 <strong>Taille</strong> {file_size_mb:.2f} Mo</span>
-                <span class="data-chip">🕒 <strong>Dernière modification</strong> {last_update_label}</span>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
     def _get_total_row(df, label, label_cols=("Institution", "Programme", "Champ disciplinaire")):
         for col in label_cols:
             if col in df.columns:
@@ -3543,7 +3541,8 @@ def render_factbook_module():
             "Jeu de données",
             [FACTBOOK_SECTION1_TITLES["1.1"], FACTBOOK_SECTION1_TITLES["1.2"]],
             horizontal=False,
-            key="fb_inst_dataset"
+            key="fb_inst_dataset",
+            label_visibility="collapsed"
         )
         inst_df = formations.copy() if dataset_choice == FACTBOOK_SECTION1_TITLES["1.1"] else du_cert.copy()
 
@@ -3954,23 +3953,6 @@ IS_HISTORICAL_PAGE = CURRENT_PAGE == "Comparaison historique"
 
 last_update_label = pd.to_datetime(excel_file_mtime, unit="s").strftime("%Y-%m-%d %H:%M:%S")
 file_size_mb = excel_file_size / (1024 * 1024)
-
-st.markdown(
-    f"""
-    <div class="control-panel">
-        <div class="control-title">{tr("control_title")}</div>
-        <div class="control-subtitle">
-            {tr("control_subtitle")}
-        </div>
-        <div class="data-chip-row">
-            <span class="data-chip">📁 <strong>{tr("active_file")}</strong> {excel_file_path}</span>
-            <span class="data-chip">💾 <strong>{tr("size")}</strong> {file_size_mb:.2f} Mo</span>
-            <span class="data-chip">🕒 <strong>{tr("last_update")}</strong> {last_update_label}</span>
-        </div>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
 
 filter_action_cols = st.columns([1.15, 1.35, 6.5])
 
