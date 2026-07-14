@@ -5213,27 +5213,81 @@ def render_factbook_section3_module():
         chart_data = chart_data[~chart_data["Programme"].astype(str).str.contains("Rétention globale", case=False, na=False, regex=False)]
         if indicator in chart_data.columns:
             chart_data["Taux"] = pd.to_numeric(chart_data[indicator], errors="coerce") * 100
-            chart_data = chart_data.dropna(subset=["Taux"]).sort_values("Taux", ascending=False).head(25)
+            cohort_col = "2024-2025"
+            if cohort_col in chart_data.columns:
+                chart_data["Cohorte S1 2024-2025"] = pd.to_numeric(chart_data[cohort_col], errors="coerce")
+            else:
+                chart_data["Cohorte S1 2024-2025"] = np.nan
+
+            chart_data = chart_data.dropna(subset=["Taux"]).copy()
+            # Sort primarily by retention rate, then by cohort size. Cohort size is used for ordering and hover only,
+            # not as an additional bar, to avoid giving the same visual weight to very small cohorts.
+            chart_data = chart_data.sort_values(
+                ["Taux", "Cohorte S1 2024-2025"],
+                ascending=[False, False]
+            ).head(25)
             if not chart_data.empty:
+                plot_data = chart_data.sort_values(["Taux", "Cohorte S1 2024-2025"], ascending=[True, True]).copy()
+                plot_data["Cohorte faible"] = pd.to_numeric(plot_data["Cohorte S1 2024-2025"], errors="coerce") < 20
+                plot_data["Hover cohort"] = plot_data["Cohorte S1 2024-2025"].map(
+                    lambda value: "NA" if pd.isna(value) else fb_format_number(value)
+                )
+
                 fig = px.bar(
-                    chart_data.sort_values("Taux", ascending=True),
+                    plot_data,
                     x="Taux",
                     y="Programme",
                     orientation="h",
                     text="Taux",
                     title=f"Top programmes selon {indicator}",
                     color_discrete_sequence=[USJ_BLUE],
+                    custom_data=["Hover cohort", "Cohorte faible"],
                 )
                 fig.update_traces(
                     texttemplate="%{text:.1f}%",
                     textposition="outside",
                     cliponaxis=False,
                     textfont=dict(size=15, color=USJ_TEXT, family="Candara, Arial"),
-                    hovertemplate="<b>%{y}</b><br>Taux: %{x:.1f}%<extra></extra>",
+                    hovertemplate=(
+                        "<b>%{y}</b><br>"
+                        "Taux: %{x:.1f}%<br>"
+                        "Cohorte S1 2024-2025: %{customdata[0]} étudiants"
+                        "<extra></extra>"
+                    ),
                 )
-                fig.update_layout(xaxis_title="Taux de rétention", yaxis_title="", xaxis=dict(range=[0, 105], ticksuffix="%"))
-                theme_layout(fig, height=max(560, 32 * len(chart_data) + 170), showlegend=False)
-                fb_polish_horizontal_bar(fig, chart_data, "Taux", left_margin=430, right_margin=150, bottom_margin=70, showlegend=False)
+
+                # Highlight only programme names with a small cohort (<20 students).
+                tick_vals = plot_data["Programme"].astype(str).tolist()
+                tick_text = []
+                for _, row in plot_data.iterrows():
+                    programme_label = html_escape(row.get("Programme", ""))
+                    if bool(row.get("Cohorte faible", False)):
+                        tick_text.append(f"<span style='color:{USJ_RED}; font-weight:900;'>{programme_label}</span>")
+                    else:
+                        tick_text.append(f"<span style='color:{USJ_TEXT};'>{programme_label}</span>")
+
+                fig.update_layout(
+                    xaxis_title="Taux de rétention",
+                    yaxis_title="",
+                    xaxis=dict(range=[0, 108], ticksuffix="%"),
+                    yaxis=dict(tickmode="array", tickvals=tick_vals, ticktext=tick_text),
+                    annotations=[
+                        dict(
+                            xref="paper", yref="paper", x=0, y=1.07,
+                            text="Tri : taux décroissant, puis taille de cohorte. Programmes en rouge : cohorte < 20 étudiants.",
+                            showarrow=False,
+                            align="left",
+                            font=dict(family="Candara, Arial", size=13, color="#667085"),
+                        )
+                    ],
+                )
+                theme_layout(fig, height=max(560, 34 * len(plot_data) + 190), showlegend=False)
+                fb_polish_horizontal_bar(fig, plot_data, "Taux", left_margin=500, right_margin=170, bottom_margin=70, showlegend=False)
+                fig.update_layout(
+                    xaxis=dict(range=[0, 108], ticksuffix="%"),
+                    yaxis=dict(tickmode="array", tickvals=tick_vals, ticktext=tick_text),
+                    margin=dict(l=500, r=170, t=125, b=70),
+                )
                 st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
             else:
                 st.info("Aucun programme disponible pour les filtres sélectionnés.")
