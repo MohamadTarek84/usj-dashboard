@@ -741,9 +741,9 @@ def fb_move_legend_below(fig, bottom_margin=130):
             xanchor="left",
             x=0,
             title=None,
-            font=dict(family="Candara, Arial", size=12, color=USJ_TEXT),
+            font=dict(family="Candara, Arial", size=14, color=USJ_TEXT),
         ),
-        margin=dict(l=70, r=80, t=95, b=bottom_margin),
+        margin=dict(l=80, r=90, t=105, b=bottom_margin),
     )
     return fig
 
@@ -751,13 +751,20 @@ def fb_move_legend_below(fig, bottom_margin=130):
 def fb_polish_horizontal_bar(fig, data, value_col, left_margin=300, right_margin=110, bottom_margin=130, showlegend=True):
     """Improve Factbook horizontal bars: readable labels, no clipped values, no legend overlap."""
     fb_force_integer_trace_text(fig, orientation="h")
-    fb_add_value_padding(fig, data, value_col, orientation="h", extra_ratio=0.20)
-    fig.update_yaxes(automargin=True)
-    fig.update_xaxes(automargin=True)
+    fb_add_value_padding(fig, data, value_col, orientation="h", extra_ratio=0.24)
+    fig.update_traces(
+        textfont=dict(size=15, family="Candara, Arial", color=USJ_TEXT),
+        insidetextfont=dict(size=15, family="Candara, Arial", color="white"),
+        outsidetextfont=dict(size=15, family="Candara, Arial", color=USJ_TEXT),
+        cliponaxis=False,
+    )
+    fig.update_yaxes(automargin=True, tickfont=dict(size=13, family="Candara, Arial", color=USJ_TEXT))
+    fig.update_xaxes(automargin=True, tickfont=dict(size=13, family="Candara, Arial", color=USJ_TEXT))
     fig.update_layout(
-        margin=dict(l=left_margin, r=right_margin, t=105, b=bottom_margin if showlegend else 65),
-        uniformtext_minsize=10,
+        margin=dict(l=left_margin, r=right_margin, t=115, b=bottom_margin if showlegend else 75),
+        uniformtext_minsize=13,
         uniformtext_mode="show",
+        font=dict(family="Candara, Arial", size=14, color=USJ_TEXT),
     )
     if showlegend:
         fb_move_legend_below(fig, bottom_margin=bottom_margin)
@@ -770,10 +777,19 @@ def fb_polish_horizontal_bar(fig, data, value_col, left_margin=300, right_margin
 def fb_polish_vertical_bar(fig, data, value_col, bottom_margin=85):
     """Improve Factbook vertical bars and keep value labels visible."""
     fb_force_integer_trace_text(fig, orientation="v")
-    fb_add_value_padding(fig, data, value_col, orientation="v", extra_ratio=0.18)
-    fig.update_xaxes(automargin=True)
-    fig.update_yaxes(automargin=True)
-    fig.update_layout(margin=dict(l=70, r=80, t=105, b=bottom_margin), uniformtext_minsize=10, uniformtext_mode="show")
+    fb_add_value_padding(fig, data, value_col, orientation="v", extra_ratio=0.22)
+    fig.update_traces(
+        textfont=dict(size=15, family="Candara, Arial", color=USJ_TEXT),
+        cliponaxis=False,
+    )
+    fig.update_xaxes(automargin=True, tickfont=dict(size=13, family="Candara, Arial", color=USJ_TEXT))
+    fig.update_yaxes(automargin=True, tickfont=dict(size=13, family="Candara, Arial", color=USJ_TEXT))
+    fig.update_layout(
+        margin=dict(l=80, r=90, t=115, b=bottom_margin),
+        uniformtext_minsize=13,
+        uniformtext_mode="show",
+        font=dict(family="Candara, Arial", size=14, color=USJ_TEXT),
+    )
     return fig
 
 
@@ -795,13 +811,21 @@ def fb_polish_line(fig, data, value_col, bottom_margin=145):
             trace.textposition = [label_positions[(trace_index + i) % len(label_positions)] for i in range(n_points)]
         trace.mode = "lines+markers+text"
         trace.texttemplate = "%{text}"
-        trace.textfont = dict(size=9, family="Candara, Arial", color=USJ_TEXT)
+        trace.textfont = dict(size=14, family="Candara, Arial", color=USJ_TEXT)
+        trace.marker = dict(size=8)
+        trace.line = dict(width=2.8)
         trace.cliponaxis = False
 
-    fig.update_xaxes(automargin=True)
-    fig.update_yaxes(automargin=True)
+    fig.update_xaxes(automargin=True, tickfont=dict(size=13, family="Candara, Arial", color=USJ_TEXT))
+    fig.update_yaxes(automargin=True, tickfont=dict(size=13, family="Candara, Arial", color=USJ_TEXT))
     fb_move_legend_below(fig, bottom_margin=bottom_margin)
-    fig.update_layout(margin=dict(l=70, r=100, t=115, b=bottom_margin), hovermode="x unified")
+    current_height = fig.layout.height if fig.layout.height else 0
+    fig.update_layout(
+        height=max(current_height, 900),
+        margin=dict(l=90, r=120, t=130, b=bottom_margin),
+        font=dict(family="Candara, Arial", size=14, color=USJ_TEXT),
+        hovermode="x unified",
+    )
     return fig
 
 
@@ -3802,9 +3826,13 @@ def render_factbook_module():
             "Lecture des effectifs et de l’ETP du semestre 1 par niveau académique."
         )
 
+        available_indicators = niveau_df["Indicateur"].dropna().astype(str).unique().tolist()
+        preferred_indicator_order = ["Effectifs étudiants semestre 1", "ETP semestre 1"]
+        indicator_options = [item for item in preferred_indicator_order if item in available_indicators]
+        indicator_options += [item for item in available_indicators if item not in indicator_options]
         indicator = st.radio(
             "Indicateur",
-            sorted(niveau_df["Indicateur"].dropna().astype(str).unique().tolist()),
+            indicator_options,
             horizontal=True,
             key="fb_niveau_indicator"
         )
@@ -3865,90 +3893,134 @@ def render_factbook_module():
     with tab_programmes:
         section_header(
             "Effectifs par programme",
-            " | ".join([FACTBOOK_SECTION1_TITLES[k] for k in ["1.5", "1.6", "1.7", "1.8", "1.9", "1.10", "1.11", "1.12", "1.13"]])
+            "Chaque sous-section du Factbook est présentée séparément, comme dans l’Excel source."
         )
 
-        programs_all = pd.concat([programmes_df, du_programmes_df], ignore_index=True, sort=False)
-        if "Programme" not in programs_all.columns:
-            programs_all["Programme"] = np.nan
-        if "Diplôme" not in programs_all.columns:
-            programs_all["Diplôme"] = np.nan
-        programs_all["Programme affiché"] = programs_all["Programme"].where(programs_all["Programme"].notna(), programs_all["Diplôme"])
-        pf1, pf2, pf3, pf4 = st.columns([1.4, 1.4, 1.4, 2.2])
-        with pf1:
-            type_programme = st.selectbox("Type de programme", filter_options(programs_all, "Type de programme"), key="fb_prog_type")
-        filtered_programs = programs_all.copy()
-        if type_programme != "Tous":
-            filtered_programs = filtered_programs[filtered_programs["Type de programme"].astype(str) == type_programme]
-        with pf2:
-            champ_programme = st.selectbox("Champ disciplinaire", filter_options(filtered_programs, "Champ disciplinaire"), key="fb_prog_champ")
-        if champ_programme != "Tous":
-            filtered_programs = filtered_programs[filtered_programs["Champ disciplinaire"].astype(str) == champ_programme]
-        with pf3:
-            acronyme_programme = st.selectbox("Acronyme", filter_options(filtered_programs, "Acronyme"), key="fb_prog_acronyme")
-        if acronyme_programme != "Tous":
-            filtered_programs = filtered_programs[filtered_programs["Acronyme"].astype(str) == acronyme_programme]
-        with pf4:
-            search_program = st.text_input("Recherche programme", value="", key="fb_prog_search")
-        if search_program.strip():
-            label_col = "Programme" if "Programme" in filtered_programs.columns else "Diplôme"
-            filtered_programs = filtered_programs[filtered_programs[label_col].astype(str).str.contains(search_program.strip(), case=False, na=False)]
+        program_section_sources = []
+        for section_key in ["1.5", "1.6", "1.7", "1.8", "1.9", "1.10", "1.11", "1.12"]:
+            section_title = FACTBOOK_SECTION1_TITLES[section_key]
+            section_data = programmes_df[programmes_df["Type de programme"].astype(str) == section_title].copy()
+            program_section_sources.append((section_key, section_title, section_data))
+        program_section_sources.append(("1.13", FACTBOOK_SECTION1_TITLES["1.13"], du_programmes_df.copy()))
 
-        program_label_col = "Programme affiché"
-        program_graph_col = "Programme graphique"
-        if program_label_col in filtered_programs.columns:
-            # Keep the visual label clean: programme name only, without adding the subsection title.
-            filtered_programs[program_graph_col] = filtered_programs[program_label_col].astype(str)
+        program_tab_labels = [
+            "1.5 1er cycle",
+            "1.6 Master",
+            "1.7 PhD",
+            "1.8 Autres",
+            "1.9 Arabe",
+            "1.10 Anglais",
+            "1.11 Nouveaux 1er cycle",
+            "1.12 Nouveaux PhD",
+            "1.13 DU/Certificats",
+        ]
+        program_tabs = st.tabs(program_tab_labels)
 
-        if "2024-2025" in filtered_programs.columns and program_graph_col in filtered_programs.columns:
-            top_programs = filtered_programs.dropna(subset=["2024-2025"]).copy()
-            top_programs = top_programs[~top_programs[program_label_col].astype(str).str.startswith("Total", na=False)]
-            top_programs = (
-                top_programs
-                .groupby([program_graph_col, "Type de programme"], as_index=False)["2024-2025"]
-                .sum()
-                .sort_values("2024-2025", ascending=False)
-                .head(30)
-            )
-            if not top_programs.empty:
-                fig = px.bar(
-                    top_programs,
-                    x="2024-2025",
-                    y=program_graph_col,
-                    orientation="h",
-                    color="Type de programme",
-                    text="2024-2025",
-                    title="Top programmes selon les effectifs 2024-2025",
-                    color_discrete_sequence=PLOTLY_SEQ,
+        for (section_key, section_title, section_df), section_tab in zip(program_section_sources, program_tabs):
+            with section_tab:
+                section_header(section_title)
+
+                filtered_programs = section_df.copy()
+                if "Programme" not in filtered_programs.columns:
+                    filtered_programs["Programme"] = np.nan
+                if "Diplôme" not in filtered_programs.columns:
+                    filtered_programs["Diplôme"] = np.nan
+
+                filtered_programs["Programme affiché"] = filtered_programs["Programme"].where(
+                    filtered_programs["Programme"].notna(),
+                    filtered_programs["Diplôme"]
                 )
-                fig.update_traces(texttemplate="%{text:,.0f}", textposition="outside", cliponaxis=False)
-                fig.update_layout(
-                    xaxis_title="Effectifs 2024-2025",
-                    yaxis_title="",
-                    yaxis={"categoryorder": "total ascending"},
-                    barmode="group",
-                )
-                theme_layout(fig, height=max(620, 31 * len(top_programs) + 190))
-                fb_polish_horizontal_bar(fig, top_programs, "2024-2025", left_margin=390, right_margin=130, bottom_margin=155, showlegend=True)
-                st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
-            else:
-                st.info("Aucun programme disponible pour les filtres sélectionnés.")
+                filtered_programs["Programme affiché"] = filtered_programs["Programme affiché"].astype(str).replace({"nan": np.nan, "None": np.nan})
 
-        render_factbook_table(
-            filtered_programs,
-            "Tableau des programmes filtrés",
-            note="Les colonnes techniques utilisées uniquement pour les graphiques sont masquées dans l’affichage.",
-            max_height=620,
-            hide_columns=["Programme graphique", "Programme affiché"]
-        )
-        st.download_button(
-            "Télécharger les programmes filtrés (CSV)",
-            data=filtered_programs.to_csv(index=False).encode("utf-8-sig"),
-            file_name="factbook_section1_programmes_filtres.csv",
-            mime="text/csv",
-            use_container_width=True,
-            key="fb_download_programs"
-        )
+                key_suffix = section_key.replace(".", "_")
+                pf1, pf2, pf3 = st.columns([1.4, 1.4, 2.2])
+                with pf1:
+                    champ_programme = st.selectbox(
+                        "Champ disciplinaire",
+                        filter_options(filtered_programs, "Champ disciplinaire"),
+                        key=f"fb_prog_champ_{key_suffix}"
+                    )
+                if champ_programme != "Tous":
+                    filtered_programs = filtered_programs[filtered_programs["Champ disciplinaire"].astype(str) == champ_programme]
+
+                with pf2:
+                    acronyme_programme = st.selectbox(
+                        "Acronyme",
+                        filter_options(filtered_programs, "Acronyme"),
+                        key=f"fb_prog_acronyme_{key_suffix}"
+                    )
+                if acronyme_programme != "Tous":
+                    filtered_programs = filtered_programs[filtered_programs["Acronyme"].astype(str) == acronyme_programme]
+
+                with pf3:
+                    search_program = st.text_input(
+                        "Recherche programme",
+                        value="",
+                        key=f"fb_prog_search_{key_suffix}"
+                    )
+                if search_program.strip():
+                    filtered_programs = filtered_programs[
+                        filtered_programs["Programme affiché"].astype(str).str.contains(search_program.strip(), case=False, na=False)
+                    ]
+
+                program_graph_col = "Programme graphique"
+                filtered_programs[program_graph_col] = filtered_programs["Programme affiché"].astype(str)
+
+                if "2024-2025" in filtered_programs.columns and program_graph_col in filtered_programs.columns:
+                    top_programs = filtered_programs.dropna(subset=["2024-2025"]).copy()
+                    top_programs = top_programs[~top_programs["Programme affiché"].astype(str).str.startswith("Total", na=False)]
+                    top_programs = (
+                        top_programs
+                        .groupby(program_graph_col, as_index=False)["2024-2025"]
+                        .sum()
+                        .sort_values("2024-2025", ascending=False)
+                        .head(25)
+                    )
+                    if not top_programs.empty:
+                        fig = px.bar(
+                            top_programs,
+                            x="2024-2025",
+                            y=program_graph_col,
+                            orientation="h",
+                            text="2024-2025",
+                            title="Top programmes selon les effectifs 2024-2025",
+                            color_discrete_sequence=[USJ_BLUE],
+                        )
+                        fig.update_traces(texttemplate="%{text:,.0f}", textposition="outside", cliponaxis=False)
+                        fig.update_layout(
+                            xaxis_title="Effectifs 2024-2025",
+                            yaxis_title="",
+                            yaxis={"categoryorder": "total ascending"},
+                        )
+                        theme_layout(fig, height=max(620, 32 * len(top_programs) + 200), showlegend=False)
+                        fb_polish_horizontal_bar(
+                            fig,
+                            top_programs,
+                            "2024-2025",
+                            left_margin=430,
+                            right_margin=160,
+                            bottom_margin=90,
+                            showlegend=False,
+                        )
+                        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+                    else:
+                        st.info("Aucun programme disponible pour les filtres sélectionnés.")
+
+                render_factbook_table(
+                    filtered_programs,
+                    f"Tableau - {section_title}",
+                    note="Table filtrée de la sous-section sélectionnée.",
+                    max_height=620,
+                    hide_columns=["Programme graphique", "Programme affiché"]
+                )
+                st.download_button(
+                    "Télécharger cette sous-section (CSV)",
+                    data=filtered_programs.to_csv(index=False).encode("utf-8-sig"),
+                    file_name=f"factbook_section_{key_suffix}_programmes.csv",
+                    mime="text/csv",
+                    use_container_width=True,
+                    key=f"fb_download_programs_{key_suffix}"
+                )
 
     with tab_donnees:
         section_header("Tables sources intégrées", "Contrôle des tableaux importés depuis l’Excel de la Section 1 avec les titres officiels des feuilles Factbook.")
@@ -3958,9 +4030,11 @@ def render_factbook_module():
             FACTBOOK_SECTION1_TITLES["1.2"]: du_cert,
             FACTBOOK_SECTION1_TITLES["1.3"]: campus_df,
             FACTBOOK_SECTION1_TITLES["1.4"]: niveau_df,
-            f"{FACTBOOK_SECTION1_TITLES['1.5']} à {FACTBOOK_SECTION1_TITLES['1.12']}": programmes_df,
-            FACTBOOK_SECTION1_TITLES["1.13"]: du_programmes_df,
         }
+        for section_key in ["1.5", "1.6", "1.7", "1.8", "1.9", "1.10", "1.11", "1.12"]:
+            section_title = FACTBOOK_SECTION1_TITLES[section_key]
+            source_tables[section_title] = programmes_df[programmes_df["Type de programme"].astype(str) == section_title].copy()
+        source_tables[FACTBOOK_SECTION1_TITLES["1.13"]] = du_programmes_df
         selected_table_name = st.selectbox("Table", list(source_tables.keys()), key="fb_source_table")
         selected_table = source_tables[selected_table_name]
         render_factbook_table(
