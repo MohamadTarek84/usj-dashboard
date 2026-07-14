@@ -3953,22 +3953,55 @@ def render_factbook_section1_module():
         ).dropna(subset=["Effectifs"])
 
         if not campus_long.empty:
-            fig = px.line(
-                campus_long,
-                x="Année",
-                y="Effectifs",
-                color="Institution",
-                markers=True,
-                text="Effectifs",
-                title="Évolution des effectifs semestre 1 par campus",
-                color_discrete_sequence=PLOTLY_SEQ,
+            campus_matrix = campus_long.copy()
+            campus_matrix["Effectifs"] = pd.to_numeric(campus_matrix["Effectifs"], errors="coerce")
+            campus_pivot = campus_matrix.pivot_table(
+                index="Institution",
+                columns="Année",
+                values="Effectifs",
+                aggfunc="sum"
             )
-            campus_long["Effectifs_label"] = campus_long["Effectifs"].map(fb_text_number)
-            fig.update_traces(texttemplate="%{text:,.0f}", textposition="top center", cliponaxis=False)
-            fig.update_layout(yaxis_title="Effectifs", xaxis_title="Année")
-            theme_layout(fig, height=760)
-            fb_polish_line(fig, campus_long, "Effectifs", bottom_margin=190)
-            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+            campus_pivot = campus_pivot[[year_col for year_col in FACTBOOK_YEARS if year_col in campus_pivot.columns]]
+            latest_year = "2024-2025" if "2024-2025" in campus_pivot.columns else campus_pivot.columns[-1]
+            campus_pivot = campus_pivot.sort_values(latest_year, ascending=False)
+            campus_text = _fb_apply_cell_function(campus_pivot, lambda value: "" if pd.isna(value) else fb_format_number(value, digits=0))
+
+            campus_heatmap = go.Figure(
+                data=go.Heatmap(
+                    z=campus_pivot.values,
+                    x=campus_pivot.columns.tolist(),
+                    y=campus_pivot.index.tolist(),
+                    colorscale=[
+                        [0.00, "#F7F9FC"],
+                        [0.35, "#D8DEFF"],
+                        [0.70, "#8FA0E2"],
+                        [1.00, USJ_BLUE],
+                    ],
+                    text=campus_text.values,
+                    texttemplate="%{text}",
+                    textfont=dict(family="Candara, Arial", size=15, color=USJ_TEXT),
+                    hovertemplate="<b>%{y}</b><br>Année: %{x}<br>Effectifs: %{z:,.0f}<extra></extra>",
+                    colorbar=dict(title="Effectifs", tickfont=dict(family="Candara, Arial", color=USJ_TEXT)),
+                )
+            )
+            campus_heatmap.update_layout(
+                title=dict(
+                    text="Évolution des effectifs semestre 1 par campus",
+                    x=0.01,
+                    font=dict(size=22, color=USJ_BLUE, family="Candara, Arial"),
+                ),
+                height=max(430, 46 * len(campus_pivot.index) + 145),
+                template="plotly_white",
+                font=dict(family="Candara, Arial", size=14, color=USJ_TEXT),
+                xaxis_title="Année",
+                yaxis_title="",
+                margin=dict(l=230, r=70, t=85, b=65),
+                paper_bgcolor="white",
+                plot_bgcolor="white",
+            )
+            campus_heatmap.update_xaxes(side="bottom", tickfont=dict(size=13), automargin=True)
+            campus_heatmap.update_yaxes(tickfont=dict(size=13), automargin=True)
+            st.plotly_chart(campus_heatmap, use_container_width=True, config={"displayModeBar": False})
         else:
             st.info("Aucune donnée disponible pour les filtres sélectionnés.")
 
@@ -4400,7 +4433,7 @@ def render_factbook_section2_module():
                 heatmap_values = heatmap_values.dropna(how="all")
 
                 if not heatmap_values.empty:
-                    heatmap_text = heatmap_values.applymap(lambda value: "" if pd.isna(value) else fb_format_number(value, digits=0))
+                    heatmap_text = _fb_apply_cell_function(heatmap_values, lambda value: "" if pd.isna(value) else fb_format_number(value, digits=0))
                     heatmap_fig = go.Figure(
                         data=go.Heatmap(
                             z=heatmap_values.values,
