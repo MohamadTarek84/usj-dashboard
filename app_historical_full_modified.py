@@ -655,6 +655,128 @@ def load_factbook_section1(file_path, file_mtime, file_size):
     }
 
 
+# =====================================================
+# Factbook Section 2 helpers
+# =====================================================
+
+FACTBOOK_SECTION2_FILE_CANDIDATES = [
+    "FB24-25 2. Effectifs diplômés HS 27-1-2026.xlsx",
+    "FB24-25 2. Effectifs diplomés HS 27-1-2026.xlsx",
+    "FB24-25 2. Effectifs diplomes HS 27-1-2026.xlsx",
+    "Factbook_Effectifs_Diplomes_2024_2025.xlsx",
+    "Factbook_Section2_Effectifs_Diplomes.xlsx",
+    "factbook_section2.xlsx",
+]
+
+FACTBOOK_SECTION2_TITLES = {
+    "2.1": "2.1. Effectifs diplômés par programme : 1er cycle d'une formation",
+    "2.2": "2.2. Effectifs diplômés par programme : Master",
+    "2.3": "2.3. Effectifs diplômés par programme : PhD",
+    "2.4": "2.4. Effectifs diplômés par programme : Autres programmes",
+    "2.5": "2.5. Effectifs diplômés par niveau académique",
+}
+
+
+def find_factbook_section2_file():
+    """Find the Section 2 Factbook Excel file without touching the Exit Survey file."""
+    for file_name in FACTBOOK_SECTION2_FILE_CANDIDATES:
+        if os.path.exists(file_name):
+            stat = os.stat(file_name)
+            return file_name, stat.st_mtime, stat.st_size
+
+    # Fallback for deployment when the filename is slightly normalized by the repository.
+    for file_name in os.listdir("."):
+        lower = file_name.lower()
+        normalized = lower.replace("ô", "o").replace("é", "e").replace("è", "e")
+        if lower.endswith((".xlsx", ".xls")) and "effectifs" in normalized and "diplom" in normalized:
+            stat = os.stat(file_name)
+            return file_name, stat.st_mtime, stat.st_size
+
+    return None, None, None
+
+
+def _fb_parse_graduate_program_sheet(file_path, sheet_name, section_title, header_row=1):
+    """Parse Section 2 programme sheets and normalize the programme label."""
+    raw = pd.read_excel(file_path, sheet_name=sheet_name, header=None)
+    raw = _fb_clean_dataframe(raw)
+
+    headers = [str(value).strip() if not _fb_is_blank(value) else f"Colonne {i + 1}" for i, value in enumerate(raw.iloc[header_row])]
+    df = raw.iloc[header_row + 1:].copy()
+    df.columns = headers[:len(df.columns)]
+    df = _fb_clean_dataframe(df)
+    df = _fb_fix_total_rows(df)
+    df = _fb_fill_metadata(df, ["Champ disciplinaire"])
+
+    if "Diplôme" in df.columns:
+        df = df.rename(columns={"Diplôme": "Programme"})
+
+    if "Programme" in df.columns:
+        footnote_mask = df["Programme"].astype(str).str.strip().str.startswith("*")
+        df = df[~footnote_mask].copy()
+
+    df = _fb_numeric_columns(df)
+    df["Sous-section"] = section_title
+    return df
+
+
+def _fb_parse_graduate_level_sheet(file_path, sheet_name):
+    """Parse Section 2 academic-level graduate totals."""
+    raw = pd.read_excel(file_path, sheet_name=sheet_name, header=None)
+    raw = _fb_apply_cell_function(raw, _fb_clean_cell)
+
+    header_row = None
+    for i in range(len(raw)):
+        row_values = [str(v).strip() for v in raw.iloc[i].tolist() if not _fb_is_blank(v)]
+        if "Niveau académique" in row_values:
+            header_row = i
+            break
+
+    if header_row is None:
+        return pd.DataFrame()
+
+    first_valid_col = None
+    for j, value in enumerate(raw.iloc[header_row].tolist()):
+        if not _fb_is_blank(value) and str(value).strip() == "Niveau académique":
+            first_valid_col = j
+            break
+
+    if first_valid_col is None:
+        return pd.DataFrame()
+
+    headers = [_fb_clean_cell(value) for value in raw.iloc[header_row, first_valid_col:first_valid_col + 9].tolist()]
+    df = raw.iloc[header_row + 1:, first_valid_col:first_valid_col + len(headers)].copy()
+    df.columns = headers[:len(df.columns)]
+    df = _fb_clean_dataframe(df)
+
+    if "Niveau académique" in df.columns:
+        df = df[~df["Niveau académique"].astype(str).str.strip().str.startswith("*")].copy()
+
+    df = _fb_numeric_columns(df)
+    return df
+
+
+@st.cache_data(show_spinner=False)
+def load_factbook_section2(file_path, file_mtime, file_size):
+    """Load only Section 2 of the Factbook from the provided Excel workbook."""
+    program_sheets = [
+        ("2.1 Eff diplômés 1er cycle form", FACTBOOK_SECTION2_TITLES["2.1"], 2),
+        ("2.2. Effectifs diplômés Master", FACTBOOK_SECTION2_TITLES["2.2"], 1),
+        ("2.3. Effectifs diplômés PhD", FACTBOOK_SECTION2_TITLES["2.3"], 1),
+        ("2.4 Autres", FACTBOOK_SECTION2_TITLES["2.4"], 1),
+    ]
+
+    programmes = pd.concat(
+        [_fb_parse_graduate_program_sheet(file_path, sheet, label, header_row=header_row) for sheet, label, header_row in program_sheets],
+        ignore_index=True
+    )
+    niveau = _fb_parse_graduate_level_sheet(file_path, "2.5 par niveau")
+
+    return {
+        "programmes": programmes,
+        "niveau": niveau,
+    }
+
+
 def fb_format_number(value, digits=0):
     if pd.isna(value):
         return "NA"
@@ -3351,8 +3473,8 @@ def render_landing_page():
 
 
 
-def render_factbook_module():
-    """Render the connected Factbook module for Section 1 only."""
+def render_factbook_section1_module():
+    """Render the connected Factbook module for Section 1."""
     factbook_file_path, factbook_file_mtime, factbook_file_size = find_factbook_section1_file()
 
     if factbook_file_path is None:
@@ -3391,10 +3513,9 @@ def render_factbook_module():
         )
         header_button_cols = st.columns([1.1, 3.5])
         with header_button_cols[0]:
-            back_label = "← Portail" if LANG == "Français" else "← Portal"
-            if st.button(back_label, key="back_to_portal_from_factbook", use_container_width=True):
-                st.session_state["selected_portal_app"] = None
-                st.session_state["dashboard_started"] = False
+            back_label = "← Sections Factbook" if LANG == "Français" else "← Factbook sections"
+            if st.button(back_label, key="back_to_factbook_cover_from_section1", use_container_width=True):
+                st.session_state["selected_factbook_section"] = None
                 st.rerun()
 
     with header_right:
@@ -4063,11 +4184,528 @@ def render_factbook_module():
     )
 
 
+
+def _factbook_logo_html(width=320):
+    """Return a local logo as inline HTML, matching the Exit Survey header style."""
+    candidates = ["LogoUAQ.png", "USJ LOGO 150.png", "usj_logo.png"]
+    for logo_path in candidates:
+        if os.path.exists(logo_path):
+            try:
+                with open(logo_path, "rb") as fh:
+                    encoded_logo = base64.b64encode(fh.read()).decode("utf-8")
+                return f"<img src='data:image/png;base64,{encoded_logo}' style='max-width:{width}px;width:100%;height:auto;' alt='USJ UAQ logo' />"
+            except Exception:
+                pass
+    return f"<div style='font-family:Candara, Arial, sans-serif;color:{USJ_BLUE};font-weight:900;font-size:30px;'>USJ · UAQ</div>"
+
+
+def render_factbook_cover():
+    """Render the Factbook cover page with section-level navigation."""
+    section1_path, _, _ = find_factbook_section1_file()
+    section2_path, _, _ = find_factbook_section2_file()
+
+    header_left, header_right = st.columns([4.5, 1.5])
+    with header_left:
+        st.markdown(
+            f"""
+            <h1 style="color:{USJ_BLUE}; margin-bottom:10px; font-family:Candara, Arial, sans-serif; font-size:48px; font-weight:900;">
+                Factbook USJ 2024-2025
+            </h1>
+            <div style="color:#4E5A6E; font-family:Candara, Arial, sans-serif; font-size:20px; margin-bottom:18px;">
+                Accès dynamique aux sections du Factbook institutionnel
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+        btn_cols = st.columns([1.1, 3.8])
+        with btn_cols[0]:
+            if st.button("← Portail", key="back_to_main_portal_from_factbook_cover", use_container_width=True):
+                st.session_state["selected_portal_app"] = None
+                st.session_state["selected_factbook_section"] = None
+                st.session_state["dashboard_started"] = False
+                st.rerun()
+    with header_right:
+        st.markdown(_factbook_logo_html(width=350), unsafe_allow_html=True)
+
+    st.markdown(
+        f"""
+        <style>
+            .fb-cover-section-title {{
+                color:{USJ_BLUE};
+                font-family:Candara, Arial, sans-serif;
+                font-size:34px;
+                font-weight:900;
+                margin:24px 0 8px 0;
+            }}
+            .fb-cover-section-subtitle {{
+                color:#5F6B7A;
+                font-family:Candara, Arial, sans-serif;
+                font-size:16px;
+                margin-bottom:18px;
+                line-height:1.5;
+            }}
+            .fb-cover-card {{
+                background:linear-gradient(135deg, #FFFFFF 0%, #F7FAFF 100%);
+                border:1px solid #DDE7F6;
+                border-radius:22px;
+                padding:22px 22px 18px 22px;
+                min-height:205px;
+                box-shadow:0 10px 28px rgba(0,27,117,0.08);
+                font-family:Candara, Arial, sans-serif;
+                margin-bottom:12px;
+                position:relative;
+                overflow:hidden;
+            }}
+            .fb-cover-card:before {{
+                content:"";
+                position:absolute;
+                top:0;
+                left:0;
+                width:8px;
+                height:100%;
+                background:{USJ_BLUE};
+            }}
+            .fb-cover-card.disabled {{ opacity:0.62; }}
+            .fb-cover-card-number {{
+                color:{USJ_RED};
+                font-size:15px;
+                font-weight:900;
+                letter-spacing:0.04em;
+                text-transform:uppercase;
+                margin-bottom:8px;
+            }}
+            .fb-cover-card-title {{
+                color:{USJ_BLUE};
+                font-size:23px;
+                font-weight:900;
+                line-height:1.18;
+                margin-bottom:8px;
+            }}
+            .fb-cover-card-text {{
+                color:#4E5A6E;
+                font-size:14px;
+                line-height:1.45;
+            }}
+            .fb-cover-status {{
+                display:inline-flex;
+                margin-top:12px;
+                background:{USJ_LIGHT_BLUE};
+                color:{USJ_BLUE};
+                border:1px solid #D8E2F0;
+                border-radius:999px;
+                padding:7px 12px;
+                font-size:12px;
+                font-weight:900;
+            }}
+        </style>
+        <div class="fb-cover-section-title">Choisir une section du Factbook</div>
+        <div class="fb-cover-section-subtitle">
+            Les sections sont ajoutées progressivement au tableau de bord. Les données restent structurées par section, comme dans les fichiers Excel source.
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    sections = [
+        {
+            "id": "section1",
+            "number": "Section 1",
+            "title": "Effectifs étudiants",
+            "text": "Effectifs étudiants, ETP, campus, niveaux académiques et programmes.",
+            "enabled": section1_path is not None,
+            "button": "Ouvrir Section 1",
+        },
+        {
+            "id": "section2",
+            "number": "Section 2",
+            "title": "Effectifs diplômés",
+            "text": "Diplômés par programme, par niveau académique et évolution annuelle.",
+            "enabled": section2_path is not None,
+            "button": "Ouvrir Section 2",
+        },
+        {
+            "id": "section3",
+            "number": "Section 3",
+            "title": "Taux de rétention",
+            "text": "Section prévue pour la prochaine intégration.",
+            "enabled": False,
+            "button": "Bientôt disponible",
+        },
+        {
+            "id": "section4",
+            "number": "Section 4",
+            "title": "Taux de diplomation",
+            "text": "Section prévue pour la prochaine intégration.",
+            "enabled": False,
+            "button": "Bientôt disponible",
+        },
+        {
+            "id": "section5",
+            "number": "Section 5",
+            "title": "Profil démographique",
+            "text": "Section prévue pour la prochaine intégration.",
+            "enabled": False,
+            "button": "Bientôt disponible",
+        },
+        {
+            "id": "section6",
+            "number": "Section 6",
+            "title": "Admission commune",
+            "text": "Section prévue pour la prochaine intégration.",
+            "enabled": False,
+            "button": "Bientôt disponible",
+        },
+    ]
+
+    for start in range(0, len(sections), 3):
+        cols = st.columns(3)
+        for col, item in zip(cols, sections[start:start + 3]):
+            with col:
+                disabled_class = " disabled" if not item["enabled"] else ""
+                status = "Connectée" if item["enabled"] else "À connecter"
+                st.markdown(
+                    f"""
+                    <div class="fb-cover-card{disabled_class}">
+                        <div class="fb-cover-card-number">{html_escape(item['number'])}</div>
+                        <div class="fb-cover-card-title">{html_escape(item['title'])}</div>
+                        <div class="fb-cover-card-text">{html_escape(item['text'])}</div>
+                        <div class="fb-cover-status">{html_escape(status)}</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+                if st.button(item["button"], key=f"open_factbook_{item['id']}", use_container_width=True, disabled=not item["enabled"]):
+                    st.session_state["selected_factbook_section"] = item["id"]
+                    st.rerun()
+
+
+def render_factbook_section2_module():
+    """Render the connected Factbook module for Section 2."""
+    factbook_file_path, factbook_file_mtime, factbook_file_size = find_factbook_section2_file()
+
+    if factbook_file_path is None:
+        st.error("Fichier Excel de la Section 2 du Factbook introuvable. Ajoutez le fichier Excel dans le même dossier que l’application.")
+        st.code("FB24-25 2. Effectifs diplômés HS 27-1-2026.xlsx")
+        st.stop()
+
+    with st.spinner("Chargement du Factbook - Section 2..."):
+        fb = load_factbook_section2(factbook_file_path, factbook_file_mtime, factbook_file_size)
+
+    programmes_df = fb["programmes"].copy()
+    niveau_df = fb["niveau"].copy()
+
+    header_left, header_right = st.columns([4.5, 1.5])
+    with header_left:
+        st.markdown(
+            f"""
+            <h1 style="color:{USJ_BLUE}; margin-bottom:18px; font-family:Candara, Arial, sans-serif;">
+                Factbook USJ 2024-2025
+            </h1>
+            """,
+            unsafe_allow_html=True
+        )
+        header_button_cols = st.columns([1.1, 3.5])
+        with header_button_cols[0]:
+            if st.button("← Sections Factbook", key="back_to_factbook_cover_from_section2", use_container_width=True):
+                st.session_state["selected_factbook_section"] = None
+                st.rerun()
+    with header_right:
+        st.markdown(_factbook_logo_html(width=350), unsafe_allow_html=True)
+
+    st.markdown(
+        f"""
+        <h2 style="
+            color:{USJ_BLUE};
+            margin-top:18px;
+            margin-bottom:8px;
+            font-family:Candara, Arial, sans-serif;
+            font-size:42px;
+            font-weight:900;
+            line-height:1.15;
+        ">
+            Section 2 - Effectifs diplômés
+        </h2>
+        """,
+        unsafe_allow_html=True
+    )
+    st.divider()
+
+    total_row = None
+    if "Niveau académique" in niveau_df.columns:
+        mask = niveau_df["Niveau académique"].astype(str).str.contains("Total diplômés USJ", case=False, na=False, regex=False)
+        if mask.any():
+            total_row = niveau_df.loc[mask].iloc[-1]
+
+    def _section_total(section_title):
+        section_df = programmes_df[programmes_df["Sous-section"].astype(str) == section_title].copy()
+        if "Programme" in section_df.columns:
+            total_mask = section_df["Programme"].astype(str).str.startswith("Total", na=False)
+            if total_mask.any():
+                return section_df.loc[total_mask].iloc[-1]
+        return None
+
+    tab_synthese, tab_programmes, tab_niveau = st.tabs([
+        "Synthèse",
+        "Par programme",
+        "Par niveau académique",
+    ])
+
+    with tab_synthese:
+        section_header("Synthèse des effectifs diplômés")
+        kpi_cols = st.columns(5)
+        with kpi_cols[0]:
+            insight_card("Total diplômés USJ", fb_format_number(total_row.get("2024-2025") if total_row is not None else np.nan), "Année 2024-2025", color=USJ_BLUE)
+        with kpi_cols[1]:
+            insight_card("Variation", fb_format_pct(total_row.get("% Var") if total_row is not None else np.nan), "2023-2024 vs 2024-2025", color=USJ_GREEN if total_row is not None and pd.to_numeric(total_row.get("% Var"), errors="coerce") >= 0 else USJ_RED)
+        with kpi_cols[2]:
+            row = _section_total(FACTBOOK_SECTION2_TITLES["2.1"])
+            insight_card("1er cycle", fb_format_number(row.get("2024-2025") if row is not None else np.nan), "Diplômés 2024-2025", color=USJ_BLUE_2)
+        with kpi_cols[3]:
+            row = _section_total(FACTBOOK_SECTION2_TITLES["2.2"])
+            insight_card("Master", fb_format_number(row.get("2024-2025") if row is not None else np.nan), "Diplômés 2024-2025", color=USJ_RED)
+        with kpi_cols[4]:
+            row = _section_total(FACTBOOK_SECTION2_TITLES["2.3"])
+            insight_card("PhD", fb_format_number(row.get("2024-2025") if row is not None else np.nan), "Diplômés 2024-2025", color=USJ_GOLD)
+
+        if not niveau_df.empty:
+            level_no_total = niveau_df.copy()
+            if "Niveau académique" in level_no_total.columns:
+                level_no_total = level_no_total[~level_no_total["Niveau académique"].astype(str).str.startswith("Total", na=False)]
+            latest = level_no_total.dropna(subset=["2024-2025"]).sort_values("2024-2025", ascending=False)
+            if not latest.empty:
+                fig = px.bar(
+                    latest,
+                    x="Niveau académique",
+                    y="2024-2025",
+                    text="2024-2025",
+                    title="Diplômés 2024-2025 par niveau académique",
+                    color_discrete_sequence=[USJ_BLUE],
+                )
+                fig.update_traces(texttemplate="%{text:,.0f}", textposition="outside", cliponaxis=False, textfont=dict(size=16, color=USJ_TEXT))
+                fig.update_layout(yaxis_title="Diplômés", xaxis_title="", xaxis_tickangle=-20)
+                theme_layout(fig, height=560, showlegend=False)
+                fb_polish_vertical_bar(fig, latest, "2024-2025", bottom_margin=120)
+                st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+
+        render_factbook_table(
+            niveau_df,
+            FACTBOOK_SECTION2_TITLES["2.5"],
+            note="Vue synthétique des diplômés par niveau académique.",
+            max_height=430
+        )
+
+    with tab_programmes:
+        section_header(
+            "Effectifs diplômés par programme",
+            "Chaque sous-section du Factbook est présentée séparément, comme dans l’Excel source."
+        )
+        program_section_sources = [
+            ("2.1", FACTBOOK_SECTION2_TITLES["2.1"], programmes_df[programmes_df["Sous-section"].astype(str) == FACTBOOK_SECTION2_TITLES["2.1"]].copy()),
+            ("2.2", FACTBOOK_SECTION2_TITLES["2.2"], programmes_df[programmes_df["Sous-section"].astype(str) == FACTBOOK_SECTION2_TITLES["2.2"]].copy()),
+            ("2.3", FACTBOOK_SECTION2_TITLES["2.3"], programmes_df[programmes_df["Sous-section"].astype(str) == FACTBOOK_SECTION2_TITLES["2.3"]].copy()),
+            ("2.4", FACTBOOK_SECTION2_TITLES["2.4"], programmes_df[programmes_df["Sous-section"].astype(str) == FACTBOOK_SECTION2_TITLES["2.4"]].copy()),
+        ]
+        program_tabs = st.tabs(["2.1 1er cycle", "2.2 Master", "2.3 PhD", "2.4 Autres"])
+
+        for (section_key, section_title, section_df), section_tab in zip(program_section_sources, program_tabs):
+            with section_tab:
+                section_header(section_title)
+                filtered_programs = section_df.copy()
+                if "Programme" not in filtered_programs.columns:
+                    filtered_programs["Programme"] = np.nan
+
+                key_suffix = section_key.replace(".", "_")
+                pf1, pf2, pf3 = st.columns([1.4, 1.4, 2.2])
+                with pf1:
+                    champ_programme = st.selectbox(
+                        "Champ disciplinaire",
+                        filter_options(filtered_programs, "Champ disciplinaire"),
+                        key=f"fb_s2_prog_champ_{key_suffix}"
+                    )
+                if champ_programme != "Tous":
+                    filtered_programs = filtered_programs[filtered_programs["Champ disciplinaire"].astype(str) == champ_programme]
+
+                with pf2:
+                    acronyme_programme = st.selectbox(
+                        "Acronyme",
+                        filter_options(filtered_programs, "Acronyme"),
+                        key=f"fb_s2_prog_acronyme_{key_suffix}"
+                    )
+                if acronyme_programme != "Tous":
+                    filtered_programs = filtered_programs[filtered_programs["Acronyme"].astype(str) == acronyme_programme]
+
+                with pf3:
+                    search_program = st.text_input(
+                        "Recherche programme",
+                        value="",
+                        key=f"fb_s2_prog_search_{key_suffix}"
+                    )
+                if search_program.strip():
+                    filtered_programs = filtered_programs[
+                        filtered_programs["Programme"].astype(str).str.contains(search_program.strip(), case=False, na=False)
+                    ]
+
+                program_graph_col = "Programme graphique"
+                filtered_programs[program_graph_col] = filtered_programs["Programme"].astype(str)
+
+                if "2024-2025" in filtered_programs.columns and program_graph_col in filtered_programs.columns:
+                    top_programs = filtered_programs.dropna(subset=["2024-2025"]).copy()
+                    top_programs = top_programs[~top_programs["Programme"].astype(str).str.startswith("Total", na=False)]
+                    top_programs = (
+                        top_programs
+                        .groupby(program_graph_col, as_index=False)["2024-2025"]
+                        .sum()
+                        .sort_values("2024-2025", ascending=False)
+                        .head(25)
+                    )
+                    if not top_programs.empty:
+                        fig = px.bar(
+                            top_programs,
+                            x="2024-2025",
+                            y=program_graph_col,
+                            orientation="h",
+                            text="2024-2025",
+                            title="Top programmes selon les diplômés 2024-2025",
+                            color_discrete_sequence=[USJ_BLUE],
+                        )
+                        fig.update_traces(texttemplate="%{text:,.0f}", textposition="outside", cliponaxis=False, textfont=dict(size=15, color=USJ_TEXT))
+                        fig.update_layout(
+                            xaxis_title="Diplômés 2024-2025",
+                            yaxis_title="",
+                            yaxis={"categoryorder": "total ascending"},
+                        )
+                        theme_layout(fig, height=max(620, 34 * len(top_programs) + 210), showlegend=False)
+                        fb_polish_horizontal_bar(
+                            fig,
+                            top_programs,
+                            "2024-2025",
+                            left_margin=430,
+                            right_margin=170,
+                            bottom_margin=90,
+                            showlegend=False,
+                        )
+                        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+                    else:
+                        st.info("Aucun programme disponible pour les filtres sélectionnés.")
+
+                render_factbook_table(
+                    filtered_programs,
+                    f"Tableau - {section_title}",
+                    note="Table filtrée de la sous-section sélectionnée.",
+                    max_height=620,
+                    hide_columns=["Programme graphique", "Sous-section"]
+                )
+                st.download_button(
+                    "Télécharger cette sous-section (CSV)",
+                    data=filtered_programs.drop(columns=["Programme graphique"], errors="ignore").to_csv(index=False).encode("utf-8-sig"),
+                    file_name=f"factbook_section_{key_suffix}_diplomes.csv",
+                    mime="text/csv",
+                    use_container_width=True,
+                    key=f"fb_s2_download_programs_{key_suffix}"
+                )
+
+    with tab_niveau:
+        section_header(
+            FACTBOOK_SECTION2_TITLES["2.5"],
+            "Lecture des diplômés par niveau académique."
+        )
+        include_total = st.checkbox("Inclure Total diplômés USJ", value=False, key="fb_s2_level_include_total")
+        filtered_level = niveau_df.copy()
+        if not include_total and "Niveau académique" in filtered_level.columns:
+            filtered_level = filtered_level[~filtered_level["Niveau académique"].astype(str).str.startswith("Total", na=False)]
+
+        level_long = filtered_level.melt(
+            id_vars=["Niveau académique"],
+            value_vars=[year_col for year_col in FACTBOOK_YEARS if year_col in filtered_level.columns],
+            var_name="Année",
+            value_name="Valeur"
+        ).dropna(subset=["Valeur"])
+
+        if not level_long.empty:
+            fig = px.line(
+                level_long,
+                x="Année",
+                y="Valeur",
+                color="Niveau académique",
+                markers=True,
+                text="Valeur",
+                title="Évolution des diplômés par niveau académique",
+                color_discrete_sequence=PLOTLY_SEQ,
+            )
+            fig.update_layout(yaxis_title="Diplômés", xaxis_title="Année")
+            theme_layout(fig, height=780)
+            fb_polish_line(fig, level_long, "Valeur", bottom_margin=205)
+            fig.update_traces(textfont=dict(size=15, color=USJ_TEXT), cliponaxis=False)
+            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+
+            latest = filtered_level[["Niveau académique", "2024-2025", "% Var"]].dropna(subset=["2024-2025"]).copy()
+            latest = latest.sort_values("2024-2025", ascending=False)
+            fig2 = px.bar(
+                latest,
+                x="Niveau académique",
+                y="2024-2025",
+                text="2024-2025",
+                title="Répartition 2024-2025 par niveau académique",
+                color_discrete_sequence=[USJ_BLUE],
+            )
+            fig2.update_traces(texttemplate="%{text:,.0f}", textposition="outside", cliponaxis=False, textfont=dict(size=16, color=USJ_TEXT))
+            fig2.update_layout(yaxis_title="Diplômés", xaxis_title="", xaxis_tickangle=-25)
+            theme_layout(fig2, height=540, showlegend=False)
+            fb_polish_vertical_bar(fig2, latest, "2024-2025", bottom_margin=130)
+            st.plotly_chart(fig2, use_container_width=True, config={"displayModeBar": False})
+        else:
+            st.info("Aucune donnée disponible.")
+
+        render_factbook_table(
+            filtered_level,
+            FACTBOOK_SECTION2_TITLES["2.5"],
+            note="Table filtrée des diplômés par niveau académique.",
+            max_height=500
+        )
+
+    st.markdown(
+        f"""
+        <div style="
+            margin-top:35px;
+            padding:15px;
+            background-color:{USJ_BLUE};
+            color:white;
+            border-radius:14px;
+            text-align:center;
+            font-size:14px;
+            box-shadow:0 4px 14px rgba(0,0,0,0.08);
+            font-family:Candara, Arial, sans-serif;
+        ">
+            Université Saint-Joseph de Beyrouth – Factbook 2024-2025 – Section 2
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+def render_factbook_module():
+    """Factbook entry point: cover page first, then selected section."""
+    if "selected_factbook_section" not in st.session_state:
+        st.session_state["selected_factbook_section"] = None
+
+    if st.session_state["selected_factbook_section"] == "section1":
+        render_factbook_section1_module()
+        return
+    if st.session_state["selected_factbook_section"] == "section2":
+        render_factbook_section2_module()
+        return
+
+    render_factbook_cover()
+
+
 if "selected_portal_app" not in st.session_state:
     st.session_state["selected_portal_app"] = None
 
 if "dashboard_started" not in st.session_state:
     st.session_state["dashboard_started"] = False
+
+if "selected_factbook_section" not in st.session_state:
+    st.session_state["selected_factbook_section"] = None
 
 # First screen: institutional portal. This is intentionally separate from the
 # Exit Survey introduction and from the analytical dashboard pages.
