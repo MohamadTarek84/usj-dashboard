@@ -990,10 +990,14 @@ def render_factbook_table(df, title, note=None, max_height=560, hide_columns=Non
         }}
         .text-col, .text-cell {{ text-align:left; }}
         .num-col, .num-cell {{
-            text-align:right;
+            text-align:center;
+            vertical-align:middle;
             white-space:normal;
             overflow-wrap:anywhere;
             font-weight:800;
+        }}
+        .num-col {{
+            vertical-align:middle;
         }}
         .total-row td {{
             background:#EEF2FF !important;
@@ -3362,6 +3366,35 @@ def render_factbook_module():
     def _sum_col(df, col):
         return pd.to_numeric(df[col], errors="coerce").sum() if col in df.columns else np.nan
 
+    def _fb_make_unique_axis_labels(df, label_col, context_cols=None, output_col=None):
+        """Create unique chart labels so duplicate institutions/programmes are not drawn on top of each other."""
+        output_col = output_col or f"{label_col} graphique"
+        context_cols = context_cols or []
+        chart_df = df.copy()
+        if label_col not in chart_df.columns:
+            chart_df[output_col] = chart_df.index.astype(str)
+            return chart_df, output_col
+
+        labels = chart_df[label_col].astype(str).str.strip()
+        chart_df[output_col] = labels
+        duplicate_mask = labels.duplicated(keep=False)
+
+        if duplicate_mask.any():
+            def _context(row):
+                parts = []
+                for col in context_cols:
+                    if col in chart_df.columns and pd.notna(row.get(col)):
+                        value = str(row.get(col)).strip()
+                        if value and value.lower() not in {"nan", "none", "nat", "<na>"}:
+                            parts.append(value)
+                return " / ".join(parts)
+
+            chart_df.loc[duplicate_mask, output_col] = chart_df.loc[duplicate_mask].apply(
+                lambda row: f"{row[label_col]} — {_context(row)}" if _context(row) else str(row[label_col]),
+                axis=1
+            )
+        return chart_df, output_col
+
     def _pct_change_from_values(previous_value, current_value):
         previous_value = pd.to_numeric(previous_value, errors="coerce")
         current_value = pd.to_numeric(current_value, errors="coerce")
@@ -3572,10 +3605,23 @@ def render_factbook_module():
         if not chart_inst.empty:
             chart_inst = chart_inst[~chart_inst["Institution"].astype(str).str.startswith("Total", na=False)]
             chart_inst = chart_inst.sort_values(metric, ascending=False).head(25)
+            if dataset_choice == FACTBOOK_SECTION1_TITLES["1.2"] and "Champ disciplinaire" in chart_inst.columns:
+                chart_inst["Catégorie graphique"] = np.where(
+                    chart_inst["Champ disciplinaire"].astype(str).str.contains("Autres entités", case=False, na=False),
+                    "Autres entités / formations",
+                    "DU et Certificats"
+                )
+            else:
+                chart_inst["Catégorie graphique"] = "Formations diplômantes"
+            chart_inst, institution_axis_col = _fb_make_unique_axis_labels(
+                chart_inst,
+                "Institution",
+                context_cols=["Catégorie graphique", "Acronyme"]
+            )
             fig = px.bar(
                 chart_inst,
                 x=metric,
-                y="Institution",
+                y=institution_axis_col,
                 orientation="h",
                 color="Champ disciplinaire" if "Champ disciplinaire" in chart_inst.columns else None,
                 text=metric,
