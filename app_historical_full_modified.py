@@ -998,6 +998,24 @@ def _fb_table_value(value, column_name):
     return str(raw)
 
 
+def _fb_is_negative_percent_value(value, column_name):
+    """Return True when a Factbook percentage/variation value is negative.
+
+    This is used only for display styling so that negative % Var cells are
+    highlighted in red without changing the underlying data.
+    """
+    if not _fb_is_percent_column(column_name) or _fb_is_blank(value):
+        return False
+    try:
+        raw = str(value).replace("\u00a0", " ").strip()
+        raw = raw.replace(" ", "").replace("%", "").replace(",", ".")
+        if raw.upper() in {"NA", "N/A", ""}:
+            return False
+        return float(raw) < 0
+    except Exception:
+        return False
+
+
 def _fb_table_is_total_row(row):
     text = " ".join(str(v) for v in row.values if not _fb_is_blank(v)).strip().lower()
     return text.startswith("total") or " total " in f" {text} "
@@ -1035,7 +1053,10 @@ def render_factbook_table(df, title, note=None, max_height=560, hide_columns=Non
         row_class = "total-row" if _fb_table_is_total_row(row) else ""
         cells = []
         for col in table.columns:
-            cls = "num-cell" if col in numeric_cols else "text-cell"
+            cls_parts = ["num-cell" if col in numeric_cols else "text-cell"]
+            if _fb_is_negative_percent_value(row[col], col):
+                cls_parts.append("negative-pct")
+            cls = " ".join(cls_parts)
             cells.append(f"<td class='{cls}'>{html_escape(_fb_table_value(row[col], col))}</td>")
         body_rows.append(f"<tr class='{row_class}'>" + "".join(cells) + "</tr>")
 
@@ -1175,6 +1196,10 @@ def render_factbook_table(df, title, note=None, max_height=560, hide_columns=Non
         }}
         .num-col {{
             vertical-align:middle;
+        }}
+        .negative-pct {{
+            color:{USJ_RED} !important;
+            font-weight:900 !important;
         }}
         .total-row td {{
             background:#EEF2FF !important;
