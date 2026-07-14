@@ -3987,208 +3987,6 @@ def render_factbook_section1_module():
             key="fb_download_campus"
         )
 
-    with tab_niveau:
-        section_header(
-            FACTBOOK_SECTION1_TITLES["1.4"],
-            "Lecture des effectifs et de l’ETP du semestre 1 par niveau académique."
-        )
-
-        available_indicators = niveau_df["Indicateur"].dropna().astype(str).unique().tolist()
-        preferred_indicator_order = ["Effectifs étudiants semestre 1", "ETP semestre 1"]
-        indicator_options = [item for item in preferred_indicator_order if item in available_indicators]
-        indicator_options += [item for item in available_indicators if item not in indicator_options]
-        indicator = st.radio(
-            "Indicateur",
-            indicator_options,
-            horizontal=True,
-            key="fb_niveau_indicator"
-        )
-        filtered_level = niveau_df[niveau_df["Indicateur"].astype(str) == indicator].copy()
-        show_total = st.checkbox("Inclure Total USJ", value=False, key="fb_niveau_total")
-        if not show_total:
-            filtered_level = filtered_level[~filtered_level["Niveau académique"].astype(str).str.startswith("Total", na=False)]
-
-        level_long = filtered_level.melt(
-            id_vars=["Niveau académique", "Indicateur"],
-            value_vars=[year_col for year_col in FACTBOOK_YEARS if year_col in filtered_level.columns],
-            var_name="Année",
-            value_name="Valeur"
-        ).dropna(subset=["Valeur"])
-
-        if not level_long.empty:
-            level_long["Valeur_label"] = level_long["Valeur"].map(fb_text_number)
-            fig = px.line(
-                level_long,
-                x="Année",
-                y="Valeur",
-                color="Niveau académique",
-                markers=True,
-                text="Valeur",
-                title=f"Évolution - {indicator}",
-                color_discrete_sequence=PLOTLY_SEQ,
-            )
-            fig.update_layout(yaxis_title="Valeur", xaxis_title="Année")
-            theme_layout(fig, height=760)
-            fb_polish_line(fig, level_long, "Valeur", bottom_margin=190)
-            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
-
-            last_year = filtered_level[["Niveau académique", "2024-2025", "% Var"]].dropna(subset=["2024-2025"]).copy()
-            last_year = last_year.sort_values("2024-2025", ascending=False)
-            fig2 = px.bar(
-                last_year,
-                x="Niveau académique",
-                y="2024-2025",
-                text="2024-2025",
-                title="Répartition 2024-2025 par niveau académique",
-                color_discrete_sequence=[USJ_BLUE],
-            )
-            fig2.update_traces(texttemplate="%{text:,.0f}", textposition="outside", cliponaxis=False)
-            fig2.update_layout(yaxis_title="Valeur", xaxis_title="", xaxis_tickangle=-25)
-            theme_layout(fig2, height=520, showlegend=False)
-            fb_polish_vertical_bar(fig2, last_year, "2024-2025", bottom_margin=125)
-            st.plotly_chart(fig2, use_container_width=True, config={"displayModeBar": False})
-        else:
-            st.info("Aucune donnée disponible pour l’indicateur sélectionné.")
-
-        render_factbook_table(
-            filtered_level,
-            "Tableau par niveau académique",
-            note=f"Indicateur sélectionné : {indicator}.",
-            max_height=500
-        )
-
-    with tab_programmes:
-        section_header(
-            "Effectifs par programme",
-            "Chaque sous-section du Factbook est présentée séparément, comme dans l’Excel source."
-        )
-
-        program_section_sources = []
-        for section_key in ["1.5", "1.6", "1.7", "1.8", "1.9", "1.10", "1.11", "1.12"]:
-            section_title = FACTBOOK_SECTION1_TITLES[section_key]
-            section_data = programmes_df[programmes_df["Type de programme"].astype(str) == section_title].copy()
-            program_section_sources.append((section_key, section_title, section_data))
-        program_section_sources.append(("1.13", FACTBOOK_SECTION1_TITLES["1.13"], du_programmes_df.copy()))
-
-        program_tab_labels = [
-            "1.5 1er cycle",
-            "1.6 Master",
-            "1.7 PhD",
-            "1.8 Autres",
-            "1.9 Arabe",
-            "1.10 Anglais",
-            "1.11 Nouveaux 1er cycle",
-            "1.12 Nouveaux PhD",
-            "1.13 DU/Certificats",
-        ]
-        program_tabs = st.tabs(program_tab_labels)
-
-        for (section_key, section_title, section_df), section_tab in zip(program_section_sources, program_tabs):
-            with section_tab:
-                section_header(section_title)
-
-                filtered_programs = section_df.copy()
-                if "Programme" not in filtered_programs.columns:
-                    filtered_programs["Programme"] = np.nan
-                if "Diplôme" not in filtered_programs.columns:
-                    filtered_programs["Diplôme"] = np.nan
-
-                filtered_programs["Programme affiché"] = filtered_programs["Programme"].where(
-                    filtered_programs["Programme"].notna(),
-                    filtered_programs["Diplôme"]
-                )
-                filtered_programs["Programme affiché"] = filtered_programs["Programme affiché"].astype(str).replace({"nan": np.nan, "None": np.nan})
-
-                key_suffix = section_key.replace(".", "_")
-                pf1, pf2, pf3 = st.columns([1.4, 1.4, 2.2])
-                with pf1:
-                    champ_programme = st.selectbox(
-                        "Champ disciplinaire",
-                        filter_options(filtered_programs, "Champ disciplinaire"),
-                        key=f"fb_prog_champ_{key_suffix}"
-                    )
-                if champ_programme != "Tous":
-                    filtered_programs = filtered_programs[filtered_programs["Champ disciplinaire"].astype(str) == champ_programme]
-
-                with pf2:
-                    acronyme_programme = st.selectbox(
-                        "Acronyme",
-                        filter_options(filtered_programs, "Acronyme"),
-                        key=f"fb_prog_acronyme_{key_suffix}"
-                    )
-                if acronyme_programme != "Tous":
-                    filtered_programs = filtered_programs[filtered_programs["Acronyme"].astype(str) == acronyme_programme]
-
-                with pf3:
-                    search_program = st.text_input(
-                        "Recherche programme",
-                        value="",
-                        key=f"fb_prog_search_{key_suffix}"
-                    )
-                if search_program.strip():
-                    filtered_programs = filtered_programs[
-                        filtered_programs["Programme affiché"].astype(str).str.contains(search_program.strip(), case=False, na=False)
-                    ]
-
-                program_graph_col = "Programme graphique"
-                filtered_programs[program_graph_col] = filtered_programs["Programme affiché"].astype(str)
-
-                if "2024-2025" in filtered_programs.columns and program_graph_col in filtered_programs.columns:
-                    top_programs = filtered_programs.dropna(subset=["2024-2025"]).copy()
-                    top_programs = top_programs[~top_programs["Programme affiché"].astype(str).str.startswith("Total", na=False)]
-                    top_programs = (
-                        top_programs
-                        .groupby(program_graph_col, as_index=False)["2024-2025"]
-                        .sum()
-                        .sort_values("2024-2025", ascending=False)
-                        .head(25)
-                    )
-                    if not top_programs.empty:
-                        fig = px.bar(
-                            top_programs,
-                            x="2024-2025",
-                            y=program_graph_col,
-                            orientation="h",
-                            text="2024-2025",
-                            title="Top programmes selon les effectifs 2024-2025",
-                            color_discrete_sequence=[USJ_BLUE],
-                        )
-                        fig.update_traces(texttemplate="%{text:,.0f}", textposition="outside", cliponaxis=False)
-                        fig.update_layout(
-                            xaxis_title="Effectifs 2024-2025",
-                            yaxis_title="",
-                            yaxis={"categoryorder": "total ascending"},
-                        )
-                        theme_layout(fig, height=max(620, 32 * len(top_programs) + 200), showlegend=False)
-                        fb_polish_horizontal_bar(
-                            fig,
-                            top_programs,
-                            "2024-2025",
-                            left_margin=430,
-                            right_margin=160,
-                            bottom_margin=90,
-                            showlegend=False,
-                        )
-                        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
-                    else:
-                        st.info("Aucun programme disponible pour les filtres sélectionnés.")
-
-                render_factbook_table(
-                    filtered_programs,
-                    f"Tableau - {section_title}",
-                    note="Table filtrée de la sous-section sélectionnée.",
-                    max_height=620,
-                    hide_columns=["Programme graphique", "Programme affiché"]
-                )
-                st.download_button(
-                    "Télécharger cette sous-section (CSV)",
-                    data=filtered_programs.to_csv(index=False).encode("utf-8-sig"),
-                    file_name=f"factbook_section_{key_suffix}_programmes.csv",
-                    mime="text/csv",
-                    use_container_width=True,
-                    key=f"fb_download_programs_{key_suffix}"
-                )
-
     st.markdown(
         f"""
         <div style="
@@ -4535,10 +4333,9 @@ def render_factbook_section2_module():
                 return section_df.loc[total_mask].iloc[-1]
         return None
 
-    tab_synthese, tab_programmes, tab_niveau = st.tabs([
+    tab_synthese, tab_programmes = st.tabs([
         "Synthèse",
         "Par programme",
-        "Par niveau académique",
     ])
 
     with tab_synthese:
@@ -4593,92 +4390,53 @@ def render_factbook_section2_module():
             ).dropna(subset=["Diplômés"])
 
             if not level_compare_long.empty:
-                # Clear comparison figure: one value label for every year, placed away from lines.
-                compare_levels = [
-                    value for value in level_no_total["Niveau académique"].dropna().astype(str).tolist()
-                    if not value.lower().startswith("total")
-                ]
-                level_rank = {name: idx for idx, name in enumerate(compare_levels)}
-                fig_compare = go.Figure()
-                years_available = [year_col for year_col in FACTBOOK_YEARS if year_col in level_no_total.columns]
+                heatmap_source = level_no_total.copy()
+                if "Niveau académique" in heatmap_source.columns:
+                    heatmap_source = heatmap_source[~heatmap_source["Niveau académique"].astype(str).str.startswith("Total", na=False)]
+                    heatmap_source = heatmap_source.set_index("Niveau académique")
 
-                for idx, level_name in enumerate(compare_levels):
-                    row_df = level_no_total[level_no_total["Niveau académique"].astype(str) == level_name]
-                    if row_df.empty:
-                        continue
-                    row = row_df.iloc[0]
-                    y_values = [pd.to_numeric(row.get(year_col), errors="coerce") for year_col in years_available]
-                    if all(pd.isna(value) for value in y_values):
-                        continue
+                heatmap_years = [year_col for year_col in FACTBOOK_YEARS if year_col in heatmap_source.columns]
+                heatmap_values = heatmap_source[heatmap_years].apply(pd.to_numeric, errors="coerce")
+                heatmap_values = heatmap_values.dropna(how="all")
 
-                    label_positions = []
-                    for year_idx, value in enumerate(y_values):
-                        if pd.isna(value):
-                            label_positions.append("top center")
-                            continue
-                        # Alternate positions by series/year so labels are not sitting on the lines.
-                        if idx % 3 == 0:
-                            label_positions.append("top center" if year_idx % 2 == 0 else "bottom center")
-                        elif idx % 3 == 1:
-                            label_positions.append("bottom center" if year_idx % 2 == 0 else "top center")
-                        else:
-                            label_positions.append("middle right" if year_idx % 2 == 0 else "middle left")
-
-                    fig_compare.add_trace(go.Scatter(
-                        x=years_available,
-                        y=y_values,
-                        mode="lines+markers+text",
-                        name=level_name,
-                        text=["" if pd.isna(value) else fb_format_number(value) for value in y_values],
-                        textposition=label_positions,
-                        textfont=dict(size=14, color=USJ_TEXT, family="Candara, Arial"),
-                        marker=dict(size=8),
-                        line=dict(width=3),
-                        cliponaxis=False,
-                        hovertemplate=f"<b>{level_name}</b><br>Année: %{{x}}<br>Diplômés: %{{y:,.0f}}<extra></extra>",
-                    ))
-
-                y_numeric = pd.to_numeric(level_compare_long["Diplômés"], errors="coerce")
-                y_max = y_numeric.max()
-                y_min = y_numeric.min()
-                y_padding = (y_max - y_min) * 0.18 if pd.notna(y_max) and pd.notna(y_min) and y_max > y_min else 80
-
-                fig_compare.update_layout(
-                    title=dict(
-                        text="Comparaison annuelle des diplômés par niveau académique",
-                        x=0.01,
-                        y=0.98,
-                        font=dict(size=21, color=USJ_BLUE, family="Candara, Arial"),
-                    ),
-                    height=650,
-                    template="plotly_white",
-                    font=dict(family="Candara, Arial", size=13, color=USJ_TEXT),
-                    yaxis_title="Diplômés",
-                    xaxis_title="Année",
-                    hovermode="x unified",
-                    margin=dict(l=70, r=105, t=125, b=80),
-                    legend=dict(
-                        orientation="h",
-                        yanchor="top",
-                        y=1.08,
-                        xanchor="left",
-                        x=0,
-                        title=None,
-                        font=dict(family="Candara, Arial", size=12, color=USJ_TEXT),
-                    ),
-                    paper_bgcolor="white",
-                    plot_bgcolor="white",
-                    uniformtext_minsize=12,
-                    uniformtext_mode="show",
-                )
-                fig_compare.update_xaxes(showgrid=False, linecolor="#D9E1EC", automargin=True, tickangle=0)
-                fig_compare.update_yaxes(
-                    gridcolor="#E6ECF3",
-                    linecolor="#D9E1EC",
-                    automargin=True,
-                    range=[max(0, y_min - y_padding), y_max + y_padding] if pd.notna(y_max) and pd.notna(y_min) else None,
-                )
-                st.plotly_chart(fig_compare, use_container_width=True, config={"displayModeBar": False})
+                if not heatmap_values.empty:
+                    heatmap_text = heatmap_values.applymap(lambda value: "" if pd.isna(value) else fb_format_number(value, digits=0))
+                    heatmap_fig = go.Figure(
+                        data=go.Heatmap(
+                            z=heatmap_values.values,
+                            x=heatmap_values.columns.tolist(),
+                            y=heatmap_values.index.tolist(),
+                            colorscale=[
+                                [0.00, "#F7F8FC"],
+                                [0.25, "#D8DEFF"],
+                                [0.55, USJ_BLUE_2],
+                                [1.00, USJ_BLUE],
+                            ],
+                            text=heatmap_text.values,
+                            texttemplate="%{text}",
+                            textfont=dict(family="Candara, Arial", size=16, color="white"),
+                            hovertemplate="<b>%{y}</b><br>Année: %{x}<br>Diplômés: %{z:,.0f}<extra></extra>",
+                            colorbar=dict(title="Diplômés", tickfont=dict(family="Candara, Arial", color=USJ_TEXT)),
+                        )
+                    )
+                    heatmap_fig.update_layout(
+                        title=dict(
+                            text="Comparaison annuelle des diplômés par niveau académique",
+                            x=0.01,
+                            font=dict(size=22, color=USJ_BLUE, family="Candara, Arial"),
+                        ),
+                        height=max(430, 48 * len(heatmap_values.index) + 150),
+                        template="plotly_white",
+                        font=dict(family="Candara, Arial", size=14, color=USJ_TEXT),
+                        xaxis_title="Année",
+                        yaxis_title="",
+                        margin=dict(l=300, r=80, t=85, b=70),
+                        paper_bgcolor="white",
+                        plot_bgcolor="white",
+                    )
+                    heatmap_fig.update_xaxes(side="bottom", tickfont=dict(size=13), automargin=True)
+                    heatmap_fig.update_yaxes(tickfont=dict(size=13), automargin=True)
+                    st.plotly_chart(heatmap_fig, use_container_width=True, config={"displayModeBar": False})
 
         render_factbook_table(
             niveau_df,
