@@ -777,6 +777,225 @@ def load_factbook_section2(file_path, file_mtime, file_size):
     }
 
 
+
+
+# =====================================================
+# Factbook Section 3 helpers
+# =====================================================
+
+FACTBOOK_SECTION3_FILE_CANDIDATES = [
+    "FB24-25 3. Retention HS 27-1-2026.xlsx",
+    "FB24-25 3. Rétention HS 27-1-2026.xlsx",
+    "Factbook_Retention_2024_2025.xlsx",
+    "Factbook_Section3_Retention.xlsx",
+    "factbook_section3.xlsx",
+]
+
+FACTBOOK_SECTION3_TITLES = {
+    "3.1": "3.1. Taux de rétention : Cohorte Semestre 1 - 2024-2025",
+    "3.2": "3.2. Évolution du taux de rétention dans un même programme",
+    "3.3": "3.3. Évolution du taux de rétention à l'USJ",
+}
+
+
+def find_factbook_section3_file():
+    """Find the Section 3 Factbook Excel file without touching the other Factbook files."""
+    for file_name in FACTBOOK_SECTION3_FILE_CANDIDATES:
+        if os.path.exists(file_name):
+            stat = os.stat(file_name)
+            return file_name, stat.st_mtime, stat.st_size
+
+    for file_name in os.listdir("."):
+        lower = file_name.lower()
+        normalized = lower.replace("é", "e").replace("è", "e").replace("ê", "e")
+        if lower.endswith((".xlsx", ".xls")) and ("retention" in normalized or "rétention" in lower):
+            stat = os.stat(file_name)
+            return file_name, stat.st_mtime, stat.st_size
+
+    return None, None, None
+
+
+def _fb_parse_retention_cohort_sheet(file_path, sheet_name):
+    """Parse Section 3.1: retention rates for the 2024-2025 cohort."""
+    raw = pd.read_excel(file_path, sheet_name=sheet_name, header=None)
+    raw = _fb_apply_cell_function(raw, _fb_clean_cell)
+
+    header_row = None
+    for i in range(len(raw)):
+        row_values = [str(v).strip() for v in raw.iloc[i].tolist() if not _fb_is_blank(v)]
+        if "Champ disciplinaire" in row_values and "Acronyme" in row_values and "Programme" in row_values:
+            header_row = i
+            break
+
+    if header_row is None:
+        return pd.DataFrame()
+
+    headers = [str(value).strip() if not _fb_is_blank(value) else f"Colonne {i + 1}" for i, value in enumerate(raw.iloc[header_row])]
+    df = raw.iloc[header_row + 1:].copy()
+    df.columns = headers[:len(df.columns)]
+    df = _fb_clean_dataframe(df)
+    df = _fb_fix_total_rows(df)
+    df = _fb_fill_metadata(df, ["Champ disciplinaire"])
+
+    if "Programme" in df.columns:
+        df = df[~df["Programme"].astype(str).str.strip().str.startswith("*")].copy()
+
+    df = _fb_numeric_columns(df)
+    return df
+
+
+def _fb_parse_retention_evolution_sheet(file_path, sheet_name, section_title):
+    """Parse Section 3.2 or 3.3: evolution of retention rates by programme."""
+    raw = pd.read_excel(file_path, sheet_name=sheet_name, header=None)
+    raw = _fb_apply_cell_function(raw, _fb_clean_cell)
+
+    header_row = None
+    year_row = None
+    for i in range(len(raw) - 1):
+        row_values = [str(v).strip() for v in raw.iloc[i].tolist() if not _fb_is_blank(v)]
+        next_values = [str(v).strip() for v in raw.iloc[i + 1].tolist() if not _fb_is_blank(v)]
+        if "Champ disciplinaire" in row_values and "Acronyme" in row_values and any(y in next_values for y in FACTBOOK_YEARS):
+            header_row = i
+            year_row = i + 1
+            break
+
+    if header_row is None or year_row is None:
+        return pd.DataFrame()
+
+    headers = []
+    for j in range(raw.shape[1]):
+        top = raw.iat[header_row, j]
+        bottom = raw.iat[year_row, j]
+        if not _fb_is_blank(bottom) and str(bottom).strip() in FACTBOOK_YEARS:
+            headers.append(str(bottom).strip())
+        elif not _fb_is_blank(top):
+            label = str(top).strip()
+            if label == "Intitulé du programme":
+                label = "Programme"
+            headers.append(label)
+        else:
+            headers.append(f"Colonne {j + 1}")
+
+    df = raw.iloc[year_row + 1:].copy()
+    df.columns = headers[:len(df.columns)]
+    df = _fb_clean_dataframe(df)
+    df = _fb_fix_total_rows(df)
+    df = _fb_fill_metadata(df, ["Champ disciplinaire"])
+
+    if "Programme" in df.columns:
+        df = df[~df["Programme"].astype(str).str.strip().str.startswith("*")].copy()
+
+    df = _fb_numeric_columns(df)
+    df["Sous-section"] = section_title
+    return df
+
+
+@st.cache_data(show_spinner=False)
+def load_factbook_section3(file_path, file_mtime, file_size):
+    """Load only Section 3 of the Factbook from the provided Excel workbook."""
+    cohort = _fb_parse_retention_cohort_sheet(file_path, "3.1 Retention par programme")
+    evolution_programme = _fb_parse_retention_evolution_sheet(
+        file_path,
+        "3.2 Evolution par prog",
+        FACTBOOK_SECTION3_TITLES["3.2"],
+    )
+    evolution_usj = _fb_parse_retention_evolution_sheet(
+        file_path,
+        "3.3 Evolution USJ",
+        FACTBOOK_SECTION3_TITLES["3.3"],
+    )
+
+    return {
+        "cohort": cohort,
+        "evolution_programme": evolution_programme,
+        "evolution_usj": evolution_usj,
+    }
+
+
+def fb_format_rate(value, digits=1):
+    """Format a retention-rate value stored either as a proportion or as a percentage."""
+    value = pd.to_numeric(value, errors="coerce")
+    if pd.isna(value):
+        return "NA"
+    pct_value = float(value) * 100 if abs(float(value)) <= 1.5 else float(value)
+    return f"{pct_value:.{digits}f}%"
+
+
+def fb_rate_delta_info(current_value, previous_value):
+    """Return evolution in percentage points for retention-rate heatmaps."""
+    current_value = pd.to_numeric(current_value, errors="coerce")
+    previous_value = pd.to_numeric(previous_value, errors="coerce")
+    if pd.isna(current_value) or pd.isna(previous_value):
+        return "", USJ_TEXT
+
+    current_pct = float(current_value) * 100 if abs(float(current_value)) <= 1.5 else float(current_value)
+    previous_pct = float(previous_value) * 100 if abs(float(previous_value)) <= 1.5 else float(previous_value)
+    delta = current_pct - previous_pct
+
+    if abs(delta) < 0.05:
+        return "= 0.0 pt", "#6B7280"
+    if delta > 0:
+        return f"▲ +{delta:.1f} pts", USJ_GREEN
+    return f"▼ {delta:.1f} pts", USJ_RED
+
+
+def fb_add_rate_heatmap_annotations(fig, matrix, value_font_size=15, delta_font_size=12, dark_threshold=0.55):
+    """Add readable retention-rate labels and point changes inside a heatmap."""
+    numeric = matrix.apply(pd.to_numeric, errors="coerce")
+    values_pct = numeric.apply(lambda col: col.map(lambda v: np.nan if pd.isna(v) else (float(v) * 100 if abs(float(v)) <= 1.5 else float(v))))
+    values_flat = values_pct.to_numpy(dtype=float)
+    min_value = np.nanmin(values_flat) if np.isfinite(values_flat).any() else 0
+    max_value = np.nanmax(values_flat) if np.isfinite(values_flat).any() else 100
+    value_range = max_value - min_value if max_value != min_value else 1
+    columns = numeric.columns.tolist()
+
+    for row_label in numeric.index.tolist():
+        for col_index, col_label in enumerate(columns):
+            value = numeric.loc[row_label, col_label]
+            if pd.isna(value):
+                continue
+
+            value_pct = float(value) * 100 if abs(float(value)) <= 1.5 else float(value)
+            intensity = (value_pct - min_value) / value_range
+            value_color = "#FFFFFF" if intensity >= dark_threshold else USJ_BLUE
+
+            if col_index == 0:
+                fig.add_annotation(
+                    x=col_label,
+                    y=row_label,
+                    text=f"<b>{fb_format_rate(value)}</b>",
+                    showarrow=False,
+                    font=dict(family="Candara, Arial", size=value_font_size, color=value_color),
+                )
+                continue
+
+            previous_col = columns[col_index - 1]
+            previous_value = numeric.loc[row_label, previous_col]
+            delta_text, delta_color = fb_rate_delta_info(value, previous_value)
+
+            fig.add_annotation(
+                x=col_label,
+                y=row_label,
+                text=f"<b>{fb_format_rate(value)}</b>",
+                showarrow=False,
+                yshift=9,
+                font=dict(family="Candara, Arial", size=value_font_size, color=value_color),
+            )
+            if delta_text:
+                fig.add_annotation(
+                    x=col_label,
+                    y=row_label,
+                    text=f"<b>{delta_text}</b>",
+                    showarrow=False,
+                    yshift=-12,
+                    font=dict(family="Candara, Arial", size=delta_font_size, color=delta_color),
+                    bgcolor="rgba(255,255,255,0.80)",
+                    bordercolor="rgba(216,226,240,0.85)",
+                    borderwidth=1,
+                    borderpad=2,
+                )
+    return fig
+
 def fb_format_number(value, digits=0):
     if pd.isna(value):
         return "NA"
@@ -1041,7 +1260,14 @@ def fb_polish_line(fig, data, value_col, bottom_margin=145):
 
 def _fb_is_percent_column(column_name):
     label = str(column_name).lower()
-    return "%" in label or "pourcentage" in label or "percent" in label
+    return (
+        "%" in label
+        or "pourcentage" in label
+        or "percent" in label
+        or "rétention" in label
+        or "retention" in label
+        or "taux" in label
+    )
 
 
 def _fb_is_numeric_like(value):
@@ -4174,8 +4400,9 @@ def render_factbook_cover():
     """Render a professional Factbook landing page with section-level navigation."""
     section1_path, _, _ = find_factbook_section1_file()
     section2_path, _, _ = find_factbook_section2_file()
+    section3_path, _, _ = find_factbook_section3_file()
 
-    active_sections = int(section1_path is not None) + int(section2_path is not None)
+    active_sections = int(section1_path is not None) + int(section2_path is not None) + int(section3_path is not None)
 
     sections = [
         {
@@ -4202,8 +4429,8 @@ def render_factbook_cover():
             "label": "Section 3",
             "title": "Taux de rétention",
             "text": "Suivi des cohortes, maintien des étudiants dans les programmes et évolution du taux de rétention.",
-            "enabled": False,
-            "button": "Bientôt disponible",
+            "enabled": section3_path is not None,
+            "button": "Ouvrir la Section 3" if section3_path is not None else "Bientôt disponible",
         },
         {
             "id": "section4",
@@ -4753,6 +4980,373 @@ def render_factbook_section2_module():
     )
 
 
+
+
+def render_factbook_section3_module():
+    """Render the connected Factbook module for Section 3: retention rates."""
+    factbook_file_path, factbook_file_mtime, factbook_file_size = find_factbook_section3_file()
+
+    if factbook_file_path is None:
+        st.error("Fichier Excel de la Section 3 du Factbook introuvable. Ajoutez le fichier Excel dans le même dossier que l’application.")
+        st.code("FB24-25 3. Retention HS 27-1-2026.xlsx")
+        st.stop()
+
+    with st.spinner("Chargement du Factbook - Section 3..."):
+        fb = load_factbook_section3(factbook_file_path, factbook_file_mtime, factbook_file_size)
+
+    cohort_df = fb["cohort"].copy()
+    evolution_programme_df = fb["evolution_programme"].copy()
+    evolution_usj_df = fb["evolution_usj"].copy()
+
+    header_left, header_right = st.columns([4.5, 1.5])
+    with header_left:
+        st.markdown(
+            f"""
+            <h1 style="color:{USJ_BLUE}; margin-bottom:18px; font-family:Candara, Arial, sans-serif;">
+                Factbook USJ 2024-2025
+            </h1>
+            """,
+            unsafe_allow_html=True
+        )
+        header_button_cols = st.columns([1.1, 3.5])
+        with header_button_cols[0]:
+            if st.button("← Sections Factbook", key="back_to_factbook_cover_from_section3", use_container_width=True):
+                st.session_state["selected_factbook_section"] = None
+                st.rerun()
+    with header_right:
+        st.markdown(_factbook_logo_html(width=350), unsafe_allow_html=True)
+
+    st.markdown(
+        f"""
+        <h2 style="
+            color:{USJ_BLUE};
+            margin-top:18px;
+            margin-bottom:8px;
+            font-family:Candara, Arial, sans-serif;
+            font-size:42px;
+            font-weight:900;
+            line-height:1.15;
+        ">
+            Section 3 - Taux de rétention
+        </h2>
+        """,
+        unsafe_allow_html=True
+    )
+    st.divider()
+
+    total_cohort = None
+    if "Programme" in cohort_df.columns:
+        total_mask = cohort_df["Programme"].astype(str).str.contains("Rétention globale", case=False, na=False, regex=False)
+        if total_mask.any():
+            total_cohort = cohort_df.loc[total_mask].iloc[-1]
+
+    def _global_row(data, label):
+        if data is None or data.empty or "Programme" not in data.columns:
+            return None
+        mask = data["Programme"].astype(str).str.contains(label, case=False, na=False, regex=False)
+        if mask.any():
+            return data.loc[mask].iloc[-1]
+        return None
+
+    global_programme = _global_row(evolution_programme_df, "Rétention globale programme")
+    global_usj = _global_row(evolution_usj_df, "Rétention globale USJ")
+
+    tab_synthese, tab_cohorte, tab_prog, tab_usj = st.tabs([
+        "Synthèse",
+        "3.1 Cohorte 2024-2025",
+        "3.2 Rétention programme",
+        "3.3 Rétention USJ",
+    ])
+
+    with tab_synthese:
+        section_header("Synthèse du taux de rétention")
+        kpi_cols = st.columns(5)
+        with kpi_cols[0]:
+            insight_card(
+                "Cohorte S1 2024-2025",
+                fb_format_number(total_cohort.get("2024-2025") if total_cohort is not None else np.nan),
+                "Étudiants de départ",
+                color=USJ_BLUE,
+            )
+        with kpi_cols[1]:
+            insight_card(
+                "Rétention programme",
+                fb_format_rate(total_cohort.get("Rétention Programme") if total_cohort is not None else np.nan),
+                "Même programme en 2025-2026",
+                color=USJ_GREEN,
+            )
+        with kpi_cols[2]:
+            insight_card(
+                "Rétention USJ",
+                fb_format_rate(total_cohort.get("Rétention USJ") if total_cohort is not None else np.nan),
+                "Inscrit à l’USJ en 2025-2026",
+                color=USJ_BLUE_2,
+            )
+        with kpi_cols[3]:
+            insight_card(
+                "Retenus programme",
+                fb_format_number(total_cohort.get("2025-2026 Prog.") if total_cohort is not None else np.nan),
+                "Effectifs 2025-2026",
+                color=USJ_RED,
+            )
+        with kpi_cols[4]:
+            insight_card(
+                "Retenus USJ",
+                fb_format_number(total_cohort.get("2025-2026 USJ") if total_cohort is not None else np.nan),
+                "Effectifs 2025-2026",
+                color=USJ_GOLD,
+            )
+
+        summary_rates = []
+        if total_cohort is not None:
+            summary_rates = [
+                {"Indicateur": "Rétention programme", "Taux": pd.to_numeric(total_cohort.get("Rétention Programme"), errors="coerce")},
+                {"Indicateur": "Rétention USJ", "Taux": pd.to_numeric(total_cohort.get("Rétention USJ"), errors="coerce")},
+            ]
+        summary_rates_df = pd.DataFrame(summary_rates)
+        if not summary_rates_df.empty:
+            summary_rates_df["Taux_pct"] = summary_rates_df["Taux"].map(lambda value: np.nan if pd.isna(value) else float(value) * 100)
+            fig = px.bar(
+                summary_rates_df,
+                x="Taux_pct",
+                y="Indicateur",
+                orientation="h",
+                text="Taux_pct",
+                title="Taux de rétention global - cohorte S1 2024-2025",
+                color="Indicateur",
+                color_discrete_sequence=[USJ_GREEN, USJ_BLUE_2],
+            )
+            fig.update_traces(
+                texttemplate="%{text:.1f}%",
+                textposition="outside",
+                cliponaxis=False,
+                textfont=dict(size=17, color=USJ_TEXT, family="Candara, Arial"),
+                hovertemplate="<b>%{y}</b><br>Taux: %{x:.1f}%<extra></extra>",
+            )
+            fig.update_layout(xaxis_title="Taux de rétention", yaxis_title="", xaxis=dict(range=[0, 105], ticksuffix="%"))
+            theme_layout(fig, height=360, showlegend=False)
+            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+
+        global_rows = []
+        for label, row in [("Rétention programme", global_programme), ("Rétention USJ", global_usj)]:
+            if row is not None:
+                item = {"Indicateur": label}
+                for year in FACTBOOK_YEARS:
+                    if year in row.index:
+                        item[year] = pd.to_numeric(row.get(year), errors="coerce")
+                global_rows.append(item)
+        global_heatmap = pd.DataFrame(global_rows)
+        if not global_heatmap.empty:
+            global_heatmap = global_heatmap.set_index("Indicateur")
+            heatmap_years = [year for year in FACTBOOK_YEARS if year in global_heatmap.columns]
+            global_heatmap = global_heatmap[heatmap_years].apply(pd.to_numeric, errors="coerce")
+            heatmap_z = global_heatmap.apply(lambda col: col.map(lambda v: np.nan if pd.isna(v) else float(v) * 100 if abs(float(v)) <= 1.5 else float(v)))
+            fig_heat = go.Figure(
+                data=go.Heatmap(
+                    z=heatmap_z.values,
+                    x=heatmap_z.columns.tolist(),
+                    y=heatmap_z.index.tolist(),
+                    colorscale=[
+                        [0.00, "#F7D7D7"],
+                        [0.35, "#F4E0B8"],
+                        [0.65, "#B9C7F3"],
+                        [1.00, USJ_BLUE],
+                    ],
+                    xgap=1,
+                    ygap=1,
+                    texttemplate="",
+                    hovertemplate="<b>%{y}</b><br>Cohorte: %{x}<br>Taux: %{z:.1f}%<extra></extra>",
+                    colorbar=dict(
+                        title=dict(text="Taux", font=dict(family="Candara, Arial", color=USJ_BLUE, size=15)),
+                        tickfont=dict(family="Candara, Arial", color=USJ_TEXT, size=13),
+                        ticksuffix="%",
+                        outlinecolor="#D8E2F0",
+                        outlinewidth=1,
+                    ),
+                )
+            )
+            fb_add_rate_heatmap_annotations(fig_heat, global_heatmap, value_font_size=16, delta_font_size=12, dark_threshold=0.58)
+            fig_heat.update_layout(
+                title=dict(text="Évolution globale du taux de rétention", x=0.01, font=dict(size=22, color=USJ_BLUE, family="Candara, Arial")),
+                height=340,
+                template="plotly_white",
+                font=dict(family="Candara, Arial", size=15, color=USJ_TEXT),
+                xaxis_title="Cohorte",
+                yaxis_title="",
+                margin=dict(l=220, r=90, t=90, b=70),
+                paper_bgcolor="white",
+                plot_bgcolor="#D8E2F0",
+            )
+            fig_heat.update_xaxes(side="bottom", tickfont=dict(size=13, color=USJ_TEXT, family="Candara, Arial"), automargin=True, showgrid=False, zeroline=False)
+            fig_heat.update_yaxes(tickfont=dict(size=13, color=USJ_TEXT, family="Candara, Arial"), automargin=True, showgrid=False, zeroline=False)
+            st.plotly_chart(fig_heat, use_container_width=True, config={"displayModeBar": False})
+
+    with tab_cohorte:
+        section_header(FACTBOOK_SECTION3_TITLES["3.1"], "Taux de rétention de la cohorte du semestre 1 2024-2025.")
+        filtered = cohort_df.copy()
+        if "Programme" not in filtered.columns:
+            filtered["Programme"] = np.nan
+
+        f1, f2, f3, f4 = st.columns([1.4, 1.2, 1.4, 2.0])
+        with f1:
+            champ = st.selectbox("Champ disciplinaire", filter_options(filtered, "Champ disciplinaire"), key="fb_s3_31_champ")
+        if champ != "Tous":
+            filtered = filtered[filtered["Champ disciplinaire"].astype(str) == champ]
+        with f2:
+            acronyme = st.selectbox("Acronyme", filter_options(filtered, "Acronyme"), key="fb_s3_31_acronyme")
+        if acronyme != "Tous":
+            filtered = filtered[filtered["Acronyme"].astype(str) == acronyme]
+        with f3:
+            indicator = st.selectbox("Indicateur", ["Rétention Programme", "Rétention USJ"], key="fb_s3_31_indicator")
+        with f4:
+            search = st.text_input("Recherche programme", value="", key="fb_s3_31_search")
+        if search.strip():
+            filtered = filtered[filtered["Programme"].astype(str).str.contains(search.strip(), case=False, na=False)]
+
+        chart_data = filtered.copy()
+        chart_data = chart_data[~chart_data["Programme"].astype(str).str.contains("Rétention globale", case=False, na=False, regex=False)]
+        if indicator in chart_data.columns:
+            chart_data["Taux"] = pd.to_numeric(chart_data[indicator], errors="coerce") * 100
+            chart_data = chart_data.dropna(subset=["Taux"]).sort_values("Taux", ascending=False).head(25)
+            if not chart_data.empty:
+                fig = px.bar(
+                    chart_data.sort_values("Taux", ascending=True),
+                    x="Taux",
+                    y="Programme",
+                    orientation="h",
+                    text="Taux",
+                    title=f"Top programmes selon {indicator}",
+                    color_discrete_sequence=[USJ_BLUE],
+                )
+                fig.update_traces(
+                    texttemplate="%{text:.1f}%",
+                    textposition="outside",
+                    cliponaxis=False,
+                    textfont=dict(size=15, color=USJ_TEXT, family="Candara, Arial"),
+                    hovertemplate="<b>%{y}</b><br>Taux: %{x:.1f}%<extra></extra>",
+                )
+                fig.update_layout(xaxis_title="Taux de rétention", yaxis_title="", xaxis=dict(range=[0, 105], ticksuffix="%"))
+                theme_layout(fig, height=max(560, 32 * len(chart_data) + 170), showlegend=False)
+                fb_polish_horizontal_bar(fig, chart_data, "Taux", left_margin=430, right_margin=150, bottom_margin=70, showlegend=False)
+                st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+            else:
+                st.info("Aucun programme disponible pour les filtres sélectionnés.")
+
+        render_factbook_table(
+            filtered,
+            f"Tableau - {FACTBOOK_SECTION3_TITLES['3.1']}",
+            note="Les taux de rétention sont affichés en pourcentage.",
+            max_height=620,
+        )
+
+    def _render_retention_evolution_tab(data, title, key_prefix):
+        section_header(title, "Évolution par cohorte du semestre 1. Les taux sont affichés en pourcentage.")
+        filtered = data.copy()
+        if "Programme" not in filtered.columns:
+            filtered["Programme"] = np.nan
+
+        f1, f2, f3 = st.columns([1.4, 1.2, 2.2])
+        with f1:
+            champ = st.selectbox("Champ disciplinaire", filter_options(filtered, "Champ disciplinaire"), key=f"{key_prefix}_champ")
+        if champ != "Tous":
+            filtered = filtered[filtered["Champ disciplinaire"].astype(str) == champ]
+        with f2:
+            acronyme = st.selectbox("Acronyme", filter_options(filtered, "Acronyme"), key=f"{key_prefix}_acronyme")
+        if acronyme != "Tous":
+            filtered = filtered[filtered["Acronyme"].astype(str) == acronyme]
+        with f3:
+            search = st.text_input("Recherche programme", value="", key=f"{key_prefix}_search")
+        if search.strip():
+            filtered = filtered[filtered["Programme"].astype(str).str.contains(search.strip(), case=False, na=False)]
+
+        heatmap_source = filtered.copy()
+        heatmap_source = heatmap_source[~heatmap_source["Programme"].astype(str).str.contains("Rétention globale", case=False, na=False, regex=False)]
+        heatmap_years = [year for year in FACTBOOK_YEARS if year in heatmap_source.columns]
+        if heatmap_years and not heatmap_source.empty:
+            heatmap_source["Programme graphique"] = heatmap_source["Programme"].astype(str)
+            latest_year = heatmap_years[-1]
+            heatmap_source[latest_year] = pd.to_numeric(heatmap_source[latest_year], errors="coerce")
+            heatmap_source = heatmap_source.dropna(subset=[latest_year]).sort_values(latest_year, ascending=False).head(25)
+            heatmap_values = heatmap_source.set_index("Programme graphique")[heatmap_years].apply(pd.to_numeric, errors="coerce")
+            heatmap_values = heatmap_values.dropna(how="all")
+
+            if not heatmap_values.empty:
+                heatmap_z = heatmap_values.apply(lambda col: col.map(lambda v: np.nan if pd.isna(v) else float(v) * 100 if abs(float(v)) <= 1.5 else float(v)))
+                fig_heat = go.Figure(
+                    data=go.Heatmap(
+                        z=heatmap_z.values,
+                        x=heatmap_z.columns.tolist(),
+                        y=heatmap_z.index.tolist(),
+                        colorscale=[
+                            [0.00, "#F7D7D7"],
+                            [0.35, "#F4E0B8"],
+                            [0.65, "#B9C7F3"],
+                            [1.00, USJ_BLUE],
+                        ],
+                        xgap=1,
+                        ygap=1,
+                        texttemplate="",
+                        hovertemplate="<b>%{y}</b><br>Cohorte: %{x}<br>Taux: %{z:.1f}%<extra></extra>",
+                        colorbar=dict(
+                            title=dict(text="Taux", font=dict(family="Candara, Arial", color=USJ_BLUE, size=15)),
+                            tickfont=dict(family="Candara, Arial", color=USJ_TEXT, size=13),
+                            ticksuffix="%",
+                            outlinecolor="#D8E2F0",
+                            outlinewidth=1,
+                        ),
+                    )
+                )
+                fb_add_rate_heatmap_annotations(fig_heat, heatmap_values, value_font_size=14, delta_font_size=11, dark_threshold=0.58)
+                fig_heat.update_layout(
+                    title=dict(text=f"{title} - Top programmes", x=0.01, font=dict(size=22, color=USJ_BLUE, family="Candara, Arial")),
+                    height=max(620, 58 * len(heatmap_values.index) + 165),
+                    template="plotly_white",
+                    font=dict(family="Candara, Arial", size=14, color=USJ_TEXT),
+                    xaxis_title="Cohorte",
+                    yaxis_title="",
+                    margin=dict(l=430, r=95, t=90, b=70),
+                    paper_bgcolor="white",
+                    plot_bgcolor="#D8E2F0",
+                )
+                fig_heat.update_xaxes(side="bottom", tickfont=dict(size=13, color=USJ_TEXT, family="Candara, Arial"), automargin=True, showgrid=False, zeroline=False)
+                fig_heat.update_yaxes(tickfont=dict(size=12, color=USJ_TEXT, family="Candara, Arial"), automargin=True, showgrid=False, zeroline=False)
+                st.plotly_chart(fig_heat, use_container_width=True, config={"displayModeBar": False})
+            else:
+                st.info("Aucune donnée disponible pour les filtres sélectionnés.")
+
+        render_factbook_table(
+            filtered,
+            f"Tableau - {title}",
+            note="Les taux de rétention sont affichés en pourcentage.",
+            max_height=620,
+            hide_columns=["Sous-section", "Programme graphique"],
+        )
+
+    with tab_prog:
+        _render_retention_evolution_tab(evolution_programme_df, FACTBOOK_SECTION3_TITLES["3.2"], "fb_s3_32")
+
+    with tab_usj:
+        _render_retention_evolution_tab(evolution_usj_df, FACTBOOK_SECTION3_TITLES["3.3"], "fb_s3_33")
+
+    st.markdown(
+        f"""
+        <div style="
+            margin-top:35px;
+            padding:15px;
+            background-color:{USJ_BLUE};
+            color:white;
+            border-radius:14px;
+            text-align:center;
+            font-size:14px;
+            box-shadow:0 4px 14px rgba(0,0,0,0.08);
+            font-family:Candara, Arial, sans-serif;
+        ">
+            Université Saint-Joseph de Beyrouth – Factbook 2024-2025 – Section 3
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
 def render_factbook_module():
     """Factbook entry point: cover page first, then selected section."""
     if "selected_factbook_section" not in st.session_state:
@@ -4763,6 +5357,9 @@ def render_factbook_module():
         return
     if st.session_state["selected_factbook_section"] == "section2":
         render_factbook_section2_module()
+        return
+    if st.session_state["selected_factbook_section"] == "section3":
+        render_factbook_section3_module()
         return
 
     render_factbook_cover()
