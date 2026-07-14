@@ -3524,13 +3524,12 @@ def render_factbook_module():
         )
         total_formations = pd.Series(total_formations_values)
 
-    tab_synthese, tab_institutions, tab_campus, tab_niveau, tab_programmes, tab_donnees = st.tabs([
+    tab_synthese, tab_institutions, tab_campus, tab_niveau, tab_programmes = st.tabs([
         "Synthèse",
         "Par institution",
         "Par campus",
         "Par niveau académique",
-        "Par programme",
-        "Données"
+        "Par programme"
     ])
 
     with tab_synthese:
@@ -4043,36 +4042,6 @@ def render_factbook_module():
                     use_container_width=True,
                     key=f"fb_download_programs_{key_suffix}"
                 )
-
-    with tab_donnees:
-        section_header("Tables sources intégrées", "Contrôle des tableaux importés depuis l’Excel de la Section 1 avec les titres officiels des feuilles Factbook.")
-
-        source_tables = {
-            FACTBOOK_SECTION1_TITLES["1.1"]: formations,
-            FACTBOOK_SECTION1_TITLES["1.2"]: du_cert,
-            FACTBOOK_SECTION1_TITLES["1.3"]: campus_df,
-            FACTBOOK_SECTION1_TITLES["1.4"]: niveau_df,
-        }
-        for section_key in ["1.5", "1.6", "1.7", "1.8", "1.9", "1.10", "1.11", "1.12"]:
-            section_title = FACTBOOK_SECTION1_TITLES[section_key]
-            source_tables[section_title] = programmes_df[programmes_df["Type de programme"].astype(str) == section_title].copy()
-        source_tables[FACTBOOK_SECTION1_TITLES["1.13"]] = du_programmes_df
-        selected_table_name = st.selectbox("Table", list(source_tables.keys()), key="fb_source_table")
-        selected_table = source_tables[selected_table_name]
-        render_factbook_table(
-            selected_table,
-            selected_table_name,
-            note="Table source importée depuis l’Excel Factbook - Section 1.",
-            max_height=620
-        )
-        st.download_button(
-            "Télécharger cette table (CSV)",
-            data=selected_table.to_csv(index=False).encode("utf-8-sig"),
-            file_name=f"{selected_table_name.replace(' ', '_').replace('/', '_')}.csv",
-            mime="text/csv",
-            use_container_width=True,
-            key="fb_download_source_table"
-        )
 
     st.markdown(
         f"""
