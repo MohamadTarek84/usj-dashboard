@@ -5,6 +5,7 @@ import textwrap
 import warnings
 import base64
 import html as html_lib
+import gc
 
 import numpy as np
 import pandas as pd
@@ -3625,12 +3626,30 @@ def _cue_parse_response_rates(file_path, semester_label):
 
 @st.cache_data(show_spinner=False)
 def load_course_unit_evaluation(file_path, file_mtime, file_size, semester_label):
-    """Load the selected semester only. Semestre 1 and Semestre 2 stay separate by design."""
+    """Legacy combined loader kept for compatibility. Prefer the lazy loaders below."""
     return {
         "raw": _cue_parse_raw_results(file_path, semester_label),
         "ue": _cue_parse_ue_results(file_path, semester_label),
         "response_rates": _cue_parse_response_rates(file_path, semester_label),
     }
+
+
+@st.cache_data(show_spinner=False)
+def load_course_unit_evaluation_raw(file_path, file_mtime, file_size, semester_label):
+    """Lazy loader: Resultats Bruts only."""
+    return _cue_parse_raw_results(file_path, semester_label)
+
+
+@st.cache_data(show_spinner=False)
+def load_course_unit_evaluation_ue(file_path, file_mtime, file_size, semester_label):
+    """Lazy loader: Résultats par UE only."""
+    return _cue_parse_ue_results(file_path, semester_label)
+
+
+@st.cache_data(show_spinner=False)
+def load_course_unit_evaluation_response_rates(file_path, file_mtime, file_size, semester_label):
+    """Lazy loader: Taux de Réponses Institutions only."""
+    return _cue_parse_response_rates(file_path, semester_label)
 
 
 def _cue_table(df, title, note=None, max_height=560, percent_cols=None, hide_columns=None, column_widths=None):
@@ -4037,6 +4056,275 @@ def _cue_count_bar(data, label_col, value_col, title, top_n=20, height=None):
     st.plotly_chart(fig, use_container_width=True)
 
 
+def _cue_prepare_ue_table_view(ue_df, institution="Tous", target="Tous", search=""):
+    """Return the UE table with each institutional total row placed before its UE rows.
+
+    The Excel sheet already contains institutional total rows. This helper keeps
+    those totals visible and highlighted instead of displaying only the UE lines.
+    Filters are applied to the UE rows, then the corresponding institutional total
+    row is reinserted above the visible UE rows for that institution.
+    """
+    if ue_df is None or ue_df.empty:
+        return pd.DataFrame()
+
+    data = ue_df.copy().reset_index(drop=True)
+    data["__original_order__"] = np.arange(len(data))
+    data["Institution courte"] = data["Institution courte"].map(_cue_clean_text)
+    data["__is_total__"] = data["Type de ligne"].astype(str).eq("Total institution")
+
+    totals = data[data["__is_total__"]].copy()
+    courses = data[~data["__is_total__"]].copy()
+
+    if institution != "Tous":
+        courses = courses[courses["Institution courte"].astype(str) == institution].copy()
+        totals = totals[totals["Institution courte"].astype(str) == institution].copy()
+
+    if target != "Tous" and "Target atteint" in courses.columns:
+        courses = courses[courses["Target atteint"].astype(str) == target].copy()
+
+    if search:
+        search_mask = (
+            courses["Matière"].astype(str).str.contains(search, case=False, na=False)
+            | courses["Code matière"].astype(str).str.contains(search, case=False, na=False)
+            | courses["Institution courte"].astype(str).str.contains(search, case=False, na=False)
+        )
+        courses = courses[search_mask].copy()
+
+    if courses.empty:
+        return pd.DataFrame()
+
+    visible_institutions = courses["Institution courte"].dropna().astype(str).unique().tolist()
+    totals = totals[totals["Institution courte"].astype(str).isin(visible_institutions)].copy()
+
+    group_order = (
+        data.drop_duplicates("Institution courte")[["Institution courte", "__original_order__"]]
+        .set_index("Institution courte")["__original_order__"]
+        .to_dict()
+    )
+    totals["__row_rank__"] = 0
+    courses["__row_rank__"] = 1
+    display = pd.concat([totals, courses], ignore_index=True)
+    display["__group_order__"] = display["Institution courte"].map(group_order).fillna(display["__original_order__"])
+    display = display.sort_values(["__group_order__", "__row_rank__", "__original_order__"]).copy()
+
+    display["Institution"] = np.where(display["__is_total__"], display["Institution"], display["Institution courte"])
+    for col in ["Code matière", "Matière", "Target atteint"]:
+        if col in display.columns:
+            display.loc[display["__is_total__"], col] = ""
+
+    columns = [
+        "Institution",
+        "Code matière",
+        "Matière",
+        "Total réponses reçues",
+        "Total réponses possibles UE évaluées",
+        "Taux de réponses UE évaluées",
+        "Taux d'accord",
+        "Taux de désaccord",
+        "Target atteint",
+        "__is_total__",
+    ]
+    return display[[col for col in columns if col in display.columns]].copy()
+
+
+def _cue_render_ue_kpis(table_df):
+    """Display compact cards for the currently filtered UE table."""
+    if table_df is None or table_df.empty or "__is_total__" not in table_df.columns:
+        return
+    course_rows = table_df[~table_df["__is_total__"]].copy()
+    total_rows = table_df[table_df["__is_total__"]].copy()
+    if course_rows.empty:
+        return
+
+    responses = pd.to_numeric(course_rows.get("Total réponses reçues", pd.Series(dtype=float)), errors="coerce").sum()
+    possible = pd.to_numeric(course_rows.get("Total réponses possibles UE évaluées", pd.Series(dtype=float)), errors="coerce").sum()
+    response_rate = responses / possible if possible else np.nan
+    target_series = course_rows.get("Target atteint", pd.Series(dtype=str)).astype(str).str.strip().str.lower()
+    target_count = int(target_series.isin(["yes", "oui", "y"]).sum()) if len(target_series) else 0
+    target_rate = target_count / len(course_rows) if len(course_rows) else np.nan
+
+    cards = [
+        (cue_t("Institutions affichées", "Displayed institutions"), fb_format_number(len(total_rows))),
+        (cue_t("UE affichées", "Displayed course units"), fb_format_number(len(course_rows))),
+        (cue_t("Réponses reçues", "Responses received"), fb_format_number(responses)),
+        (cue_t("Taux de réponse", "Response rate"), _cue_format_pct(response_rate, digits=2)),
+        (cue_t("Target atteint", "Target reached"), f"{target_count} ({_cue_format_pct(target_rate, digits=2)})"),
+    ]
+    cols = st.columns(len(cards))
+    for col, (label, value) in zip(cols, cards):
+        with col:
+            st.markdown(
+                f"""
+                <div style="background:linear-gradient(135deg,#FFFFFF 0%,#F7F9FC 100%); border:1px solid #DDE5F0; border-radius:18px; padding:15px 16px; box-shadow:0 8px 20px rgba(0,27,117,0.07); min-height:92px; font-family:Candara, Arial, sans-serif;">
+                    <div style="color:#667085; font-size:13px; font-weight:800; margin-bottom:8px;">{html_escape(label)}</div>
+                    <div style="color:{USJ_BLUE}; font-size:24px; font-weight:900; line-height:1.05;">{html_escape(value)}</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+
+def _cue_render_ue_dynamic_table(table_df, title, note=None, max_height=760):
+    """Render the Résultats par UE table with USJ styling and highlighted institutional totals."""
+    if table_df is None or table_df.empty:
+        st.info(cue_t("Aucune UE ne correspond aux filtres sélectionnés.", "No course unit matches the selected filters."))
+        return
+
+    table = table_df.copy()
+    is_total = table.pop("__is_total__") if "__is_total__" in table.columns else pd.Series(False, index=table.index)
+
+    rename_en = {
+        "Institution": "Institution",
+        "Code matière": "Course code",
+        "Matière": "Course unit",
+        "Total réponses reçues": "Responses received",
+        "Total réponses possibles UE évaluées": "Possible responses for evaluated CUs",
+        "Taux de réponses UE évaluées": "Response rate for evaluated CUs",
+        "Taux d'accord": "Agreement rate",
+        "Taux de désaccord": "Disagreement rate",
+        "Target atteint": "Target reached",
+    }
+    if LANG == "English":
+        table = table.rename(columns={col: rename_en.get(col, col) for col in table.columns})
+
+    percent_cols_fr = {"Taux de réponses UE évaluées", "Taux d'accord", "Taux de désaccord"}
+    percent_cols = {rename_en.get(col, col) for col in percent_cols_fr} if LANG == "English" else percent_cols_fr
+
+    numeric_cols = set(percent_cols).union({
+        rename_en.get("Total réponses reçues", "Total réponses reçues") if LANG == "English" else "Total réponses reçues",
+        rename_en.get("Total réponses possibles UE évaluées", "Total réponses possibles UE évaluées") if LANG == "English" else "Total réponses possibles UE évaluées",
+    })
+
+    def display_cell(value, col):
+        if _fb_is_blank(value):
+            return ""
+        if col in percent_cols:
+            return _cue_format_pct(value, digits=2)
+        if col in numeric_cols:
+            try:
+                return fb_format_number(pd.to_numeric(value, errors="coerce"), digits=0)
+            except Exception:
+                return str(value)
+        return str(value)
+
+    header_html = "".join(
+        f"<th class='{'num-col' if col in numeric_cols else 'text-col'}'>{html_escape(str(col))}</th>"
+        for col in table.columns
+    )
+
+    body_rows = []
+    target_col = rename_en.get("Target atteint", "Target atteint") if LANG == "English" else "Target atteint"
+    for i, row in table.iterrows():
+        row_class = "institution-total-row" if bool(is_total.loc[i]) else "ue-row"
+        cells = []
+        for col in table.columns:
+            value = display_cell(row[col], col)
+            cls = "num-cell" if col in numeric_cols else "text-cell"
+            if col == target_col and value:
+                clean = value.strip().lower()
+                if clean in {"yes", "oui", "y"}:
+                    value_html = f"<span class='target-badge target-yes'>{html_escape(value)}</span>"
+                elif clean in {"no", "non", "n"}:
+                    value_html = f"<span class='target-badge target-no'>{html_escape(value)}</span>"
+                else:
+                    value_html = html_escape(value)
+            else:
+                value_html = html_escape(value)
+            cells.append(f"<td class='{cls}'>{value_html}</td>")
+        body_rows.append(f"<tr class='{row_class}'>" + "".join(cells) + "</tr>")
+
+    row_count = len(table)
+    row_label = f"{row_count} {cue_t('lignes', 'rows')}"
+    note_html = f"<div class='cue-ue-note'>{html_escape(note)}</div>" if note else ""
+    scroll_height = min(max_height, max(360, 44 * min(row_count, 22) + 80))
+    component_height = min(max_height + 170, scroll_height + 155)
+
+    table_html = f"""
+    <html>
+    <head>
+    <style>
+        body {{ margin:0; background:white; font-family:Candara, Arial, sans-serif; color:{USJ_TEXT}; }}
+        .cue-ue-card {{
+            background:#FFFFFF;
+            border:1px solid #DDE5F0;
+            border-radius:22px;
+            overflow:hidden;
+            box-shadow:0 10px 26px rgba(0,27,117,0.08);
+        }}
+        .cue-ue-titlebar {{
+            display:flex;
+            justify-content:space-between;
+            align-items:flex-end;
+            gap:12px;
+            padding:17px 20px 13px 20px;
+            background:linear-gradient(135deg,#FFFFFF 0%,#F8FAFF 62%,#EEF2FF 100%);
+            border-bottom:1px solid #E4EAF4;
+        }}
+        .cue-ue-title {{ color:{USJ_BLUE}; font-size:22px; font-weight:900; line-height:1.15; }}
+        .cue-ue-note {{ color:#667085; font-size:13px; margin-top:6px; line-height:1.35; }}
+        .cue-ue-pill {{
+            background:{USJ_LIGHT_BLUE}; color:{USJ_BLUE}; border:1px solid #D8E2F0;
+            border-radius:999px; padding:7px 12px; font-size:13px; font-weight:900; white-space:nowrap;
+        }}
+        .cue-ue-scroll {{ max-height:{scroll_height}px; overflow-y:auto; overflow-x:hidden; background:white; }}
+        table {{ width:100%; min-width:100%; table-layout:fixed; border-collapse:separate; border-spacing:0; font-size:13px; }}
+        thead th {{
+            position:sticky; top:0; z-index:5; background:{USJ_BLUE}; color:white;
+            padding:10px 8px; border-right:1px solid rgba(255,255,255,0.18); border-bottom:1px solid {USJ_BLUE};
+            font-weight:900; text-align:center; vertical-align:middle; line-height:1.2; white-space:normal; overflow-wrap:anywhere;
+        }}
+        tbody td {{
+            padding:8px 8px; border-bottom:1px solid #E6ECF3; border-right:1px solid #EEF2F8;
+            vertical-align:middle; line-height:1.25; background:white; overflow-wrap:anywhere; word-break:normal;
+        }}
+        tbody tr.ue-row:nth-child(even) td {{ background:#FBFCFE; }}
+        tbody tr.ue-row:hover td {{ background:#F3F6FF; }}
+        .institution-total-row td {{
+            background:linear-gradient(90deg,#FFF36A 0%,#FFF9AE 100%) !important;
+            color:{USJ_BLUE}; font-weight:900; border-top:2px solid {USJ_BLUE}; border-bottom:2px solid #D9CA2E;
+        }}
+        .institution-total-row td:first-child {{ font-size:14px; }}
+        .text-cell {{ text-align:left; }}
+        .num-cell {{ text-align:center; font-weight:800; white-space:nowrap; }}
+        th:nth-child(1), td:nth-child(1) {{ width:11%; font-weight:900; color:{USJ_BLUE}; }}
+        th:nth-child(2), td:nth-child(2) {{ width:9%; }}
+        th:nth-child(3), td:nth-child(3) {{ width:31%; }}
+        th:nth-child(4), td:nth-child(4) {{ width:8%; }}
+        th:nth-child(5), td:nth-child(5) {{ width:10%; }}
+        th:nth-child(6), td:nth-child(6) {{ width:10%; }}
+        th:nth-child(7), td:nth-child(7) {{ width:8%; }}
+        th:nth-child(8), td:nth-child(8) {{ width:8%; }}
+        th:nth-child(9), td:nth-child(9) {{ width:5%; }}
+        .target-badge {{
+            display:inline-block; min-width:44px; padding:4px 8px; border-radius:999px;
+            font-weight:900; font-size:12px; line-height:1; text-align:center;
+        }}
+        .target-yes {{ background:#E9F7EF; color:{USJ_GREEN}; border:1px solid #B8E2C1; }}
+        .target-no {{ background:#FCE8EC; color:{USJ_RED}; border:1px solid #F2B5C1; }}
+    </style>
+    </head>
+    <body>
+        <div class='cue-ue-card'>
+            <div class='cue-ue-titlebar'>
+                <div>
+                    <div class='cue-ue-title'>{html_escape(title)}</div>
+                    {note_html}
+                </div>
+                <div class='cue-ue-pill'>{html_escape(row_label)}</div>
+            </div>
+            <div class='cue-ue-scroll'>
+                <table>
+                    <thead><tr>{header_html}</tr></thead>
+                    <tbody>{''.join(body_rows)}</tbody>
+                </table>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    st_components.html(table_html, height=component_height, scrolling=False)
+
+
 def _cue_logo_html(width=280):
     for logo_path in ["LogoUAQ.png", "USJ LOGO 150.png", "usj_logo.png"]:
         if os.path.exists(logo_path):
@@ -4101,12 +4389,6 @@ def render_course_unit_evaluation_module():
         st.code("EvalEns_2024-2025_Sem1.xlsx\nEvalEns_2024-2025_Sem2.xlsx")
         st.stop()
 
-    with st.spinner(cue_t("Chargement des résultats de l’évaluation des UE...", "Loading course unit evaluation results...")):
-        cue = load_course_unit_evaluation(file_path, file_mtime, file_size, semester_label)
-
-    raw_df = cue["raw"].copy()
-    ue_df = cue["ue"].copy()
-    response_df = cue["response_rates"].copy()
     semester_readable = semester_display[semester_label]
 
     last_update_label = pd.to_datetime(file_mtime, unit="s").strftime("%Y-%m-%d %H:%M:%S")
@@ -4123,16 +4405,27 @@ def render_course_unit_evaluation_module():
         unsafe_allow_html=True,
     )
 
-    response_total, response_rate, agreement_rate, courses_count, institutions_count, not_evaluated = _cue_metric_summary(raw_df, ue_df, response_df)
-
-    tab_summary, tab_questions, tab_ue, tab_institutions = st.tabs([
+    cue_view_options = [
         cue_t("Synthèse", "Summary"),
         cue_t("Résultats par question", "Results by question"),
         cue_t("Résultats par UE", "Results by course unit"),
         cue_t("Taux de réponses", "Response rates"),
-    ])
+    ]
+    cue_active_view = st.radio(
+        cue_t("Section", "Section"),
+        cue_view_options,
+        horizontal=True,
+        label_visibility="collapsed",
+        key="cue_active_view",
+    )
+    st.markdown("<div style='margin-bottom:14px;'></div>", unsafe_allow_html=True)
 
-    with tab_summary:
+    if cue_active_view == cue_view_options[0]:
+        with st.spinner(cue_t("Chargement de la synthèse...", "Loading summary...")):
+            raw_df = load_course_unit_evaluation_raw(file_path, file_mtime, file_size, semester_label)
+            ue_df = load_course_unit_evaluation_ue(file_path, file_mtime, file_size, semester_label)
+            response_df = load_course_unit_evaluation_response_rates(file_path, file_mtime, file_size, semester_label)
+        response_total, response_rate, agreement_rate, courses_count, institutions_count, not_evaluated = _cue_metric_summary(raw_df, ue_df, response_df)
         section_header(
             cue_t("Synthèse de l’évaluation des UE", "Course Unit Evaluation summary"),
             cue_t("Lecture globale du semestre sélectionné. Les résultats du Semestre 1 et du Semestre 2 restent strictement séparés.",
@@ -4189,7 +4482,9 @@ def render_course_unit_evaluation_module():
         ])
         _cue_table(summary_table, cue_t("Tableau de synthèse", "Summary table"), max_height=360)
 
-    with tab_questions:
+    elif cue_active_view == cue_view_options[1]:
+        with st.spinner(cue_t("Chargement des résultats par question...", "Loading question results...")):
+            raw_df = load_course_unit_evaluation_raw(file_path, file_mtime, file_size, semester_label)
         section_header(
             cue_t("Résultats par question", "Results by question"),
             cue_t("Analyse des réponses d’accord/désaccord par question, faculté et institution.",
@@ -4263,52 +4558,40 @@ def render_course_unit_evaluation_module():
                 },
             )
 
-    with tab_ue:
+    elif cue_active_view == cue_view_options[2]:
+        with st.spinner(cue_t("Chargement des résultats par UE...", "Loading course-unit results...")):
+            ue_df = load_course_unit_evaluation_ue(file_path, file_mtime, file_size, semester_label)
         section_header(
             cue_t("Résultats par UE", "Results by course unit"),
-            cue_t("Analyse des UE évaluées. Les lignes de total institutionnel sont exclues des classements par UE.",
-                  "Analysis of evaluated course units. Institutional total rows are excluded from course-unit rankings."),
+            cue_t("Tableau dynamique des UE évaluées. Chaque total institutionnel est affiché avant les UE de l’institution.",
+                  "Dynamic table of evaluated course units. Each institutional total is displayed before the institution's course units."),
         )
-        courses = ue_df[ue_df["Type de ligne"].eq("UE")].copy()
-        filter_cols = st.columns(4)
+        courses_only = ue_df[ue_df["Type de ligne"].eq("UE")].copy()
+        filter_cols = st.columns([1.15, 1.0, 1.85])
         with filter_cols[0]:
-            institution = st.selectbox(cue_t("Institution", "Institution"), filter_options(courses, "Institution courte"), key="cue_ue_institution")
-        if institution != "Tous":
-            courses = courses[courses["Institution courte"].astype(str) == institution]
+            institution = st.selectbox(cue_t("Institution", "Institution"), filter_options(courses_only, "Institution courte"), key="cue_ue_institution")
         with filter_cols[1]:
-            target_options = ["Tous"] + sorted(courses["Target atteint"].dropna().astype(str).unique().tolist()) if "Target atteint" in courses.columns else ["Tous"]
+            target_options = ["Tous"] + sorted(courses_only["Target atteint"].dropna().astype(str).unique().tolist()) if "Target atteint" in courses_only.columns else ["Tous"]
             target = st.selectbox(cue_t("Target atteint", "Target reached"), target_options, key="cue_ue_target")
-        if target != "Tous":
-            courses = courses[courses["Target atteint"].astype(str) == target]
         with filter_cols[2]:
-            metric = st.selectbox(
-                cue_t("Indicateur", "Indicator"),
-                [cue_t("Taux d’accord", "Agreement rate"), cue_t("Taux de réponse", "Response rate"), cue_t("Réponses reçues", "Responses received")],
-                key="cue_ue_metric",
-            )
-        with filter_cols[3]:
-            search = st.text_input(cue_t("Recherche UE", "Search course unit"), key="cue_ue_search")
-        if search:
-            courses = courses[courses["Matière"].astype(str).str.contains(search, case=False, na=False) | courses["Code matière"].astype(str).str.contains(search, case=False, na=False)]
+            search = st.text_input(cue_t("Recherche UE ou code matière", "Search course unit or course code"), key="cue_ue_search")
 
-        courses["Libellé UE"] = courses["Matière"].astype(str) + " - " + courses["Institution courte"].astype(str)
-        if metric in {"Taux d’accord", "Agreement rate"}:
-            _cue_percent_bar(courses, "Libellé UE", "Taux d'accord", cue_t("Top UE selon le taux d’accord", "Top course units by agreement rate"), orientation="h", top_n=30, color_col="Institution courte")
-            lower = courses.dropna(subset=["Taux d'accord"]).sort_values("Taux d'accord", ascending=True).head(20)
-            _cue_percent_bar(lower, "Libellé UE", "Taux d'accord", cue_t("UE à suivre selon le taux d’accord", "Course units to monitor by agreement rate"), orientation="h", top_n=None, color_col="Institution courte")
-        elif metric in {"Taux de réponse", "Response rate"}:
-            _cue_percent_bar(courses, "Libellé UE", "Taux de réponses UE évaluées", cue_t("Top UE selon le taux de réponse", "Top course units by response rate"), orientation="h", top_n=30, color_col="Institution courte")
-        else:
-            _cue_count_bar(courses, "Libellé UE", "Total réponses reçues", cue_t("Top UE selon le nombre de réponses reçues", "Top course units by responses received"), top_n=30)
-
-        _cue_table(
-            courses[["Institution courte", "Code matière", "Matière", "Total réponses reçues", "Total réponses possibles UE évaluées", "Taux de réponses UE évaluées", "Taux d'accord", "Taux de désaccord", "Target atteint"]],
-            cue_t("Tableau détaillé des UE", "Course-unit detail table"),
-            max_height=680,
-            percent_cols={"Taux de réponses UE évaluées", "Taux d'accord", "Taux de désaccord"},
+        ue_table = _cue_prepare_ue_table_view(ue_df, institution=institution, target=target, search=search)
+        _cue_render_ue_kpis(ue_table)
+        st.markdown("<div style='height:12px;'></div>", unsafe_allow_html=True)
+        _cue_render_ue_dynamic_table(
+            ue_table,
+            cue_t("Tableau dynamique des résultats par UE", "Dynamic course-unit results table"),
+            note=cue_t(
+                "Les lignes jaunes représentent les totaux institutionnels. Les pourcentages sont affichés avec deux décimales.",
+                "Yellow rows represent institutional totals. Percentages are displayed with two decimals.",
+            ),
+            max_height=760,
         )
 
-    with tab_institutions:
+    elif cue_active_view == cue_view_options[3]:
+        with st.spinner(cue_t("Chargement des taux de réponses...", "Loading response rates...")):
+            response_df = load_course_unit_evaluation_response_rates(file_path, file_mtime, file_size, semester_label)
         section_header(
             cue_t("Taux de réponses par institution", "Response rates by institution"),
             cue_t("Suivi de la participation aux évaluations des UE par institution.", "Monitoring participation in course-unit evaluations by institution."),
