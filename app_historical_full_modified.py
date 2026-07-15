@@ -4220,6 +4220,16 @@ def _cue_render_ue_dynamic_table(table_df, title, note=None, max_height=760):
     table = table_df.copy()
     is_total = table.pop("__is_total__") if "__is_total__" in table.columns else pd.Series(False, index=table.index)
 
+    # Keep the UE table focused on analytical fields only. Internal metadata
+    # columns are used for filtering/grouping but should not be displayed.
+    metadata_cols_to_hide = [
+        "Type de ligne",
+        "Semestre",
+        "Row type",
+        "Semester",
+    ]
+    table = table.drop(columns=[col for col in metadata_cols_to_hide if col in table.columns], errors="ignore")
+
     rename_en = {
         "Institution": "Institution",
         "Code matière": "Course code",
