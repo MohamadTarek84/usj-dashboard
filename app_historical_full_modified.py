@@ -3721,6 +3721,32 @@ def _cue_make_question_summary(raw_df):
     grouped = grouped.sort_values("Taux d'accord", ascending=False)
     return grouped
 
+def _cue_make_institution_valid_response_counts(raw_df):
+    """Compute valid answers by institution from Resultats Bruts.
+
+    This is the correct denominator for the low-response warning in the
+    agreement-by-institution chart because it excludes both:
+    - Ne s'applique pas
+    - Pas de réponses
+    """
+    if raw_df is None or raw_df.empty:
+        return pd.DataFrame(columns=["Institution courte", "Réponses valides institution"])
+    required = {"Institution", "Total réponses valides"}
+    if not required.issubset(set(raw_df.columns)):
+        return pd.DataFrame(columns=["Institution courte", "Réponses valides institution"])
+
+    counts = raw_df.copy()
+    counts["Institution courte"] = counts["Institution"].map(_cue_clean_text)
+    counts["Total réponses valides"] = pd.to_numeric(counts["Total réponses valides"], errors="coerce")
+    counts = (
+        counts.groupby("Institution courte", dropna=False)["Total réponses valides"]
+        .sum(min_count=1)
+        .reset_index()
+        .rename(columns={"Total réponses valides": "Réponses valides institution"})
+    )
+    return counts
+
+
 
 def _cue_percent_bar(
     data,
@@ -3814,7 +3840,7 @@ def _cue_percent_bar(
     if highlight_label_note and plot_data["__label_highlight__"].any():
         st.markdown(
             f"<div style='font-family:Candara, Arial, sans-serif; color:{USJ_RED}; font-size:13px; font-weight:700; margin-top:-12px; margin-bottom:10px;'>"
-            f"{html_escape(cue_t('Labels en rouge : moins de 30 réponses reçues.', 'Red labels: fewer than 30 received responses.'))}"
+            f"{html_escape(cue_t('Labels en rouge : moins de 30 réponses valides (hors Ne s\'applique pas et Pas de réponses).', 'Red labels: fewer than 30 valid answers, excluding Not applicable and No answer.'))}"
             "</div>",
             unsafe_allow_html=True,
         )
@@ -3979,6 +4005,9 @@ def render_course_unit_evaluation_module():
 
         institution_totals = ue_df[ue_df["Type de ligne"].eq("Total institution")].copy()
         if not institution_totals.empty:
+            valid_counts = _cue_make_institution_valid_response_counts(raw_df)
+            if not valid_counts.empty and "Institution courte" in institution_totals.columns:
+                institution_totals = institution_totals.merge(valid_counts, on="Institution courte", how="left")
             _cue_percent_bar(
                 institution_totals,
                 "Institution courte",
@@ -3987,7 +4016,7 @@ def render_course_unit_evaluation_module():
                 orientation="h",
                 top_n=25,
                 height=760,
-                highlight_label_col="Total réponses reçues",
+                highlight_label_col="Réponses valides institution",
                 highlight_label_threshold=30,
             )
 
