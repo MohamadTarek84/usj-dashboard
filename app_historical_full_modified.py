@@ -3882,11 +3882,23 @@ def _cue_question_institution_agreement_chart(data, question_title, semester_rea
         return
 
     grouped["Taux d'accord"] = grouped["Accord Effectif"] / grouped["Total réponses valides"].replace({0: np.nan})
-    grouped = grouped.dropna(subset=["Taux d'accord"]).sort_values("Taux d'accord", ascending=False).copy()
-    grouped["Label %"] = grouped["Taux d'accord"].map(lambda v: _cue_format_pct(v, digits=2))
+    grouped = grouped.dropna(subset=["Taux d'accord"]).copy()
 
-    overall_agreement = grouped["Accord Effectif"].sum() / grouped["Total réponses valides"].sum() if grouped["Total réponses valides"].sum() else np.nan
+    # Keep the orange reference line as the official overall rate for the selected question.
+    # For the blue institutional bars, exclude institutions with fewer than 30 valid answers.
+    grouped_all = grouped.copy()
+    overall_agreement = grouped_all["Accord Effectif"].sum() / grouped_all["Total réponses valides"].sum() if grouped_all["Total réponses valides"].sum() else np.nan
     overall_label = _cue_format_pct(overall_agreement, digits=2)
+
+    min_valid_answers = 30
+    valid_counts = pd.to_numeric(grouped_all["Total réponses valides"], errors="coerce")
+    excluded_low_n = grouped_all[valid_counts < min_valid_answers].copy()
+    grouped = grouped_all[valid_counts >= min_valid_answers].copy()
+    grouped = grouped.sort_values("Taux d'accord", ascending=False).copy()
+    if grouped.empty:
+        st.info(cue_t("Aucune institution avec au moins 30 réponses valides pour cette question.", "No institution has at least 30 valid answers for this question."))
+        return
+    grouped["Label %"] = grouped["Taux d'accord"].map(lambda v: _cue_format_pct(v, digits=2))
 
     title_text = cue_t(
         f"Taux d’accord par institution - {semester_readable}",
@@ -3965,10 +3977,18 @@ def _cue_question_institution_agreement_chart(data, question_title, semester_rea
     st.plotly_chart(fig, use_container_width=True)
     st.markdown(
         f"<div style='font-family:Candara, Arial, sans-serif; color:#667085; font-size:13px; margin-top:-8px; margin-bottom:10px;'>"
-        f"{html_escape(cue_t('Barres bleues : Tout à fait d\'accord + Plutôt d\'accord par institution. Ligne orange : taux d\'accord global pour la question sélectionnée.', 'Blue bars: Strongly agree + Rather agree by institution. Orange line: overall agreement rate for the selected question.'))}"
+        f"{html_escape(cue_t('Barres bleues : Tout à fait d\'accord + Plutôt d\'accord par institution. Les institutions avec moins de 30 réponses valides sont exclues. Ligne orange : taux d\'accord global pour la question sélectionnée.', 'Blue bars: Strongly agree + Rather agree by institution. Institutions with fewer than 30 valid answers are excluded. Orange line: overall agreement rate for the selected question.'))}"
         "</div>",
         unsafe_allow_html=True,
     )
+    if 'excluded_low_n' in locals() and not excluded_low_n.empty:
+        excluded_labels = ', '.join(excluded_low_n['Institution'].dropna().astype(str).tolist())
+        st.markdown(
+            f"<div style='font-family:Candara, Arial, sans-serif; color:{USJ_RED}; font-size:13px; font-weight:700; margin-top:-4px; margin-bottom:10px;'>"
+            f"{html_escape(cue_t('Institutions exclues car elles ont moins de 30 réponses valides : ', 'Institutions excluded because they have fewer than 30 valid answers: '))}{html_escape(excluded_labels)}"
+            "</div>",
+            unsafe_allow_html=True,
+        )
 
 
 def _cue_count_bar(data, label_col, value_col, title, top_n=20, height=None):
