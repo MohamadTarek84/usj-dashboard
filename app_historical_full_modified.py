@@ -4494,6 +4494,237 @@ def _cue_logo_html(width=280):
     return ""
 
 
+
+def render_course_unit_evaluation_landing_page():
+    """Introductory page for Course Unit Evaluation, aligned with the Exit Survey style."""
+    logo_html = _cue_logo_html(width=320)
+
+    if LANG == "Français":
+        hero_kicker = "ÉVALUATION DES UE 2024-2025"
+        hero_title = "Transformer l’évaluation des UE en leviers d’amélioration pédagogique"
+        hero_subtitle = (
+            "Une lecture institutionnelle claire des évaluations des unités d’enseignement, séparée par semestre, "
+            "pour soutenir la qualité pédagogique, le suivi des UE et l’amélioration continue."
+        )
+        strategic_line = "Les résultats du Semestre 1 et du Semestre 2 restent analysés séparément afin de respecter le rythme réel de l’évaluation."
+        stat_1_value, stat_1_label = "2024-2025", "Année académique"
+        stat_2_value, stat_2_label = "2", "Semestres analysés séparément"
+        stat_3_value, stat_3_label = "4", "Espaces analytiques"
+        problem_title = "Pourquoi cette plateforme est stratégique ?"
+        problem_text = (
+            "L’évaluation des UE produit des informations essentielles sur la clarté des plans d’apprentissage, "
+            "l’accompagnement, l’ambiance de classe, les modalités d’évaluation, les supports de cours et les méthodes pédagogiques. "
+            "En version tableau de bord, ces informations deviennent plus lisibles, comparables et directement exploitables par les responsables académiques."
+        )
+        decision_title = "Ce qu’elle permet de décider"
+        decision_text = (
+            "La plateforme aide à identifier les UE et les institutions qui atteignent le seuil d’accord, à repérer les points nécessitant un suivi, "
+            "à analyser les résultats par question et à suivre les taux de réponses. Elle permet ainsi de transformer les évaluations en actions concrètes d’amélioration."
+        )
+        value_title = "Valeur ajoutée pour l’USJ"
+        value_items = [
+            ("Pilotage pédagogique", "Mettre en évidence les forces et les priorités d’amélioration des UE à partir d’indicateurs lisibles."),
+            ("Lecture par semestre", "Analyser séparément le Semestre 1 et le Semestre 2 sans combiner des campagnes d’évaluation différentes."),
+            ("Analyse par question", "Comparer les dimensions pédagogiques évaluées et identifier les questions les plus sensibles."),
+            ("Suivi par UE", "Afficher les résultats détaillés par UE, avec les totaux institutionnels et le seuil d’accord de 75%."),
+            ("Taux de participation", "Suivre la participation aux évaluations pour mieux interpréter la robustesse des résultats."),
+            ("Amélioration continue", "Fournir des résultats utilisables dans les réunions académiques, les comités qualité et les plans d’action."),
+        ]
+        modules_title = "Ce que l’utilisateur peut explorer"
+        modules = [
+            ("01", "Synthèse", "Consulter les KPI principaux du semestre : réponses reçues, taux de réponse, taux d’accord global, UE évaluées et institutions participantes."),
+            ("02", "Résultats par question", "Visualiser le taux d’accord par question et comparer les institutions, avec exclusion des bases valides inférieures à 30."),
+            ("03", "Résultats par UE", "Lire un tableau dynamique des UE, avec les totaux institutionnels et l’atteinte du seuil d’accord de 75%."),
+            ("04", "Taux de réponses", "Suivre la participation par institution pour les UE évaluées et pour l’ensemble des UE."),
+        ]
+        audience_title = "À qui s’adresse cette lecture ?"
+        audience_items = ["Vice-rectorats", "Doyens et directeurs", "Responsables d’UE", "Assurance qualité", "Responsables de programme", "Comités pédagogiques"]
+        evidence_title = "Une lecture orientée décision"
+        evidence_text = (
+            "L’objectif n’est pas seulement de présenter des pourcentages. Il s’agit d’identifier les signaux pédagogiques importants, "
+            "de contextualiser les résultats selon les bases de réponses valides et d’appuyer les décisions académiques sur des indicateurs transparents."
+        )
+        enter_label = "Entrer dans l’évaluation des UE"
+        back_label = "← Retour au portail"
+    else:
+        hero_kicker = "COURSE UNIT EVALUATION 2024-2025"
+        hero_title = "Turn course-unit evaluation into pedagogical improvement signals"
+        hero_subtitle = (
+            "A clear institutional reading of course-unit evaluations, separated by semester, "
+            "to support teaching quality, course-unit monitoring and continuous improvement."
+        )
+        strategic_line = "Semester 1 and Semester 2 results remain analyzed separately to respect the real evaluation cycle."
+        stat_1_value, stat_1_label = "2024-2025", "Academic year"
+        stat_2_value, stat_2_label = "2", "Semesters analyzed separately"
+        stat_3_value, stat_3_label = "4", "Analytical areas"
+        problem_title = "Why this platform is strategic"
+        problem_text = (
+            "Course-unit evaluations produce essential information on learning plans, support, classroom climate, assessment methods, "
+            "course materials and pedagogical approaches. In dashboard form, this information becomes more readable, comparable and directly usable by academic leaders."
+        )
+        decision_title = "What it helps decide"
+        decision_text = (
+            "The platform helps identify course units and institutions that reach the agreement threshold, detect points requiring follow-up, "
+            "analyze results by question and monitor response rates. It turns evaluation results into concrete improvement actions."
+        )
+        value_title = "Added value for USJ"
+        value_items = [
+            ("Pedagogical steering", "Highlight strengths and improvement priorities in course units using readable indicators."),
+            ("Semester-based reading", "Analyze Semester 1 and Semester 2 separately without combining different evaluation campaigns."),
+            ("Question-level analysis", "Compare the pedagogical dimensions evaluated and identify the most sensitive questions."),
+            ("Course-unit monitoring", "Display detailed results by course unit, with institutional totals and the 75% agreement threshold."),
+            ("Participation monitoring", "Track participation in evaluations to better interpret the robustness of results."),
+            ("Continuous improvement", "Provide usable results for academic meetings, quality committees and action plans."),
+        ]
+        modules_title = "What users can explore"
+        modules = [
+            ("01", "Summary", "Review the semester’s main KPIs: responses received, response rate, overall agreement, evaluated course units and participating institutions."),
+            ("02", "Results by question", "Visualize agreement rates by question and compare institutions, excluding valid-response bases below 30."),
+            ("03", "Results by course unit", "Read a dynamic course-unit table with institutional totals and the 75% agreement threshold."),
+            ("04", "Response rates", "Monitor participation by institution for evaluated course units and for all course units."),
+        ]
+        audience_title = "Who this reading is for"
+        audience_items = ["Vice-rectorates", "Deans and directors", "Course-unit leaders", "Quality assurance", "Program leaders", "Pedagogical committees"]
+        evidence_title = "A decision-oriented reading"
+        evidence_text = (
+            "The objective is not only to display percentages. It is to identify important pedagogical signals, "
+            "contextualize results according to valid-response bases and support academic decisions with transparent indicators."
+        )
+        enter_label = "Enter Course Unit Evaluation"
+        back_label = "← Back to portal"
+
+    value_cards_html = "".join(
+        f"""
+        <div class='cue-intro-value-card'>
+            <div class='cue-intro-value-dot'></div>
+            <div class='cue-intro-value-title'>{html_escape(title)}</div>
+            <div class='cue-intro-value-text'>{html_escape(text)}</div>
+        </div>
+        """
+        for title, text in value_items
+    )
+    modules_html = "".join(
+        f"""
+        <div class='cue-intro-module'>
+            <div class='cue-intro-module-number'>{html_escape(number)}</div>
+            <div>
+                <div class='cue-intro-module-title'>{html_escape(title)}</div>
+                <div class='cue-intro-module-text'>{html_escape(text)}</div>
+            </div>
+        </div>
+        """
+        for number, title, text in modules
+    )
+    audience_html = "".join(f"<span class='cue-intro-audience-chip'>{html_escape(item)}</span>" for item in audience_items)
+
+    intro_html = f"""
+    <style>
+    .cue-intro-shell {{font-family:Candara, Arial, sans-serif; color:{USJ_TEXT};}}
+    .cue-intro-logo-strip {{display:flex; justify-content:flex-end; margin:0 0 8px 0;}}
+    .cue-intro-logo-strip img {{max-width:320px; height:auto;}}
+    .cue-intro-hero {{
+        position:relative; overflow:hidden;
+        background:
+            radial-gradient(circle at 91% 8%, rgba(199,34,67,0.45) 0%, transparent 30%),
+            linear-gradient(135deg, {USJ_BLUE} 0%, #232B69 48%, #151B4F 100%);
+        border-radius:34px; padding:48px 52px; color:white;
+        box-shadow:0 22px 52px rgba(35,43,105,0.28); margin-top:8px; margin-bottom:26px;
+    }}
+    .cue-intro-hero:after {{content:""; position:absolute; right:-160px; top:-160px; width:420px; height:420px; border-radius:999px; border:1px solid rgba(255,255,255,0.13);}}
+    .cue-intro-hero-content {{position:relative; z-index:1; max-width:1120px;}}
+    .cue-intro-badge {{display:inline-block; background:rgba(255,255,255,0.14); border:1px solid rgba(255,255,255,0.28); color:white; padding:9px 16px; border-radius:999px; font-size:14px; font-weight:900; margin-bottom:18px;}}
+    .cue-intro-kicker {{font-size:15px; font-weight:950; letter-spacing:0.11em; text-transform:uppercase; color:#E8D9C7; margin-bottom:10px;}}
+    .cue-intro-title {{font-size:50px; line-height:1.10; font-weight:950; margin:0 0 18px 0; color:white; max-width:1060px;}}
+    .cue-intro-subtitle {{font-size:20px; line-height:1.65; max-width:1100px; color:rgba(255,255,255,0.94); margin-bottom:12px;}}
+    .cue-intro-strategic-line {{font-size:16px; line-height:1.55; color:#F3E7DA; font-weight:850; margin-bottom:26px; max-width:1050px;}}
+    .cue-intro-stat-grid {{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; max-width:900px;}}
+    .cue-intro-stat {{background:rgba(255,255,255,0.13); border:1px solid rgba(255,255,255,0.23); border-radius:20px; padding:16px 18px; backdrop-filter:blur(8px);}}
+    .cue-intro-stat-value {{font-size:28px; font-weight:950; color:white; line-height:1.25;}}
+    .cue-intro-stat-label {{font-size:13px; color:rgba(255,255,255,0.84); margin-top:6px; font-weight:750;}}
+    .cue-intro-section-grid {{display:grid; grid-template-columns:1fr 1fr; gap:20px; margin:22px 0;}}
+    .cue-intro-info-panel {{background:#FFFFFF; border:1px solid #DDE5F0; border-radius:26px; padding:27px 30px; box-shadow:0 10px 28px rgba(35,43,105,0.08);}}
+    .cue-intro-info-panel.gold {{border-left:8px solid {USJ_GOLD};}}
+    .cue-intro-info-panel.red {{border-left:8px solid {USJ_RED};}}
+    .cue-intro-panel-title {{font-size:25px; font-weight:950; color:{USJ_BLUE}; margin-bottom:12px;}}
+    .cue-intro-panel-text {{font-size:16px; line-height:1.78; color:{USJ_TEXT};}}
+    .cue-intro-value-grid {{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; margin:22px 0 24px 0;}}
+    .cue-intro-value-card {{background:#FFFFFF; border:1px solid #DDE5F0; border-radius:22px; padding:22px; min-height:170px; box-shadow:0 8px 22px rgba(35,43,105,0.07);}}
+    .cue-intro-value-dot {{width:34px; height:6px; border-radius:999px; background:linear-gradient(90deg,{USJ_BLUE},{USJ_RED},{USJ_GOLD}); margin-bottom:16px;}}
+    .cue-intro-value-title {{color:{USJ_BLUE}; font-size:20px; font-weight:950; margin-bottom:9px;}}
+    .cue-intro-value-text {{color:#5F6B7A; font-size:15px; line-height:1.58;}}
+    .cue-intro-module-panel {{background:linear-gradient(135deg,#FFFFFF 0%,#F8FAFE 100%); border:1px solid #DDE5F0; border-left:8px solid {USJ_BLUE}; border-radius:26px; padding:27px 30px; box-shadow:0 10px 28px rgba(35,43,105,0.08);}}
+    .cue-intro-module-grid {{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin-top:16px;}}
+    .cue-intro-module {{display:flex; gap:14px; background:#FFFFFF; border:1px solid #E4EAF4; border-radius:18px; padding:17px 18px;}}
+    .cue-intro-module-number {{width:40px; height:40px; border-radius:12px; background:{USJ_BLUE}; color:white; font-weight:950; display:flex; align-items:center; justify-content:center; flex:0 0 40px;}}
+    .cue-intro-module-title {{font-size:17px; font-weight:950; color:{USJ_BLUE}; margin-bottom:5px;}}
+    .cue-intro-module-text {{font-size:14px; line-height:1.52; color:#5F6B7A;}}
+    .cue-intro-audience-box {{background:#FFFFFF; border:1px solid #DDE5F0; border-radius:26px; padding:25px 28px; box-shadow:0 10px 28px rgba(35,43,105,0.08); margin:22px 0;}}
+    .cue-intro-audience-chips {{display:flex; flex-wrap:wrap; gap:10px; margin-top:14px;}}
+    .cue-intro-audience-chip {{display:inline-flex; align-items:center; border:1px solid #DDE5F0; background:#F7F8FC; border-radius:999px; padding:9px 13px; color:{USJ_BLUE}; font-weight:850; font-size:14px;}}
+    @media (max-width: 900px) {{
+        .cue-intro-section-grid, .cue-intro-value-grid, .cue-intro-module-grid {{grid-template-columns:1fr;}}
+        .cue-intro-stat-grid {{grid-template-columns:1fr;}}
+        .cue-intro-title {{font-size:36px;}}
+    }}
+    </style>
+    <div class='cue-intro-shell'>
+        <div class='cue-intro-logo-strip'>{logo_html}</div>
+        <div class='cue-intro-hero'>
+            <div class='cue-intro-hero-content'>
+                <div class='cue-intro-badge'>{html_escape('Université Saint-Joseph de Beyrouth - Unité Assurance qualité' if LANG == 'Français' else 'Saint Joseph University of Beirut - Quality Assurance Unit')}</div>
+                <div class='cue-intro-kicker'>{html_escape(hero_kicker)}</div>
+                <div class='cue-intro-title'>{html_escape(hero_title)}</div>
+                <div class='cue-intro-subtitle'>{html_escape(hero_subtitle)}</div>
+                <div class='cue-intro-strategic-line'>{html_escape(strategic_line)}</div>
+                <div class='cue-intro-stat-grid'>
+                    <div class='cue-intro-stat'><div class='cue-intro-stat-value'>{html_escape(stat_1_value)}</div><div class='cue-intro-stat-label'>{html_escape(stat_1_label)}</div></div>
+                    <div class='cue-intro-stat'><div class='cue-intro-stat-value'>{html_escape(stat_2_value)}</div><div class='cue-intro-stat-label'>{html_escape(stat_2_label)}</div></div>
+                    <div class='cue-intro-stat'><div class='cue-intro-stat-value'>{html_escape(stat_3_value)}</div><div class='cue-intro-stat-label'>{html_escape(stat_3_label)}</div></div>
+                </div>
+            </div>
+        </div>
+        <div class='cue-intro-section-grid'>
+            <div class='cue-intro-info-panel gold'>
+                <div class='cue-intro-panel-title'>{html_escape(problem_title)}</div>
+                <div class='cue-intro-panel-text'>{html_escape(problem_text)}</div>
+            </div>
+            <div class='cue-intro-info-panel red'>
+                <div class='cue-intro-panel-title'>{html_escape(decision_title)}</div>
+                <div class='cue-intro-panel-text'>{html_escape(decision_text)}</div>
+            </div>
+        </div>
+        <div class='cue-intro-info-panel'>
+            <div class='cue-intro-panel-title'>{html_escape(evidence_title)}</div>
+            <div class='cue-intro-panel-text'>{html_escape(evidence_text)}</div>
+        </div>
+        <div class='cue-intro-panel-title' style='margin-top:26px;'>{html_escape(value_title)}</div>
+        <div class='cue-intro-value-grid'>{value_cards_html}</div>
+        <div class='cue-intro-module-panel'>
+            <div class='cue-intro-panel-title'>{html_escape(modules_title)}</div>
+            <div class='cue-intro-module-grid'>{modules_html}</div>
+        </div>
+        <div class='cue-intro-audience-box'>
+            <div class='cue-intro-panel-title'>{html_escape(audience_title)}</div>
+            <div class='cue-intro-audience-chips'>{audience_html}</div>
+        </div>
+    </div>
+    """
+    intro_html = re.sub(r"\n[ \t]+<", "\n<", intro_html)
+    intro_html = re.sub(r"^[ \t]+<", "<", intro_html)
+    st.markdown(intro_html, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    action_cols = st.columns([1.45, 1.25, 3.4])
+    with action_cols[0]:
+        if st.button(enter_label, use_container_width=True, type="primary", key="enter_cue_dashboard_from_intro"):
+            st.session_state["dashboard_started"] = True
+            st.rerun()
+    with action_cols[1]:
+        if st.button(back_label, use_container_width=True, key="back_to_portal_from_cue_intro"):
+            st.session_state["selected_portal_app"] = None
+            st.session_state["dashboard_started"] = False
+            st.rerun()
+
 def render_course_unit_evaluation_module():
     """Course Unit Evaluation dashboard. Semester files are loaded and analyzed separately."""
     if "cue_selected_semester" not in st.session_state:
@@ -4512,8 +4743,12 @@ def render_course_unit_evaluation_module():
             """,
             unsafe_allow_html=True,
         )
-        nav_cols = st.columns([1.1, 3.4])
+        nav_cols = st.columns([1.1, 1.0, 3.0])
         with nav_cols[0]:
+            if st.button(cue_t("← Présentation", "← Introduction"), key="back_to_cue_intro", use_container_width=True):
+                st.session_state["dashboard_started"] = False
+                st.rerun()
+        with nav_cols[1]:
             if st.button(cue_t("← Portail", "← Portal"), key="back_to_portal_from_cue", use_container_width=True):
                 st.session_state["selected_portal_app"] = None
                 st.session_state["dashboard_started"] = False
@@ -9237,7 +9472,10 @@ if st.session_state["selected_portal_app"] == "factbook":
     st.stop()
 
 if st.session_state["selected_portal_app"] == "course_unit_evaluation":
-    render_course_unit_evaluation_module()
+    if not st.session_state["dashboard_started"]:
+        render_course_unit_evaluation_landing_page()
+    else:
+        render_course_unit_evaluation_module()
     st.stop()
 
 if st.session_state["selected_portal_app"] != "exit_students":
