@@ -3497,6 +3497,14 @@ def _cue_threshold_status_label(value):
     return str(value)
 
 
+def _cue_ue_threshold_kpi_explanation(target_count, total_ue, target_rate):
+    """Academic explanation of the UE threshold KPI displayed in Résultats par UE."""
+    return cue_t(
+        f"Cet indicateur présente le nombre d’UE affichées dont le taux d’accord atteint au moins 75%. Le taux d’accord est calculé comme la somme de « Tout à fait d’accord » et « Plutôt d’accord ». Dans la sélection actuelle, {fb_format_number(target_count)} UE sur {fb_format_number(total_ue)} atteignent ce seuil, soit {_cue_format_pct(target_rate, digits=2)} des UE affichées.",
+        f"This indicator shows the number of displayed course units whose agreement rate reaches at least 75%. The agreement rate is calculated as the sum of ‘Strongly agree’ and ‘Agree’. In the current selection, {fb_format_number(target_count)} out of {fb_format_number(total_ue)} course units reach this threshold, representing {_cue_format_pct(target_rate, digits=2)} of displayed course units.",
+    )
+
+
 def find_course_unit_evaluation_file(semester_label):
     """Find the Excel file for the selected semester only; semesters are intentionally not combined."""
     candidates = COURSE_UNIT_EVALUATION_FILES.get(semester_label, [])
@@ -4176,7 +4184,7 @@ def _cue_render_ue_kpis(table_df):
         (cue_t("UE affichées", "Displayed course units"), fb_format_number(len(course_rows))),
         (cue_t("Réponses reçues", "Responses received"), fb_format_number(responses)),
         (cue_t("Taux de réponse", "Response rate"), _cue_format_pct(response_rate, digits=2)),
-        (cue_t("UE avec seuil d’accord atteint", "CUs with agreement threshold reached"), f"{target_count} ({_cue_format_pct(target_rate, digits=2)})"),
+        (cue_t("UE ayant atteint le seuil d’accord (75%)", "CUs reaching the agreement threshold (75%)"), f"{target_count} ({_cue_format_pct(target_rate, digits=2)})"),
     ]
     cols = st.columns(len(cards))
     for col, (label, value) in zip(cols, cards):
@@ -4190,6 +4198,17 @@ def _cue_render_ue_kpis(table_df):
                 """,
                 unsafe_allow_html=True,
             )
+
+    explanation = _cue_ue_threshold_kpi_explanation(target_count, len(course_rows), target_rate)
+    st.markdown(
+        f"""
+        <div style="margin-top:10px; margin-bottom:8px; background:#FFF9E8; border:1px solid #E8D9A8; border-left:5px solid {USJ_GOLD}; border-radius:14px; padding:12px 16px; font-family:Candara, Arial, sans-serif; color:{USJ_TEXT}; font-size:14px; line-height:1.45;">
+            <b style="color:{USJ_BLUE};">{html_escape(cue_t('Lecture de l’indicateur', 'How to read this indicator'))}</b><br>
+            {html_escape(explanation)}
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 def _cue_render_ue_dynamic_table(table_df, title, note=None, max_height=760):
