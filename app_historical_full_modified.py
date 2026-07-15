@@ -144,6 +144,38 @@ st.markdown(
         border-color: #B9C7DE !important;
     }}
 
+    /* Unified capsule navigation used by Exit Survey, Factbook and Course Unit Evaluation */
+    div[data-testid="stRadio"] > div[role="radiogroup"] {{
+        display:inline-flex !important;
+        flex-wrap:wrap !important;
+        gap:8px !important;
+        align-items:center !important;
+        background:linear-gradient(135deg,#FFFFFF 0%,#F3F7FF 100%) !important;
+        border:1px solid #D5E0F2 !important;
+        border-radius:22px !important;
+        padding:8px 12px !important;
+        box-shadow:0 8px 20px rgba(35,43,105,0.08) !important;
+        width:auto !important;
+        max-width:100% !important;
+    }}
+    div[data-testid="stRadio"] label[data-baseweb="radio"] {{
+        margin:0 !important;
+        padding:6px 10px !important;
+        border-radius:999px !important;
+        transition:all 0.16s ease !important;
+    }}
+    div[data-testid="stRadio"] label[data-baseweb="radio"]:hover {{
+        background:#FFFFFF !important;
+        box-shadow:0 3px 10px rgba(35,43,105,0.07) !important;
+    }}
+    div[data-testid="stRadio"] label[data-baseweb="radio"] p {{
+        font-family:Candara, Arial, sans-serif !important;
+        font-size:15px !important;
+        font-weight:750 !important;
+        color:{USJ_TEXT} !important;
+        margin:0 !important;
+    }}
+
     .stSelectbox label, .stRadio > label, .stButton button {{
         font-family: Candara, Arial, sans-serif !important;
         color: {USJ_TEXT} !important;
@@ -3686,6 +3718,10 @@ def _cue_table(df, title, note=None, max_height=560, percent_cols=None, hide_col
         st.info(cue_t("Aucune donnée disponible.", "No data available."))
         return
     table = df.copy()
+    # These columns are internal metadata used for filtering/calculation only.
+    # They should never appear in the visible Course Unit Evaluation tables.
+    internal_hidden_columns = {"Type de ligne", "Semestre", "Row type", "Semester"}
+    hide_columns = set(hide_columns or []).union(internal_hidden_columns)
     rename_en = {
         "Faculté": "Faculty",
         "Institution": "Institution",
@@ -7884,6 +7920,27 @@ def render_factbook_cover():
     """).strip()
     st.html(landing_html)
 
+    # Unified Factbook navigation capsule, aligned with the Exit Survey and UE navigation style.
+    enabled_sections = [item for item in sections if item.get("enabled")]
+    factbook_nav_labels = {
+        f"{item['label']} · {item['title'].split(':')[0].strip()}": item["id"]
+        for item in enabled_sections
+    }
+    if factbook_nav_labels:
+        selected_factbook_nav = st.radio(
+            "Sections Factbook",
+            list(factbook_nav_labels.keys()),
+            horizontal=True,
+            label_visibility="collapsed",
+            key="factbook_cover_section_nav",
+        )
+        nav_cols = st.columns([1.25, 4.75])
+        with nav_cols[0]:
+            if st.button("Ouvrir la section", key="open_factbook_selected_from_radio", use_container_width=True):
+                st.session_state["selected_factbook_section"] = factbook_nav_labels[selected_factbook_nav]
+                st.rerun()
+        st.markdown("<div style='height:10px;'></div>", unsafe_allow_html=True)
+
     # Navigation cards with real Streamlit buttons.
     for start in range(0, len(sections), 3):
         cols = st.columns(3)
@@ -9362,8 +9419,7 @@ st.markdown(
 # Navigation
 # =====================================================
 
-st.markdown(f'<div class="nav-title">{tr("nav_title")}</div>', unsafe_allow_html=True)
-
+# The navigation is displayed directly as a unified capsule without an extra title above it.
 page = st.radio(
     tr("nav_title"),
     PAGE_OPTIONS,
