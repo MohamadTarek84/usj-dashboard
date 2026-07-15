@@ -9664,24 +9664,75 @@ def _qs_grouped_score_chart(metric):
         barmode="group",
         text=df["Score"].map(lambda v: f"{v:.1f}"),
     )
-    fig.update_traces(textposition="outside", textfont=dict(size=11, color=USJ_TEXT), cliponaxis=False)
-    fig = _qs_polish_fig(fig, height=620, title=f"{_qs_metric_label(metric)} - 2023-2027")
+    # Make values clearer and make USJ visually stand out among peer universities.
+    fig.update_traces(textposition="outside", textfont=dict(size=15, color=USJ_TEXT, family="Candara, Arial"), cliponaxis=False)
+    for trace in fig.data:
+        x_values = list(trace.x) if hasattr(trace, "x") else []
+        trace.marker.line = dict(
+            color=[USJ_RED if str(x) == "USJ" else "rgba(255,255,255,0)" for x in x_values],
+            width=[3 if str(x) == "USJ" else 0 for x in x_values],
+        )
+    fig = _qs_polish_fig(fig, height=660, title=f"{_qs_metric_label(metric)} - 2023-2027")
     max_score = df["Score"].max()
-    y_top = 105 if pd.notna(max_score) and max_score > 80 else (max_score * 1.25 if pd.notna(max_score) else 100)
-    fig.update_yaxes(title=_qs_metric_label(metric), range=[0, y_top])
-    fig.update_xaxes(title="")
+    y_top = 108 if pd.notna(max_score) and max_score > 80 else (max_score * 1.33 if pd.notna(max_score) else 100)
+    fig.update_yaxes(title=_qs_metric_label(metric), range=[0, y_top], tickfont=dict(size=13, color=USJ_TEXT))
+    fig.update_xaxes(title="", tickfont=dict(size=15, color=USJ_TEXT))
+    # A light red band behind USJ improves readability without hiding the bars.
+    try:
+        usj_index = QS_UNIVERSITIES.index("USJ")
+        fig.add_vrect(
+            x0=usj_index - 0.48,
+            x1=usj_index + 0.48,
+            fillcolor="rgba(199,34,67,0.08)",
+            line_width=0,
+            layer="below",
+        )
+        fig.add_annotation(
+            x="USJ",
+            y=y_top * 0.98,
+            text="<b>USJ</b>",
+            showarrow=False,
+            font=dict(family="Candara, Arial", size=15, color=USJ_RED),
+            bgcolor="rgba(255,255,255,0.86)",
+            bordercolor="rgba(199,34,67,0.25)",
+            borderwidth=1,
+            borderpad=3,
+        )
+    except Exception:
+        pass
     return fig
 
 
-def _qs_usj_indicator_trend_chart():
-    df = _qs_scores_long()
-    df = df[df["University"] == "USJ"].dropna(subset=["Score"]).copy()
-    df["Indicateur"] = df["Indicator"].map(_qs_metric_label)
-    fig = px.line(df, x="Year", y="Score", color="Indicateur", markers=True)
-    fig.update_traces(line=dict(width=3), marker=dict(size=8))
-    fig = _qs_polish_fig(fig, height=620, title=_qs_t("USJ indicator trends", "Évolution des indicateurs de l’USJ"))
+def _qs_usj_indicator_trend_chart(metric):
+    df = _qs_scores_long(metric).dropna(subset=["Score"]).copy()
+    df = df[df["University"] == "USJ"].copy()
+    df["Score label"] = df["Score"].map(lambda v: f"{v:.1f}")
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(
+            x=df["Year"],
+            y=df["Score"],
+            mode="lines+markers+text",
+            text=df["Score label"],
+            textposition="top center",
+            textfont=dict(family="Candara, Arial", size=15, color=USJ_BLUE),
+            line=dict(color=USJ_BLUE, width=4),
+            marker=dict(size=11, color=USJ_RED, line=dict(color="white", width=2)),
+            name="USJ",
+            hovertemplate="<b>USJ</b><br>Year: %{x}<br>Score: %{y:.1f}<extra></extra>",
+        )
+    )
+    fig = _qs_polish_fig(fig, height=470, title=f"USJ trend - {_qs_metric_label(metric)}")
+    max_score = df["Score"].max()
+    min_score = df["Score"].min()
+    if pd.notna(max_score) and pd.notna(min_score):
+        pad = max(5, (max_score - min_score) * 0.22)
+        y_min = max(0, min_score - pad)
+        y_max = min(105, max_score + pad * 1.6)
+        fig.update_yaxes(range=[y_min, y_max])
     fig.update_yaxes(title="Score")
-    fig.update_xaxes(title="Année" if LANG == "Français" else "Year", dtick=1)
+    fig.update_xaxes(title="Year", dtick=1)
+    fig.update_layout(showlegend=False, margin=dict(l=70, r=90, t=90, b=80))
     return fig
 
 
@@ -9703,10 +9754,21 @@ def _qs_lebanon_rank_chart():
         category_orders={"University": QS_UNIVERSITIES},
         color_discrete_sequence=PLOTLY_SEQ,
     )
-    fig.update_traces(line=dict(width=3), marker=dict(size=8))
-    fig = _qs_polish_fig(fig, height=520, title=_qs_t("Ranking in Lebanon", "Rang au Liban"))
-    fig.update_yaxes(autorange="reversed", dtick=1, title=_qs_t("Rank", "Rang"))
-    fig.update_xaxes(dtick=1, title="Année" if LANG == "Français" else "Year")
+    fig.update_traces(line=dict(width=2.6), marker=dict(size=7), opacity=0.72)
+    # USJ is intentionally shown as a dashed, thicker red line to avoid confusion with similar colors.
+    for trace in fig.data:
+        if trace.name == "USJ":
+            trace.update(
+                line=dict(width=5, dash="dash", color=USJ_RED),
+                marker=dict(size=11, color=USJ_RED, symbol="diamond", line=dict(color="white", width=2)),
+                opacity=1,
+            )
+        elif trace.name == "AUB":
+            trace.update(line=dict(width=3, color=USJ_BLUE), marker=dict(size=8), opacity=0.95)
+    fig = _qs_polish_fig(fig, height=540, title="Ranking in Lebanon")
+    fig.update_yaxes(autorange="reversed", dtick=1, title="Rank", tickfont=dict(size=13, color=USJ_TEXT))
+    fig.update_xaxes(dtick=1, title="Year", tickfont=dict(size=13, color=USJ_TEXT))
+    fig.update_layout(legend=dict(orientation="h", yanchor="bottom", y=1.04, xanchor="center", x=0.5, title=None))
     return fig
 
 
@@ -9957,7 +10019,7 @@ def render_qs_ranking_module():
         indicator_rows = [(en, weight_en) for en, weight_en, _, _ in QS_INDICATORS]
         table = pd.DataFrame(indicator_rows, columns=["Indicator", "Weight"])
         title_table = "QS World University Rankings indicators and weights"
-        _qs_table_card(table, title_table, max_height=460)
+        _qs_table_card(table, title_table, max_height=285)
         weight_df = table.copy()
         weight_df["WeightValue"] = weight_df["Weight"].astype(str).str.replace("%", "", regex=False).astype(float)
         fig = px.bar(
@@ -9971,6 +10033,7 @@ def render_qs_ranking_module():
         )
         fig.update_traces(textposition="outside", cliponaxis=False)
         fig = _qs_polish_fig(fig, height=520, title=title_table)
+        fig.update_layout(margin=dict(l=70, r=80, t=55, b=75))
         fig.update_xaxes(title="Weight (%)")
         fig.update_yaxes(title="")
         fig.update_layout(coloraxis_showscale=False)
@@ -9980,7 +10043,7 @@ def render_qs_ranking_module():
         metric_options = list(QS_SCORE_DATA.keys())
         selected_label = st.selectbox("Indicator", metric_options, key="qs_score_metric_selector")
         st.plotly_chart(_qs_grouped_score_chart(selected_label), use_container_width=True)
-        st.plotly_chart(_qs_usj_indicator_trend_chart(), use_container_width=True)
+        st.plotly_chart(_qs_usj_indicator_trend_chart(selected_label), use_container_width=True)
         score_table = _qs_scores_long(selected_label).pivot_table(index="University", columns="Year", values="Score", aggfunc="first").reset_index()
         score_table = score_table.set_index("University").reindex(QS_UNIVERSITIES).reset_index()
         _qs_table_card(score_table, f"{selected_label} - 2023-2027", max_height=520)
