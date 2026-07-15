@@ -3722,7 +3722,19 @@ def _cue_make_question_summary(raw_df):
     return grouped
 
 
-def _cue_percent_bar(data, label_col, value_col, title, orientation="h", top_n=None, color_col=None, height=None):
+def _cue_percent_bar(
+    data,
+    label_col,
+    value_col,
+    title,
+    orientation="h",
+    top_n=None,
+    color_col=None,
+    height=None,
+    highlight_label_col=None,
+    highlight_label_threshold=None,
+    highlight_label_note=True,
+):
     plot_data = data.copy()
     plot_data[value_col] = plot_data[value_col].map(_cue_normalize_rate)
     plot_data = plot_data.dropna(subset=[label_col, value_col]).copy()
@@ -3732,6 +3744,13 @@ def _cue_percent_bar(data, label_col, value_col, title, orientation="h", top_n=N
         st.info(cue_t("Aucune donnée disponible pour ce graphique.", "No data available for this chart."))
         return
     plot_data["Label %"] = plot_data[value_col].map(lambda v: _cue_format_pct(v, digits=2))
+
+    highlight_values = None
+    if highlight_label_col and highlight_label_col in plot_data.columns and highlight_label_threshold is not None:
+        highlight_values = pd.to_numeric(plot_data[highlight_label_col], errors="coerce") < float(highlight_label_threshold)
+        plot_data["__label_highlight__"] = highlight_values.fillna(False).to_numpy()
+    else:
+        plot_data["__label_highlight__"] = False
 
     if orientation == "h":
         plot_data = plot_data.sort_values(value_col, ascending=True)
@@ -3745,9 +3764,21 @@ def _cue_percent_bar(data, label_col, value_col, title, orientation="h", top_n=N
             color_discrete_sequence=PLOTLY_SEQ,
             title=title,
         )
-        fig.update_yaxes(categoryorder="array", categoryarray=plot_data[label_col].tolist(), automargin=True)
+        y_values = plot_data[label_col].astype(str).tolist()
+        y_tick_text = [
+            f"<b><span style='color:{USJ_RED}'>{html_escape(label)}</span></b>" if is_low else html_escape(label)
+            for label, is_low in zip(y_values, plot_data["__label_highlight__"].tolist())
+        ]
+        fig.update_yaxes(
+            categoryorder="array",
+            categoryarray=y_values,
+            tickmode="array",
+            tickvals=y_values,
+            ticktext=y_tick_text,
+            automargin=True,
+        )
         fig.update_xaxes(tickformat=".0%", range=[0, min(1.08, max(0.05, plot_data[value_col].max() * 1.14))], automargin=True)
-        fig.update_layout(height=height or max(430, 33 * len(plot_data) + 160), margin=dict(l=310, r=110, t=95, b=80))
+        fig.update_layout(height=height or max(430, 33 * len(plot_data) + 160), margin=dict(l=330, r=120, t=95, b=95))
     else:
         plot_data = plot_data.sort_values(value_col, ascending=False)
         fig = px.bar(
@@ -3759,8 +3790,16 @@ def _cue_percent_bar(data, label_col, value_col, title, orientation="h", top_n=N
             color_discrete_sequence=PLOTLY_SEQ,
             title=title,
         )
+        if plot_data["__label_highlight__"].any():
+            x_values = plot_data[label_col].astype(str).tolist()
+            x_tick_text = [
+                f"<b><span style='color:{USJ_RED}'>{html_escape(label)}</span></b>" if is_low else html_escape(label)
+                for label, is_low in zip(x_values, plot_data["__label_highlight__"].tolist())
+            ]
+            fig.update_xaxes(tickmode="array", tickvals=x_values, ticktext=x_tick_text, automargin=True)
+        else:
+            fig.update_xaxes(automargin=True)
         fig.update_yaxes(tickformat=".0%", range=[0, min(1.08, max(0.05, plot_data[value_col].max() * 1.16))], automargin=True)
-        fig.update_xaxes(automargin=True)
         fig.update_layout(height=height or 560, margin=dict(l=90, r=90, t=95, b=140))
 
     fig.update_traces(texttemplate="%{text}", textposition="outside", cliponaxis=False)
@@ -3772,6 +3811,13 @@ def _cue_percent_bar(data, label_col, value_col, title, orientation="h", top_n=N
         paper_bgcolor="white",
     )
     st.plotly_chart(fig, use_container_width=True)
+    if highlight_label_note and plot_data["__label_highlight__"].any():
+        st.markdown(
+            f"<div style='font-family:Candara, Arial, sans-serif; color:{USJ_RED}; font-size:13px; font-weight:700; margin-top:-12px; margin-bottom:10px;'>"
+            f"{html_escape(cue_t('Labels en rouge : moins de 30 réponses reçues.', 'Red labels: fewer than 30 received responses.'))}"
+            "</div>",
+            unsafe_allow_html=True,
+        )
 
 
 def _cue_count_bar(data, label_col, value_col, title, top_n=20, height=None):
@@ -3941,6 +3987,8 @@ def render_course_unit_evaluation_module():
                 orientation="h",
                 top_n=25,
                 height=760,
+                highlight_label_col="Total réponses reçues",
+                highlight_label_threshold=30,
             )
 
         summary_table = pd.DataFrame([
