@@ -3910,18 +3910,16 @@ def _cue_question_institution_agreement_chart(data, question_title, semester_rea
         go.Bar(
             x=grouped["Institution"].astype(str),
             y=grouped["Taux d'accord"],
-            text=grouped["Label %"],
-            textposition="outside",
             marker=dict(color=USJ_BLUE),
             name=cue_t("Tout à fait d'accord + Plutôt d'accord", "Strongly agree + Rather agree"),
             hovertemplate=(
                 "<b>%{x}</b><br>"
                 + cue_t("Taux d'accord", "Agreement rate")
-                + ": %{text}<br>"
+                + ": %{customdata[1]}<br>"
                 + cue_t("Réponses valides", "Valid answers")
                 + ": %{customdata[0]:,.0f}<extra></extra>"
             ),
-            customdata=np.column_stack([grouped["Total réponses valides"].to_numpy()]),
+            customdata=np.column_stack([grouped["Total réponses valides"].to_numpy(), grouped["Label %"].to_numpy()]),
         )
     )
 
@@ -3942,12 +3940,28 @@ def _cue_question_institution_agreement_chart(data, question_title, semester_rea
             text=f"<b>{overall_label}</b>",
             showarrow=False,
             xshift=38,
-            yshift=8,
+            yshift=10,
             font=dict(family="Candara, Arial", size=13, color=USJ_ORANGE),
-            bgcolor="rgba(255,255,255,0.85)",
+            bgcolor="rgba(255,255,255,0.95)",
             bordercolor="rgba(201,133,43,0.65)",
             borderwidth=1,
             borderpad=3,
+        )
+
+    # Draw percentage labels as annotations above the bars, with a white background.
+    # This keeps the values readable when the orange overall line crosses near a label.
+    for _, row in grouped.iterrows():
+        fig.add_annotation(
+            x=str(row["Institution"]),
+            y=row["Taux d'accord"],
+            text=f"<b>{row['Label %']}</b>",
+            showarrow=False,
+            yshift=16,
+            font=dict(family="Candara, Arial", size=12, color=USJ_TEXT),
+            bgcolor="rgba(255,255,255,0.96)",
+            bordercolor="rgba(255,255,255,0.96)",
+            borderwidth=1,
+            borderpad=1,
         )
 
     fig.update_layout(
@@ -3972,7 +3986,7 @@ def _cue_question_institution_agreement_chart(data, question_title, semester_rea
         tickangle=-45,
         automargin=True,
     )
-    fig.update_traces(textfont=dict(size=12, family="Candara, Arial", color=USJ_TEXT), cliponaxis=False)
+    fig.update_traces(cliponaxis=False)
 
     st.plotly_chart(fig, use_container_width=True)
     st.markdown(
