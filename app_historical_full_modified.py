@@ -9784,6 +9784,12 @@ def _qs_module_css():
         .qs-value-title {{color:{USJ_BLUE}; font-size:19px; font-weight:950; margin-bottom:8px;}}
         .qs-value-text {{color:#5F6B7A; font-size:15px; line-height:1.55;}}
         .qs-note {{font-size:13px; line-height:1.55; color:#5F6B7A; background:#F8FAFE; border:1px solid #DDE5F0; border-radius:16px; padding:12px 14px; margin:10px 0 18px 0;}}
+        .qs-kpi-card-fb {{background:#FFFFFF; border:1px solid #DDE5F0; border-radius:22px; padding:22px 22px 20px 22px; min-height:142px; box-shadow:0 10px 26px rgba(35,43,105,0.08); font-family:Candara, Arial, sans-serif;}}
+        .qs-kpi-card-fb:hover {{transform:translateY(-1px); box-shadow:0 14px 30px rgba(35,43,105,0.11);}}
+        .qs-kpi-accent {{width:34px; height:5px; border-radius:999px; margin-bottom:14px;}}
+        .qs-kpi-label-fb {{font-size:15px; font-weight:900; color:{USJ_TEXT}; margin-bottom:14px; line-height:1.25;}}
+        .qs-kpi-value-fb {{font-size:32px; line-height:1.05; font-weight:950; margin-bottom:14px; letter-spacing:0.2px;}}
+        .qs-kpi-caption-fb {{font-size:13px; color:#5F6B7A; line-height:1.35; font-weight:650;}}
 
         .qs-kpi-grid {{display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:18px; margin:20px 0 28px 0;}}
         .qs-kpi-card {{background:#FFFFFF; border:1px solid #DDE5F0; border-radius:22px; padding:24px 22px; min-height:148px; box-shadow:0 10px 26px rgba(35,43,105,0.08);}}
@@ -9926,13 +9932,22 @@ def render_qs_ranking_module():
             ("Academic reputation", f"{usj_ar_2027:.1f}", "USJ score 2027", USJ_GREEN),
             ("Employer reputation", f"{usj_er_2027:.1f}", "USJ score 2027", USJ_GREEN),
         ]
-        # Use native Streamlit metric cards instead of a raw HTML block.
-        # This avoids the browser showing the HTML code as text on Streamlit Cloud.
+        # Factbook-style KPI cards for QS Summary.
+        # Rendered as HTML cards with unsafe_allow_html=True, not st.metric, to match the Factbook design.
         kpi_cols = st.columns(6)
         for col, (label, value, caption, color) in zip(kpi_cols, kpi_items):
             with col:
-                st.metric(label=label, value=value, help=caption)
-                st.caption(caption)
+                st.markdown(
+                    f"""
+                    <div class="qs-kpi-card-fb">
+                        <div class="qs-kpi-accent" style="background:linear-gradient(90deg,{color},{USJ_RED},{USJ_GOLD});"></div>
+                        <div class="qs-kpi-label-fb">{html_escape(label)}</div>
+                        <div class="qs-kpi-value-fb" style="color:{color};">{html_escape(value)}</div>
+                        <div class="qs-kpi-caption-fb">{html_escape(caption)}</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
 
         st.plotly_chart(_qs_lebanon_rank_chart(), use_container_width=True)
         rank_table = pd.DataFrame(QS_WORLD_RANKING_DATA)
