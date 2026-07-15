@@ -1533,7 +1533,7 @@ def _fb_table_is_total_row(row):
     return text.startswith("total") or " total " in f" {text} "
 
 
-def render_factbook_table(df, title, note=None, max_height=560, hide_columns=None, percent_2_dec_cols=None):
+def render_factbook_table(df, title, note=None, max_height=560, hide_columns=None, percent_2_dec_cols=None, column_widths=None):
     """Render Factbook tables with the same USJ-styled card/table design used in the Exit Survey pages."""
     display_title = fbt(title)
     display_note = fbt(note) if note else note
@@ -1589,6 +1589,20 @@ def render_factbook_table(df, title, note=None, max_height=560, hide_columns=Non
     note_html = f"<div class='fb-table-note'>{html_escape(display_note)}</div>" if display_note else ""
     row_count = len(table)
     row_label = fbt("1 ligne") if row_count == 1 else f"{row_count} {fbt('lignes')}"
+
+    column_widths = column_widths or {}
+    if column_widths:
+        width_css = "\n".join(
+            f"th:nth-child({idx}), td:nth-child({idx}) {{ width:{column_widths.get(col)}; }}"
+            for idx, col in enumerate(table.columns, start=1)
+            if col in column_widths and column_widths.get(col)
+        )
+    else:
+        width_css = """
+        th:nth-child(1), td:nth-child(1) { width:11%; }
+        th:nth-child(2), td:nth-child(2) { width:6%; }
+        th:nth-child(3), td:nth-child(3) { width:13%; }
+        """
 
     # For very small filtered tables, do not create an internal scrollbar.
     # A one-row table should appear as a complete professional card, not as a cropped scroll box.
@@ -1733,9 +1747,7 @@ def render_factbook_table(df, title, note=None, max_height=560, hide_columns=Non
             font-weight:900;
             border-top:2px solid #D8E2F0;
         }}
-        th:nth-child(1), td:nth-child(1) {{ width:11%; }}
-        th:nth-child(2), td:nth-child(2) {{ width:6%; }}
-        th:nth-child(3), td:nth-child(3) {{ width:13%; }}
+        {width_css}
         .total-row td:first-child {{ background:#EEF2FF !important; }}
     </style>
     </head>
@@ -3599,7 +3611,7 @@ def load_course_unit_evaluation(file_path, file_mtime, file_size, semester_label
     }
 
 
-def _cue_table(df, title, note=None, max_height=560, percent_cols=None, hide_columns=None):
+def _cue_table(df, title, note=None, max_height=560, percent_cols=None, hide_columns=None, column_widths=None):
     if df is None or df.empty:
         st.info(cue_t("Aucune donnée disponible.", "No data available."))
         return
@@ -3635,7 +3647,9 @@ def _cue_table(df, title, note=None, max_height=560, percent_cols=None, hide_col
         table = table.rename(columns={col: rename_en.get(col, col) for col in table.columns})
         if percent_cols:
             percent_cols = {rename_en.get(col, col) for col in percent_cols}
-    render_factbook_table(table, title, note=note, max_height=max_height, percent_2_dec_cols=percent_cols, hide_columns=hide_columns)
+        if column_widths:
+            column_widths = {rename_en.get(col, col): width for col, width in column_widths.items()}
+    render_factbook_table(table, title, note=note, max_height=max_height, percent_2_dec_cols=percent_cols, hide_columns=hide_columns, column_widths=column_widths)
 
 
 def _cue_metric_summary(raw_df, ue_df, response_df):
@@ -3930,6 +3944,16 @@ def render_course_unit_evaluation_module():
                 table_title,
                 max_height=620,
                 percent_cols={"Taux d'accord", "Taux de désaccord"},
+                column_widths={
+                    "Faculté": "11%",
+                    "Institution": "20%",
+                    "Question": "30%",
+                    "Accord Effectif": "8%",
+                    "Taux d'accord": "9%",
+                    "Désaccord Effectif": "8%",
+                    "Taux de désaccord": "9%",
+                    "Total réponses valides": "5%",
+                },
             )
         else:
             question_summary = _cue_make_question_summary(filtered)
@@ -3939,6 +3963,14 @@ def render_course_unit_evaluation_module():
                 cue_t("Synthèse par question", "Question summary"),
                 max_height=520,
                 percent_cols={"Taux d'accord", "Taux de désaccord"},
+                column_widths={
+                    "Question": "44%",
+                    "Accord Effectif": "10%",
+                    "Taux d'accord": "11%",
+                    "Désaccord Effectif": "10%",
+                    "Taux de désaccord": "11%",
+                    "Total réponses valides": "14%",
+                },
             )
 
     with tab_ue:
