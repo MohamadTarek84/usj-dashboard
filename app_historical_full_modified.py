@@ -267,7 +267,7 @@ st.markdown(
 
 
     /* Factbook internal navigation: make st.tabs look like the Exit Survey / UE navigation capsule */
-    div[data-testid="stTabs"] > div[role="tablist"] {
+    div[data-testid="stTabs"] > div[role="tablist"] {{
         background: linear-gradient(135deg, #F7F9FC 0%, #EEF4FF 100%) !important;
         padding: 8px 12px !important;
         border-radius: 18px !important;
@@ -277,9 +277,9 @@ st.markdown(
         margin-bottom: 18px !important;
         overflow-x: auto !important;
         white-space: nowrap !important;
-    }
+    }}
 
-    div[data-testid="stTabs"] button[role="tab"] {
+    div[data-testid="stTabs"] button[role="tab"] {{
         border-radius: 999px !important;
         padding: 8px 14px !important;
         min-height: 38px !important;
@@ -289,23 +289,23 @@ st.markdown(
         font-family: Candara, Arial, sans-serif !important;
         font-weight: 700 !important;
         line-height: 1.15 !important;
-    }
+    }}
 
     div[data-testid="stTabs"] button[role="tab"] p,
-    div[data-testid="stTabs"] button[role="tab"] span {
+    div[data-testid="stTabs"] button[role="tab"] span {{
         color: inherit !important;
         font-family: Candara, Arial, sans-serif !important;
         font-weight: 700 !important;
-    }
+    }}
 
-    div[data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
+    div[data-testid="stTabs"] button[role="tab"][aria-selected="true"] {{
         background: #FFFFFF !important;
         border-color: #C9D6EA !important;
         color: {USJ_RED} !important;
         box-shadow: 0 4px 12px rgba(0, 27, 117, 0.08) !important;
-    }
+    }}
 
-    div[data-testid="stTabs"] button[role="tab"][aria-selected="true"]::before {
+    div[data-testid="stTabs"] button[role="tab"][aria-selected="true"]::before {{
         content: "";
         display: inline-block;
         width: 10px;
@@ -315,15 +315,15 @@ st.markdown(
         margin-right: 8px;
         box-shadow: inset 0 0 0 3px #FFFFFF;
         vertical-align: middle;
-    }
+    }}
 
-    div[data-testid="stTabs"] [data-baseweb="tab-highlight"] {
+    div[data-testid="stTabs"] [data-baseweb="tab-highlight"] {{
         display: none !important;
-    }
+    }}
 
-    div[data-testid="stTabs"] div[role="tabpanel"] {
+    div[data-testid="stTabs"] div[role="tabpanel"] {{
         padding-top: 6px !important;
-    }
+    }}
 
     .control-panel {{
         background: linear-gradient(135deg, #FFFFFF 0%, #F7FAFF 58%, #EEF5FF 100%);
