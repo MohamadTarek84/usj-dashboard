@@ -5111,9 +5111,9 @@ SURVEY_PORTAL_ITEMS = [
     {
         "id": "qs_ranking",
         "english": "QS Ranking",
-        "french": "Classement QS",
+        "french": "QS Ranking",
         "description_en": "QS ranking indicators, benchmarking and ranking-readiness monitoring.",
-        "description_fr": "Indicateurs QS, benchmark et suivi de la préparation au classement.",
+        "description_fr": "QS ranking indicators, benchmarking and ranking-readiness monitoring.",
         "icon": "🏅",
         "active": True,
     },
@@ -9608,11 +9608,13 @@ QS_FR_LABELS = {
 
 
 def _qs_t(text_en, text_fr=None):
-    return text_fr if LANG == "Français" and text_fr is not None else text_en
+    # QS Ranking is intentionally kept in English, regardless of the global dashboard language.
+    return text_en
 
 
 def _qs_metric_label(metric):
-    return QS_FR_LABELS.get(metric, metric) if LANG == "Français" else metric
+    # QS Ranking is intentionally kept in English, regardless of the global dashboard language.
+    return metric
 
 
 def _qs_scores_long(metric=None):
@@ -9782,7 +9784,14 @@ def _qs_module_css():
         .qs-value-title {{color:{USJ_BLUE}; font-size:19px; font-weight:950; margin-bottom:8px;}}
         .qs-value-text {{color:#5F6B7A; font-size:15px; line-height:1.55;}}
         .qs-note {{font-size:13px; line-height:1.55; color:#5F6B7A; background:#F8FAFE; border:1px solid #DDE5F0; border-radius:16px; padding:12px 14px; margin:10px 0 18px 0;}}
-        @media (max-width:900px) {{.qs-grid-2, .qs-value-grid, .qs-stat-grid {{grid-template-columns:1fr;}} .qs-title {{font-size:36px;}}}}
+
+        .qs-kpi-grid {display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:18px; margin:20px 0 28px 0;}
+        .qs-kpi-card {background:#FFFFFF; border:1px solid #DDE5F0; border-radius:22px; padding:24px 22px; min-height:148px; box-shadow:0 10px 26px rgba(35,43,105,0.08);}
+        .qs-kpi-label {font-size:17px; font-weight:950; color:#1B2A41; margin-bottom:20px;}
+        .qs-kpi-value {font-size:34px; line-height:1.05; font-weight:950; margin-bottom:18px; letter-spacing:0.2px;}
+        .qs-kpi-caption {font-size:15px; color:#5F6B7A; line-height:1.35; font-weight:650;}
+        @media (max-width:1200px) {{.qs-kpi-grid {{grid-template-columns:repeat(3,minmax(0,1fr));}}}}
+        @media (max-width:900px) {{.qs-grid-2, .qs-value-grid, .qs-stat-grid, .qs-kpi-grid {{grid-template-columns:1fr;}} .qs-title {{font-size:36px;}}}}
         </style>
         """,
         unsafe_allow_html=True,
@@ -9790,60 +9799,35 @@ def _qs_module_css():
 
 
 def render_qs_ranking_landing_page():
-    """Introductory page for the QS Ranking dashboard section."""
+    """Introductory page for the QS Ranking dashboard section. English-only section."""
     _qs_module_css()
-    logo_html = get_logo_html(width=140, fallback_text="Unité Assurance qualité")
+    logo_html = _factbook_logo_html(width=320)
 
-    if LANG == "Français":
-        hero_kicker = "CLASSEMENT QS 2022-2027"
-        hero_title = "Transformer les données QS en tableau de bord stratégique"
-        hero_subtitle = "Une lecture institutionnelle du positionnement de l’USJ dans le QS World University Rankings, des indicateurs de performance et des nominations de réputation."
-        stat_items = [("2022-2027", "Période analysée"), ("9", "Indicateurs QS"), ("4", "Axes analytiques")]
-        why_title = "Pourquoi suivre le Classement QS ?"
-        why_text = "Le suivi QS permet d’identifier les leviers de réputation, de recherche, d’internationalisation, d’employabilité et de durabilité qui influencent le positionnement institutionnel."
-        decide_title = "Ce qu’il permet de décider"
-        decide_text = "Il aide à prioriser les actions de collecte, d’amélioration des indicateurs, de mobilisation des nominations et de communication institutionnelle."
-        value_title = "Valeur ajoutée pour l’USJ"
-        value_items = [
-            ("Positionnement", "Comparer l’évolution de l’USJ dans le contexte libanais et international."),
-            ("Lecture par indicateur", "Identifier les indicateurs qui progressent, reculent ou nécessitent un suivi ciblé."),
-            ("Réputation", "Suivre les nominations académiques et employeurs, domestiques et internationales."),
-        ]
-        modules_title = "Ce que contient le module"
-        modules = [
-            ("01", "Synthèse", "Vue générale du classement et du rang au Liban."),
-            ("02", "Indicateurs QS", "Poids officiels et lecture méthodologique des indicateurs."),
-            ("03", "Résultats USJ", "Graphiques natifs par indicateur, université et année."),
-            ("04", "Réputation académique", "Nominations historiques et répartition par domaine."),
-            ("05", "Réputation employeur", "Nominations historiques et répartition par domaine."),
-        ]
-        enter_label = "Entrer dans le Classement QS"
-        back_label = "Retour au portail"
-    else:
-        hero_kicker = "QS RANKING 2022-2027"
-        hero_title = "Turn QS ranking data into a strategic dashboard"
-        hero_subtitle = "An institutional reading of USJ’s position in the QS World University Rankings, performance indicators and reputation nominations."
-        stat_items = [("2022-2027", "Period analyzed"), ("9", "QS indicators"), ("4", "Analytical areas")]
-        why_title = "Why monitor QS Ranking?"
-        why_text = "QS monitoring helps identify reputation, research, internationalization, employability and sustainability levers that shape institutional positioning."
-        decide_title = "What it supports"
-        decide_text = "It supports priorities for data collection, indicator improvement, nomination mobilization and institutional communication."
-        value_title = "Added value for USJ"
-        value_items = [
-            ("Positioning", "Compare USJ’s evolution in the Lebanese and international context."),
-            ("Indicator reading", "Identify indicators that improved, declined or need targeted monitoring."),
-            ("Reputation", "Track academic and employer nominations, domestic and international."),
-        ]
-        modules_title = "Module content"
-        modules = [
-            ("01", "Summary", "General view of the ranking and Lebanese position."),
-            ("02", "QS indicators", "Official weights and methodological reading of indicators."),
-            ("03", "USJ results", "Native charts by indicator, university and year."),
-            ("04", "Academic reputation", "Historical nominations and subject distribution."),
-            ("05", "Employer reputation", "Historical nominations and subject distribution."),
-        ]
-        enter_label = "Enter QS Ranking"
-        back_label = "Back to portal"
+    hero_kicker = "QS WORLD UNIVERSITY RANKINGS 2022-2027"
+    hero_title = "Turn QS ranking data into a strategic dashboard"
+    hero_subtitle = "An institutional reading of USJ’s position in the QS World University Rankings, performance indicators, and academic and employer reputation nominations."
+    stat_items = [("2022-2027", "Period analyzed"), ("9", "QS indicators"), ("5", "Dashboard views")]
+    why_title = "Why monitor QS rankings?"
+    why_text = "QS monitoring helps identify the reputation, research, internationalization, employability and sustainability levers that shape institutional positioning."
+    decide_title = "What it supports"
+    decide_text = "It supports priorities for data collection, indicator improvement, nomination mobilization and institutional communication."
+    value_title = "Added value for USJ"
+    value_items = [
+        ("Institutional positioning", "Compare USJ’s evolution in the Lebanese and international context."),
+        ("Indicator monitoring", "Identify indicators that improved, declined or need targeted institutional follow-up."),
+        ("Reputation intelligence", "Track academic and employer nominations, domestic and international."),
+        ("Benchmarking", "Compare Lebanese universities across ranking years and QS indicators."),
+        ("Strategic reporting", "Prepare clear evidence for quality meetings, rankings follow-up and leadership reporting."),
+        ("Action planning", "Translate ranking results into targeted institutional actions."),
+    ]
+    modules_title = "What this section contains"
+    modules = [
+        ("01", "Summary", "General view of USJ’s ranking position and key QS indicators."),
+        ("02", "QS indicators", "Official weights and methodological reading of indicators."),
+        ("03", "USJ results", "Native charts by indicator, university and year."),
+        ("04", "Academic reputation", "Historical academic nominations and subject distribution."),
+        ("05", "Employer reputation", "Historical employer nominations and subject distribution."),
+    ]
 
     stat_html = "".join(f"<div class='qs-stat'><div class='qs-stat-value'>{html_escape(value)}</div><div class='qs-stat-label'>{html_escape(label)}</div></div>" for value, label in stat_items)
     values_html = "".join(f"<div class='qs-value-card'><div class='qs-value-dot'></div><div class='qs-value-title'>{html_escape(title)}</div><div class='qs-value-text'>{html_escape(text)}</div></div>" for title, text in value_items)
@@ -9855,7 +9839,7 @@ def render_qs_ranking_landing_page():
             <div style='display:flex; justify-content:flex-end; margin:0 0 8px 0;'>{logo_html}</div>
             <div class='qs-hero'>
                 <div class='qs-hero-content'>
-                    <div class='qs-badge'>{html_escape('Université Saint-Joseph de Beyrouth - Unité Assurance qualité' if LANG == 'Français' else 'Saint Joseph University of Beirut - Quality Assurance Unit')}</div>
+                    <div class='qs-badge'>Saint Joseph University of Beirut - Quality Assurance Unit</div>
                     <div class='qs-kicker'>{html_escape(hero_kicker)}</div>
                     <div class='qs-title'>{html_escape(hero_title)}</div>
                     <div class='qs-subtitle'>{html_escape(hero_subtitle)}</div>
@@ -9882,31 +9866,25 @@ def render_qs_ranking_landing_page():
     st.markdown("<br>", unsafe_allow_html=True)
     action_cols = st.columns([1.35, 1.10, 3.55])
     with action_cols[0]:
-        if st.button(enter_label, use_container_width=True, type="primary", key="enter_qs_dashboard_from_intro"):
+        if st.button("Enter QS Ranking", use_container_width=True, type="primary", key="enter_qs_dashboard_from_intro"):
             st.session_state["dashboard_started"] = True
             st.rerun()
     with action_cols[1]:
-        if st.button(back_label, use_container_width=True, key="back_to_portal_from_qs_intro"):
+        if st.button("Back to portal", use_container_width=True, key="back_to_portal_from_qs_intro"):
             st.session_state["selected_portal_app"] = None
             st.session_state["dashboard_started"] = False
             st.rerun()
 
 
 def render_qs_ranking_module():
-    """Interactive QS Ranking section with native Plotly figures, not slide images."""
+    """Interactive QS Ranking section with native Plotly figures, English-only."""
     _qs_module_css()
 
-    title = "Classement QS" if LANG == "Français" else "QS Ranking"
-    subtitle = (
-        "Graphiques natifs construits à partir de la présentation QS World University Rankings 2022-2027."
-        if LANG == "Français"
-        else "Native charts built from the QS World University Rankings 2022-2027 presentation."
-    )
     st.markdown(
         f"""
         <div class='control-panel'>
-            <div class='control-title'>{html_escape(title)}</div>
-            <div class='control-subtitle'>{html_escape(subtitle)}</div>
+            <div class='control-title'>QS Ranking</div>
+            <div class='control-subtitle'>Native charts built from the QS World University Rankings 2022-2027 data.</div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -9914,111 +9892,111 @@ def render_qs_ranking_module():
 
     top_cols = st.columns([1.0, 1.0, 4.0])
     with top_cols[0]:
-        if st.button("Présentation" if LANG == "Français" else "Presentation", key="qs_back_intro", use_container_width=True):
+        if st.button("Presentation", key="qs_back_intro", use_container_width=True):
             st.session_state["dashboard_started"] = False
             st.rerun()
     with top_cols[1]:
-        if st.button("Portail" if LANG == "Français" else "Portal", key="qs_back_portal", use_container_width=True):
+        if st.button("Portal", key="qs_back_portal", use_container_width=True):
             st.session_state["selected_portal_app"] = None
             st.session_state["dashboard_started"] = False
             st.rerun()
 
-    nav_options = (
-        ["Synthèse", "Indicateurs QS", "Résultats USJ", "Réputation académique", "Réputation employeur"]
-        if LANG == "Français"
-        else ["Summary", "QS indicators", "USJ results", "Academic reputation", "Employer reputation"]
-    )
+    nav_options = ["Summary", "QS indicators", "USJ results", "Academic reputation", "Employer reputation"]
     selected = st.radio(
-        "Navigation QS" if LANG == "Français" else "QS navigation",
+        "QS navigation",
         nav_options,
         horizontal=True,
         label_visibility="collapsed",
         key="qs_internal_navigation",
     )
 
-    st.markdown(
-        "<div class='qs-note'>"
-        + html_escape(
-            "Cette section n’affiche plus les diapositives comme images. Les graphiques et tableaux sont reconstruits nativement dans Streamlit à partir des données visibles dans la présentation QS fournie."
-            if LANG == "Français"
-            else "This section no longer displays slides as images. Charts and tables are rebuilt natively in Streamlit from the data visible in the provided QS presentation."
-        )
-        + "</div>",
-        unsafe_allow_html=True,
-    )
-
-    if selected in {"Synthèse", "Summary"}:
-        c1, c2, c3, c4 = st.columns(4)
+    if selected == "Summary":
         usj_2027 = QS_SCORE_DATA["Overall Ranking Scores"]["USJ"][-1]
         usj_world_2027 = "537"
-        usj_lebanon_2027 = 3
+        usj_lebanon_2027 = "3"
         usj_change = QS_WORLD_RANKING_DATA[2]["Change"]
-        c1.metric("Score QS USJ 2027" if LANG == "Français" else "USJ QS score 2027", f"{usj_2027:.1f}")
-        c2.metric("Rang mondial USJ 2027" if LANG == "Français" else "USJ world rank 2027", usj_world_2027)
-        c3.metric("Rang au Liban 2027" if LANG == "Français" else "Lebanon rank 2027", usj_lebanon_2027)
-        c4.metric("Évolution 2026-2027" if LANG == "Français" else "Change 2026-2027", usj_change)
+        usj_ar_2027 = QS_SCORE_DATA["Academic Reputation"]["USJ"][-1]
+        usj_er_2027 = QS_SCORE_DATA["Employer Reputation"]["USJ"][-1]
+
+        kpi_items = [
+            ("USJ QS score", f"{usj_2027:.1f}", "Overall ranking score 2027", USJ_BLUE),
+            ("World rank", usj_world_2027, "QS WUR 2027", USJ_BLUE),
+            ("Lebanon rank", usj_lebanon_2027, "National position 2027", USJ_RED),
+            ("Change", usj_change, "Lebanon rank 2026-2027", USJ_ORANGE),
+            ("Academic reputation", f"{usj_ar_2027:.1f}", "USJ score 2027", USJ_GREEN),
+            ("Employer reputation", f"{usj_er_2027:.1f}", "USJ score 2027", USJ_GREEN),
+        ]
+        kpi_html = "".join(
+            f"""
+            <div class='qs-kpi-card'>
+                <div class='qs-kpi-label'>{html_escape(label)}</div>
+                <div class='qs-kpi-value' style='color:{color};'>{html_escape(value)}</div>
+                <div class='qs-kpi-caption'>{html_escape(caption)}</div>
+            </div>
+            """
+            for label, value, caption, color in kpi_items
+        )
+        st.markdown(f"<div class='qs-kpi-grid'>{kpi_html}</div>", unsafe_allow_html=True)
+
         st.plotly_chart(_qs_lebanon_rank_chart(), use_container_width=True)
         rank_table = pd.DataFrame(QS_WORLD_RANKING_DATA)
-        _qs_table_card(rank_table, "Classement des universités libanaises 2022-2027" if LANG == "Français" else "Lebanese universities ranking 2022-2027", max_height=520)
+        _qs_table_card(rank_table, "Lebanese universities ranking 2022-2027", max_height=520)
 
-    elif selected in {"Indicateurs QS", "QS indicators"}:
-        if LANG == "Français":
-            indicator_rows = [(fr, weight_fr) for _, _, fr, weight_fr in QS_INDICATORS]
-            table = pd.DataFrame(indicator_rows, columns=["Indicateur", "Poids"])
-            title_table = "Indicateurs QS World University Rankings et poids"
-        else:
-            indicator_rows = [(en, weight_en) for en, weight_en, _, _ in QS_INDICATORS]
-            table = pd.DataFrame(indicator_rows, columns=["Indicator", "Weight"])
-            title_table = "QS World University Rankings indicators and weights"
+    elif selected == "QS indicators":
+        indicator_rows = [(en, weight_en) for en, weight_en, _, _ in QS_INDICATORS]
+        table = pd.DataFrame(indicator_rows, columns=["Indicator", "Weight"])
+        title_table = "QS World University Rankings indicators and weights"
         _qs_table_card(table, title_table, max_height=460)
         weight_df = table.copy()
-        label_col = weight_df.columns[0]
-        weight_col = weight_df.columns[1]
-        weight_df["WeightValue"] = weight_df[weight_col].astype(str).str.replace("%", "", regex=False).astype(float)
-        fig = px.bar(weight_df.sort_values("WeightValue"), x="WeightValue", y=label_col, orientation="h", text=weight_col, color="WeightValue", color_continuous_scale=PLOTLY_CONT)
+        weight_df["WeightValue"] = weight_df["Weight"].astype(str).str.replace("%", "", regex=False).astype(float)
+        fig = px.bar(
+            weight_df.sort_values("WeightValue"),
+            x="WeightValue",
+            y="Indicator",
+            orientation="h",
+            text="Weight",
+            color="WeightValue",
+            color_continuous_scale=PLOTLY_CONT,
+        )
         fig.update_traces(textposition="outside", cliponaxis=False)
         fig = _qs_polish_fig(fig, height=520, title=title_table)
-        fig.update_xaxes(title="Poids (%)" if LANG == "Français" else "Weight (%)")
+        fig.update_xaxes(title="Weight (%)")
         fig.update_yaxes(title="")
         fig.update_layout(coloraxis_showscale=False)
         st.plotly_chart(fig, use_container_width=True)
 
-    elif selected in {"Résultats USJ", "USJ results"}:
+    elif selected == "USJ results":
         metric_options = list(QS_SCORE_DATA.keys())
-        metric_label_map = {_qs_metric_label(m): m for m in metric_options}
-        selected_label = st.selectbox("Indicateur" if LANG == "Français" else "Indicator", list(metric_label_map.keys()), key="qs_score_metric_selector")
-        metric = metric_label_map[selected_label]
-        st.plotly_chart(_qs_grouped_score_chart(metric), use_container_width=True)
+        selected_label = st.selectbox("Indicator", metric_options, key="qs_score_metric_selector")
+        st.plotly_chart(_qs_grouped_score_chart(selected_label), use_container_width=True)
         st.plotly_chart(_qs_usj_indicator_trend_chart(), use_container_width=True)
-        score_table = _qs_scores_long(metric).pivot_table(index="University", columns="Year", values="Score", aggfunc="first").reset_index()
+        score_table = _qs_scores_long(selected_label).pivot_table(index="University", columns="Year", values="Score", aggfunc="first").reset_index()
         score_table = score_table.set_index("University").reindex(QS_UNIVERSITIES).reset_index()
-        _qs_table_card(score_table, f"{_qs_metric_label(metric)} - 2023-2027", max_height=520)
+        _qs_table_card(score_table, f"{selected_label} - 2023-2027", max_height=520)
 
-    elif selected in {"Réputation académique", "Academic reputation"}:
-        nomination_type_label = st.radio(
-            "Type de nominations" if LANG == "Français" else "Nomination type",
-            [_qs_t("Domestic", "Domestique"), _qs_t("International", "International")],
+    elif selected == "Academic reputation":
+        nomination_type = st.radio(
+            "Nomination type",
+            ["Domestic", "International"],
             horizontal=True,
             key="qs_academic_nomination_type",
         )
-        nomination_type = "Domestic" if nomination_type_label in {"Domestic", "Domestique"} else "International"
         st.plotly_chart(_qs_nomination_line_chart("academic", nomination_type), use_container_width=True)
         st.plotly_chart(_qs_subject_bar_chart("academic"), use_container_width=True)
         table = _qs_nomination_long("academic", nomination_type).pivot_table(index="University", columns="Year", values="Nominations", aggfunc="first").reset_index()
-        _qs_table_card(table, ("Nominations de réputation académique" if LANG == "Français" else "Academic reputation nominations") + f" - {nomination_type_label}", max_height=520)
+        _qs_table_card(table, f"Academic reputation nominations - {nomination_type}", max_height=520)
 
-    elif selected in {"Réputation employeur", "Employer reputation"}:
-        nomination_type_label = st.radio(
-            "Type de nominations" if LANG == "Français" else "Nomination type",
-            [_qs_t("Domestic", "Domestique"), _qs_t("International", "International")],
+    elif selected == "Employer reputation":
+        nomination_type = st.radio(
+            "Nomination type",
+            ["Domestic", "International"],
             horizontal=True,
             key="qs_employer_nomination_type",
         )
-        nomination_type = "Domestic" if nomination_type_label in {"Domestic", "Domestique"} else "International"
         st.plotly_chart(_qs_nomination_line_chart("employer", nomination_type), use_container_width=True)
         st.plotly_chart(_qs_subject_bar_chart("employer"), use_container_width=True)
         table = _qs_nomination_long("employer", nomination_type).pivot_table(index="University", columns="Year", values="Nominations", aggfunc="first").reset_index()
-        _qs_table_card(table, ("Nominations de réputation employeur" if LANG == "Français" else "Employer reputation nominations") + f" - {nomination_type_label}", max_height=520)
+        _qs_table_card(table, f"Employer reputation nominations - {nomination_type}", max_height=520)
 
     gc.collect()
 
