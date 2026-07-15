@@ -9926,17 +9926,13 @@ def render_qs_ranking_module():
             ("Academic reputation", f"{usj_ar_2027:.1f}", "USJ score 2027", USJ_GREEN),
             ("Employer reputation", f"{usj_er_2027:.1f}", "USJ score 2027", USJ_GREEN),
         ]
-        kpi_html = "".join(
-            f"""
-            <div class='qs-kpi-card'>
-                <div class='qs-kpi-label'>{html_escape(label)}</div>
-                <div class='qs-kpi-value' style='color:{color};'>{html_escape(value)}</div>
-                <div class='qs-kpi-caption'>{html_escape(caption)}</div>
-            </div>
-            """
-            for label, value, caption, color in kpi_items
-        )
-        st.markdown(f"<div class='qs-kpi-grid'>{kpi_html}</div>", unsafe_allow_html=True)
+        # Use native Streamlit metric cards instead of a raw HTML block.
+        # This avoids the browser showing the HTML code as text on Streamlit Cloud.
+        kpi_cols = st.columns(6)
+        for col, (label, value, caption, color) in zip(kpi_cols, kpi_items):
+            with col:
+                st.metric(label=label, value=value, help=caption)
+                st.caption(caption)
 
         st.plotly_chart(_qs_lebanon_rank_chart(), use_container_width=True)
         rank_table = pd.DataFrame(QS_WORLD_RANKING_DATA)
