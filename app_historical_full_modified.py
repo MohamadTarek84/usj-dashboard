@@ -4174,9 +4174,26 @@ def render_course_unit_evaluation_module():
         with filter_cols[2]:
             question = st.selectbox(cue_t("Question", "Question"), filter_options(filtered, "Question"), key="cue_question_question")
 
+        available_questions = [q for q in filter_options(filtered, "Question") if q != "Tous"]
+        chart_question = question if question != "Tous" else (available_questions[0] if available_questions else None)
+
+        if chart_question:
+            st.markdown(
+                f"<h3 style='font-family:Candara, Arial, sans-serif; color:{USJ_BLUE}; margin-top:18px; margin-bottom:6px;'>"
+                f"{html_escape(cue_t('Graphique par institution pour la question sélectionnée', 'Institution chart for the selected question'))}"
+                "</h3>",
+                unsafe_allow_html=True,
+            )
+            if question == "Tous":
+                st.caption(cue_t(
+                    "Aucune question spécifique n’est sélectionnée. Le graphique affiche automatiquement la première question disponible. Sélectionnez une question dans le filtre pour afficher une autre figure.",
+                    "No specific question is selected. The chart automatically displays the first available question. Select a question in the filter to show another figure.",
+                ))
+            question_filtered_for_chart = filtered[filtered["Question"].astype(str) == chart_question].copy()
+            _cue_question_institution_agreement_chart(question_filtered_for_chart, chart_question, semester_readable)
+
         if question != "Tous":
             question_filtered = filtered[filtered["Question"].astype(str) == question].copy()
-            _cue_question_institution_agreement_chart(question_filtered, question, semester_readable)
             table_title = cue_t("Détail de la question sélectionnée", "Selected question details")
             _cue_table(
                 question_filtered[["Faculté", "Institution", "Question", "Accord Effectif", "Taux d'accord", "Désaccord Effectif", "Taux de désaccord", "Total réponses valides"]],
