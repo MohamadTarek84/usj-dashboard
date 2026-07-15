@@ -2347,7 +2347,7 @@ OTHER_QUESTION_LABELS = {
     "9a- L’université vous aidé à trouver un stage": "9a-L’Université vous a-t-elle aidé à trouver un stage ?",
     "9b_a- Canaux d’accès à votre stage : Service de l’insertion professionnelle de l’USJ": "9b_a-Par quel canal avez-vous accédé à votre stage ? Service de l’insertion professionnelle de l’USJ",
     "9b_b- Canaux d’accès à votre stage : Institution USJ / enseignants": "9b_b-Par quel canal avez-vous accédé à votre stage ? Institution USJ / enseignants",
-    "9b_c- Canaux d’accès à votre stage : Réseau des anciens – Plateforme AlumniUSJ": "9b_c-Par quel canal avez-vous accédé à votre stage ? Réseau des anciens / Plateforme AlumniUSJ",
+    "9b_c- Canaux d’accès à votre stage : Réseau des anciens / Plateforme AlumniUSJ": "9b_c-Par quel canal avez-vous accédé à votre stage ? Réseau des anciens / Plateforme AlumniUSJ",
     "9b_d- Canaux d’accès à votre stage : Participation à des concours USJ": "9b_d-Par quel canal avez-vous accédé à votre stage ? Participation à des concours USJ",
     "9b_e- Canaux d’accès à votre stage : Sites Web de l'entreprise": "9b_e-Par quel canal avez-vous accédé à votre stage ? Sites web de l’entreprise",
     "9b_f- Canaux d’accès à votre stage :Médias sociaux": "9b_f-Par quel canal avez-vous accédé à votre stage ? Médias sociaux",
@@ -3001,7 +3001,7 @@ with st.spinner("Chargement du tableau de bord..."):
 
 TEXTS = {
     "Français": {
-        "title": "Tableau de bord – Exit Survey USJ 2022-2025",
+        "title": "Tableau de bord - Exit Survey USJ 2022-2025",
         "subtitle": "Analyse historique, indicateurs clés, comparaisons et leviers d’amélioration",
         "landing_badge": "Plateforme institutionnelle d’analyse décisionnelle",
         "landing_title": "Transformez les réponses de l’Exit Survey en décisions stratégiques",
@@ -3041,7 +3041,7 @@ TEXTS = {
         "population": "Population actuellement analysée",
         "no_specific_filter": "Aucun filtre spécifique appliqué",
         "nav_title": "Navigation analytique",
-        "footer": "Université Saint-Joseph de Beyrouth – Exit Survey 2022-2025",
+        "footer": "Université Saint-Joseph de Beyrouth - Exit Survey 2022-2025",
     },
     "English": {
         "title": "USJ Exit Survey Dashboard 2022-2025",
@@ -3084,7 +3084,7 @@ TEXTS = {
         "population": "Current analyzed population",
         "no_specific_filter": "No specific filter applied",
         "nav_title": "Analytical navigation",
-        "footer": "Saint Joseph University of Beirut – Exit Survey 2022-2025",
+        "footer": "Saint Joseph University of Beirut - Exit Survey 2022-2025",
     }
 }
 
@@ -3459,7 +3459,8 @@ COURSE_UNIT_EVALUATION_FILES = {
 
 def cue_t(fr_text, en_text):
     """Small bilingual helper dedicated to the Course Unit Evaluation module."""
-    return fr_text if LANG == "Français" else en_text
+    text = fr_text if LANG == "Français" else en_text
+    return str(text).replace("—", "-").replace("–", "-")
 
 
 def find_course_unit_evaluation_file(semester_label):
@@ -3498,7 +3499,7 @@ def _cue_normalize_rate(value):
     return numeric / 100 if abs(numeric) > 1.5 else numeric
 
 
-def _cue_format_pct(value, digits=1):
+def _cue_format_pct(value, digits=2):
     value = _cue_normalize_rate(value)
     if pd.isna(value):
         return "NA"
@@ -3678,7 +3679,7 @@ def _cue_percent_bar(data, label_col, value_col, title, orientation="h", top_n=N
     if plot_data.empty:
         st.info(cue_t("Aucune donnée disponible pour ce graphique.", "No data available for this chart."))
         return
-    plot_data["Label %"] = plot_data[value_col].map(lambda v: _cue_format_pct(v, digits=1))
+    plot_data["Label %"] = plot_data[value_col].map(lambda v: _cue_format_pct(v, digits=2))
 
     if orientation == "h":
         plot_data = plot_data.sort_values(value_col, ascending=True)
@@ -3778,7 +3779,7 @@ def render_course_unit_evaluation_module():
                 {html_escape(cue_t("Évaluation des UE", "Course Unit Evaluation"))}
             </div>
             <div style="font-family:Candara, Arial, sans-serif; color:{USJ_RED}; font-size:15px; font-weight:900; text-transform:uppercase; letter-spacing:0.12em; margin-bottom:16px;">
-                {html_escape(cue_t("Analyse par semestre — résultats non combinés", "Semester-based analysis — results are not combined"))}
+                {html_escape(cue_t("Analyse par semestre : résultats non combinés", "Semester-based analysis: results are not combined"))}
             </div>
             """,
             unsafe_allow_html=True,
@@ -4026,7 +4027,7 @@ def render_course_unit_evaluation_module():
     st.markdown(
         f"""
         <div style='margin-top:26px;color:#667085;font-family:Candara, Arial, sans-serif;font-size:13px;text-align:right;'>
-            {html_escape(cue_t('Université Saint-Joseph de Beyrouth – Évaluation des UE 2024-2025', 'Saint Joseph University of Beirut – Course Unit Evaluation 2024-2025'))}
+            {html_escape(cue_t('Université Saint-Joseph de Beyrouth - Évaluation des UE 2024-2025', 'Saint Joseph University of Beirut - Course Unit Evaluation 2024-2025'))}
         </div>
         """,
         unsafe_allow_html=True,
@@ -5504,7 +5505,7 @@ def render_factbook_section1_module():
             box-shadow:0 4px 14px rgba(0,0,0,0.08);
             font-family:Candara, Arial, sans-serif;
         ">
-            Université Saint-Joseph de Beyrouth – Factbook 2024-2025 – Section 1
+            Université Saint-Joseph de Beyrouth - Factbook 2024-2025 - Section 1
         </div>
         """,
         unsafe_allow_html=True
@@ -6420,7 +6421,7 @@ def render_factbook_section5_module():
             box-shadow:0 4px 14px rgba(0,0,0,0.08);
             font-family:Candara, Arial, sans-serif;
         ">
-            Université Saint-Joseph de Beyrouth – Factbook 2024-2025 – Section 5
+            Université Saint-Joseph de Beyrouth - Factbook 2024-2025 - Section 5
         </div>
         """,
         unsafe_allow_html=True,
@@ -6982,7 +6983,7 @@ def render_factbook_section6_module():
     st.markdown(
         f"""
         <div style='margin-top:26px;color:#667085;font-family:Candara, Arial, sans-serif;font-size:13px;text-align:right;'>
-            Université Saint-Joseph de Beyrouth – Factbook 2024-2025 – Section 6
+            Université Saint-Joseph de Beyrouth - Factbook 2024-2025 - Section 6
         </div>
         """,
         unsafe_allow_html=True,
@@ -7568,7 +7569,7 @@ def render_factbook_section2_module():
             box-shadow:0 4px 14px rgba(0,0,0,0.08);
             font-family:Candara, Arial, sans-serif;
         ">
-            Université Saint-Joseph de Beyrouth – Factbook 2024-2025 – Section 2
+            Université Saint-Joseph de Beyrouth - Factbook 2024-2025 - Section 2
         </div>
         """,
         unsafe_allow_html=True
@@ -8025,7 +8026,7 @@ def render_factbook_section3_module():
             box-shadow:0 4px 14px rgba(0,0,0,0.08);
             font-family:Candara, Arial, sans-serif;
         ">
-            Université Saint-Joseph de Beyrouth – Factbook 2024-2025 – Section 3
+            Université Saint-Joseph de Beyrouth - Factbook 2024-2025 - Section 3
         </div>
         """,
         unsafe_allow_html=True
@@ -8410,7 +8411,7 @@ def render_factbook_section4_module():
             box-shadow:0 4px 14px rgba(0,0,0,0.08);
             font-family:Candara, Arial, sans-serif;
         ">
-            Université Saint-Joseph de Beyrouth – Factbook 2024-2025 – Section 4
+            Université Saint-Joseph de Beyrouth - Factbook 2024-2025 - Section 4
         </div>
         """,
         unsafe_allow_html=True,
@@ -9638,7 +9639,7 @@ def page_descriptive_sections():
     )
     fig_rank.update_traces(texttemplate="%{text:.2f}%", textposition="outside")
     fig_rank.update_layout(
-        title=f"Classement des questions – {selected_section}",
+        title=f"Classement des questions - {selected_section}",
         xaxis_title="Résultat (%)",
         yaxis_title="Question"
     )
@@ -9693,7 +9694,7 @@ def page_descriptive_sections():
             y_min = max(0, float(trend_selected["Résultat (%)"].min()) - 5)
             y_max = min(100, float(trend_selected["Résultat (%)"].max()) + 5)
             fig_q_trend.update_layout(
-                title=f"Évolution des questions – {selected_section}",
+                title=f"Évolution des questions - {selected_section}",
                 xaxis_title="Année",
                 yaxis_title="Résultat (%)",
                 legend_title="Question",
@@ -9748,7 +9749,7 @@ def page_descriptive_sections():
         )
         fig_dist.update_traces(texttemplate="%{text:.2f}%", textposition="inside", hovertemplate="Réponse: %{fullData.name}<br>Année: %{x}<br>Pourcentage: %{y:.2f}%<extra></extra>")
         fig_dist.update_layout(
-            title=f"Distribution des réponses – {selected_question_short}",
+            title=f"Distribution des réponses - {selected_question_short}",
             xaxis_title="Année",
             yaxis_title="Pourcentage des réponses"
         )
@@ -9771,7 +9772,7 @@ def page_descriptive_sections():
             color_continuous_scale=PLOTLY_DIVERGING,
             zmin=-1,
             zmax=1,
-            title=f"Heatmap de corrélation – {selected_section}"
+            title=f"Heatmap de corrélation - {selected_section}"
         )
         fig_corr.update_layout(
             xaxis_title="Questions",
