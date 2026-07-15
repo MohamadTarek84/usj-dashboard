@@ -3476,6 +3476,27 @@ def cue_t(fr_text, en_text):
     return str(text).replace("—", "-").replace("–", "-")
 
 
+def _cue_threshold_header():
+    """Academic label for the 75% agreement threshold used in UE results."""
+    return cue_t("Atteinte du seuil d’accord (75%)", "Agreement threshold reached (75%)")
+
+
+def _cue_threshold_explanation():
+    return cue_t(
+        "Le seuil d’accord correspond au total de « Tout à fait d’accord » + « Plutôt d’accord ». Il est considéré comme atteint lorsque le taux d’accord est supérieur ou égal à 75%; en dessous de 75%, le seuil n’est pas atteint.",
+        "The agreement threshold corresponds to the total of ‘Strongly agree’ + ‘Agree’. It is considered reached when the agreement rate is greater than or equal to 75%; below 75%, the threshold is not reached.",
+    )
+
+
+def _cue_threshold_status_label(value):
+    raw = str(value).strip().lower()
+    if raw in {"yes", "oui", "y", "true", "1"}:
+        return cue_t("Seuil atteint", "Threshold reached")
+    if raw in {"no", "non", "n", "false", "0"}:
+        return cue_t("Seuil non atteint", "Threshold not reached")
+    return str(value)
+
+
 def find_course_unit_evaluation_file(semester_label):
     """Find the Excel file for the selected semester only; semesters are intentionally not combined."""
     candidates = COURSE_UNIT_EVALUATION_FILES.get(semester_label, [])
@@ -3670,7 +3691,7 @@ def _cue_table(df, title, note=None, max_height=560, percent_cols=None, hide_col
         "Taux de réponses UE évaluées": "Response rate for evaluated CUs",
         "Taux d'accord": "Agreement rate",
         "Taux de désaccord": "Disagreement rate",
-        "Target atteint": "Target reached",
+        "Target atteint": _cue_threshold_header(),
         "Type de ligne": "Row type",
         "Nombre étudiants institution": "Institution student count",
         "Nombre d'étudiants inscrits": "Enrolled students",
@@ -3690,6 +3711,13 @@ def _cue_table(df, title, note=None, max_height=560, percent_cols=None, hide_col
             percent_cols = {rename_en.get(col, col) for col in percent_cols}
         if column_widths:
             column_widths = {rename_en.get(col, col): width for col, width in column_widths.items()}
+    else:
+        rename_fr = {"Target atteint": _cue_threshold_header()}
+        table = table.rename(columns={col: rename_fr.get(col, col) for col in table.columns})
+        if percent_cols:
+            percent_cols = {rename_fr.get(col, col) for col in percent_cols}
+        if column_widths:
+            column_widths = {rename_fr.get(col, col): width for col, width in column_widths.items()}
     render_factbook_table(table, title, note=note, max_height=max_height, percent_2_dec_cols=percent_cols, hide_columns=hide_columns, column_widths=column_widths)
 
 
@@ -4148,7 +4176,7 @@ def _cue_render_ue_kpis(table_df):
         (cue_t("UE affichées", "Displayed course units"), fb_format_number(len(course_rows))),
         (cue_t("Réponses reçues", "Responses received"), fb_format_number(responses)),
         (cue_t("Taux de réponse", "Response rate"), _cue_format_pct(response_rate, digits=2)),
-        (cue_t("Target atteint", "Target reached"), f"{target_count} ({_cue_format_pct(target_rate, digits=2)})"),
+        (cue_t("UE avec seuil d’accord atteint", "CUs with agreement threshold reached"), f"{target_count} ({_cue_format_pct(target_rate, digits=2)})"),
     ]
     cols = st.columns(len(cards))
     for col, (label, value) in zip(cols, cards):
@@ -4182,10 +4210,13 @@ def _cue_render_ue_dynamic_table(table_df, title, note=None, max_height=760):
         "Taux de réponses UE évaluées": "Response rate for evaluated CUs",
         "Taux d'accord": "Agreement rate",
         "Taux de désaccord": "Disagreement rate",
-        "Target atteint": "Target reached",
+        "Target atteint": _cue_threshold_header(),
     }
     if LANG == "English":
         table = table.rename(columns={col: rename_en.get(col, col) for col in table.columns})
+    else:
+        rename_fr = {"Target atteint": _cue_threshold_header()}
+        table = table.rename(columns={col: rename_fr.get(col, col) for col in table.columns})
 
     percent_cols_fr = {"Taux de réponses UE évaluées", "Taux d'accord", "Taux de désaccord"}
     percent_cols = {rename_en.get(col, col) for col in percent_cols_fr} if LANG == "English" else percent_cols_fr
@@ -4213,22 +4244,23 @@ def _cue_render_ue_dynamic_table(table_df, title, note=None, max_height=760):
     )
 
     body_rows = []
-    target_col = rename_en.get("Target atteint", "Target atteint") if LANG == "English" else "Target atteint"
+    target_col = _cue_threshold_header()
     for i, row in table.iterrows():
         row_class = "institution-total-row" if bool(is_total.loc[i]) else "ue-row"
         cells = []
         for col in table.columns:
-            value = display_cell(row[col], col)
             cls = "num-cell" if col in numeric_cols else "text-cell"
-            if col == target_col and value:
-                clean = value.strip().lower()
-                if clean in {"yes", "oui", "y"}:
-                    value_html = f"<span class='target-badge target-yes'>{html_escape(value)}</span>"
-                elif clean in {"no", "non", "n"}:
-                    value_html = f"<span class='target-badge target-no'>{html_escape(value)}</span>"
+            if col == target_col and not _fb_is_blank(row[col]):
+                raw_status = str(row[col]).strip().lower()
+                badge_label = _cue_threshold_status_label(row[col])
+                if raw_status in {"yes", "oui", "y", "true", "1"}:
+                    value_html = f"<span class='target-badge target-yes'>{html_escape(badge_label)}</span>"
+                elif raw_status in {"no", "non", "n", "false", "0"}:
+                    value_html = f"<span class='target-badge target-no'>{html_escape(badge_label)}</span>"
                 else:
-                    value_html = html_escape(value)
+                    value_html = html_escape(badge_label)
             else:
+                value = display_cell(row[col], col)
                 value_html = html_escape(value)
             cells.append(f"<td class='{cls}'>{value_html}</td>")
         body_rows.append(f"<tr class='{row_class}'>" + "".join(cells) + "</tr>")
@@ -4563,16 +4595,24 @@ def render_course_unit_evaluation_module():
             ue_df = load_course_unit_evaluation_ue(file_path, file_mtime, file_size, semester_label)
         section_header(
             cue_t("Résultats par UE", "Results by course unit"),
-            cue_t("Tableau dynamique des UE évaluées. Chaque total institutionnel est affiché avant les UE de l’institution.",
-                  "Dynamic table of evaluated course units. Each institutional total is displayed before the institution's course units."),
+            cue_t("Tableau dynamique des UE évaluées. Chaque total institutionnel est affiché avant les UE de l’institution. Le seuil d’accord correspond à Tout à fait d’accord + Plutôt d’accord; il est atteint à partir de 75%.",
+                  "Dynamic table of evaluated course units. Each institutional total is displayed before the institution's course units. The agreement threshold corresponds to Strongly agree + Agree; it is reached from 75%."),
         )
         courses_only = ue_df[ue_df["Type de ligne"].eq("UE")].copy()
         filter_cols = st.columns([1.15, 1.0, 1.85])
         with filter_cols[0]:
             institution = st.selectbox(cue_t("Institution", "Institution"), filter_options(courses_only, "Institution courte"), key="cue_ue_institution")
         with filter_cols[1]:
-            target_options = ["Tous"] + sorted(courses_only["Target atteint"].dropna().astype(str).unique().tolist()) if "Target atteint" in courses_only.columns else ["Tous"]
-            target = st.selectbox(cue_t("Target atteint", "Target reached"), target_options, key="cue_ue_target")
+            target_display_to_raw = {cue_t("Tous", "All"): "Tous"}
+            target_options = [cue_t("Tous", "All")]
+            if "Target atteint" in courses_only.columns:
+                for raw_status in sorted(courses_only["Target atteint"].dropna().astype(str).unique().tolist()):
+                    display_status = _cue_threshold_status_label(raw_status)
+                    if display_status not in target_display_to_raw:
+                        target_display_to_raw[display_status] = raw_status
+                        target_options.append(display_status)
+            selected_target_display = st.selectbox(_cue_threshold_header(), target_options, key="cue_ue_target")
+            target = target_display_to_raw.get(selected_target_display, "Tous")
         with filter_cols[2]:
             search = st.text_input(cue_t("Recherche UE ou code matière", "Search course unit or course code"), key="cue_ue_search")
 
@@ -4583,8 +4623,8 @@ def render_course_unit_evaluation_module():
             ue_table,
             cue_t("Tableau dynamique des résultats par UE", "Dynamic course-unit results table"),
             note=cue_t(
-                "Les lignes jaunes représentent les totaux institutionnels. Les pourcentages sont affichés avec deux décimales.",
-                "Yellow rows represent institutional totals. Percentages are displayed with two decimals.",
+                "Les lignes jaunes représentent les totaux institutionnels. Les pourcentages sont affichés avec deux décimales. " + _cue_threshold_explanation(),
+                "Yellow rows represent institutional totals. Percentages are displayed with two decimals. " + _cue_threshold_explanation(),
             ),
             max_height=760,
         )
