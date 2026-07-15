@@ -9785,11 +9785,11 @@ def _qs_module_css():
         .qs-value-text {{color:#5F6B7A; font-size:15px; line-height:1.55;}}
         .qs-note {{font-size:13px; line-height:1.55; color:#5F6B7A; background:#F8FAFE; border:1px solid #DDE5F0; border-radius:16px; padding:12px 14px; margin:10px 0 18px 0;}}
 
-        .qs-kpi-grid {display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:18px; margin:20px 0 28px 0;}
-        .qs-kpi-card {background:#FFFFFF; border:1px solid #DDE5F0; border-radius:22px; padding:24px 22px; min-height:148px; box-shadow:0 10px 26px rgba(35,43,105,0.08);}
-        .qs-kpi-label {font-size:17px; font-weight:950; color:#1B2A41; margin-bottom:20px;}
-        .qs-kpi-value {font-size:34px; line-height:1.05; font-weight:950; margin-bottom:18px; letter-spacing:0.2px;}
-        .qs-kpi-caption {font-size:15px; color:#5F6B7A; line-height:1.35; font-weight:650;}
+        .qs-kpi-grid {{display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:18px; margin:20px 0 28px 0;}}
+        .qs-kpi-card {{background:#FFFFFF; border:1px solid #DDE5F0; border-radius:22px; padding:24px 22px; min-height:148px; box-shadow:0 10px 26px rgba(35,43,105,0.08);}}
+        .qs-kpi-label {{font-size:17px; font-weight:950; color:#1B2A41; margin-bottom:20px;}}
+        .qs-kpi-value {{font-size:34px; line-height:1.05; font-weight:950; margin-bottom:18px; letter-spacing:0.2px;}}
+        .qs-kpi-caption {{font-size:15px; color:#5F6B7A; line-height:1.35; font-weight:650;}}
         @media (max-width:1200px) {{.qs-kpi-grid {{grid-template-columns:repeat(3,minmax(0,1fr));}}}}
         @media (max-width:900px) {{.qs-grid-2, .qs-value-grid, .qs-stat-grid, .qs-kpi-grid {{grid-template-columns:1fr;}} .qs-title {{font-size:36px;}}}}
         </style>
