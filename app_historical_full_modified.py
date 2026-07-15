@@ -3911,6 +3911,7 @@ def _cue_percent_bar(
     highlight_label_col=None,
     highlight_label_threshold=None,
     highlight_label_note=True,
+    highlight_note_text=None,
 ):
     plot_data = data.copy()
     plot_data[value_col] = plot_data[value_col].map(_cue_normalize_rate)
@@ -3989,9 +3990,13 @@ def _cue_percent_bar(
     )
     st.plotly_chart(fig, use_container_width=True)
     if highlight_label_note and plot_data["__label_highlight__"].any():
+        note_text = highlight_note_text or cue_t(
+            "Labels en rouge : moins de 30 réponses valides (hors Ne s'applique pas et Pas de réponses).",
+            "Red labels: fewer than 30 valid answers, excluding Not applicable and No answer.",
+        )
         st.markdown(
             f"<div style='font-family:Candara, Arial, sans-serif; color:{USJ_RED}; font-size:13px; font-weight:700; margin-top:-12px; margin-bottom:10px;'>"
-            f"{html_escape(cue_t('Labels en rouge : moins de 30 réponses valides (hors Ne s\'applique pas et Pas de réponses).', 'Red labels: fewer than 30 valid answers, excluding Not applicable and No answer.'))}"
+            f"{html_escape(note_text)}"
             "</div>",
             unsafe_allow_html=True,
         )
@@ -4783,19 +4788,7 @@ def render_course_unit_evaluation_module():
 
     semester_readable = semester_display[semester_label]
 
-    last_update_label = pd.to_datetime(file_mtime, unit="s").strftime("%Y-%m-%d %H:%M:%S")
-    file_size_mb = file_size / (1024 * 1024)
-    st.markdown(
-        f"""
-        <div class="data-chip-row">
-            <div class="data-chip"><strong>{html_escape(cue_t('Semestre', 'Semester'))}</strong> {html_escape(semester_readable)}</div>
-            <div class="data-chip"><strong>{html_escape(cue_t('Fichier actif', 'Active file'))}</strong> {html_escape(os.path.basename(file_path))}</div>
-            <div class="data-chip"><strong>{html_escape(cue_t('Taille', 'Size'))}</strong> {file_size_mb:.2f} MB</div>
-            <div class="data-chip"><strong>{html_escape(cue_t('Dernière modification', 'Last modification'))}</strong> {html_escape(last_update_label)}</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    # Technical file metadata chips removed from the visible interface.
 
     cue_view_options = [
         cue_t("Synthèse", "Summary"),
@@ -5024,6 +5017,12 @@ def render_course_unit_evaluation_module():
                 cue_t(f"Taux de réponses pour toutes les UE - {semester_readable}", f"Response rate for all CUs - {semester_readable}"),
                 orientation="h",
                 top_n=40,
+                highlight_label_col=col_all,
+                highlight_label_threshold=0.20,
+                highlight_note_text=cue_t(
+                    "Labels en rouge : taux de réponses pour toutes les UE inférieur à 20%.",
+                    "Red labels: response rate for all CUs below 20%.",
+                ),
             )
 
         _cue_table(
