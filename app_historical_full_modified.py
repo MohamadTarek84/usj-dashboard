@@ -9458,13 +9458,15 @@ def render_factbook_module():
 # QS Ranking module helpers
 # =====================================================
 
-QS_RANKING_PPT_FILE_CANDIDATES = [
-    "USJ in QS World Rankings (2022-2027) 22-6-2026 HS(1).pptx",
-    "USJ in QS World Rankings (2022-2027) 22-6-2026 HS.pptx",
-    "USJ_in_QS_World_Rankings_2022_2027.pptx",
-    "QS_World_Rankings_USJ_2022_2027.pptx",
-    "qs_ranking_usj.pptx",
-]
+QS_YEARS = [2023, 2024, 2025, 2026, 2027]
+QS_UNIVERSITIES = ["AUB", "LAU", "USJ", "LU", "BAU", "USEK", "UoB", "NDU", "IUL"]
+QS_YEAR_COLORS = {
+    2023: "#1F4E79",
+    2024: "#C84E4E",
+    2025: "#70AD47",
+    2026: "#8064A2",
+    2027: "#00A6A6",
+}
 
 QS_INDICATORS = [
     ("Academic Reputation", "30%", "Réputation académique", "30%"),
@@ -9478,108 +9480,277 @@ QS_INDICATORS = [
     ("Sustainability", "5%", "Durabilité", "5%"),
 ]
 
-QS_IMAGE_GROUPS = {
-    "indicators": [
-        ("image6.png", "QS World University Rankings indicators"),
-    ],
-    "results": [
-        ("image7.png", "Lebanese universities rankings 2022-2027"),
-        ("image8.png", "Overall ranking scores"),
-        ("image9.png", "Academic Reputation"),
-        ("image10.png", "Employer Reputation"),
-        ("image11.png", "Faculty Student Ratio"),
-        ("image12.png", "Citations per Faculty"),
-        ("image13.png", "International Faculty Ratio"),
-        ("image14.png", "International Students Ratio"),
-        ("image15.png", "International Research Network"),
-        ("image16.png", "Employment Outcomes"),
-        ("image17.png", "Sustainability"),
-    ],
-    "academic_reputation": [
-        ("image18.png", "Domestic Academic Reputation nominations"),
-        ("image19.png", "International Academic Reputation nominations"),
-        ("image20.png", "Domestic Academic Reputation nominations by subject area"),
-        ("image21.png", "International Academic Reputation nominations by subject area"),
-        ("image22.png", "Domestic vs International by subject 2027"),
-    ],
-    "employer_reputation": [
-        ("image23.png", "Domestic Employer Reputation nominations"),
-        ("image24.png", "International Employer Reputation nominations"),
-        ("image25.png", "Domestic Employer Reputation nominations by subject area"),
-        ("image26.png", "International Employer Reputation nominations by subject area"),
-        ("image27.png", "Domestic vs International by subject 2027"),
-    ],
+QS_WORLD_RANKING_DATA = [
+    {"University": "AUB", "World 2022": "242", "World 2023": "252", "World 2024": "226", "World 2025": "250", "World 2026": "237", "World 2027": "223", "Lebanon 2022": 1, "Lebanon 2023": 1, "Lebanon 2024": 1, "Lebanon 2025": 1, "Lebanon 2026": 1, "Lebanon 2027": 1, "Change": "No change"},
+    {"University": "LAU", "World 2022": "581-590", "World 2023": "601-650", "World 2024": "661-670", "World 2025": "701-710", "World 2026": "535", "World 2027": "477", "Lebanon 2022": 5, "Lebanon 2023": 5, "Lebanon 2024": 4, "Lebanon 2025": 4, "Lebanon 2026": 3, "Lebanon 2027": 2, "Change": "Improved (+1)"},
+    {"University": "USJ", "World 2022": "531-540", "World 2023": "531-540", "World 2024": "631-640", "World 2025": "711-720", "World 2026": "618", "World 2027": "537", "Lebanon 2022": 3, "Lebanon 2023": 2, "Lebanon 2024": 3, "Lebanon 2025": 5, "Lebanon 2026": 4, "Lebanon 2027": 3, "Change": "Improved (+1)"},
+    {"University": "LU", "World 2022": "701-750", "World 2023": "601-650", "World 2024": "577", "World 2025": "567", "World 2026": "515", "World 2027": "626", "Lebanon 2022": 6, "Lebanon 2023": 6, "Lebanon 2024": 2, "Lebanon 2025": 2, "Lebanon 2026": 2, "Lebanon 2027": 4, "Change": "Declined (-2)"},
+    {"University": "BAU", "World 2022": "801-1000", "World 2023": "801-1000", "World 2024": "711-720", "World 2025": "641-650", "World 2026": "676", "World 2027": "670", "Lebanon 2022": 8, "Lebanon 2023": 8, "Lebanon 2024": 6, "Lebanon 2025": 3, "Lebanon 2026": 5, "Lebanon 2027": 5, "Change": "No change"},
+    {"University": "USEK", "World 2022": "571-580", "World 2023": "571-580", "World 2024": "661-670", "World 2025": "771-780", "World 2026": "771-780", "World 2027": "761-770", "Lebanon 2022": 4, "Lebanon 2023": 4, "Lebanon 2024": 5, "Lebanon 2025": 6, "Lebanon 2026": 6, "Lebanon 2027": 6, "Change": "No change"},
+    {"University": "UoB", "World 2022": "511-520", "World 2023": "531-540", "World 2024": "801-850", "World 2025": "-", "World 2026": "1001-1200", "World 2027": "1001-1200", "Lebanon 2022": 2, "Lebanon 2023": 3, "Lebanon 2024": 7, "Lebanon 2025": np.nan, "Lebanon 2026": 9, "Lebanon 2027": 7, "Change": "Improved (+2)"},
+    {"University": "NDU", "World 2022": "701-750", "World 2023": "801-1000", "World 2024": "901-950", "World 2025": "-", "World 2026": "1001-1200", "World 2027": "1201-1400", "Lebanon 2022": 7, "Lebanon 2023": 7, "Lebanon 2024": 8, "Lebanon 2025": np.nan, "Lebanon 2026": 8, "Lebanon 2027": 9, "Change": "Declined (-1)"},
+    {"University": "IUL", "World 2022": "-", "World 2023": "-", "World 2024": "-", "World 2025": "-", "World 2026": "1001-1200", "World 2027": "1201-1400", "Lebanon 2022": np.nan, "Lebanon 2023": np.nan, "Lebanon 2024": np.nan, "Lebanon 2025": np.nan, "Lebanon 2026": 7, "Lebanon 2027": 8, "Change": "Declined (-1)"},
+]
+
+QS_SCORE_DATA = {
+    "Overall Ranking Scores": {
+        "AUB": [38.4, 41.9, 40.6, 51.6, 53.7], "LAU": [19.6, 17.8, 18.0, 30.6, 33.4], "USJ": [22.9, 18.6, 17.6, 27.7, 30.6], "LU": [19.5, 20.5, 21.9, 31.5, 27.7], "BAU": [14.5, 16.6, 19.2, 26.1, 26.3], "USEK": [21.6, 17.6, 15.9, 24.6, 23.8], "UoB": [22.9, 14.4, np.nan, 16.2, 14.8], "NDU": [15.2, 12.2, np.nan, 15.4, 13.1], "IUL": [np.nan, np.nan, np.nan, 14.9, 12.7],
+    },
+    "Academic Reputation": {
+        "AUB": [27.2, 27.6, 28.6, 41.5, 43.0], "LAU": [9.9, 10.5, 13.5, 20.2, 20.0], "USJ": [9.1, 9.6, 8.2, 13.4, 15.8], "LU": [19.5, 23.7, 29.0, 32.9, 27.3], "BAU": [9.8, 13.4, 17.7, 20.0, 16.1], "USEK": [5.2, 6.0, 6.7, 11.1, 10.0], "UoB": [4.5, 4.9, np.nan, 8.0, 8.1], "NDU": [4.5, 4.5, np.nan, 6.5, 6.6], "IUL": [np.nan, np.nan, np.nan, 10.6, 7.8],
+    },
+    "Employer Reputation": {
+        "AUB": [40.7, 41.6, 29.5, 58.1, 62.5], "LAU": [21.7, 28.2, 20.3, 44.6, 46.4], "USJ": [27.1, 27.6, 16.4, 38.2, 38.8], "LU": [47.8, 49.8, 34.4, 55.3, 42.2], "BAU": [15.9, 18.8, 14.8, 22.2, 14.3], "USEK": [8.6, 12.0, 6.4, 20.7, 27.2], "UoB": [11.1, 13.0, np.nan, 21.2, 19.6], "NDU": [12.3, 13.8, np.nan, 19.8, 23.8], "IUL": [np.nan, np.nan, np.nan, 13.4, 7.5],
+    },
+    "Faculty Student Ratio": {
+        "AUB": [62.1, 57.3, 48.5, 52.3, 48.0], "LAU": [32.7, 35.5, 29.1, 31.3, 25.1], "USJ": [52.3, 46.8, 50.7, 62.3, 66.0], "LU": [12.7, 11.6, 10.1, 16.0, 16.6], "BAU": [14.3, 16.5, 19.1, 28.8, 30.8], "USEK": [57.3, 60.6, 62.3, 70.4, 68.0], "UoB": [88.3, 83.8, np.nan, 49.8, 50.1], "NDU": [31.8, 24.9, np.nan, 25.1, 19.7], "IUL": [np.nan, np.nan, np.nan, 39.6, 37.1],
+    },
+    "Citations per Faculty": {
+        "AUB": [20.0, 24.2, 28.9, 37.8, 45.7], "LAU": [3.5, 3.2, 3.7, 10.7, 19.7], "USJ": [2.8, 2.5, 2.4, 4.2, 3.6], "LU": [2.0, 2.1, 2.2, 3.4, 3.0], "BAU": [2.3, 2.7, 3.3, 7.6, 8.8], "USEK": [1.8, 2.0, 2.1, 3.8, 3.8], "UoB": [1.9, 2.0, np.nan, 3.6, 3.8], "NDU": [3.6, 2.6, np.nan, 3.8, 3.4], "IUL": [np.nan, np.nan, np.nan, 1.2, 1.2],
+    },
+    "International Faculty Ratio": {
+        "AUB": [74.9, 67.8, 63.2, 71.4, 66.7], "LAU": [88.2, 78.9, 73.3, 80.6, 79.1], "USJ": [88.8, 90.8, 91.3, 94.3, 96.6], "LU": [44.9, 43.3, 43.8, 52.2, 51.9], "BAU": [70.1, 80.1, 88.5, 94.8, 96.0], "USEK": [98.7, 99.0, 98.9, 99.4, 98.8], "UoB": [15.8, 12.6, np.nan, 20.5, 14.5], "NDU": [77.0, 84.2, np.nan, 87.9, 72.2], "IUL": [np.nan, np.nan, np.nan, 36.7, 33.5],
+    },
+    "International Student Ratio": {
+        "AUB": [61.8, 46.8, 37.0, 45.2, 44.5], "LAU": [37.1, 26.4, 19.6, 26.6, 23.3], "USJ": [19.2, 19.7, 25.8, 40.7, 41.0], "LU": [34.3, 31.9, 29.5, 47.2, 45.1], "BAU": [43.5, 51.3, 48.2, 61.1, 61.0], "USEK": [37.3, 38.3, 37.8, 52.2, 47.1], "UoB": [22.8, 21.8, np.nan, 26.9, 22.6], "NDU": [24.1, 21.9, np.nan, 27.1, 21.9], "IUL": [np.nan, np.nan, np.nan, 98.8, 98.8],
+    },
+    "International Research Network": {
+        "AUB": [73.8, 35.6, 73.1, 68.7, 64.3], "LAU": [12.5, 1.0, 36.5, 78.3, 87.1], "USJ": [19.5, 1.0, 13.1, 30.2, 40.6], "LU": [49.4, 2.3, 43.7, 59.9, 57.3], "BAU": [17.0, 1.1, 28.0, 29.6, 30.7], "USEK": [7.1, 1.0, 6.5, 9.6, 11.2], "UoB": [16.3, 1.0, np.nan, 14.4, 21.7], "NDU": [8.2, 1.0, np.nan, 7.3, 6.4], "IUL": [np.nan, np.nan, np.nan, 2.2, 1.6],
+    },
+    "Employment Outcomes": {
+        "AUB": [99.0, 88.5, 97.0, 98.7, 99.8], "LAU": [21.2, 10.4, 19.9, 29.2, 37.6], "USJ": [8.4, 13.0, 33.4, 40.8, 49.4], "LU": [12.2, 9.9, 29.9, 38.9, 32.3], "BAU": [42.6, 18.2, 38.2, 44.1, 73.3], "USEK": [9.0, 9.5, 5.7, 7.3, 12.0], "UoB": [11.2, 8.2, np.nan, 3.8, 7.2], "NDU": [11.7, 8.0, np.nan, 3.9, 7.9], "IUL": [np.nan, np.nan, np.nan, 3.9, 6.4],
+    },
+    "Sustainability": {
+        "AUB": [np.nan, 93.2, 80.5, 77.7, 83.0], "LAU": [np.nan, 7.8, 19.5, 58.3, 73.3], "USJ": [np.nan, 9.7, 1.4, 35.0, 49.1], "LU": [np.nan, 2.1, 5.8, 45.2, 56.8], "BAU": [np.nan, 1.1, 1.0, 42.1, 53.8], "USEK": [np.nan, 2.6, 1.1, 38.0, 41.4], "UoB": [np.nan, 1.0, np.nan, 33.6, 40.3], "NDU": [np.nan, 1.0, np.nan, 17.5, 22.6], "IUL": [np.nan, np.nan, np.nan, np.nan, np.nan],
+    },
+}
+
+QS_ACADEMIC_NOMINATIONS = {
+    "Domestic": {
+        "AUB": [28, 76, 136, 206, 324, 384, 381, 375, 265, 199],
+        "LAU": [30, 63, 101, 131, 207, 256, 247, 316, 176, 143],
+        "LU": [34, 69, 99, 129, 202, 222, 246, 330, 222, 134],
+        "USJ": [31, 60, 95, 127, 192, 214, 218, 213, 156, 127],
+        "USEK": [15, 21, 41, 60, 96, 123, 126, 124, 79, 68],
+        "UoB": [21, 31, 48, 68, 105, 111, 115, 119, 86, 67],
+        "BAU": [9, 19, 33, 46, 85, 172, 352, 422, 107, 67],
+        "NDU": [0, 0, 40, 51, 92, 95, 99, 93, 80, 54],
+        "IUL": [0, 2, 3, 24, 53, 55, 116, 166, 41, 18],
+    },
+    "International": {
+        "AUB": [258, 398, 514, 609, 749, 816, 806, 818, 695, 641],
+        "LAU": [33, 54, 74, 98, 133, 171, 192, 968, 187, 175],
+        "LU": [13, 26, 45, 182, 573, 1256, 1435, 2348, 232, 128],
+        "BAU": [9, 23, 51, 63, 190, 770, 988, 1748, 197, 103],
+        "USJ": [25, 44, 56, 76, 123, 131, 128, 125, 114, 103],
+        "USEK": [13, 18, 20, 24, 43, 57, 63, 100, 111, 65],
+        "UoB": [3, 5, 7, 20, 26, 40, 45, 51, 45, 43],
+        "NDU": [0, 0, 75, 77, 87, 79, 63, 58, 57, 38],
+        "IUL": [6, 16, 22, 41, 211, 223, 367, 914, 138, 31],
+    },
+}
+
+QS_EMPLOYER_NOMINATIONS = {
+    "Domestic": {
+        "AUB": [32, 54, 111, 202, 274, 330, 348, 322, 258, 257],
+        "LAU": [20, 32, 72, 129, 177, 239, 260, 321, 201, 213],
+        "USJ": [16, 29, 72, 158, 217, 257, 260, 234, 168, 177],
+        "LU": [15, 30, 57, 106, 168, 214, 214, 298, 186, 158],
+        "USEK": [14, 23, 38, 68, 95, 124, 127, 125, 114, 131],
+        "NDU": [0, 0, 39, 90, 109, 150, 154, 137, 105, 124],
+        "UoB": [5, 10, 21, 63, 88, 125, 139, 146, 96, 94],
+        "IUL": [0, 1, 1, 2, 15, 18, 17, 81, 16, 4],
+    },
+    "International": {
+        "AUB": [140, 152, 185, 260, 410, 631, 682, 816, 676, 658],
+        "LAU": [25, 30, 30, 47, 81, 123, 143, 392, 151, 132],
+        "USJ": [6, 15, 47, 54, 76, 97, 102, 96, 73, 57],
+        "LU": [8, 13, 5, 36, 95, 115, 120, 325, 84, 47],
+        "USEK": [0, 1, 16, 30, 46, 56, 65, 61, 44, 40],
+        "NDU": [0, 0, 21, 18, 23, 29, 33, 35, 37, 36],
+        "UoB": [12, 12, 0, 5, 15, 27, 33, 40, 40, 33],
+        "IUL": [0, 0, 5, 35, 69, 81, 89, 250, 40, 18],
+    },
+}
+
+QS_NOMINATION_YEARS = list(range(2018, 2028))
+
+QS_ACADEMIC_SUBJECT_2027 = pd.DataFrame([
+    {"Subject": "Arts & Humanities", "Domestic": 23, "International": 41},
+    {"Subject": "Engineering & Technology", "Domestic": 35, "International": 20},
+    {"Subject": "Life Sciences & Medicine", "Domestic": 28, "International": 14},
+    {"Subject": "Natural Sciences", "Domestic": 11, "International": 8},
+    {"Subject": "Social Sciences & Management", "Domestic": 38, "International": 27},
+])
+
+QS_EMPLOYER_SUBJECT_2027 = pd.DataFrame([
+    {"Subject": "Arts & Humanities", "Domestic": 11, "International": 6},
+    {"Subject": "Engineering & Technology", "Domestic": 58, "International": 15},
+    {"Subject": "Life Sciences & Medicine", "Domestic": 24, "International": 5},
+    {"Subject": "Natural Sciences", "Domestic": 23, "International": 7},
+    {"Subject": "Social Sciences & Management", "Domestic": 61, "International": 24},
+])
+
+QS_FR_LABELS = {
+    "Overall Ranking Scores": "Score global QS",
+    "Academic Reputation": "Réputation académique",
+    "Employer Reputation": "Réputation employeur",
+    "Faculty Student Ratio": "Ratio enseignants / étudiants",
+    "Citations per Faculty": "Citations par enseignant",
+    "International Faculty Ratio": "Ratio enseignants internationaux",
+    "International Student Ratio": "Ratio étudiants internationaux",
+    "International Research Network": "Réseau international de recherche",
+    "Employment Outcomes": "Résultats d’employabilité",
+    "Sustainability": "Durabilité",
+    "Domestic": "Domestique",
+    "International": "International",
 }
 
 
-def find_qs_ranking_ppt_file():
-    """Find the QS Ranking PowerPoint file locally without exposing its content."""
-    for file_name in QS_RANKING_PPT_FILE_CANDIDATES:
-        if os.path.exists(file_name):
-            stat = os.stat(file_name)
-            return file_name, stat.st_mtime, stat.st_size
-
-    for file_name in os.listdir("."):
-        lower = file_name.lower()
-        normalized = lower.replace(" ", "_").replace("-", "_")
-        if lower.endswith(".pptx") and "qs" in normalized and ("ranking" in normalized or "rankings" in normalized):
-            stat = os.stat(file_name)
-            return file_name, stat.st_mtime, stat.st_size
-
-    return None, None, None
+def _qs_t(text_en, text_fr=None):
+    return text_fr if LANG == "Français" and text_fr is not None else text_en
 
 
-@st.cache_data(show_spinner=False)
-def load_qs_ranking_ppt_assets(file_path, file_mtime, file_size):
-    """Load images embedded in the QS PowerPoint using only local file access."""
-    assets = {}
-    with zipfile.ZipFile(file_path, "r") as archive:
-        for name in archive.namelist():
-            if name.startswith("ppt/media/") and name.lower().endswith((".png", ".jpg", ".jpeg")):
-                assets[os.path.basename(name)] = archive.read(name)
-    return assets
+def _qs_metric_label(metric):
+    return QS_FR_LABELS.get(metric, metric) if LANG == "Français" else metric
 
 
-def _qs_asset_mime(image_name):
-    lower = str(image_name).lower()
-    if lower.endswith(".jpg") or lower.endswith(".jpeg"):
-        return "image/jpeg"
-    return "image/png"
+def _qs_scores_long(metric=None):
+    rows = []
+    metrics = [metric] if metric else list(QS_SCORE_DATA.keys())
+    for metric_name in metrics:
+        for university, values in QS_SCORE_DATA[metric_name].items():
+            for year, score in zip(QS_YEARS, values):
+                rows.append({"Indicator": metric_name, "Indicateur": _qs_metric_label(metric_name), "University": university, "Year": year, "Score": score})
+    return pd.DataFrame(rows)
 
 
-def _qs_image_html(assets, image_name, title=None, max_height=None):
-    image_bytes = assets.get(image_name)
-    if not image_bytes:
-        return ""
-    encoded = base64.b64encode(image_bytes).decode("utf-8")
-    max_height_style = f"max-height:{int(max_height)}px; object-fit:contain;" if max_height else ""
-    title_html = f"<div class='qs-img-title'>{html_escape(title)}</div>" if title else ""
-    return f"""
-    <div class='qs-img-card'>
-        {title_html}
-        <img class='qs-img' src='data:{_qs_asset_mime(image_name)};base64,{encoded}' style='{max_height_style}' />
-    </div>
-    """
+def _qs_nomination_long(source, nomination_type):
+    data = QS_ACADEMIC_NOMINATIONS if source == "academic" else QS_EMPLOYER_NOMINATIONS
+    rows = []
+    for university, values in data[nomination_type].items():
+        for year, value in zip(QS_NOMINATION_YEARS, values):
+            rows.append({"University": university, "Year": year, "Nominations": value, "Type": nomination_type})
+    return pd.DataFrame(rows)
 
 
-def _qs_render_image_grid(assets, items, columns=1, max_height=None):
-    if not items:
-        return
-    if columns <= 1:
-        for image_name, title in items:
-            html_block = _qs_image_html(assets, image_name, title, max_height=max_height)
-            if html_block:
-                st.markdown(html_block, unsafe_allow_html=True)
-        return
+def _qs_polish_fig(fig, height=560, title=None):
+    fig.update_layout(
+        height=height,
+        title=dict(text=title or "", font=dict(family="Candara, Arial", size=22, color=USJ_BLUE)),
+        plot_bgcolor="white",
+        paper_bgcolor="white",
+        font=dict(family="Candara, Arial", size=13, color=USJ_TEXT),
+        margin=dict(l=70, r=80, t=90 if title else 50, b=90),
+        legend=dict(orientation="h", yanchor="bottom", y=1.03, xanchor="center", x=0.5, title=None),
+    )
+    fig.update_xaxes(showgrid=False, linecolor="#DDE5F0", tickfont=dict(color=USJ_TEXT))
+    fig.update_yaxes(gridcolor="#E8EDF5", zeroline=False, linecolor="#DDE5F0", tickfont=dict(color=USJ_TEXT))
+    return fig
 
-    for start in range(0, len(items), columns):
-        row_items = items[start:start + columns]
-        cols = st.columns(columns)
-        for col, (image_name, title) in zip(cols, row_items):
-            with col:
-                html_block = _qs_image_html(assets, image_name, title, max_height=max_height)
-                if html_block:
-                    st.markdown(html_block, unsafe_allow_html=True)
+
+def _qs_grouped_score_chart(metric):
+    df = _qs_scores_long(metric).dropna(subset=["Score"]).copy()
+    df["Year"] = df["Year"].astype(str)
+    fig = px.bar(
+        df,
+        x="University",
+        y="Score",
+        color="Year",
+        category_orders={"University": QS_UNIVERSITIES, "Year": [str(y) for y in QS_YEARS]},
+        color_discrete_map={str(y): QS_YEAR_COLORS[y] for y in QS_YEARS},
+        barmode="group",
+        text=df["Score"].map(lambda v: f"{v:.1f}"),
+    )
+    fig.update_traces(textposition="outside", textfont=dict(size=11, color=USJ_TEXT), cliponaxis=False)
+    fig = _qs_polish_fig(fig, height=620, title=f"{_qs_metric_label(metric)} - 2023-2027")
+    max_score = df["Score"].max()
+    y_top = 105 if pd.notna(max_score) and max_score > 80 else (max_score * 1.25 if pd.notna(max_score) else 100)
+    fig.update_yaxes(title=_qs_metric_label(metric), range=[0, y_top])
+    fig.update_xaxes(title="")
+    return fig
+
+
+def _qs_usj_indicator_trend_chart():
+    df = _qs_scores_long()
+    df = df[df["University"] == "USJ"].dropna(subset=["Score"]).copy()
+    df["Indicateur"] = df["Indicator"].map(_qs_metric_label)
+    fig = px.line(df, x="Year", y="Score", color="Indicateur", markers=True)
+    fig.update_traces(line=dict(width=3), marker=dict(size=8))
+    fig = _qs_polish_fig(fig, height=620, title=_qs_t("USJ indicator trends", "Évolution des indicateurs de l’USJ"))
+    fig.update_yaxes(title="Score")
+    fig.update_xaxes(title="Année" if LANG == "Français" else "Year", dtick=1)
+    return fig
+
+
+def _qs_lebanon_rank_chart():
+    table = pd.DataFrame(QS_WORLD_RANKING_DATA)
+    rank_cols = [c for c in table.columns if c.startswith("Lebanon ")]
+    rows = []
+    for _, row in table.iterrows():
+        for col in rank_cols:
+            year = int(col.split()[-1])
+            rows.append({"University": row["University"], "Year": year, "Rank": row[col]})
+    df = pd.DataFrame(rows).dropna(subset=["Rank"])
+    fig = px.line(
+        df,
+        x="Year",
+        y="Rank",
+        color="University",
+        markers=True,
+        category_orders={"University": QS_UNIVERSITIES},
+        color_discrete_sequence=PLOTLY_SEQ,
+    )
+    fig.update_traces(line=dict(width=3), marker=dict(size=8))
+    fig = _qs_polish_fig(fig, height=520, title=_qs_t("Ranking in Lebanon", "Rang au Liban"))
+    fig.update_yaxes(autorange="reversed", dtick=1, title=_qs_t("Rank", "Rang"))
+    fig.update_xaxes(dtick=1, title="Année" if LANG == "Français" else "Year")
+    return fig
+
+
+def _qs_nomination_line_chart(source="academic", nomination_type="Domestic"):
+    df = _qs_nomination_long(source, nomination_type)
+    fig = px.line(
+        df,
+        x="Year",
+        y="Nominations",
+        color="University",
+        markers=True,
+        category_orders={"University": QS_UNIVERSITIES},
+        color_discrete_sequence=PLOTLY_SEQ,
+    )
+    fig.update_traces(line=dict(width=3), marker=dict(size=7))
+    title_base = _qs_t("Academic reputation nominations", "Nominations de réputation académique") if source == "academic" else _qs_t("Employer reputation nominations", "Nominations de réputation employeur")
+    type_label = _qs_t(nomination_type, QS_FR_LABELS.get(nomination_type, nomination_type))
+    fig = _qs_polish_fig(fig, height=620, title=f"{title_base} - {type_label}")
+    fig.update_yaxes(title=_qs_t("Number of nominations", "Nombre de nominations"))
+    fig.update_xaxes(title="Année" if LANG == "Français" else "Year", dtick=1)
+    return fig
+
+
+def _qs_subject_bar_chart(source="academic"):
+    df = QS_ACADEMIC_SUBJECT_2027.copy() if source == "academic" else QS_EMPLOYER_SUBJECT_2027.copy()
+    long_df = df.melt(id_vars=["Subject"], value_vars=["Domestic", "International"], var_name="Type", value_name="Nominations")
+    long_df["Type label"] = long_df["Type"].map(lambda x: _qs_t(x, QS_FR_LABELS.get(x, x)))
+    fig = px.bar(
+        long_df,
+        y="Subject",
+        x="Nominations",
+        color="Type label",
+        orientation="h",
+        barmode="group",
+        text="Nominations",
+        color_discrete_sequence=[USJ_BLUE, USJ_RED],
+    )
+    fig.update_traces(textposition="outside", cliponaxis=False, textfont=dict(color=USJ_TEXT, size=13))
+    fig = _qs_polish_fig(fig, height=520, title=_qs_t("USJ domestic vs international nominations by subject - 2027", "USJ - nominations domestiques vs internationales par domaine - 2027"))
+    fig.update_xaxes(title=_qs_t("Number of nominations", "Nombre de nominations"))
+    fig.update_yaxes(title="")
+    return fig
+
+
+def _qs_table_card(df, title, note=None, max_height=520):
+    return render_factbook_table(df, title, note=note, max_height=max_height)
 
 
 def _qs_module_css():
@@ -9587,14 +9758,7 @@ def _qs_module_css():
         f"""
         <style>
         .qs-shell {{font-family:Candara, Arial, sans-serif; color:{USJ_TEXT};}}
-        .qs-hero {{
-            position:relative; overflow:hidden;
-            background:
-                radial-gradient(circle at 91% 8%, rgba(199,34,67,0.45) 0%, transparent 30%),
-                linear-gradient(135deg, {USJ_BLUE} 0%, #232B69 50%, #171C52 100%);
-            border-radius:34px; padding:44px 50px; color:white;
-            box-shadow:0 22px 52px rgba(35,43,105,0.28); margin:8px 0 26px 0;
-        }}
+        .qs-hero {{position:relative; overflow:hidden; background:radial-gradient(circle at 91% 8%, rgba(199,34,67,0.45) 0%, transparent 30%), linear-gradient(135deg, {USJ_BLUE} 0%, #232B69 50%, #171C52 100%); border-radius:34px; padding:44px 50px; color:white; box-shadow:0 22px 52px rgba(35,43,105,0.28); margin:8px 0 26px 0;}}
         .qs-hero:after {{content:""; position:absolute; right:-160px; top:-160px; width:420px; height:420px; border-radius:999px; border:1px solid rgba(255,255,255,0.13);}}
         .qs-hero-content {{position:relative; z-index:1; max-width:1120px;}}
         .qs-badge {{display:inline-block; background:rgba(255,255,255,0.14); border:1px solid rgba(255,255,255,0.28); color:white; padding:9px 16px; border-radius:999px; font-size:14px; font-weight:900; margin-bottom:18px;}}
@@ -9613,19 +9777,11 @@ def _qs_module_css():
         .qs-panel-title {{font-size:24px; font-weight:950; color:{USJ_BLUE}; margin-bottom:10px;}}
         .qs-panel-text {{font-size:16px; line-height:1.72; color:{USJ_TEXT};}}
         .qs-value-grid {{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; margin:20px 0 24px 0;}}
-        .qs-value-card {{background:#FFFFFF; border:1px solid #DDE5F0; border-radius:22px; padding:21px; min-height:150px; box-shadow:0 8px 22px rgba(35,43,105,0.07);}}
+        .qs-value-card {{background:#FFFFFF; border:1px solid #DDE5F0; border-radius:22px; padding:21px; min-height:140px; box-shadow:0 8px 22px rgba(35,43,105,0.07);}}
         .qs-value-dot {{width:34px; height:6px; border-radius:999px; background:linear-gradient(90deg,{USJ_BLUE},{USJ_RED},{USJ_GOLD}); margin-bottom:15px;}}
         .qs-value-title {{color:{USJ_BLUE}; font-size:19px; font-weight:950; margin-bottom:8px;}}
         .qs-value-text {{color:#5F6B7A; font-size:15px; line-height:1.55;}}
-        .qs-img-card {{background:#FFFFFF; border:1px solid #DDE5F0; border-radius:22px; padding:16px 18px 18px 18px; margin:14px 0; box-shadow:0 8px 22px rgba(35,43,105,0.07);}}
-        .qs-img-title {{font-size:19px; font-weight:950; color:{USJ_BLUE}; margin:0 0 12px 0;}}
-        .qs-img {{display:block; width:100%; height:auto; border-radius:14px; border:1px solid #EEF2F7; background:#FFFFFF;}}
         .qs-note {{font-size:13px; line-height:1.55; color:#5F6B7A; background:#F8FAFE; border:1px solid #DDE5F0; border-radius:16px; padding:12px 14px; margin:10px 0 18px 0;}}
-        .qs-indicator-table {{width:100%; border-collapse:collapse; font-family:Candara, Arial, sans-serif; overflow:hidden; border-radius:18px;}}
-        .qs-indicator-table th {{background:{USJ_BLUE}; color:white; font-size:14px; padding:12px; text-align:left;}}
-        .qs-indicator-table td {{border:1px solid #E4EAF4; padding:11px 12px; font-size:14px;}}
-        .qs-indicator-table tr:nth-child(even) td {{background:#F8FAFE;}}
-        .qs-indicator-table td:last-child {{font-weight:950; color:{USJ_RED}; text-align:center;}}
         @media (max-width:900px) {{.qs-grid-2, .qs-value-grid, .qs-stat-grid {{grid-template-columns:1fr;}} .qs-title {{font-size:36px;}}}}
         </style>
         """,
@@ -9636,96 +9792,62 @@ def _qs_module_css():
 def render_qs_ranking_landing_page():
     """Introductory page for the QS Ranking dashboard section."""
     _qs_module_css()
-    logo_html = _cue_logo_html(width=320)
+    logo_html = get_logo_html(width=140, fallback_text="Unité Assurance qualité")
 
     if LANG == "Français":
         hero_kicker = "CLASSEMENT QS 2022-2027"
         hero_title = "Transformer les données QS en tableau de bord stratégique"
-        hero_subtitle = (
-            "Une lecture institutionnelle du positionnement de l’USJ dans le QS World University Rankings, "
-            "avec les indicateurs, les résultats, les comparaisons et les nominations de réputation."
-        )
+        hero_subtitle = "Une lecture institutionnelle du positionnement de l’USJ dans le QS World University Rankings, des indicateurs de performance et des nominations de réputation."
         stat_items = [("2022-2027", "Période analysée"), ("9", "Indicateurs QS"), ("4", "Axes analytiques")]
-        why_title = "Pourquoi ce tableau de bord est stratégique ?"
-        why_text = (
-            "Le classement QS combine des indicateurs de réputation, de recherche, d’internationalisation, "
-            "d’employabilité et de durabilité. En format dynamique, ces éléments deviennent plus faciles à suivre, "
-            "à comparer et à mobiliser pour le pilotage institutionnel."
-        )
+        why_title = "Pourquoi suivre le Classement QS ?"
+        why_text = "Le suivi QS permet d’identifier les leviers de réputation, de recherche, d’internationalisation, d’employabilité et de durabilité qui influencent le positionnement institutionnel."
         decide_title = "Ce qu’il permet de décider"
-        decide_text = (
-            "Le module aide à identifier les indicateurs où l’USJ progresse, ceux qui nécessitent un suivi prioritaire, "
-            "les écarts avec les universités comparables et les leviers liés aux nominations académiques et employeurs."
-        )
+        decide_text = "Il aide à prioriser les actions de collecte, d’amélioration des indicateurs, de mobilisation des nominations et de communication institutionnelle."
         value_title = "Valeur ajoutée pour l’USJ"
         value_items = [
-            ("Suivi du positionnement", "Lire l’évolution de l’USJ dans le classement et dans le contexte libanais."),
-            ("Lecture par indicateur", "Comparer les scores QS par domaine : réputation, citations, internationalisation et employabilité."),
-            ("Benchmark institutionnel", "Mettre en perspective les résultats avec d’autres universités libanaises et régionales."),
-            ("Réputation académique", "Suivre les nominations domestiques et internationales par sujet et par année."),
-            ("Réputation employeur", "Analyser les nominations employeurs et les zones de renforcement possibles."),
-            ("Aide à la décision", "Transformer les résultats QS en priorités de collecte, de communication et d’action institutionnelle."),
+            ("Positionnement", "Comparer l’évolution de l’USJ dans le contexte libanais et international."),
+            ("Lecture par indicateur", "Identifier les indicateurs qui progressent, reculent ou nécessitent un suivi ciblé."),
+            ("Réputation", "Suivre les nominations académiques et employeurs, domestiques et internationales."),
         ]
-        modules_title = "Ce que l’utilisateur peut explorer"
+        modules_title = "Ce que contient le module"
         modules = [
-            ("01", "Synthèse", "Présentation générale du module QS et de ses usages institutionnels."),
-            ("02", "Indicateurs QS", "Rappel des indicateurs et des poids utilisés dans le QS World University Rankings."),
-            ("03", "Résultats USJ", "Lecture des résultats et des comparaisons issues de la présentation QS."),
-            ("04", "Réputation académique", "Analyse des nominations académiques domestiques et internationales."),
-            ("05", "Réputation employeur", "Analyse des nominations employeurs domestiques et internationales."),
+            ("01", "Synthèse", "Vue générale du classement et du rang au Liban."),
+            ("02", "Indicateurs QS", "Poids officiels et lecture méthodologique des indicateurs."),
+            ("03", "Résultats USJ", "Graphiques natifs par indicateur, université et année."),
+            ("04", "Réputation académique", "Nominations historiques et répartition par domaine."),
+            ("05", "Réputation employeur", "Nominations historiques et répartition par domaine."),
         ]
         enter_label = "Entrer dans le Classement QS"
-        back_label = "← Retour au portail"
+        back_label = "Retour au portail"
     else:
         hero_kicker = "QS RANKING 2022-2027"
         hero_title = "Turn QS ranking data into a strategic dashboard"
-        hero_subtitle = (
-            "An institutional reading of USJ’s position in the QS World University Rankings, "
-            "with indicators, results, comparisons and reputation nominations."
-        )
+        hero_subtitle = "An institutional reading of USJ’s position in the QS World University Rankings, performance indicators and reputation nominations."
         stat_items = [("2022-2027", "Period analyzed"), ("9", "QS indicators"), ("4", "Analytical areas")]
-        why_title = "Why this dashboard is strategic"
-        why_text = (
-            "QS combines reputation, research, internationalization, employability and sustainability indicators. "
-            "In dashboard format, these elements become easier to monitor, compare and mobilize for institutional steering."
-        )
-        decide_title = "What it helps decide"
-        decide_text = (
-            "The module helps identify indicators where USJ is progressing, areas requiring closer monitoring, gaps with peer universities "
-            "and levers related to academic and employer nominations."
-        )
+        why_title = "Why monitor QS Ranking?"
+        why_text = "QS monitoring helps identify reputation, research, internationalization, employability and sustainability levers that shape institutional positioning."
+        decide_title = "What it supports"
+        decide_text = "It supports priorities for data collection, indicator improvement, nomination mobilization and institutional communication."
         value_title = "Added value for USJ"
         value_items = [
-            ("Positioning monitoring", "Track USJ’s evolution in the ranking and in the Lebanese context."),
-            ("Indicator-level reading", "Compare QS scores by area: reputation, citations, internationalization and employability."),
-            ("Institutional benchmark", "Contextualize results against Lebanese and regional universities."),
-            ("Academic reputation", "Track domestic and international academic nominations by subject and year."),
-            ("Employer reputation", "Analyze employer nominations and possible reinforcement areas."),
-            ("Decision support", "Turn QS results into priorities for data collection, communication and institutional action."),
+            ("Positioning", "Compare USJ’s evolution in the Lebanese and international context."),
+            ("Indicator reading", "Identify indicators that improved, declined or need targeted monitoring."),
+            ("Reputation", "Track academic and employer nominations, domestic and international."),
         ]
-        modules_title = "What users can explore"
+        modules_title = "Module content"
         modules = [
-            ("01", "Summary", "General presentation of the QS module and its institutional uses."),
-            ("02", "QS indicators", "Overview of the indicators and weights used in the QS World University Rankings."),
-            ("03", "USJ results", "Reading of results and comparisons from the QS presentation."),
-            ("04", "Academic reputation", "Analysis of domestic and international academic nominations."),
-            ("05", "Employer reputation", "Analysis of domestic and international employer nominations."),
+            ("01", "Summary", "General view of the ranking and Lebanese position."),
+            ("02", "QS indicators", "Official weights and methodological reading of indicators."),
+            ("03", "USJ results", "Native charts by indicator, university and year."),
+            ("04", "Academic reputation", "Historical nominations and subject distribution."),
+            ("05", "Employer reputation", "Historical nominations and subject distribution."),
         ]
         enter_label = "Enter QS Ranking"
-        back_label = "← Back to portal"
+        back_label = "Back to portal"
 
-    stat_html = "".join(
-        f"<div class='qs-stat'><div class='qs-stat-value'>{html_escape(value)}</div><div class='qs-stat-label'>{html_escape(label)}</div></div>"
-        for value, label in stat_items
-    )
-    values_html = "".join(
-        f"<div class='qs-value-card'><div class='qs-value-dot'></div><div class='qs-value-title'>{html_escape(title)}</div><div class='qs-value-text'>{html_escape(text)}</div></div>"
-        for title, text in value_items
-    )
-    modules_html = "".join(
-        f"<div class='qs-value-card'><div class='qs-value-title'>{html_escape(number)}. {html_escape(title)}</div><div class='qs-value-text'>{html_escape(text)}</div></div>"
-        for number, title, text in modules
-    )
+    stat_html = "".join(f"<div class='qs-stat'><div class='qs-stat-value'>{html_escape(value)}</div><div class='qs-stat-label'>{html_escape(label)}</div></div>" for value, label in stat_items)
+    values_html = "".join(f"<div class='qs-value-card'><div class='qs-value-dot'></div><div class='qs-value-title'>{html_escape(title)}</div><div class='qs-value-text'>{html_escape(text)}</div></div>" for title, text in value_items)
+    modules_html = "".join(f"<div class='qs-value-card'><div class='qs-value-title'>{html_escape(number)}. {html_escape(title)}</div><div class='qs-value-text'>{html_escape(text)}</div></div>" for number, title, text in modules)
 
     st.markdown(
         f"""
@@ -9771,29 +9893,14 @@ def render_qs_ranking_landing_page():
 
 
 def render_qs_ranking_module():
-    """Interactive QS Ranking section built from the uploaded PowerPoint media."""
+    """Interactive QS Ranking section with native Plotly figures, not slide images."""
     _qs_module_css()
-
-    file_path, file_mtime, file_size = find_qs_ranking_ppt_file()
-    if not file_path:
-        st.error(
-            "Fichier PowerPoint QS introuvable. Veuillez ajouter le fichier QS dans le même dossier GitHub que l’application."
-            if LANG == "Français"
-            else "QS PowerPoint file not found. Please add the QS file in the same GitHub folder as the app."
-        )
-        if st.button("← Retour au portail" if LANG == "Français" else "← Back to portal", key="qs_missing_back"):
-            st.session_state["selected_portal_app"] = None
-            st.session_state["dashboard_started"] = False
-            st.rerun()
-        return
-
-    assets = load_qs_ranking_ppt_assets(file_path, file_mtime, file_size)
 
     title = "Classement QS" if LANG == "Français" else "QS Ranking"
     subtitle = (
-        "Lecture dynamique de la présentation QS World University Rankings 2022-2027."
+        "Graphiques natifs construits à partir de la présentation QS World University Rankings 2022-2027."
         if LANG == "Français"
-        else "Dynamic reading of the QS World University Rankings 2022-2027 presentation."
+        else "Native charts built from the QS World University Rankings 2022-2027 presentation."
     )
     st.markdown(
         f"""
@@ -9811,7 +9918,7 @@ def render_qs_ranking_module():
             st.session_state["dashboard_started"] = False
             st.rerun()
     with top_cols[1]:
-        if st.button("← Portail" if LANG == "Français" else "← Portal", key="qs_back_portal", use_container_width=True):
+        if st.button("Portail" if LANG == "Français" else "Portal", key="qs_back_portal", use_container_width=True):
             st.session_state["selected_portal_app"] = None
             st.session_state["dashboard_started"] = False
             st.rerun()
@@ -9832,61 +9939,86 @@ def render_qs_ranking_module():
     st.markdown(
         "<div class='qs-note'>"
         + html_escape(
-            "Les visuels de cette section sont lus localement depuis le PowerPoint QS fourni. Les données restent séparées de l’Exit Survey, du Factbook et de l’évaluation des UE."
+            "Cette section n’affiche plus les diapositives comme images. Les graphiques et tableaux sont reconstruits nativement dans Streamlit à partir des données visibles dans la présentation QS fournie."
             if LANG == "Français"
-            else "The visuals in this section are read locally from the provided QS PowerPoint. The data remains separate from the Exit Survey, Factbook and Course Unit Evaluation."
+            else "This section no longer displays slides as images. Charts and tables are rebuilt natively in Streamlit from the data visible in the provided QS presentation."
         )
         + "</div>",
         unsafe_allow_html=True,
     )
 
     if selected in {"Synthèse", "Summary"}:
-        if LANG == "Français":
-            panels = [
-                ("Positionnement", "Comparer l’évolution de l’USJ dans le QS World University Rankings et dans le contexte libanais."),
-                ("Indicateurs", "Lire les contributions des indicateurs clés : réputation, citations, internationalisation, employabilité et durabilité."),
-                ("Nominations", "Suivre les nominations académiques et employeurs, domestiques et internationales, par sujet et par année."),
-            ]
-        else:
-            panels = [
-                ("Positioning", "Compare USJ’s evolution in the QS World University Rankings and in the Lebanese context."),
-                ("Indicators", "Read the contribution of key indicators: reputation, citations, internationalization, employability and sustainability."),
-                ("Nominations", "Monitor academic and employer nominations, domestic and international, by subject and year."),
-            ]
-        panel_html = "".join(
-            f"<div class='qs-value-card'><div class='qs-value-dot'></div><div class='qs-value-title'>{html_escape(t)}</div><div class='qs-value-text'>{html_escape(x)}</div></div>"
-            for t, x in panels
-        )
-        st.markdown(f"<div class='qs-value-grid'>{panel_html}</div>", unsafe_allow_html=True)
-        _qs_render_image_grid(assets, [("image7.png", "Lebanese universities rankings 2022-2027")], columns=1, max_height=650)
+        c1, c2, c3, c4 = st.columns(4)
+        usj_2027 = QS_SCORE_DATA["Overall Ranking Scores"]["USJ"][-1]
+        usj_world_2027 = "537"
+        usj_lebanon_2027 = 3
+        usj_change = QS_WORLD_RANKING_DATA[2]["Change"]
+        c1.metric("Score QS USJ 2027" if LANG == "Français" else "USJ QS score 2027", f"{usj_2027:.1f}")
+        c2.metric("Rang mondial USJ 2027" if LANG == "Français" else "USJ world rank 2027", usj_world_2027)
+        c3.metric("Rang au Liban 2027" if LANG == "Français" else "Lebanon rank 2027", usj_lebanon_2027)
+        c4.metric("Évolution 2026-2027" if LANG == "Français" else "Change 2026-2027", usj_change)
+        st.plotly_chart(_qs_lebanon_rank_chart(), use_container_width=True)
+        rank_table = pd.DataFrame(QS_WORLD_RANKING_DATA)
+        _qs_table_card(rank_table, "Classement des universités libanaises 2022-2027" if LANG == "Français" else "Lebanese universities ranking 2022-2027", max_height=520)
 
     elif selected in {"Indicateurs QS", "QS indicators"}:
         if LANG == "Français":
-            st.markdown("### Indicateurs et poids QS World University Rankings")
-            header = ("Indicateur", "Poids")
-            rows = [(fr, weight_fr) for _, _, fr, weight_fr in QS_INDICATORS]
+            indicator_rows = [(fr, weight_fr) for _, _, fr, weight_fr in QS_INDICATORS]
+            table = pd.DataFrame(indicator_rows, columns=["Indicateur", "Poids"])
+            title_table = "Indicateurs QS World University Rankings et poids"
         else:
-            st.markdown("### QS World University Rankings indicators and weights")
-            header = ("Indicator", "Weight")
-            rows = [(en, weight_en) for en, weight_en, _, _ in QS_INDICATORS]
-        table_rows = "".join(f"<tr><td>{html_escape(a)}</td><td>{html_escape(b)}</td></tr>" for a, b in rows)
-        st.markdown(
-            f"<table class='qs-indicator-table'><thead><tr><th>{html_escape(header[0])}</th><th>{html_escape(header[1])}</th></tr></thead><tbody>{table_rows}</tbody></table>",
-            unsafe_allow_html=True,
-        )
-        _qs_render_image_grid(assets, QS_IMAGE_GROUPS["indicators"], columns=1, max_height=650)
+            indicator_rows = [(en, weight_en) for en, weight_en, _, _ in QS_INDICATORS]
+            table = pd.DataFrame(indicator_rows, columns=["Indicator", "Weight"])
+            title_table = "QS World University Rankings indicators and weights"
+        _qs_table_card(table, title_table, max_height=460)
+        weight_df = table.copy()
+        label_col = weight_df.columns[0]
+        weight_col = weight_df.columns[1]
+        weight_df["WeightValue"] = weight_df[weight_col].astype(str).str.replace("%", "", regex=False).astype(float)
+        fig = px.bar(weight_df.sort_values("WeightValue"), x="WeightValue", y=label_col, orientation="h", text=weight_col, color="WeightValue", color_continuous_scale=PLOTLY_CONT)
+        fig.update_traces(textposition="outside", cliponaxis=False)
+        fig = _qs_polish_fig(fig, height=520, title=title_table)
+        fig.update_xaxes(title="Poids (%)" if LANG == "Français" else "Weight (%)")
+        fig.update_yaxes(title="")
+        fig.update_layout(coloraxis_showscale=False)
+        st.plotly_chart(fig, use_container_width=True)
 
     elif selected in {"Résultats USJ", "USJ results"}:
-        st.markdown("### " + ("Résultats USJ dans QS World University Rankings" if LANG == "Français" else "USJ results in QS World University Rankings"))
-        _qs_render_image_grid(assets, QS_IMAGE_GROUPS["results"], columns=1, max_height=720)
+        metric_options = list(QS_SCORE_DATA.keys())
+        metric_label_map = {_qs_metric_label(m): m for m in metric_options}
+        selected_label = st.selectbox("Indicateur" if LANG == "Français" else "Indicator", list(metric_label_map.keys()), key="qs_score_metric_selector")
+        metric = metric_label_map[selected_label]
+        st.plotly_chart(_qs_grouped_score_chart(metric), use_container_width=True)
+        st.plotly_chart(_qs_usj_indicator_trend_chart(), use_container_width=True)
+        score_table = _qs_scores_long(metric).pivot_table(index="University", columns="Year", values="Score", aggfunc="first").reset_index()
+        score_table = score_table.set_index("University").reindex(QS_UNIVERSITIES).reset_index()
+        _qs_table_card(score_table, f"{_qs_metric_label(metric)} - 2023-2027", max_height=520)
 
     elif selected in {"Réputation académique", "Academic reputation"}:
-        st.markdown("### " + ("Nominations de réputation académique" if LANG == "Français" else "Academic reputation nominations"))
-        _qs_render_image_grid(assets, QS_IMAGE_GROUPS["academic_reputation"], columns=1, max_height=720)
+        nomination_type_label = st.radio(
+            "Type de nominations" if LANG == "Français" else "Nomination type",
+            [_qs_t("Domestic", "Domestique"), _qs_t("International", "International")],
+            horizontal=True,
+            key="qs_academic_nomination_type",
+        )
+        nomination_type = "Domestic" if nomination_type_label in {"Domestic", "Domestique"} else "International"
+        st.plotly_chart(_qs_nomination_line_chart("academic", nomination_type), use_container_width=True)
+        st.plotly_chart(_qs_subject_bar_chart("academic"), use_container_width=True)
+        table = _qs_nomination_long("academic", nomination_type).pivot_table(index="University", columns="Year", values="Nominations", aggfunc="first").reset_index()
+        _qs_table_card(table, ("Nominations de réputation académique" if LANG == "Français" else "Academic reputation nominations") + f" - {nomination_type_label}", max_height=520)
 
     elif selected in {"Réputation employeur", "Employer reputation"}:
-        st.markdown("### " + ("Nominations de réputation employeur" if LANG == "Français" else "Employer reputation nominations"))
-        _qs_render_image_grid(assets, QS_IMAGE_GROUPS["employer_reputation"], columns=1, max_height=720)
+        nomination_type_label = st.radio(
+            "Type de nominations" if LANG == "Français" else "Nomination type",
+            [_qs_t("Domestic", "Domestique"), _qs_t("International", "International")],
+            horizontal=True,
+            key="qs_employer_nomination_type",
+        )
+        nomination_type = "Domestic" if nomination_type_label in {"Domestic", "Domestique"} else "International"
+        st.plotly_chart(_qs_nomination_line_chart("employer", nomination_type), use_container_width=True)
+        st.plotly_chart(_qs_subject_bar_chart("employer"), use_container_width=True)
+        table = _qs_nomination_long("employer", nomination_type).pivot_table(index="University", columns="Year", values="Nominations", aggfunc="first").reset_index()
+        _qs_table_card(table, ("Nominations de réputation employeur" if LANG == "Français" else "Employer reputation nominations") + f" - {nomination_type_label}", max_height=520)
 
     gc.collect()
 
