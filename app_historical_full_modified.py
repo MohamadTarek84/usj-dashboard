@@ -265,6 +265,66 @@ st.markdown(
         background: #F4F8FF !important;
     }}
 
+
+    /* Factbook internal navigation: make st.tabs look like the Exit Survey / UE navigation capsule */
+    div[data-testid="stTabs"] > div[role="tablist"] {
+        background: linear-gradient(135deg, #F7F9FC 0%, #EEF4FF 100%) !important;
+        padding: 8px 12px !important;
+        border-radius: 18px !important;
+        border: 1px solid #D9E4F5 !important;
+        box-shadow: 0 6px 18px rgba(0, 27, 117, 0.06) !important;
+        gap: 8px !important;
+        margin-bottom: 18px !important;
+        overflow-x: auto !important;
+        white-space: nowrap !important;
+    }
+
+    div[data-testid="stTabs"] button[role="tab"] {
+        border-radius: 999px !important;
+        padding: 8px 14px !important;
+        min-height: 38px !important;
+        border: 1px solid transparent !important;
+        background: transparent !important;
+        color: {USJ_TEXT} !important;
+        font-family: Candara, Arial, sans-serif !important;
+        font-weight: 700 !important;
+        line-height: 1.15 !important;
+    }
+
+    div[data-testid="stTabs"] button[role="tab"] p,
+    div[data-testid="stTabs"] button[role="tab"] span {
+        color: inherit !important;
+        font-family: Candara, Arial, sans-serif !important;
+        font-weight: 700 !important;
+    }
+
+    div[data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
+        background: #FFFFFF !important;
+        border-color: #C9D6EA !important;
+        color: {USJ_RED} !important;
+        box-shadow: 0 4px 12px rgba(0, 27, 117, 0.08) !important;
+    }
+
+    div[data-testid="stTabs"] button[role="tab"][aria-selected="true"]::before {
+        content: "";
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: {USJ_RED};
+        margin-right: 8px;
+        box-shadow: inset 0 0 0 3px #FFFFFF;
+        vertical-align: middle;
+    }
+
+    div[data-testid="stTabs"] [data-baseweb="tab-highlight"] {
+        display: none !important;
+    }
+
+    div[data-testid="stTabs"] div[role="tabpanel"] {
+        padding-top: 6px !important;
+    }
+
     .control-panel {{
         background: linear-gradient(135deg, #FFFFFF 0%, #F7FAFF 58%, #EEF5FF 100%);
         border: 1px solid #D8E3F3;
@@ -7915,31 +7975,9 @@ def render_factbook_cover():
             <div class='fb-landing-panel-text'>Les six sections du Factbook sont intégrées progressivement. Chaque section sera accessible séparément afin de garder une lecture claire, proche de la structure du fichier Excel source.</div>
             <div class='fb-landing-module-grid'>{content_modules_html}</div>
         </div>
-        <div class='fb-landing-heading'>Accéder aux sections</div>
     </div>
     """).strip()
     st.html(landing_html)
-
-    # Unified Factbook navigation capsule, aligned with the Exit Survey and UE navigation style.
-    enabled_sections = [item for item in sections if item.get("enabled")]
-    factbook_nav_labels = {
-        f"{item['label']} · {item['title'].split(':')[0].strip()}": item["id"]
-        for item in enabled_sections
-    }
-    if factbook_nav_labels:
-        selected_factbook_nav = st.radio(
-            "Sections Factbook",
-            list(factbook_nav_labels.keys()),
-            horizontal=True,
-            label_visibility="collapsed",
-            key="factbook_cover_section_nav",
-        )
-        nav_cols = st.columns([1.25, 4.75])
-        with nav_cols[0]:
-            if st.button("Ouvrir la section", key="open_factbook_selected_from_radio", use_container_width=True):
-                st.session_state["selected_factbook_section"] = factbook_nav_labels[selected_factbook_nav]
-                st.rerun()
-        st.markdown("<div style='height:10px;'></div>", unsafe_allow_html=True)
 
     # Navigation cards with real Streamlit buttons.
     for start in range(0, len(sections), 3):
