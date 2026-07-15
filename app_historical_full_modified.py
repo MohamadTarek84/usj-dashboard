@@ -3594,9 +3594,31 @@ def _cue_parse_response_rates(file_path, semester_label):
     first_col = headers[0]
     df = df.dropna(subset=[first_col], how="any").copy()
     df = df.rename(columns={first_col: "Institution"})
+    df["Institution"] = df["Institution"].map(_cue_clean_text)
     for col in df.columns:
         if col != "Institution":
             df[col] = pd.to_numeric(df[col], errors="coerce")
+
+    # Keep only the real response-rate block. The Excel sheet may contain a small
+    # extra student-count block after the USJ total; those rows have no response
+    # metrics and must not be counted as responses or participating institutions.
+    response_metric_cols = [
+        col for col in [
+            "Total Réponses recues",
+            "Total réponses possibles pour les UE évaluées",
+            "Taux de réponses pour les UE évaluées",
+            "Total réponses possibles pour toutes les UE",
+            "Taux de réponses pour toutes les UE",
+        ] if col in df.columns
+    ]
+    if response_metric_cols:
+        df = df[~df[response_metric_cols].isna().all(axis=1)].copy()
+
+    df["Type de ligne"] = np.where(
+        df["Institution"].astype(str).str.contains("USJ", case=False, na=False),
+        "Total USJ",
+        "Institution",
+    )
     df["Semestre"] = semester_label
     return df
 
@@ -3653,18 +3675,34 @@ def _cue_table(df, title, note=None, max_height=560, percent_cols=None, hide_col
 
 
 def _cue_metric_summary(raw_df, ue_df, response_df):
-    response_total = pd.to_numeric(response_df.get("Total Réponses recues", pd.Series(dtype=float)), errors="coerce").sum()
-    possible_evaluated = pd.to_numeric(response_df.get("Total réponses possibles pour les UE évaluées", pd.Series(dtype=float)), errors="coerce").sum()
-    response_rate = response_total / possible_evaluated if possible_evaluated else np.nan
+    response_data = response_df.copy()
+    if "Type de ligne" in response_data.columns:
+        total_rows = response_data[response_data["Type de ligne"].eq("Total USJ")].copy()
+        institution_rows = response_data[response_data["Type de ligne"].eq("Institution")].copy()
+    else:
+        total_rows = response_data[response_data.get("Institution", pd.Series(dtype=str)).astype(str).str.contains("USJ", case=False, na=False)].copy()
+        institution_rows = response_data[~response_data.index.isin(total_rows.index)].copy()
+
+    if not total_rows.empty:
+        total_row = total_rows.iloc[0]
+        response_total = pd.to_numeric(total_row.get("Total Réponses recues"), errors="coerce")
+        possible_evaluated = pd.to_numeric(total_row.get("Total réponses possibles pour les UE évaluées"), errors="coerce")
+        stored_response_rate = pd.to_numeric(total_row.get("Taux de réponses pour les UE évaluées"), errors="coerce")
+        response_rate = stored_response_rate if pd.notna(stored_response_rate) else (response_total / possible_evaluated if possible_evaluated else np.nan)
+        not_evaluated = pd.to_numeric(total_row.get("Nombre des UE non évaluées"), errors="coerce")
+    else:
+        response_total = pd.to_numeric(institution_rows.get("Total Réponses recues", pd.Series(dtype=float)), errors="coerce").sum()
+        possible_evaluated = pd.to_numeric(institution_rows.get("Total réponses possibles pour les UE évaluées", pd.Series(dtype=float)), errors="coerce").sum()
+        response_rate = response_total / possible_evaluated if possible_evaluated else np.nan
+        not_evaluated = pd.to_numeric(institution_rows.get("Nombre des UE non évaluées", pd.Series(dtype=float)), errors="coerce").sum()
 
     accord_total = pd.to_numeric(raw_df.get("Accord Effectif", pd.Series(dtype=float)), errors="coerce").sum()
     valid_total = pd.to_numeric(raw_df.get("Total réponses valides", pd.Series(dtype=float)), errors="coerce").sum()
     agreement_rate = accord_total / valid_total if valid_total else np.nan
 
     courses_df = ue_df[ue_df["Type de ligne"].eq("UE")].copy() if "Type de ligne" in ue_df.columns else ue_df.copy()
-    institutions_count = response_df["Institution"].dropna().astype(str).nunique() if "Institution" in response_df.columns else np.nan
+    institutions_count = institution_rows["Institution"].dropna().astype(str).nunique() if "Institution" in institution_rows.columns else np.nan
     courses_count = len(courses_df)
-    not_evaluated = pd.to_numeric(response_df.get("Nombre des UE non évaluées", pd.Series(dtype=float)), errors="coerce").sum()
     return response_total, response_rate, agreement_rate, courses_count, institutions_count, not_evaluated
 
 
@@ -4028,20 +4066,24 @@ def render_course_unit_evaluation_module():
         if institution != "Tous":
             filtered = filtered[filtered["Institution"].astype(str) == institution]
 
+        chart_filtered = filtered.copy()
+        if institution == "Tous" and "Type de ligne" in chart_filtered.columns:
+            chart_filtered = chart_filtered[chart_filtered["Type de ligne"].eq("Institution")].copy()
+
         col_eval = "Taux de réponses pour les UE évaluées"
         col_all = "Taux de réponses pour toutes les UE"
-        if col_eval in filtered.columns:
+        if col_eval in chart_filtered.columns:
             _cue_percent_bar(
-                filtered,
+                chart_filtered,
                 "Institution",
                 col_eval,
                 cue_t(f"Taux de réponses pour les UE évaluées - {semester_readable}", f"Response rate for evaluated CUs - {semester_readable}"),
                 orientation="h",
                 top_n=40,
             )
-        if col_all in filtered.columns:
+        if col_all in chart_filtered.columns:
             _cue_percent_bar(
-                filtered,
+                chart_filtered,
                 "Institution",
                 col_all,
                 cue_t(f"Taux de réponses pour toutes les UE - {semester_readable}", f"Response rate for all CUs - {semester_readable}"),
