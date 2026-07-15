@@ -3846,6 +3846,131 @@ def _cue_percent_bar(
         )
 
 
+def _cue_question_institution_agreement_chart(data, question_title, semester_readable):
+    """Show a selected question by institution with bars and the overall agreement line.
+
+    Bars = Tout à fait d'accord + Plutôt d'accord / valid responses by institution.
+    Orange line = overall agreement for the selected question, weighted by valid answers.
+    """
+    if data is None or data.empty:
+        st.info(cue_t("Aucune donnée disponible pour ce graphique.", "No data available for this chart."))
+        return
+
+    required_cols = {"Institution", "Accord Effectif", "Total réponses valides"}
+    if not required_cols.issubset(set(data.columns)):
+        st.info(cue_t("Les colonnes nécessaires ne sont pas disponibles pour ce graphique.", "Required columns are not available for this chart."))
+        return
+
+    plot_data = data.copy()
+    plot_data["Institution"] = plot_data["Institution"].map(_cue_clean_text)
+    plot_data["Accord Effectif"] = pd.to_numeric(plot_data["Accord Effectif"], errors="coerce")
+    plot_data["Total réponses valides"] = pd.to_numeric(plot_data["Total réponses valides"], errors="coerce")
+
+    grouped = (
+        plot_data.groupby("Institution", dropna=False)
+        .agg(
+            **{
+                "Accord Effectif": ("Accord Effectif", "sum"),
+                "Total réponses valides": ("Total réponses valides", "sum"),
+            }
+        )
+        .reset_index()
+    )
+    grouped = grouped[grouped["Total réponses valides"].fillna(0) > 0].copy()
+    if grouped.empty:
+        st.info(cue_t("Aucune réponse valide disponible pour cette question.", "No valid answers available for this question."))
+        return
+
+    grouped["Taux d'accord"] = grouped["Accord Effectif"] / grouped["Total réponses valides"].replace({0: np.nan})
+    grouped = grouped.dropna(subset=["Taux d'accord"]).sort_values("Taux d'accord", ascending=False).copy()
+    grouped["Label %"] = grouped["Taux d'accord"].map(lambda v: _cue_format_pct(v, digits=2))
+
+    overall_agreement = grouped["Accord Effectif"].sum() / grouped["Total réponses valides"].sum() if grouped["Total réponses valides"].sum() else np.nan
+    overall_label = _cue_format_pct(overall_agreement, digits=2)
+
+    title_text = cue_t(
+        f"Taux d’accord par institution - {semester_readable}",
+        f"Agreement rate by institution - {semester_readable}",
+    )
+
+    fig = go.Figure()
+    fig.add_trace(
+        go.Bar(
+            x=grouped["Institution"].astype(str),
+            y=grouped["Taux d'accord"],
+            text=grouped["Label %"],
+            textposition="outside",
+            marker=dict(color=USJ_BLUE),
+            name=cue_t("Tout à fait d'accord + Plutôt d'accord", "Strongly agree + Rather agree"),
+            hovertemplate=(
+                "<b>%{x}</b><br>"
+                + cue_t("Taux d'accord", "Agreement rate")
+                + ": %{text}<br>"
+                + cue_t("Réponses valides", "Valid answers")
+                + ": %{customdata[0]:,.0f}<extra></extra>"
+            ),
+            customdata=np.column_stack([grouped["Total réponses valides"].to_numpy()]),
+        )
+    )
+
+    if pd.notna(overall_agreement):
+        fig.add_trace(
+            go.Scatter(
+                x=grouped["Institution"].astype(str),
+                y=[overall_agreement] * len(grouped),
+                mode="lines",
+                line=dict(color=USJ_ORANGE, width=4),
+                name=cue_t("Taux d’accord global", "Overall agreement rate"),
+                hovertemplate=cue_t("Taux d’accord global", "Overall agreement rate") + f": {overall_label}<extra></extra>",
+            )
+        )
+        fig.add_annotation(
+            x=grouped["Institution"].astype(str).iloc[-1],
+            y=overall_agreement,
+            text=f"<b>{overall_label}</b>",
+            showarrow=False,
+            xshift=38,
+            yshift=8,
+            font=dict(family="Candara, Arial", size=13, color=USJ_ORANGE),
+            bgcolor="rgba(255,255,255,0.85)",
+            bordercolor="rgba(201,133,43,0.65)",
+            borderwidth=1,
+            borderpad=3,
+        )
+
+    fig.update_layout(
+        title=dict(text=title_text, font=dict(family="Candara, Arial", size=20, color=USJ_BLUE)),
+        height=max(560, 18 * len(grouped) + 430),
+        margin=dict(l=80, r=130, t=110, b=170),
+        font=dict(family="Candara, Arial", size=13, color=USJ_TEXT),
+        plot_bgcolor="white",
+        paper_bgcolor="white",
+        showlegend=True,
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
+    )
+    fig.update_yaxes(
+        title=cue_t("Taux d'accord", "Agreement rate"),
+        tickformat=".0%",
+        range=[0, min(1.08, max(0.05, grouped["Taux d'accord"].max() * 1.14, overall_agreement * 1.12 if pd.notna(overall_agreement) else 0.05))],
+        gridcolor="#E2E8F0",
+        automargin=True,
+    )
+    fig.update_xaxes(
+        title=cue_t("Institution", "Institution"),
+        tickangle=-45,
+        automargin=True,
+    )
+    fig.update_traces(textfont=dict(size=12, family="Candara, Arial", color=USJ_TEXT), cliponaxis=False)
+
+    st.plotly_chart(fig, use_container_width=True)
+    st.markdown(
+        f"<div style='font-family:Candara, Arial, sans-serif; color:#667085; font-size:13px; margin-top:-8px; margin-bottom:10px;'>"
+        f"{html_escape(cue_t('Barres bleues : Tout à fait d\'accord + Plutôt d\'accord par institution. Ligne orange : taux d\'accord global pour la question sélectionnée.', 'Blue bars: Strongly agree + Rather agree by institution. Orange line: overall agreement rate for the selected question.'))}"
+        "</div>",
+        unsafe_allow_html=True,
+    )
+
+
 def _cue_count_bar(data, label_col, value_col, title, top_n=20, height=None):
     plot_data = data.copy()
     plot_data[value_col] = pd.to_numeric(plot_data[value_col], errors="coerce")
@@ -4051,8 +4176,7 @@ def render_course_unit_evaluation_module():
 
         if question != "Tous":
             question_filtered = filtered[filtered["Question"].astype(str) == question].copy()
-            chart_title = cue_t("Taux d’accord par institution pour la question sélectionnée", "Agreement rate by institution for the selected question")
-            _cue_percent_bar(question_filtered, "Institution", "Taux d'accord", chart_title, orientation="h", top_n=40, color_col="Faculté")
+            _cue_question_institution_agreement_chart(question_filtered, question, semester_readable)
             table_title = cue_t("Détail de la question sélectionnée", "Selected question details")
             _cue_table(
                 question_filtered[["Faculté", "Institution", "Question", "Accord Effectif", "Taux d'accord", "Désaccord Effectif", "Taux de désaccord", "Total réponses valides"]],
