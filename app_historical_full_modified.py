@@ -10253,6 +10253,7 @@ def render_strategic_plan_table(df, title, max_height=560):
         col for col in table.columns
         if str(col).strip().lower() != "formule"
         and str(col).strip() != "Nombre d'Objectifs"
+        and str(col).strip() != "2025-2026"
     ]]
     year_cols = _ps_year_columns(table)
     numeric_cols = set(year_cols)
