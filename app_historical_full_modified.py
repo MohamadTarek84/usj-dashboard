@@ -9960,6 +9960,90 @@ def _qs_subject_status_cards(source="academic", nomination_type="Domestic"):
         )
 
 
+def _qs_add_subject_value_annotations(fig, df):
+    """Add readable value labels to subject-area line charts.
+
+    Plotly text labels attached directly to traces can overlap when subject
+    lines cross or have very close values. This helper keeps the values visible
+    by adding separate annotations with a small white background and dynamic
+    vertical offsets for close points within the same year.
+    """
+    if df.empty or "Nominations" not in df.columns:
+        return fig
+
+    working = df.copy()
+    working["Nominations"] = pd.to_numeric(working["Nominations"], errors="coerce")
+    working = working.dropna(subset=["Nominations", "Year", "Subject Area"])
+    if working.empty:
+        return fig
+
+    max_value = float(working["Nominations"].max())
+    # Close values need stronger separation. The threshold scales lightly with
+    # the chart range but never goes below 2 nominations.
+    close_threshold = max(2.0, max_value * 0.035)
+    default_subject_shift = {
+        "Arts & Humanities": 14,
+        "Engineering & Technology": -16,
+        "Life Sciences & Medicine": 16,
+        "Natural Sciences": -18,
+        "Social Sciences & Management": 22,
+    }
+    cluster_shifts = [-22, 22, -36, 36, 0, 50, -50]
+
+    for year, year_df in working.groupby("Year"):
+        year_df = year_df.sort_values("Nominations").reset_index(drop=True)
+        clusters = []
+        current = []
+        previous_value = None
+        for _, row in year_df.iterrows():
+            value = float(row["Nominations"])
+            if previous_value is None or abs(value - previous_value) <= close_threshold:
+                current.append(row)
+            else:
+                clusters.append(current)
+                current = [row]
+            previous_value = value
+        if current:
+            clusters.append(current)
+
+        yshift_by_subject = {}
+        for cluster in clusters:
+            if len(cluster) == 1:
+                subject = str(cluster[0]["Subject Area"])
+                yshift_by_subject[subject] = default_subject_shift.get(subject, 14)
+            else:
+                # For close/crossing lines, alternate labels above and below.
+                # Sorting by subject order keeps the layout stable across all
+                # four subject-area charts.
+                cluster = sorted(
+                    cluster,
+                    key=lambda r: QS_SUBJECT_AREAS.index(str(r["Subject Area"])) if str(r["Subject Area"]) in QS_SUBJECT_AREAS else 999,
+                )
+                for i, row in enumerate(cluster):
+                    subject = str(row["Subject Area"])
+                    yshift_by_subject[subject] = cluster_shifts[i % len(cluster_shifts)]
+
+        for _, row in year_df.iterrows():
+            subject = str(row["Subject Area"])
+            value = float(row["Nominations"])
+            color = QS_SUBJECT_AREA_COLORS.get(subject, USJ_BLUE)
+            yshift = yshift_by_subject.get(subject, default_subject_shift.get(subject, 14))
+            fig.add_annotation(
+                x=int(row["Year"]),
+                y=value,
+                text=f"<b>{int(round(value))}</b>",
+                showarrow=False,
+                yshift=yshift,
+                xshift=0,
+                font=dict(family="Candara, Arial", size=12, color=USJ_TEXT),
+                bgcolor="rgba(255,255,255,0.92)",
+                bordercolor=color,
+                borderwidth=1,
+                borderpad=2,
+            )
+    return fig
+
+
 def _qs_subject_area_trend_chart(source="academic", nomination_type="Domestic"):
     df = _qs_subject_nomination_long(source, nomination_type)
     if df.empty:
@@ -9977,16 +10061,13 @@ def _qs_subject_area_trend_chart(source="academic", nomination_type="Domestic"):
         y="Nominations",
         color="Subject Area",
         markers=True,
-        text="Nominations",
         category_orders={"Subject Area": QS_SUBJECT_AREAS},
         color_discrete_map=QS_SUBJECT_AREA_COLORS,
     )
     fig.update_traces(
-        mode="lines+markers+text",
+        mode="lines+markers",
         line=dict(width=3.2),
         marker=dict(size=8, line=dict(color="white", width=1.4)),
-        textposition="top center",
-        textfont=dict(family="Candara, Arial", size=12, color=USJ_TEXT),
         hovertemplate="<b>%{fullData.name}</b><br>Year: %{x}<br>Nominations: %{y}<extra></extra>",
         cliponaxis=False,
     )
@@ -9997,9 +10078,9 @@ def _qs_subject_area_trend_chart(source="academic", nomination_type="Domestic"):
         line_width=0,
         layer="below",
     )
-    fig = _qs_polish_fig(fig, height=610, title=title)
+    fig = _qs_polish_fig(fig, height=660, title=title)
     max_value = pd.to_numeric(df["Nominations"], errors="coerce").max()
-    y_top = max(10, max_value * 1.18) if pd.notna(max_value) else None
+    y_top = max(10, max_value * 1.28) if pd.notna(max_value) else None
     if y_top:
         fig.update_yaxes(range=[0, y_top])
     fig.update_yaxes(title="Number of ranked subjects")
@@ -10011,14 +10092,15 @@ def _qs_subject_area_trend_chart(source="academic", nomination_type="Domestic"):
             y=0.98,
             xanchor="left",
             x=0.02,
-            bgcolor="rgba(255,255,255,0.85)",
+            bgcolor="rgba(255,255,255,0.90)",
             bordercolor="#D9E4F5",
             borderwidth=1,
             font=dict(family="Candara, Arial", size=12, color=USJ_TEXT),
             title=None,
         ),
-        margin=dict(l=75, r=40, t=95, b=75),
+        margin=dict(l=75, r=55, t=105, b=80),
     )
+    fig = _qs_add_subject_value_annotations(fig, df)
     return fig
 
 
