@@ -763,12 +763,120 @@ THEME_PROFILE_HINTS = {
     "reputation et image": "reputation image classement visibilite notoriete attractivite rayonnement perception reconnaissance",
     "environnement politique et economique emigration": "crise politique economique emigration instabilite inflation guerre securite contexte libanais",
 }
+# ------------------------------------------------------------
+# EXPERT-CURATED KEYWORDS — Forces / Faiblesses (internal themes)
+# ------------------------------------------------------------
+# Sourced from keywordsFF-IM.xlsx (theme headers highlighted yellow, one
+# keyword list per theme highlighted blue underneath). Keys are normalized
+# (see normalize()) official theme strings, matched the same "substring
+# either way" rule already used by THEME_PROFILE_HINTS above, so this works
+# directly against official_themes_for() output for PSG / Directeurs /
+# Enseignants (whose 13 internal themes are exactly the columns below), and
+# transparently benefits Anciens / Étudiants too wherever they happen to
+# share an identically-worded theme with those three types.
+#
+# Two columns from the source file were intentionally NOT included here:
+# "Anciens" (a participant type, not an official Forces/Faiblesses theme)
+# and "Réputation" (this maps to "Réputation et image", which is an
+# EXTERNAL Opportunités/Menaces theme, not Forces/Faiblesses). Including
+# them under this dict would have silently misfiled their keywords onto the
+# wrong theme family.
+THEME_KEYWORDS_INTERNAL = {
+    "soutenabilite financiere": [
+        "budget", "scolarités", "fonds", "fundraising", "salaire", "dotation", "marketing", "coût", "déficit",
+    ],  # Soutenabilité financière
+    "gouvernance et leadership (gestion, relation, representation, etc.)": [
+        "gestion", "management", "communication", "hiérarchie", "représentation", "participation", "décision",
+        "leader", "responsible", "recteur", "transparence", "fragmentation", "vision", "facultaire", "processus",
+        "politiques", "information", "dédoublement", "organisation", "décentralisation", "donnée", "data",
+        "rigidité", "lenteur", "nomination", "élection", "insuffisance", "coordination", "centralisation",
+        "controle", "adaptation", "qualité",
+    ],  # Gouvernance et Leadership (gestion, relation, représentation, etc.)
+    "strategie academique et qualite d’enseignement": [
+        "étudiant", "horaire", "enseignant", "tuteur", "prof", "surcharge", "cours", "crédit", "excellence",
+        "succès", "évaluation", "théorie", "pratique", "stage", "mutualisation", "nombre d'étudiants",
+        "programme", "licence", "master", "doctorat", "admission", "vacataire", "cadre", "accréditation",
+        "anglais", "trilinguisme", "discipline", "multilinguisme", "pluridisciplinaire", "multidisciplinaire",
+        "normes",
+    ],  # Stratégie académique et qualité d’enseignement
+    "recherche et innovation": [
+        "projet", "recherche", "citation", "chercheur", "publication", "article",
+    ],  # Recherche et Innovation
+    "ressources documentaires et environnement digital": [
+        "bibliothèque", "livres", "revues", "abonnement", "plateforme", "ordi", "software", "app", "internet",
+        "réseau", "ai", "ia", "matériel", "informatique", "outils", "digital", "teams", "moodle",
+    ],  # Ressources documentaires et Environnement digital
+    "succes des etudiants (recrutement, accompagnement, services de support, employabilite, etc.)": [
+        "attractivité", "service", "vie étudiante", "employabilité", "chômage", "bourse", "débouchés", "sport",
+        "étudiant", "insertion professionnelle", "orientation", "aide financière",
+    ],  # Succès des étudiants (recrutement, accompagnement, services de support, employabilité, etc.)
+    "ressources humaines": [
+        "carrière", "salaire", "paiement", "justice", "valorisation", "appréciation", "personnel", "qualifié",
+        "promotion", "retraités", "descriptif de poste", "charge de travail", "formation continue",
+    ],  # Ressources humaines
+    "strategie et mobilite internationales": [
+        "échange", "équivalence", "reconnaissance", "diplôme", "étranger",
+    ],  # Stratégie et mobilité internationales
+    "mission societale": [
+        "volontariat", "aide à la société",
+    ],  # Mission sociétale ("o7" / "mazid" excluded: too short / ambiguous to match reliably as keywords)
+    "espace et infrastructures": [
+        "espace vert", "cafet", "banc", "arbre", "salle", "immobilier", "manque d'espace", "infrastructure",
+    ],  # Espace et infrastructures
+    "environnement de travail": [
+        "confiance",
+    ],  # Environnement de travail
+    "diversite et inclusion": [
+        "pluralisme", "handicap", "religion", "accessibilité",
+    ],  # Diversité et inclusion
+    "developpement durable (odd)": [
+        "environnement", "écologie", "tri", "renouvelable", "défavorisés", "genre", "femme", "recyclage", "vert",
+    ],  # Développement Durable (ODD)
+}
+def _theme_keywords_for(theme):
+    """Return the expert-curated keyword list for one official theme (see
+    THEME_KEYWORDS_INTERNAL), or an empty list if this theme has no curated
+    list — e.g. all external (Opportunités/Menaces) themes, and any
+    internal theme not covered by the source spreadsheet. Never raises."""
+    theme_n = normalize(theme)
+    for key, keywords in THEME_KEYWORDS_INTERNAL.items():
+        if key in theme_n or theme_n in key:
+            return keywords
+    return []
+def keyword_match_score(answer, theme):
+    """Score (0.0-1.0) plus the list of matched keywords, based on the
+    expert-curated keyword list for this theme. Uses the same whole-word /
+    whole-phrase matching rule as the domain ontology guardrails
+    (_contains_term), so a keyword like "salle" won't spuriously match
+    inside an unrelated word. Returns (0.0, []) when the theme has no
+    curated keyword list — this makes the boost a strict no-op for external
+    themes and for internal themes not yet covered, rather than penalizing
+    them.
+    """
+    keywords = _theme_keywords_for(theme)
+    if not keywords:
+        return 0.0, []
+    answer_norm = normalize(answer)
+    hits = [kw for kw in keywords if _contains_term(answer_norm, kw)]
+    if not hits:
+        return 0.0, []
+    # First hit already carries most of the signal (an expert picked this
+    # word specifically for this theme); further hits add confirmation with
+    # diminishing returns rather than linearly stacking.
+    return min(1.0, 0.55 + 0.15 * (len(hits) - 1)), hits
 def _theme_profile_text(theme):
     theme_n = normalize(theme)
     hints = []
     for key, value in THEME_PROFILE_HINTS.items():
         if key in theme_n or theme_n in key:
             hints.append(value)
+    keyword_hints = _theme_keywords_for(theme)
+    if keyword_hints:
+        # Also feeds the expert keywords into the text profile used for
+        # local-embeddings / TF-IDF similarity below, so the keyword list
+        # helps even when it doesn't produce a literal match in the answer
+        # (e.g. a close synonym the embeddings model can still relate).
+        hints.append(" ".join(keyword_hints))
     return clean(theme) + ". " + " ".join(hints)
 @st.cache_resource(show_spinner=False)
 def _load_local_sentence_model():
@@ -813,14 +921,24 @@ def semantic_institutional_score_candidates(answer, participant_type, swot_eleme
         lexical_weight = 0.20
     lexical_scores = tfidf_scores_against_themes(answer, themes)
     detected = detected_answer_domains(answer)
+    # Weight applied to the expert-curated keyword match (THEME_KEYWORDS_INTERNAL,
+    # see keyword_match_score above). Additive on top of the existing formula:
+    # it is 0.0 for any theme without a curated keyword list (all external
+    # themes, and internal themes not yet covered), so it never changes
+    # scoring there — the final max(0, min(1, score)) clip below also means
+    # this can only push an already-strong candidate the rest of the way to
+    # 1.0, not overflow it.
+    KEYWORD_MATCH_WEIGHT = 0.25
     ranked = []
     for i, theme in enumerate(themes):
         domain_pos, domain_neg, matched = domain_guardrail_score(answer, theme)
         ontology_score = max(0.0, domain_pos - 0.70 * domain_neg)
+        kw_score, kw_hits = keyword_match_score(answer, theme)
         score = (
             semantic_weight * semantic_scores[i]
             + 0.40 * ontology_score
             + lexical_weight * lexical_scores[i]
+            + KEYWORD_MATCH_WEIGHT * kw_score
         )
         # Strong guardrail: when the answer clearly belongs to a domain and
         # the candidate theme is in a contradictory domain, suppress it.
@@ -829,7 +947,7 @@ def semantic_institutional_score_candidates(answer, participant_type, swot_eleme
         elif detected and domain_pos == 0:
             score *= 0.70
         score = max(0.0, min(1.0, score))
-        ranked.append((theme, score, matched, semantic_scores[i], lexical_scores[i], ontology_score))
+        ranked.append((theme, score, matched, semantic_scores[i], lexical_scores[i], ontology_score, kw_hits))
     return sorted(ranked, key=lambda x: x[1], reverse=True), semantic_source
 def semantic_confidence(ranked, semantic_source):
     """Heuristic relevance score (0-100), NOT a calibrated statistical
@@ -858,7 +976,7 @@ def classify_semantic_institutional(answer, participant_type, swot_element):
     ranked, source = semantic_institutional_score_candidates(answer, participant_type, swot_element)
     if not ranked:
         return "", 0.0, "", "Aucun thème officiel disponible"
-    best_theme, best_score, matched, sem_score, lex_score, onto_score = ranked[0]
+    best_theme, best_score, matched, sem_score, lex_score, onto_score, kw_hits = ranked[0]
     conf = semantic_confidence(ranked, source)
     top3 = " | ".join([f"{t} ({round(s * 100, 1)})" for t, s, *_ in ranked[:3]])
     if source == "embeddings locaux":
@@ -871,6 +989,8 @@ def classify_semantic_institutional(answer, participant_type, swot_element):
             "Moteur sémantique institutionnel : taxonomie officielle + ontologie de domaine. "
             "Embeddings locaux non disponibles sur ce serveur ; fallback lexical contrôlé utilisé."
         )
+    if kw_hits:
+        evidence += f" Mots-clés experts détectés pour ce thème : {', '.join(kw_hits)}."
     return best_theme, conf, top3, evidence
 # ============================================================
 # EXCEL I/O
