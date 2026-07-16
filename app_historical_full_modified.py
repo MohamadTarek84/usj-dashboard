@@ -10419,45 +10419,35 @@ def _ps_indicator_trend_chart(df, indicator_label):
 
 def _ps_apply_filters(df):
     filtered = df.copy()
-    with st.container():
-        st.markdown(
-            f"""
-            <div class='control-panel'>
-                <div class='control-title'>Filtres du Plan Stratégique 2027</div>
-                <div class='control-subtitle'>Filtrez les indicateurs par axe stratégique, objectif, responsable ou mot-clé. La colonne source <b>Formule</b> est volontairement exclue du dashboard.</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-        c1, c2, c3, c4 = st.columns([1.25, 1.55, 1.05, 1.35])
-        axis_options = sorted([v for v in filtered.get("Axe Stratégique", pd.Series(dtype=str)).dropna().astype(str).unique()])
-        objective_cols = _ps_objective_columns(filtered)
-        objective_values = []
-        for col in objective_cols:
-            objective_values.extend([
-                _ps_clean_text(v)
-                for v in filtered[col].dropna().tolist()
-                if _ps_clean_text(v)
-            ])
-        objective_options = sorted(set(objective_values))
-        resp_options = sorted([v for v in filtered.get("Responsable de l'information", pd.Series(dtype=str)).dropna().astype(str).unique()])
+    c1, c2, c3, c4 = st.columns([1.25, 1.65, 1.05, 1.35])
+    axis_options = sorted([v for v in filtered.get("Axe Stratégique", pd.Series(dtype=str)).dropna().astype(str).unique()])
+    objective_cols = _ps_objective_columns(filtered)
+    objective_values = []
+    for col in objective_cols:
+        objective_values.extend([
+            _ps_clean_text(v)
+            for v in filtered[col].dropna().tolist()
+            if _ps_clean_text(v)
+        ])
+    objective_options = sorted(set(objective_values))
+    resp_options = sorted([v for v in filtered.get("Responsable de l'information", pd.Series(dtype=str)).dropna().astype(str).unique()])
 
-        with c1:
-            axes = st.multiselect("Axe stratégique", axis_options, key="ps2027_axes_filter")
-        with c2:
-            objectives = st.multiselect("Objectif", objective_options, key="ps2027_objectif_filter")
-        with c3:
-            responsables = st.multiselect("Responsable", resp_options, key="ps2027_responsable_filter")
-        with c4:
-            search = st.text_input("Recherche", key="ps2027_search", placeholder="Code, indicateur, objectif...")
+    with c1:
+        axes = st.multiselect("Axe stratégique", axis_options, key="ps2027_axes_filter")
+    with c2:
+        objective_choice = st.selectbox("Objectif", ["Tous"] + objective_options, key="ps2027_objectif_filter")
+    with c3:
+        responsables = st.multiselect("Responsable", resp_options, key="ps2027_responsable_filter")
+    with c4:
+        search = st.text_input("Recherche", key="ps2027_search", placeholder="Code, indicateur, objectif...")
 
     if axes and "Axe Stratégique" in filtered.columns:
         filtered = filtered[filtered["Axe Stratégique"].astype(str).isin(axes)]
-    if objectives:
+    if objective_choice and objective_choice != "Tous":
         objective_cols = _ps_objective_columns(filtered)
         obj_mask = pd.Series(False, index=filtered.index)
         for col in objective_cols:
-            obj_mask = obj_mask | filtered[col].astype(str).isin(objectives)
+            obj_mask = obj_mask | (filtered[col].map(_ps_clean_text) == objective_choice)
         filtered = filtered[obj_mask]
     if responsables and "Responsable de l'information" in filtered.columns:
         filtered = filtered[filtered["Responsable de l'information"].astype(str).isin(responsables)]
