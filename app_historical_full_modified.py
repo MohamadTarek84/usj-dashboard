@@ -5126,6 +5126,15 @@ SURVEY_PORTAL_ITEMS = [
         "icon": "📝",
         "active": True,
     },
+    {
+        "id": "strategic_plan_2027",
+        "english": "Strategic Plan 2027",
+        "french": "Plan Stratégique 2027",
+        "description_en": "Strategic-plan indicators, objectives, sources and yearly monitoring values.",
+        "description_fr": "Indicateurs du plan stratégique, objectifs, sources et suivi annuel.",
+        "icon": "🎯",
+        "active": True,
+    },
 ]
 
 
@@ -9468,45 +9477,6 @@ QS_YEAR_COLORS = {
     2027: "#00A6A6",
 }
 
-QS_UNIVERSITY_COLORS = {
-    "AUB": USJ_BLUE,
-    "LAU": "#D14966",
-    "USJ": USJ_RED,
-    "LU": "#34469B",
-    "BAU": "#7E8FC9",
-    "USEK": "#B7AA95",
-    "UoB": "#6573A4",
-    "NDU": "#D76A82",
-    "IUL": "#9AA7D4",
-}
-
-
-def _qs_apply_university_trace_style(fig, dashed_usj=True, highlight_usj=True):
-    """Apply a fixed university color mapping across QS comparison charts."""
-    for trace in fig.data:
-        uni = str(trace.name)
-        color = QS_UNIVERSITY_COLORS.get(uni, USJ_BLUE)
-        base_line = dict(color=color, width=2.8)
-        base_marker = dict(size=7, color=color)
-        opacity = 0.78
-
-        if uni == "USJ" and highlight_usj:
-            base_line.update(width=4.6)
-            if dashed_usj:
-                base_line.update(dash="dash")
-            base_marker.update(size=10, symbol="diamond", line=dict(color="white", width=2))
-            opacity = 1
-        elif uni == "AUB":
-            base_line.update(width=3.2)
-            base_marker.update(size=8)
-            opacity = 0.9
-        else:
-            base_marker.update(size=7)
-
-        trace.update(line=base_line, marker=base_marker, opacity=opacity)
-
-    return fig
-
 QS_INDICATORS = [
     ("Academic Reputation", "30%", "Réputation académique", "30%"),
     ("Employer Reputation", "15%", "Réputation employeur", "15%"),
@@ -9629,59 +9599,6 @@ QS_EMPLOYER_SUBJECT_2027 = pd.DataFrame([
     {"Subject": "Natural Sciences", "Domestic": 23, "International": 7},
     {"Subject": "Social Sciences & Management", "Domestic": 61, "International": 24},
 ])
-
-
-QS_SUBJECT_AREAS = [
-    "Arts & Humanities",
-    "Engineering & Technology",
-    "Life Sciences & Medicine",
-    "Natural Sciences",
-    "Social Sciences & Management",
-]
-
-QS_SUBJECT_AREA_COLORS = {
-    "Arts & Humanities": USJ_RED,
-    "Engineering & Technology": "#0065A8",
-    "Life Sciences & Medicine": "#2E9B45",
-    "Natural Sciences": "#7E57C2",
-    "Social Sciences & Management": "#F26A00",
-}
-
-QS_SUBJECT_NOMINATION_YEARS = list(range(2018, 2028))
-
-QS_ACADEMIC_SUBJECT_NOMINATIONS = {
-    "Domestic": {
-        "Arts & Humanities": [4, 11, 19, 19, 32, 32, 29, 27, 23, 23],
-        "Engineering & Technology": [15, 24, 36, 49, 71, 69, 72, 69, 52, 35],
-        "Life Sciences & Medicine": [6, 14, 23, 35, 47, 56, 56, 55, 35, 28],
-        "Natural Sciences": [3, 3, 7, 9, 20, 22, 26, 28, 17, 11],
-        "Social Sciences & Management": [7, 15, 22, 28, 46, 59, 59, 58, 48, 38],
-    },
-    "International": {
-        "Arts & Humanities": [9, 21, 23, 27, 38, 39, 36, 35, 33, 41],
-        "Engineering & Technology": [5, 5, 12, 18, 28, 29, 32, 32, 26, 20],
-        "Life Sciences & Medicine": [3, 3, 4, 8, 14, 15, 17, 20, 17, 14],
-        "Natural Sciences": [2, 2, 4, 7, 15, 17, 16, 15, 12, 8],
-        "Social Sciences & Management": [6, 13, 14, 19, 34, 38, 36, 34, 33, 27],
-    },
-}
-
-QS_EMPLOYER_SUBJECT_NOMINATIONS = {
-    "Domestic": {
-        "Arts & Humanities": [3, 6, 10, 22, 30, 34, 32, 26, 13, 11],
-        "Engineering & Technology": [3, 5, 18, 42, 55, 68, 71, 70, 51, 58],
-        "Life Sciences & Medicine": [3, 5, 13, 26, 36, 42, 42, 36, 24, 24],
-        "Natural Sciences": [1, 2, 6, 13, 20, 23, 22, 19, 15, 23],
-        "Social Sciences & Management": [6, 11, 25, 55, 76, 90, 93, 83, 65, 61],
-    },
-    "International": {
-        "Arts & Humanities": [1, 2, 9, 10, 11, 14, 14, 11, 5, 6],
-        "Engineering & Technology": [1, 3, 10, 11, 16, 19, 21, 24, 22, 15],
-        "Life Sciences & Medicine": [1, 4, 7, 9, 13, 15, 13, 12, 8, 5],
-        "Natural Sciences": [1, 1, 9, 10, 15, 18, 20, 15, 11, 7],
-        "Social Sciences & Management": [2, 5, 12, 14, 21, 31, 34, 34, 27, 24],
-    },
-}
 
 QS_FR_LABELS = {
     "Overall Ranking Scores": "Score global QS",
@@ -9844,9 +9761,19 @@ def _qs_lebanon_rank_chart():
         color="University",
         markers=True,
         category_orders={"University": QS_UNIVERSITIES},
-        color_discrete_map=QS_UNIVERSITY_COLORS,
+        color_discrete_sequence=PLOTLY_SEQ,
     )
-    fig = _qs_apply_university_trace_style(fig, dashed_usj=True, highlight_usj=True)
+    fig.update_traces(line=dict(width=2.6), marker=dict(size=7), opacity=0.72)
+    # USJ is intentionally shown as a dashed, thicker red line to avoid confusion with similar colors.
+    for trace in fig.data:
+        if trace.name == "USJ":
+            trace.update(
+                line=dict(width=5, dash="dash", color=USJ_RED),
+                marker=dict(size=11, color=USJ_RED, symbol="diamond", line=dict(color="white", width=2)),
+                opacity=1,
+            )
+        elif trace.name == "AUB":
+            trace.update(line=dict(width=3, color=USJ_BLUE), marker=dict(size=8), opacity=0.95)
     fig = _qs_polish_fig(fig, height=540, title="Ranking in Lebanon")
     fig.update_yaxes(autorange="reversed", dtick=1, title="Rank", tickfont=dict(size=13, color=USJ_TEXT))
     fig.update_xaxes(dtick=1, title="Year", tickfont=dict(size=13, color=USJ_TEXT))
@@ -9863,15 +9790,14 @@ def _qs_nomination_line_chart(source="academic", nomination_type="Domestic"):
         color="University",
         markers=True,
         category_orders={"University": QS_UNIVERSITIES},
-        color_discrete_map=QS_UNIVERSITY_COLORS,
+        color_discrete_sequence=PLOTLY_SEQ,
     )
-    fig = _qs_apply_university_trace_style(fig, dashed_usj=True, highlight_usj=True)
+    fig.update_traces(line=dict(width=3), marker=dict(size=7))
     title_base = _qs_t("Academic reputation nominations", "Nominations de réputation académique") if source == "academic" else _qs_t("Employer reputation nominations", "Nominations de réputation employeur")
     type_label = _qs_t(nomination_type, QS_FR_LABELS.get(nomination_type, nomination_type))
     fig = _qs_polish_fig(fig, height=620, title=f"{title_base} - {type_label}")
     fig.update_yaxes(title=_qs_t("Number of nominations", "Nombre de nominations"))
     fig.update_xaxes(title="Année" if LANG == "Français" else "Year", dtick=1)
-    fig.update_layout(legend=dict(orientation="h", yanchor="bottom", y=1.04, xanchor="center", x=0.5, title=None))
     return fig
 
 
@@ -9896,403 +9822,8 @@ def _qs_subject_bar_chart(source="academic"):
     return fig
 
 
-
-
-def _qs_subject_nomination_long(source="academic", nomination_type="Domestic"):
-    data = QS_ACADEMIC_SUBJECT_NOMINATIONS if source == "academic" else QS_EMPLOYER_SUBJECT_NOMINATIONS
-    rows = []
-    for subject in QS_SUBJECT_AREAS:
-        values = data.get(nomination_type, {}).get(subject, [])
-        for year, value in zip(QS_SUBJECT_NOMINATION_YEARS, values):
-            rows.append({
-                "Subject Area": subject,
-                "Year": year,
-                "Nominations": value,
-                "Nomination type": nomination_type,
-            })
-    return pd.DataFrame(rows)
-
-
-def _qs_subject_status_cards(source="academic", nomination_type="Domestic"):
-    data = QS_ACADEMIC_SUBJECT_NOMINATIONS if source == "academic" else QS_EMPLOYER_SUBJECT_NOMINATIONS
-    title = "2027 Status"
-    st.markdown(
-        f"""
-        <div style="font-family:Candara, Arial, sans-serif; margin-top:8px;">
-            <div style="font-size:22px; font-weight:900; color:{USJ_BLUE}; margin-bottom:4px;">{title}</div>
-            <div style="font-size:13px; color:#6B7280; margin-bottom:14px;">Value and variation from 2026</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-    for subject in QS_SUBJECT_AREAS:
-        values = data[nomination_type][subject]
-        value_2026 = values[-2]
-        value_2027 = values[-1]
-        if value_2026 in [0, None] or pd.isna(value_2026):
-            variation = np.nan
-        else:
-            variation = (value_2027 - value_2026) / value_2026 * 100
-        color = QS_SUBJECT_AREA_COLORS.get(subject, USJ_BLUE)
-        variation_text = "NA" if pd.isna(variation) else f"{variation:+.1f}%"
-        variation_color = USJ_GREEN if pd.notna(variation) and variation >= 0 else USJ_RED
-        st.markdown(
-            f"""
-            <div style="
-                border:1px solid #D9E4F5;
-                border-left:5px solid {color};
-                background:#FFFFFF;
-                border-radius:0px;
-                padding:10px 12px;
-                margin-bottom:12px;
-                min-height:58px;
-                box-shadow:0 3px 10px rgba(35,43,105,0.04);
-                font-family:Candara, Arial, sans-serif;
-            ">
-                <div style="font-size:12px; font-weight:900; color:{USJ_TEXT}; margin-bottom:5px;">{html_escape(subject)}</div>
-                <div style="display:flex; justify-content:space-between; gap:8px; align-items:center;">
-                    <span style="font-size:12px; color:#536173;">2027 value: <b>{value_2027}</b></span>
-                    <span style="font-size:12px; font-weight:900; color:{variation_color};">{variation_text}</span>
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-
-def _qs_add_subject_value_annotations(fig, df):
-    """Add readable value labels to subject-area line charts.
-
-    Plotly text labels attached directly to traces can overlap when subject
-    lines cross or have very close values. This helper keeps the values visible
-    by adding separate annotations with a small white background and dynamic
-    vertical offsets for close points within the same year.
-    """
-    if df.empty or "Nominations" not in df.columns:
-        return fig
-
-    working = df.copy()
-    working["Nominations"] = pd.to_numeric(working["Nominations"], errors="coerce")
-    working = working.dropna(subset=["Nominations", "Year", "Subject Area"])
-    if working.empty:
-        return fig
-
-    max_value = float(working["Nominations"].max())
-    # Close values need stronger separation. The threshold scales lightly with
-    # the chart range but never goes below 2 nominations.
-    close_threshold = max(2.0, max_value * 0.035)
-    default_subject_shift = {
-        "Arts & Humanities": 14,
-        "Engineering & Technology": -16,
-        "Life Sciences & Medicine": 16,
-        "Natural Sciences": -18,
-        "Social Sciences & Management": 22,
-    }
-    cluster_shifts = [-22, 22, -36, 36, 0, 50, -50]
-
-    for year, year_df in working.groupby("Year"):
-        year_df = year_df.sort_values("Nominations").reset_index(drop=True)
-        clusters = []
-        current = []
-        previous_value = None
-        for _, row in year_df.iterrows():
-            value = float(row["Nominations"])
-            if previous_value is None or abs(value - previous_value) <= close_threshold:
-                current.append(row)
-            else:
-                clusters.append(current)
-                current = [row]
-            previous_value = value
-        if current:
-            clusters.append(current)
-
-        yshift_by_subject = {}
-        for cluster in clusters:
-            if len(cluster) == 1:
-                subject = str(cluster[0]["Subject Area"])
-                yshift_by_subject[subject] = default_subject_shift.get(subject, 14)
-            else:
-                # For close/crossing lines, alternate labels above and below.
-                # Sorting by subject order keeps the layout stable across all
-                # four subject-area charts.
-                cluster = sorted(
-                    cluster,
-                    key=lambda r: QS_SUBJECT_AREAS.index(str(r["Subject Area"])) if str(r["Subject Area"]) in QS_SUBJECT_AREAS else 999,
-                )
-                for i, row in enumerate(cluster):
-                    subject = str(row["Subject Area"])
-                    yshift_by_subject[subject] = cluster_shifts[i % len(cluster_shifts)]
-
-        for _, row in year_df.iterrows():
-            subject = str(row["Subject Area"])
-            value = float(row["Nominations"])
-            color = QS_SUBJECT_AREA_COLORS.get(subject, USJ_BLUE)
-            yshift = yshift_by_subject.get(subject, default_subject_shift.get(subject, 14))
-            fig.add_annotation(
-                x=int(row["Year"]),
-                y=value,
-                text=f"<b>{int(round(value))}</b>",
-                showarrow=False,
-                yshift=yshift,
-                xshift=0,
-                font=dict(family="Candara, Arial", size=12, color=USJ_TEXT),
-                bgcolor="rgba(255,255,255,0.92)",
-                bordercolor=color,
-                borderwidth=1,
-                borderpad=2,
-            )
-    return fig
-
-
-def _qs_subject_area_trend_chart(source="academic", nomination_type="Domestic"):
-    df = _qs_subject_nomination_long(source, nomination_type)
-    if df.empty:
-        return go.Figure()
-
-    if source == "academic":
-        title_prefix = "Academic Reputation Nominations"
-    else:
-        title_prefix = "Employer Reputation Nominations"
-    title = f"{nomination_type} {title_prefix} by Subject Area (2018-2027)"
-
-    fig = px.line(
-        df,
-        x="Year",
-        y="Nominations",
-        color="Subject Area",
-        markers=True,
-        category_orders={"Subject Area": QS_SUBJECT_AREAS},
-        color_discrete_map=QS_SUBJECT_AREA_COLORS,
-    )
-    fig.update_traces(
-        mode="lines+markers",
-        line=dict(width=3.2),
-        marker=dict(size=8, line=dict(color="white", width=1.4)),
-        hovertemplate="<b>%{fullData.name}</b><br>Year: %{x}<br>Nominations: %{y}<extra></extra>",
-        cliponaxis=False,
-    )
-    fig.add_vrect(
-        x0=2025.5,
-        x1=2027.5,
-        fillcolor="rgba(232,241,250,0.85)",
-        line_width=0,
-        layer="below",
-    )
-    fig = _qs_polish_fig(fig, height=660, title=title)
-    max_value = pd.to_numeric(df["Nominations"], errors="coerce").max()
-    y_top = max(10, max_value * 1.28) if pd.notna(max_value) else None
-    if y_top:
-        fig.update_yaxes(range=[0, y_top])
-    fig.update_yaxes(title="Number of ranked subjects")
-    fig.update_xaxes(title="Year", dtick=1)
-    fig.update_layout(
-        legend=dict(
-            orientation="v",
-            yanchor="top",
-            y=0.98,
-            xanchor="left",
-            x=0.02,
-            bgcolor="rgba(255,255,255,0.90)",
-            bordercolor="#D9E4F5",
-            borderwidth=1,
-            font=dict(family="Candara, Arial", size=12, color=USJ_TEXT),
-            title=None,
-        ),
-        margin=dict(l=75, r=55, t=105, b=80),
-    )
-    fig = _qs_add_subject_value_annotations(fig, df)
-    return fig
-
-
-def _qs_render_subject_area_trend(source="academic", nomination_type="Domestic"):
-    left_col, right_col = st.columns([4.4, 1.05])
-    with left_col:
-        st.plotly_chart(_qs_subject_area_trend_chart(source, nomination_type), use_container_width=True)
-    with right_col:
-        _qs_subject_status_cards(source, nomination_type)
-    st.markdown(
-        "<div style='font-family:Candara, Arial, sans-serif; color:#6B7280; font-size:12px; text-align:center; margin-top:-6px;'>Note: Final variation is calculated as (2027 value - 2026 value) / 2026 value.</div>",
-        unsafe_allow_html=True,
-    )
-
-def _qs_table_format_value(value, column_name, table_title=""):
-    """Format QS table values without using the generic Factbook integer rounding.
-
-    QS indicator score tables must keep one decimal (e.g., 38.4, 30.6). The
-    generic Factbook table formatter rounds numeric values to whole numbers,
-    which is correct for student counts but not for QS scores.
-    """
-    if _fb_is_blank(value):
-        return ""
-
-    column_text = str(column_name)
-    title_text = str(table_title).lower()
-
-    if isinstance(value, str):
-        raw = value.replace("\u00a0", " ").strip()
-        if raw in {"", "-", "NA", "N/A", "nan", "None"}:
-            return "" if raw in {"nan", "None"} else raw
-        if raw.endswith("%"):
-            return raw
-        numeric = pd.to_numeric(raw.replace(" ", "").replace(",", "."), errors="coerce")
-    else:
-        raw = value
-        numeric = pd.to_numeric(value, errors="coerce")
-
-    if pd.notna(numeric):
-        # Ranking positions and nomination counts are counts/ranks, not scores.
-        if (
-            column_text.lower().startswith("world")
-            or column_text.lower().startswith("lebanon")
-            or column_text.lower() in {"rank", "year", "nominations"}
-            or "ranking 2022-2027" in title_text
-            or "nominations" in title_text
-        ):
-            return f"{int(round(float(numeric))):,}".replace(",", " ")
-        return f"{float(numeric):.1f}"
-
-    return str(raw)
-
-
 def _qs_table_card(df, title, note=None, max_height=520):
-    """Render QS tables with the USJ card style and one-decimal score values."""
-    if df is None or df.empty:
-        st.info(f"No data available for {title}.")
-        return
-
-    table = df.copy().dropna(how="all")
-    if table.empty:
-        st.info(f"No data available for {title}.")
-        return
-
-    # Keep QS score values at one decimal. Do not pass through render_factbook_table,
-    # because it is intentionally designed to round Factbook count values.
-    formatted = table.copy()
-    for col in formatted.columns:
-        formatted[col] = formatted[col].map(lambda value, c=col: _qs_table_format_value(value, c, title))
-
-    numeric_cols = []
-    for col in table.columns:
-        numeric_share = pd.to_numeric(table[col], errors="coerce").notna().mean()
-        if numeric_share >= 0.55:
-            numeric_cols.append(col)
-
-    header_html = "".join(
-        f"<th class='{'num-col' if col in numeric_cols else 'text-col'}'>{html_escape(col)}</th>"
-        for col in formatted.columns
-    )
-
-    body_rows = []
-    for _, row in formatted.iterrows():
-        row_is_usj = str(row.get("University", "")).strip().upper() == "USJ"
-        row_class = "qs-usj-row" if row_is_usj else ""
-        cells = []
-        for col in formatted.columns:
-            cls = "num-cell" if col in numeric_cols else "text-cell"
-            cells.append(f"<td class='{cls}'>{html_escape(row[col])}</td>")
-        body_rows.append(f"<tr class='{row_class}'>" + "".join(cells) + "</tr>")
-
-    row_count = len(formatted)
-    note_html = f"<div class='qs-table-note'>{html_escape(note)}</div>" if note else ""
-    body_html = "".join(body_rows)
-
-    st.markdown(
-        f"""
-        <style>
-        .qs-table-card {{
-            background:#FFFFFF;
-            border:1px solid #DDE5F0;
-            border-radius:24px;
-            box-shadow:0 10px 28px rgba(35,43,105,0.08);
-            overflow:hidden;
-            margin:18px 0 22px 0;
-            font-family:Candara, Arial, sans-serif;
-        }}
-        .qs-table-head {{
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-            gap:14px;
-            padding:18px 20px 12px 20px;
-        }}
-        .qs-table-title {{
-            color:{USJ_BLUE};
-            font-size:22px;
-            font-weight:950;
-            line-height:1.25;
-        }}
-        .qs-table-count {{
-            color:{USJ_BLUE};
-            background:#F3F7FF;
-            border:1px solid #D7E2F2;
-            border-radius:999px;
-            padding:7px 14px;
-            font-size:13px;
-            font-weight:850;
-            white-space:nowrap;
-        }}
-        .qs-table-scroll {{
-            max-height:{int(max_height)}px;
-            overflow:auto;
-        }}
-        .qs-table {{
-            width:100%;
-            border-collapse:collapse;
-            table-layout:auto;
-            font-size:14px;
-            color:{USJ_TEXT};
-        }}
-        .qs-table th {{
-            position:sticky;
-            top:0;
-            z-index:2;
-            background:{USJ_BLUE};
-            color:#FFFFFF;
-            padding:12px 14px;
-            border:1px solid rgba(255,255,255,0.18);
-            font-weight:950;
-            text-align:left;
-        }}
-        .qs-table th.num-col {{text-align:center;}}
-        .qs-table td {{
-            padding:11px 14px;
-            border:1px solid #E3EAF4;
-            vertical-align:middle;
-            background:#FFFFFF;
-            font-weight:700;
-        }}
-        .qs-table tbody tr:nth-child(even) td {{background:#F6F8FC;}}
-        .qs-table td.num-cell {{text-align:center; font-variant-numeric:tabular-nums;}}
-        .qs-table tr.qs-usj-row td {{
-            background:#FFF3F5 !important;
-            color:{USJ_DARK_RED};
-            font-weight:950;
-            border-top:2px solid rgba(199,34,67,0.22);
-            border-bottom:2px solid rgba(199,34,67,0.22);
-        }}
-        .qs-table-note {{
-            padding:10px 20px 18px 20px;
-            color:#5F6B7A;
-            font-size:13px;
-            line-height:1.45;
-        }}
-        </style>
-        <div class='qs-table-card'>
-            <div class='qs-table-head'>
-                <div class='qs-table-title'>{html_escape(title)}</div>
-                <div class='qs-table-count'>{row_count} rows</div>
-            </div>
-            <div class='qs-table-scroll'>
-                <table class='qs-table'>
-                    <thead><tr>{header_html}</tr></thead>
-                    <tbody>{body_html}</tbody>
-                </table>
-            </div>
-            {note_html}
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    return render_factbook_table(df, title, note=note, max_height=max_height)
 
 
 def _qs_module_css():
@@ -10534,7 +10065,7 @@ def render_qs_ranking_module():
             key="qs_academic_nomination_type",
         )
         st.plotly_chart(_qs_nomination_line_chart("academic", nomination_type), use_container_width=True)
-        _qs_render_subject_area_trend("academic", nomination_type)
+        st.plotly_chart(_qs_subject_bar_chart("academic"), use_container_width=True)
         table = _qs_nomination_long("academic", nomination_type).pivot_table(index="University", columns="Year", values="Nominations", aggfunc="first").reset_index()
         _qs_table_card(table, f"Academic reputation nominations - {nomination_type}", max_height=520)
 
@@ -10546,11 +10077,482 @@ def render_qs_ranking_module():
             key="qs_employer_nomination_type",
         )
         st.plotly_chart(_qs_nomination_line_chart("employer", nomination_type), use_container_width=True)
-        _qs_render_subject_area_trend("employer", nomination_type)
+        st.plotly_chart(_qs_subject_bar_chart("employer"), use_container_width=True)
         table = _qs_nomination_long("employer", nomination_type).pivot_table(index="University", columns="Year", values="Nominations", aggfunc="first").reset_index()
         _qs_table_card(table, f"Employer reputation nominations - {nomination_type}", max_height=520)
 
     gc.collect()
+
+
+
+# =====================================================
+# Strategic Plan 2027 module helpers
+# =====================================================
+
+STRATEGIC_PLAN_2027_FILE_CANDIDATES = [
+    "PS2027.xlsx",
+    "Plan_Strategique_2027.xlsx",
+    "Plan Stratégique 2027.xlsx",
+    "Plan Strategique 2027.xlsx",
+]
+
+
+def find_strategic_plan_2027_file():
+    for file_name in STRATEGIC_PLAN_2027_FILE_CANDIDATES:
+        if os.path.exists(file_name):
+            stat = os.stat(file_name)
+            return file_name, stat.st_mtime, stat.st_size
+
+    for file_name in os.listdir("."):
+        lower = file_name.lower().replace("é", "e").replace("è", "e").replace("ê", "e")
+        if lower.endswith((".xlsx", ".xls")) and ("ps2027" in lower or "strateg" in lower):
+            stat = os.stat(file_name)
+            return file_name, stat.st_mtime, stat.st_size
+    return None, None, None
+
+
+@st.cache_data(show_spinner=False)
+def load_strategic_plan_2027(file_path, file_mtime, file_size):
+    df = pd.read_excel(file_path)
+    df.columns = df.columns.astype(str).str.replace("\u00a0", " ").str.strip()
+
+    # Column I in the source file is "Formule". It must not appear in the dashboard.
+    formula_columns = [col for col in df.columns if str(col).strip().lower() == "formule"]
+    if formula_columns:
+        df = df.drop(columns=formula_columns)
+
+    df = df.dropna(how="all").copy()
+    for col in df.columns:
+        if _ps_is_year_column(col) or str(col).strip() == "Nombre d'Objectifs":
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+    return df
+
+
+def _ps_is_year_column(col):
+    return bool(re.match(r"^\d{4}-\d{4}$", str(col).strip()))
+
+
+def _ps_year_columns(df):
+    return [col for col in df.columns if _ps_is_year_column(col)]
+
+
+def _ps_clean_text(value):
+    if pd.isna(value):
+        return ""
+    return str(value).replace("\u00a0", " ").strip()
+
+
+def _ps_format_indicator_value(value, unit=None):
+    if pd.isna(value) or str(value).strip() == "":
+        return ""
+    try:
+        numeric = float(value)
+    except Exception:
+        return str(value)
+
+    unit_label = _ps_clean_text(unit).lower()
+    if "ratio" in unit_label or "taux" in unit_label:
+        pct = numeric * 100 if abs(numeric) <= 1.5 else numeric
+        return f"{pct:.2f}%"
+    if "montant" in unit_label or "$" in unit_label:
+        return f"{numeric:,.0f} $".replace(",", " ")
+    if "moyenne" in unit_label:
+        return f"{numeric:.2f}"
+    if abs(numeric - round(numeric)) < 0.000001:
+        return f"{int(round(numeric)):,}".replace(",", " ")
+    return f"{numeric:,.1f}".replace(",", " ")
+
+
+def _ps_table_value(row, col):
+    value = row.get(col, "")
+    if _ps_is_year_column(col):
+        return _ps_format_indicator_value(value, row.get("Unité", ""))
+    if str(col).strip() == "Nombre d'Objectifs":
+        return _ps_format_indicator_value(value, "Effectif")
+    return _ps_clean_text(value)
+
+
+def _ps_axis_short(value):
+    text = _ps_clean_text(value)
+    if " - " in text:
+        return text.split(" - ", 1)[0]
+    return text
+
+
+def _ps_section_header(title, subtitle=None):
+    st.markdown(
+        f"""
+        <div style="margin:18px 0 10px 0; font-family:Candara, Arial, sans-serif;">
+            <div style="color:{USJ_BLUE}; font-size:28px; font-weight:950; line-height:1.15;">{html_escape(title)}</div>
+            {f'<div style="color:#667085; font-size:15px; margin-top:6px; font-weight:650;">{html_escape(subtitle)}</div>' if subtitle else ''}
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def _ps_kpi_cards(cards):
+    html = "".join(
+        f"""
+        <div class='ps-kpi-card'>
+            <div class='ps-kpi-label'>{html_escape(label)}</div>
+            <div class='ps-kpi-value' style='color:{color};'>{html_escape(value)}</div>
+            <div class='ps-kpi-caption'>{html_escape(caption)}</div>
+        </div>
+        """
+        for label, value, caption, color in cards
+    )
+    st.markdown(
+        f"""
+        <style>
+        .ps-kpi-grid {{display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:18px; margin:18px 0 22px 0;}}
+        .ps-kpi-card {{background:#FFFFFF; border:1px solid #DDE6F3; border-radius:24px; padding:22px 24px 20px 24px; box-shadow:0 12px 32px rgba(35,43,105,0.08); font-family:Candara, Arial, sans-serif; position:relative; overflow:hidden;}}
+        .ps-kpi-card:before {{content:""; position:absolute; top:0; left:0; width:100%; height:5px; background:linear-gradient(90deg,{USJ_BLUE},{USJ_RED},{USJ_GOLD});}}
+        .ps-kpi-label {{font-size:15px; font-weight:900; color:{USJ_BLUE}; margin-bottom:14px;}}
+        .ps-kpi-value {{font-size:34px; line-height:1; font-weight:950; margin-bottom:12px; letter-spacing:-0.03em;}}
+        .ps-kpi-caption {{font-size:13px; color:#667085; font-weight:650; line-height:1.35;}}
+        @media(max-width:1100px) {{.ps-kpi-grid {{grid-template-columns:repeat(2,minmax(0,1fr));}}}}
+        @media(max-width:700px) {{.ps-kpi-grid {{grid-template-columns:1fr;}}}}
+        </style>
+        <div class='ps-kpi-grid'>{html}</div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def render_strategic_plan_table(df, title, max_height=560):
+    if df is None or df.empty:
+        st.info("Aucune donnée disponible.")
+        return
+
+    table = df.copy()
+    table = table[[col for col in table.columns if str(col).strip().lower() != "formule"]]
+    year_cols = _ps_year_columns(table)
+    numeric_cols = set(year_cols + ["Nombre d'Objectifs"])
+
+    header_html = "".join(
+        f"<th class='{'num-col' if col in numeric_cols else 'text-col'}'>{html_escape(str(col))}</th>"
+        for col in table.columns
+    )
+
+    rows_html = []
+    for _, row in table.iterrows():
+        axis = _ps_axis_short(row.get("Axe Stratégique", ""))
+        cells = []
+        for col in table.columns:
+            value = _ps_table_value(row, col)
+            cls = "num-cell" if col in numeric_cols else "text-cell"
+            if col == "Axe Stratégique":
+                value = axis
+                cls += " axis-cell"
+            if col == "Code - Indicateur":
+                cls += " indicator-cell"
+            cells.append(f"<td class='{cls}'>{html_escape(value)}</td>")
+        rows_html.append("<tr>" + "".join(cells) + "</tr>")
+
+    row_label = "1 ligne" if len(table) == 1 else f"{len(table)} lignes"
+    st.markdown(
+        f"""
+        <style>
+        .ps-table-card {{background:#FFFFFF; border:1px solid #DDE6F3; border-radius:24px; box-shadow:0 14px 36px rgba(35,43,105,0.08); overflow:hidden; margin:14px 0 24px 0; font-family:Candara, Arial, sans-serif;}}
+        .ps-table-head {{display:flex; justify-content:space-between; align-items:center; gap:16px; padding:18px 22px; border-bottom:1px solid #E7EDF7; background:linear-gradient(135deg,#FFFFFF 0%,#F7FAFF 100%);}}
+        .ps-table-title {{color:{USJ_BLUE}; font-size:22px; font-weight:950;}}
+        .ps-row-badge {{background:#EEF3FF; border:1px solid #D7E2F4; border-radius:999px; padding:8px 13px; color:{USJ_BLUE}; font-size:13px; font-weight:900;}}
+        .ps-table-wrap {{max-height:{max_height}px; overflow:auto;}}
+        table.ps-table {{width:100%; border-collapse:separate; border-spacing:0; min-width:1480px;}}
+        table.ps-table th {{position:sticky; top:0; z-index:3; background:{USJ_BLUE}; color:#FFFFFF; text-align:left; padding:14px 14px; font-size:14px; font-weight:950; border-right:1px solid rgba(255,255,255,0.18);}}
+        table.ps-table td {{padding:12px 14px; font-size:13.5px; color:{USJ_TEXT}; border-right:1px solid #E5ECF6; border-bottom:1px solid #E5ECF6; vertical-align:top; line-height:1.35;}}
+        table.ps-table tr:nth-child(even) td {{background:#F8FAFE;}}
+        table.ps-table tr:hover td {{background:#FFF7F8;}}
+        table.ps-table .num-cell {{text-align:center; white-space:nowrap; font-weight:800;}}
+        table.ps-table .axis-cell {{font-weight:950; color:{USJ_BLUE}; white-space:nowrap;}}
+        table.ps-table .indicator-cell {{font-weight:900; color:{USJ_BLUE}; min-width:280px;}}
+        table.ps-table th:nth-child(1), table.ps-table td:nth-child(1) {{min-width:155px;}}
+        table.ps-table th:nth-child(2), table.ps-table td:nth-child(2) {{min-width:340px;}}
+        table.ps-table th:nth-child(6), table.ps-table td:nth-child(6) {{min-width:330px;}}
+        </style>
+        <div class='ps-table-card'>
+            <div class='ps-table-head'>
+                <div class='ps-table-title'>{html_escape(title)}</div>
+                <div class='ps-row-badge'>{html_escape(row_label)}</div>
+            </div>
+            <div class='ps-table-wrap'>
+                <table class='ps-table'>
+                    <thead><tr>{header_html}</tr></thead>
+                    <tbody>{''.join(rows_html)}</tbody>
+                </table>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def _ps_count_bar(df, column, title, top_n=None):
+    if column not in df.columns or df.empty:
+        return None
+    data = df[column].fillna("Non renseigné").astype(str).str.strip()
+    counts = data.value_counts().reset_index()
+    counts.columns = [column, "Nombre d'indicateurs"]
+    if top_n:
+        counts = counts.head(top_n)
+    counts[column] = counts[column].map(lambda v: _ps_axis_short(v) if column == "Axe Stratégique" else v)
+    fig = px.bar(
+        counts.sort_values("Nombre d'indicateurs", ascending=True),
+        x="Nombre d'indicateurs",
+        y=column,
+        orientation="h",
+        text="Nombre d'indicateurs",
+        color_discrete_sequence=[USJ_BLUE],
+        title=title,
+    )
+    fig.update_traces(textposition="outside", textfont=dict(size=14, family="Candara, Arial", color=USJ_TEXT), cliponaxis=False)
+    fig.update_layout(
+        height=max(380, 48 * len(counts) + 120),
+        title=dict(font=dict(size=24, family="Candara, Arial", color=USJ_BLUE)),
+        font=dict(family="Candara, Arial", color=USJ_TEXT),
+        plot_bgcolor="white",
+        paper_bgcolor="white",
+        margin=dict(l=170, r=90, t=80, b=70),
+        showlegend=False,
+    )
+    fig.update_xaxes(showgrid=True, gridcolor="#E4EBF5", zeroline=False)
+    fig.update_yaxes(automargin=True)
+    return fig
+
+
+def _ps_indicator_trend_chart(df, indicator_label):
+    year_cols = _ps_year_columns(df)
+    if not year_cols or not indicator_label:
+        return None
+    row = df[df["Code - Indicateur"].astype(str) == indicator_label]
+    if row.empty:
+        return None
+    row = row.iloc[0]
+    values = pd.DataFrame({
+        "Year": year_cols,
+        "Value": [pd.to_numeric(row.get(col), errors="coerce") for col in year_cols],
+    }).dropna(subset=["Value"])
+    if values.empty:
+        return None
+    unit = row.get("Unité", "")
+    display_values = [_ps_format_indicator_value(v, unit) for v in values["Value"]]
+    y_values = values["Value"].astype(float)
+    if "ratio" in _ps_clean_text(unit).lower() or "taux" in _ps_clean_text(unit).lower():
+        y_values = y_values.map(lambda v: v * 100 if abs(v) <= 1.5 else v)
+        y_title = "Value (%)"
+    else:
+        y_title = _ps_clean_text(unit) or "Value"
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=values["Year"],
+        y=y_values,
+        mode="lines+markers+text",
+        text=display_values,
+        textposition="top center",
+        line=dict(color=USJ_RED, width=4),
+        marker=dict(size=11, color=USJ_RED, line=dict(color="white", width=2)),
+        textfont=dict(size=14, family="Candara, Arial", color=USJ_TEXT),
+        name=_ps_clean_text(row.get("Code - Indicateur", "Indicator")),
+    ))
+    fig.update_layout(
+        title=_ps_clean_text(row.get("Code - Indicateur", "Indicator trend")),
+        height=500,
+        title_font=dict(size=23, family="Candara, Arial", color=USJ_BLUE),
+        font=dict(family="Candara, Arial", color=USJ_TEXT),
+        plot_bgcolor="white",
+        paper_bgcolor="white",
+        margin=dict(l=80, r=80, t=90, b=80),
+        showlegend=False,
+        xaxis_title="Academic year",
+        yaxis_title=y_title,
+    )
+    fig.update_yaxes(showgrid=True, gridcolor="#E4EBF5", zeroline=False)
+    return fig
+
+
+def _ps_apply_filters(df):
+    filtered = df.copy()
+    with st.container():
+        st.markdown(
+            f"""
+            <div class='control-panel'>
+                <div class='control-title'>Filtres du Plan Stratégique 2027</div>
+                <div class='control-subtitle'>Filtrez les indicateurs par axe, objectif, responsable, unité ou mot-clé. La colonne source <b>Formule</b> est volontairement exclue du dashboard.</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        c1, c2, c3, c4 = st.columns([1.15, 1.15, 0.9, 1.3])
+        axis_options = sorted([v for v in filtered.get("Axe Stratégique", pd.Series(dtype=str)).dropna().astype(str).unique()])
+        resp_options = sorted([v for v in filtered.get("Responsable de l'information", pd.Series(dtype=str)).dropna().astype(str).unique()])
+        unit_options = sorted([v for v in filtered.get("Unité", pd.Series(dtype=str)).dropna().astype(str).unique()])
+        with c1:
+            axes = st.multiselect("Axe stratégique", axis_options, key="ps2027_axes_filter")
+        with c2:
+            responsables = st.multiselect("Responsable", resp_options, key="ps2027_responsable_filter")
+        with c3:
+            units = st.multiselect("Unité", unit_options, key="ps2027_unite_filter")
+        with c4:
+            search = st.text_input("Recherche", key="ps2027_search", placeholder="Code, indicateur, objectif...")
+
+    if axes:
+        filtered = filtered[filtered["Axe Stratégique"].astype(str).isin(axes)]
+    if responsables:
+        filtered = filtered[filtered["Responsable de l'information"].astype(str).isin(responsables)]
+    if units:
+        filtered = filtered[filtered["Unité"].astype(str).isin(units)]
+    if search:
+        haystack_cols = [col for col in ["Axe Stratégique", "Objectif", "Code - Indicateur", "Responsable de l'information", "Source de l'information"] if col in filtered.columns]
+        mask = pd.Series(False, index=filtered.index)
+        for col in haystack_cols:
+            mask = mask | filtered[col].astype(str).str.contains(search, case=False, na=False)
+        filtered = filtered[mask]
+    return filtered
+
+
+def render_strategic_plan_2027_landing_page():
+    st.markdown(
+        f"""
+        <style>
+        .ps-landing-hero {{position:relative; overflow:hidden; border-radius:34px; padding:50px 56px; margin:10px 0 24px 0; color:white; background:radial-gradient(circle at 88% 10%, rgba(199,34,67,0.42), transparent 28%), linear-gradient(135deg,{USJ_BLUE} 0%, #262F74 48%, #151A52 100%); box-shadow:0 24px 60px rgba(35,43,105,0.26); font-family:Candara, Arial, sans-serif;}}
+        .ps-landing-kicker {{display:inline-flex; border:1px solid rgba(255,255,255,0.28); background:rgba(255,255,255,0.12); color:#F3E7DA; border-radius:999px; padding:9px 15px; font-size:13px; font-weight:950; letter-spacing:0.12em; text-transform:uppercase; margin-bottom:20px;}}
+        .ps-landing-title {{font-size:48px; line-height:1.05; font-weight:950; letter-spacing:-0.04em; max-width:1040px; color:white; margin-bottom:16px;}}
+        .ps-landing-text {{font-size:19px; line-height:1.6; color:rgba(255,255,255,0.92); font-weight:650; max-width:1120px;}}
+        .ps-landing-grid {{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; margin:22px 0; font-family:Candara, Arial, sans-serif;}}
+        .ps-landing-card {{background:#FFFFFF; border:1px solid #DDE6F3; border-radius:24px; padding:22px 24px; box-shadow:0 12px 34px rgba(35,43,105,0.08);}}
+        .ps-landing-card-title {{color:{USJ_BLUE}; font-size:20px; font-weight:950; margin-bottom:10px;}}
+        .ps-landing-card-text {{color:#475467; font-size:15px; line-height:1.55; font-weight:650;}}
+        </style>
+        <div class='ps-landing-hero'>
+            <div class='ps-landing-kicker'>Plan Stratégique 2027</div>
+            <div class='ps-landing-title'>Piloter les indicateurs du Plan Stratégique 2027</div>
+            <div class='ps-landing-text'>Cette section centralise les axes stratégiques, objectifs, indicateurs, responsables, sources et valeurs annuelles afin de suivre l’avancement du Plan Stratégique 2027 dans une logique de gouvernance et d’assurance qualité.</div>
+        </div>
+        <div class='ps-landing-grid'>
+            <div class='ps-landing-card'><div class='ps-landing-card-title'>Lecture par axe</div><div class='ps-landing-card-text'>Identifier les indicateurs associés à chaque axe stratégique et à chaque objectif prioritaire.</div></div>
+            <div class='ps-landing-card'><div class='ps-landing-card-title'>Suivi annuel</div><div class='ps-landing-card-text'>Comparer les valeurs disponibles par année académique et suivre les tendances.</div></div>
+            <div class='ps-landing-card'><div class='ps-landing-card-title'>Traçabilité</div><div class='ps-landing-card-text'>Afficher les responsables et les sources d’information tout en excluant la colonne technique Formule.</div></div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    c1, c2 = st.columns([1, 1])
+    with c1:
+        if st.button("Entrer dans le Plan Stratégique 2027", use_container_width=True, type="primary", key="enter_ps2027"):
+            st.session_state["dashboard_started"] = True
+            st.rerun()
+    with c2:
+        if st.button("Retour au portail", use_container_width=True, key="back_ps2027_portal"):
+            st.session_state["selected_portal_app"] = None
+            st.session_state["dashboard_started"] = False
+            st.rerun()
+
+
+def render_strategic_plan_2027_module():
+    top_left, top_right = st.columns([1, 1])
+    with top_left:
+        if st.button("← Portail", key="ps2027_back_portal"):
+            st.session_state["selected_portal_app"] = None
+            st.session_state["dashboard_started"] = False
+            st.rerun()
+    with top_right:
+        if st.button("Présentation", key="ps2027_show_intro"):
+            st.session_state["dashboard_started"] = False
+            st.rerun()
+
+    _ps_section_header(
+        "Plan Stratégique 2027",
+        "Suivi des axes stratégiques, objectifs, indicateurs, responsables, sources et valeurs annuelles.",
+    )
+
+    file_path, file_mtime, file_size = find_strategic_plan_2027_file()
+    if not file_path:
+        st.error("Fichier PS2027.xlsx introuvable. Veuillez l’ajouter dans le même dossier GitHub que l’application.")
+        return
+
+    df = load_strategic_plan_2027(file_path, file_mtime, file_size)
+    if df.empty:
+        st.warning("Le fichier PS2027.xlsx ne contient aucune donnée exploitable.")
+        return
+
+    year_cols = _ps_year_columns(df)
+    filtered = _ps_apply_filters(df)
+
+    total_indicators = len(filtered)
+    total_axes = filtered["Axe Stratégique"].nunique() if "Axe Stratégique" in filtered.columns else 0
+    total_objectives = filtered["Objectif"].nunique() if "Objectif" in filtered.columns else 0
+    total_responsables = filtered["Responsable de l'information"].nunique() if "Responsable de l'information" in filtered.columns else 0
+    year_span = f"{year_cols[0]} - {year_cols[-1]}" if year_cols else "NA"
+    _ps_kpi_cards([
+        ("Indicateurs", f"{total_indicators}", "Indicateurs affichés après filtres", USJ_BLUE),
+        ("Axes stratégiques", f"{total_axes}", "Axes représentés", USJ_RED),
+        ("Objectifs", f"{total_objectives}", "Objectifs distincts", USJ_GOLD),
+        ("Responsables", f"{total_responsables}", "Unités responsables", USJ_GREEN),
+        ("Période", year_span, "Années disponibles", USJ_ORANGE),
+    ])
+
+    section = st.radio(
+        "Navigation Plan Stratégique 2027",
+        ["Synthèse", "Indicateurs", "Évolution", "Sources"],
+        horizontal=True,
+        label_visibility="collapsed",
+        key="ps2027_section_nav",
+    )
+
+    if section == "Synthèse":
+        c1, c2 = st.columns([1, 1])
+        with c1:
+            fig = _ps_count_bar(filtered, "Axe Stratégique", "Nombre d’indicateurs par axe stratégique")
+            if fig:
+                st.plotly_chart(fig, use_container_width=True)
+        with c2:
+            fig = _ps_count_bar(filtered, "Responsable de l'information", "Nombre d’indicateurs par responsable")
+            if fig:
+                st.plotly_chart(fig, use_container_width=True)
+
+        if "Axe Stratégique" in filtered.columns:
+            summary = filtered.groupby("Axe Stratégique", dropna=False).agg(
+                **{
+                    "Nombre d’indicateurs": ("Code - Indicateur", "count"),
+                    "Objectifs distincts": ("Objectif", pd.Series.nunique),
+                    "Responsables distincts": ("Responsable de l'information", pd.Series.nunique),
+                }
+            ).reset_index()
+            summary["Axe Stratégique"] = summary["Axe Stratégique"].map(_ps_axis_short)
+            render_strategic_plan_table(summary, "Synthèse par axe stratégique", max_height=420)
+
+    elif section == "Indicateurs":
+        render_strategic_plan_table(filtered, "Tableau des indicateurs du Plan Stratégique 2027", max_height=650)
+
+    elif section == "Évolution":
+        indicator_options = filtered.get("Code - Indicateur", pd.Series(dtype=str)).dropna().astype(str).tolist()
+        selected_indicator = st.selectbox("Indicateur", indicator_options, key="ps2027_indicator_select") if indicator_options else None
+        if selected_indicator:
+            fig = _ps_indicator_trend_chart(filtered, selected_indicator)
+            if fig:
+                st.plotly_chart(fig, use_container_width=True)
+            detail = filtered[filtered["Code - Indicateur"].astype(str) == selected_indicator]
+            cols_to_show = [col for col in ["Axe Stratégique", "Objectif", "Code - Indicateur", "Responsable de l'information", "Source de l'information", "Unité"] + year_cols if col in detail.columns]
+            render_strategic_plan_table(detail[cols_to_show], "Détail de l’indicateur sélectionné", max_height=360)
+        else:
+            st.info("Aucun indicateur disponible avec les filtres appliqués.")
+
+    elif section == "Sources":
+        c1, c2 = st.columns([1, 1])
+        with c1:
+            fig = _ps_count_bar(filtered, "Responsable de l'information", "Indicateurs par responsable", top_n=20)
+            if fig:
+                st.plotly_chart(fig, use_container_width=True)
+        with c2:
+            fig = _ps_count_bar(filtered, "Source de l'information", "Indicateurs par source", top_n=20)
+            if fig:
+                st.plotly_chart(fig, use_container_width=True)
+        source_cols = [col for col in ["Axe Stratégique", "Code - Indicateur", "Responsable de l'information", "Source de l'information", "Unité"] if col in filtered.columns]
+        render_strategic_plan_table(filtered[source_cols], "Responsables et sources des indicateurs", max_height=560)
+
+    gc.collect()
+
 
 if "selected_portal_app" not in st.session_state:
     st.session_state["selected_portal_app"] = None
@@ -10583,6 +10585,13 @@ if st.session_state["selected_portal_app"] == "course_unit_evaluation":
         render_course_unit_evaluation_landing_page()
     else:
         render_course_unit_evaluation_module()
+    st.stop()
+
+if st.session_state["selected_portal_app"] == "strategic_plan_2027":
+    if not st.session_state["dashboard_started"]:
+        render_strategic_plan_2027_landing_page()
+    else:
+        render_strategic_plan_2027_module()
     st.stop()
 
 if st.session_state["selected_portal_app"] != "exit_students":
