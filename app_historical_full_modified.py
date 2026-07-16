@@ -10247,9 +10247,15 @@ def render_strategic_plan_table(df, title, max_height=560):
         return
 
     table = df.copy()
-    table = table[[col for col in table.columns if str(col).strip().lower() != "formule"]]
+    # Keep source-only/helper columns out of the visible table.
+    # "Nombre d'Objectifs" is still kept internally for calculations, but not displayed.
+    table = table[[
+        col for col in table.columns
+        if str(col).strip().lower() != "formule"
+        and str(col).strip() != "Nombre d'Objectifs"
+    ]]
     year_cols = _ps_year_columns(table)
-    numeric_cols = set(year_cols + ["Nombre d'Objectifs"])
+    numeric_cols = set(year_cols)
 
     header_html = "".join(
         f"<th class='{'num-col' if col in numeric_cols else 'text-col'}'>{html_escape(str(col))}</th>"
