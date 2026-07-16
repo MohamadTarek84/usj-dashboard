@@ -5146,7 +5146,7 @@ def render_survey_portal():
     as a polished entry point for senior university leadership.
     """
     if LANG == "Français":
-        portal_kicker = "PLATEFORME DÉCISIONNELLE UAQ"
+        portal_kicker = "PLATEFORME DÉCISIONNELLE CCAD"
         portal_title = "Un portail unique pour transformer les données institutionnelles en décisions"
         portal_subtitle = (
             "Une page d’accueil conçue pour la gouvernance universitaire : Recteur, Vice-recteurs, "
