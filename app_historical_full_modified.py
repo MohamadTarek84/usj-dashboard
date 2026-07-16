@@ -10293,10 +10293,12 @@ def render_strategic_plan_table(df, title, max_height=560):
         table.ps-table tr:hover td {{background:#FFF7F8;}}
         table.ps-table .num-cell {{text-align:center; white-space:nowrap; font-weight:800;}}
         table.ps-table .axis-cell {{font-weight:950; color:{USJ_BLUE}; white-space:nowrap;}}
-        table.ps-table .indicator-cell {{font-weight:900; color:{USJ_BLUE}; min-width:280px;}}
+        table.ps-table .indicator-cell {{font-weight:900; color:{USJ_BLUE}; min-width:210px; max-width:260px; white-space:normal;}}
         table.ps-table th:nth-child(1), table.ps-table td:nth-child(1) {{min-width:155px;}}
         table.ps-table th:nth-child(2), table.ps-table td:nth-child(2) {{min-width:340px;}}
-        table.ps-table th:nth-child(6), table.ps-table td:nth-child(6) {{min-width:330px;}}
+        /* After removing Nombre d'Objectifs, Code-Indicateur is column 5 and Responsable is column 6. */
+        table.ps-table th:nth-child(5), table.ps-table td:nth-child(5) {{min-width:210px; max-width:260px; width:230px;}}
+        table.ps-table th:nth-child(6), table.ps-table td:nth-child(6) {{min-width:140px; max-width:170px; width:150px; white-space:normal;}}
         </style>
         <div class='ps-table-card'>
             <div class='ps-table-head'>
