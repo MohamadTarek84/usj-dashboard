@@ -68,6 +68,18 @@ statistique.
    groupe éligible ou sans modèle encore entraîné pour son groupe, la classification
    retombe automatiquement sur le moteur sémantique pour cette combinaison uniquement,
    de façon visible (colonne "Moteur utilisé"), jamais silencieuse.
+
+5. MOTS-CLÉS EXPERTS : DEUX ENTRÉES AJOUTÉES (révision courante)
+   Deux entrées ont été ajoutées à THEME_KEYWORDS_INTERNAL à la demande des experts,
+   au-delà des colonnes Forces/Faiblesses du fichier source d'origine :
+     - "anciens" (mot-clé : alumni) : AUCUN thème officiel interne ne contient le mot
+       "anciens" — cette entrée est donc INACTIVE tant qu'un thème personnalisé
+       contenant « Anciens » n'est pas créé via l'interface de validation experte.
+       Elle est conservée volontairement pour couvrir ce cas.
+     - "reputation et image" : ce thème est EXTERNE (Opportunités/Menaces). Le boost
+       par mots-clés experts s'applique donc désormais aussi hors Forces/Faiblesses.
+       Le nom THEME_KEYWORDS_INTERNAL est conservé pour compatibilité, mais il ne
+       signifie plus « thèmes internes uniquement » — voir le commentaire du dict.
 """
 import re
 import os
@@ -764,7 +776,7 @@ THEME_PROFILE_HINTS = {
     "environnement politique et economique emigration": "crise politique economique emigration instabilite inflation guerre securite contexte libanais",
 }
 # ------------------------------------------------------------
-# EXPERT-CURATED KEYWORDS — Forces / Faiblesses (internal themes)
+# EXPERT-CURATED KEYWORDS — thèmes officiels avec liste de mots-clés experts
 # ------------------------------------------------------------
 # Sourced from keywordsFF-IM.xlsx (theme headers highlighted yellow, one
 # keyword list per theme highlighted blue underneath). Keys are normalized
@@ -775,12 +787,21 @@ THEME_PROFILE_HINTS = {
 # transparently benefits Anciens / Étudiants too wherever they happen to
 # share an identically-worded theme with those three types.
 #
-# Two columns from the source file were intentionally NOT included here:
-# "Anciens" (a participant type, not an official Forces/Faiblesses theme)
-# and "Réputation" (this maps to "Réputation et image", which is an
-# EXTERNAL Opportunités/Menaces theme, not Forces/Faiblesses). Including
-# them under this dict would have silently misfiled their keywords onto the
-# wrong theme family.
+# RÉVISION — deux entrées ajoutées à la demande des experts, au-delà des
+# colonnes Forces/Faiblesses du fichier source d'origine :
+#   - "anciens" (mot-clé : alumni). ATTENTION : aucun thème officiel interne
+#     de THEME_TAXONOMY ne contient le mot "anciens" (c'est un TYPE de
+#     participant, pas un thème). Cette entrée est donc INACTIVE tant qu'un
+#     thème personnalisé contenant « Anciens » n'est pas créé par un expert
+#     via l'interface de validation (register_custom_theme). Elle est
+#     conservée volontairement pour couvrir ce cas futur, sans effet de bord
+#     aujourd'hui (_theme_keywords_for ne la retournera pour aucun thème
+#     officiel actuel).
+#   - "reputation et image" : ce thème est EXTERNE (Opportunités / Menaces).
+#     Le boost par mots-clés experts s'applique donc désormais aussi à un
+#     thème externe. Le nom THEME_KEYWORDS_INTERNAL est conservé pour
+#     compatibilité avec le reste du code, mais il ne signifie plus
+#     « thèmes internes uniquement ».
 THEME_KEYWORDS_INTERNAL = {
     "soutenabilite financiere": [
         "budget", "scolarités", "fonds", "fundraising", "salaire", "dotation", "marketing", "coût", "déficit",
@@ -832,12 +853,21 @@ THEME_KEYWORDS_INTERNAL = {
     "developpement durable (odd)": [
         "environnement", "écologie", "tri", "renouvelable", "défavorisés", "genre", "femme", "recyclage", "vert",
     ],  # Développement Durable (ODD)
+    "anciens": [
+        "alumni",
+    ],  # Anciens — inactif tant qu'aucun thème officiel/personnalisé ne contient "Anciens" (voir note ci-dessus)
+    "reputation et image": [
+        "image", "visibilité", "notoriété", "francophone", "excellence", "pilier", "appartenance",
+    ],  # Réputation et image (thème EXTERNE Opportunités/Menaces — voir note ci-dessus)
 }
 def _theme_keywords_for(theme):
     """Return the expert-curated keyword list for one official theme (see
     THEME_KEYWORDS_INTERNAL), or an empty list if this theme has no curated
-    list — e.g. all external (Opportunités/Menaces) themes, and any
-    internal theme not covered by the source spreadsheet. Never raises."""
+    list. Depuis la dernière révision, la couverture n'est plus strictement
+    limitée aux thèmes internes : « Réputation et image » (thème externe
+    Opportunités/Menaces) dispose d'une liste de mots-clés experts. Les
+    autres thèmes externes, et les thèmes internes non couverts par le
+    fichier source, restent sans liste (retour []). Never raises."""
     theme_n = normalize(theme)
     for key, keywords in THEME_KEYWORDS_INTERNAL.items():
         if key in theme_n or theme_n in key:
@@ -849,9 +879,8 @@ def keyword_match_score(answer, theme):
     whole-phrase matching rule as the domain ontology guardrails
     (_contains_term), so a keyword like "salle" won't spuriously match
     inside an unrelated word. Returns (0.0, []) when the theme has no
-    curated keyword list — this makes the boost a strict no-op for external
-    themes and for internal themes not yet covered, rather than penalizing
-    them.
+    curated keyword list — the boost is then a strict no-op for that theme
+    rather than a penalty.
     """
     keywords = _theme_keywords_for(theme)
     if not keywords:
@@ -923,11 +952,10 @@ def semantic_institutional_score_candidates(answer, participant_type, swot_eleme
     detected = detected_answer_domains(answer)
     # Weight applied to the expert-curated keyword match (THEME_KEYWORDS_INTERNAL,
     # see keyword_match_score above). Additive on top of the existing formula:
-    # it is 0.0 for any theme without a curated keyword list (all external
-    # themes, and internal themes not yet covered), so it never changes
-    # scoring there — the final max(0, min(1, score)) clip below also means
-    # this can only push an already-strong candidate the rest of the way to
-    # 1.0, not overflow it.
+    # it is 0.0 for any theme without a curated keyword list, so it never
+    # changes scoring there — the final max(0, min(1, score)) clip below also
+    # means this can only push an already-strong candidate the rest of the
+    # way to 1.0, not overflow it.
     KEYWORD_MATCH_WEIGHT = 0.25
     ranked = []
     for i, theme in enumerate(themes):
