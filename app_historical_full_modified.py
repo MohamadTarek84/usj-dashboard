@@ -9981,7 +9981,7 @@ def _qs_subject_area_line_dashboard(source="academic", nomination_type="Domestic
         linecolor="#DDE5F0",
         domain=[0.0, 0.68],
         tickfont=dict(size=11.5, color=USJ_TEXT),
-        titlefont=dict(size=13, color=USJ_TEXT),
+        title_font=dict(size=13, color=USJ_TEXT),
     )
     fig.update_yaxes(
         title="Number of ranked subjects",
@@ -9990,7 +9990,7 @@ def _qs_subject_area_line_dashboard(source="academic", nomination_type="Domestic
         zeroline=False,
         linecolor="#DDE5F0",
         tickfont=dict(size=11.5, color=USJ_TEXT),
-        titlefont=dict(size=13, color=USJ_TEXT),
+        title_font=dict(size=13, color=USJ_TEXT),
     )
 
     # Right-side status panel. xanchor is essential: without it, labels drift left and overlap.
