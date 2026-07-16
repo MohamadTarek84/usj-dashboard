@@ -9600,6 +9600,42 @@ QS_EMPLOYER_SUBJECT_2027 = pd.DataFrame([
     {"Subject": "Social Sciences & Management", "Domestic": 61, "International": 24},
 ])
 
+
+# Historical academic-reputation subject-area nominations restored for the QS Ranking module.
+# These values are used to rebuild the domestic/international subject-area line dashboards.
+QS_SUBJECT_AREAS = [
+    "Arts & Humanities",
+    "Engineering & Technology",
+    "Life Sciences & Medicine",
+    "Natural Sciences",
+    "Social Sciences & Management",
+]
+
+QS_SUBJECT_COLORS = {
+    "Arts & Humanities": "#D62728",
+    "Engineering & Technology": "#005A9C",
+    "Life Sciences & Medicine": "#1B8F3A",
+    "Natural Sciences": "#7A55CC",
+    "Social Sciences & Management": "#FF7F0E",
+}
+
+QS_ACADEMIC_SUBJECT_HISTORY = {
+    "Domestic": {
+        "Arts & Humanities": [4, 11, 19, 19, 32, 32, 29, 27, 23, 23],
+        "Engineering & Technology": [15, 24, 36, 49, 71, 69, 72, 69, 52, 35],
+        "Life Sciences & Medicine": [5, 14, 23, 35, 47, 56, 56, 55, 35, 28],
+        "Natural Sciences": [3, 3, 7, 9, 20, 22, 26, 28, 17, 11],
+        "Social Sciences & Management": [7, 15, 22, 28, 46, 59, 59, 58, 48, 38],
+    },
+    "International": {
+        "Arts & Humanities": [9, 21, 23, 27, 38, 39, 36, 35, 33, 41],
+        "Engineering & Technology": [5, 5, 12, 18, 28, 29, 32, 32, 26, 20],
+        "Life Sciences & Medicine": [3, 3, 4, 8, 14, 15, 17, 20, 17, 14],
+        "Natural Sciences": [2, 2, 4, 7, 15, 17, 16, 15, 12, 8],
+        "Social Sciences & Management": [6, 13, 14, 19, 34, 38, 36, 34, 33, 27],
+    },
+}
+
 QS_FR_LABELS = {
     "Overall Ranking Scores": "Score global QS",
     "Academic Reputation": "Réputation académique",
@@ -9792,12 +9828,185 @@ def _qs_nomination_line_chart(source="academic", nomination_type="Domestic"):
         category_orders={"University": QS_UNIVERSITIES},
         color_discrete_sequence=PLOTLY_SEQ,
     )
-    fig.update_traces(line=dict(width=3), marker=dict(size=7))
+    fig.update_traces(line=dict(width=3), marker=dict(size=7), opacity=0.72)
+    for trace in fig.data:
+        if trace.name == "USJ":
+            trace.update(
+                line=dict(width=5, dash="dash", color=USJ_RED),
+                marker=dict(size=11, color=USJ_RED, symbol="diamond", line=dict(color="white", width=2)),
+                opacity=1,
+            )
+        elif trace.name == "AUB":
+            trace.update(line=dict(width=3.4, color=USJ_BLUE), marker=dict(size=8), opacity=0.95)
     title_base = _qs_t("Academic reputation nominations", "Nominations de réputation académique") if source == "academic" else _qs_t("Employer reputation nominations", "Nominations de réputation employeur")
     type_label = _qs_t(nomination_type, QS_FR_LABELS.get(nomination_type, nomination_type))
     fig = _qs_polish_fig(fig, height=620, title=f"{title_base} - {type_label}")
     fig.update_yaxes(title=_qs_t("Number of nominations", "Nombre de nominations"))
     fig.update_xaxes(title="Année" if LANG == "Français" else "Year", dtick=1)
+    return fig
+
+
+
+def _qs_metric_comparison_line_chart(metric):
+    """Line chart comparing Lebanese universities for the selected QS indicator.
+
+    This restores the line-chart view used in the ranking section: all universities are
+    visible, while USJ is highlighted with a dashed red line.
+    """
+    df = _qs_scores_long(metric).dropna(subset=["Score"]).copy()
+    fig = px.line(
+        df,
+        x="Year",
+        y="Score",
+        color="University",
+        markers=True,
+        category_orders={"University": QS_UNIVERSITIES},
+        color_discrete_sequence=PLOTLY_SEQ,
+    )
+    fig.update_traces(line=dict(width=2.8), marker=dict(size=7), opacity=0.72)
+    for trace in fig.data:
+        if trace.name == "USJ":
+            trace.update(
+                line=dict(width=5, dash="dash", color=USJ_RED),
+                marker=dict(size=11, color=USJ_RED, symbol="diamond", line=dict(color="white", width=2)),
+                opacity=1,
+            )
+        elif trace.name == "AUB":
+            trace.update(line=dict(width=3.4, color=USJ_BLUE), marker=dict(size=8), opacity=0.95)
+    fig = _qs_polish_fig(fig, height=560, title=f"Trend comparison - {_qs_metric_label(metric)}")
+    fig.update_yaxes(title="Score", tickfont=dict(size=13, color=USJ_TEXT))
+    fig.update_xaxes(title="Year", dtick=1, tickfont=dict(size=13, color=USJ_TEXT))
+    fig.update_layout(legend=dict(orientation="h", yanchor="bottom", y=1.04, xanchor="center", x=0.5, title=None))
+    return fig
+
+
+def _qs_subject_history_long(source="academic", nomination_type="Domestic"):
+    """Return long-format subject-area nominations for historical subject figures."""
+    if source != "academic":
+        return pd.DataFrame(columns=["Subject", "Year", "Nominations", "Type"])
+    data = QS_ACADEMIC_SUBJECT_HISTORY.get(nomination_type, {})
+    rows = []
+    for subject in QS_SUBJECT_AREAS:
+        for year, value in zip(QS_NOMINATION_YEARS, data.get(subject, [])):
+            rows.append({"Subject": subject, "Year": year, "Nominations": value, "Type": nomination_type})
+    return pd.DataFrame(rows)
+
+
+def _qs_subject_area_line_dashboard(source="academic", nomination_type="Domestic"):
+    """Rebuild the subject-area line dashboard with 2027 status cards.
+
+    The figure is intentionally close to the uploaded reference: historical lines on the
+    left, a highlighted recent period, values on points, and 2027 status cards on the right.
+    """
+    df = _qs_subject_history_long(source, nomination_type)
+    if df.empty:
+        return _qs_subject_bar_chart(source)
+
+    source_label = "Academic Reputation" if source == "academic" else "Employer Reputation"
+    title = f"{nomination_type} {source_label} Nominations by Subject Area (2018-2027)"
+    y_max = max(10, float(df["Nominations"].max()) * 1.18)
+
+    fig = go.Figure()
+    for subject in QS_SUBJECT_AREAS:
+        subject_df = df[df["Subject"] == subject].copy()
+        fig.add_trace(
+            go.Scatter(
+                x=subject_df["Year"],
+                y=subject_df["Nominations"],
+                mode="lines+markers+text",
+                text=subject_df["Nominations"].map(lambda v: f"{int(v)}"),
+                textposition="top center",
+                textfont=dict(family="Candara, Arial", size=12, color=USJ_TEXT),
+                line=dict(color=QS_SUBJECT_COLORS[subject], width=4),
+                marker=dict(size=9, color=QS_SUBJECT_COLORS[subject], line=dict(color="white", width=2)),
+                name=subject,
+                hovertemplate=f"<b>{subject}</b><br>Year: %{{x}}<br>Nominations: %{{y}}<extra></extra>",
+            )
+        )
+
+    # Highlight the latest two-year period, as in the reference figures.
+    fig.add_vrect(x0=2025.5, x1=2027.5, fillcolor="rgba(211,226,244,0.55)", line_width=0, layer="below")
+
+    fig.update_layout(
+        height=650,
+        title=dict(text=f"<b>{title}</b>", font=dict(family="Candara, Arial", size=25, color=USJ_BLUE), x=0.39, xanchor="center"),
+        plot_bgcolor="white",
+        paper_bgcolor="white",
+        font=dict(family="Candara, Arial", size=13, color=USJ_TEXT),
+        margin=dict(l=75, r=330, t=90, b=75),
+        legend=dict(
+            orientation="v",
+            yanchor="top",
+            y=0.96,
+            xanchor="left",
+            x=0.02,
+            bgcolor="rgba(255,255,255,0.85)",
+            bordercolor="#DDE5F0",
+            borderwidth=1,
+            title=None,
+            font=dict(size=12),
+        ),
+    )
+    fig.update_xaxes(title="Year", range=[2017.65, 2027.55], dtick=1, showgrid=False, linecolor="#DDE5F0", domain=[0.0, 0.74])
+    fig.update_yaxes(title="Number of ranked subjects", range=[0, y_max], gridcolor="#E8EDF5", zeroline=False, linecolor="#DDE5F0")
+
+    # Right-side 2027 status area.
+    fig.add_annotation(
+        x=0.79, y=0.98, xref="paper", yref="paper",
+        text="<b>2027 Status</b>", showarrow=False, align="left",
+        font=dict(family="Candara, Arial", size=21, color=USJ_BLUE),
+    )
+    fig.add_annotation(
+        x=0.79, y=0.935, xref="paper", yref="paper",
+        text="Value and variation from 2026", showarrow=False, align="left",
+        font=dict(family="Candara, Arial", size=11, color="#5F6B7A"),
+    )
+
+    card_y = [0.82, 0.68, 0.54, 0.40, 0.26]
+    for y_pos, subject in zip(card_y, QS_SUBJECT_AREAS):
+        subject_df = df[df["Subject"] == subject].set_index("Year")
+        current_value = int(subject_df.loc[2027, "Nominations"])
+        previous_value = float(subject_df.loc[2026, "Nominations"])
+        if previous_value == 0:
+            variation_text = "NA"
+            variation_color = "#5F6B7A"
+        else:
+            variation = (current_value - previous_value) / previous_value * 100
+            variation_text = f"{variation:+.1f}%" if abs(variation) >= 0.05 else "0.0%"
+            variation_color = USJ_GREEN if variation > 0 else (USJ_RED if variation < 0 else USJ_TEXT)
+
+        fig.add_shape(
+            type="rect", xref="paper", yref="paper",
+            x0=0.79, x1=0.985, y0=y_pos - 0.055, y1=y_pos + 0.055,
+            fillcolor="#F8FAFE", line=dict(color="#DDE5F0", width=1), layer="above",
+        )
+        fig.add_shape(
+            type="rect", xref="paper", yref="paper",
+            x0=0.79, x1=0.797, y0=y_pos - 0.055, y1=y_pos + 0.055,
+            fillcolor=QS_SUBJECT_COLORS[subject], line=dict(color=QS_SUBJECT_COLORS[subject], width=0), layer="above",
+        )
+        fig.add_annotation(
+            x=0.807, y=y_pos + 0.025, xref="paper", yref="paper",
+            text=f"<b>{subject}</b>", showarrow=False, align="left",
+            font=dict(family="Candara, Arial", size=11, color=USJ_TEXT),
+        )
+        fig.add_annotation(
+            x=0.807, y=y_pos - 0.016, xref="paper", yref="paper",
+            text=f"2027 value: {current_value}", showarrow=False, align="left",
+            font=dict(family="Candara, Arial", size=11, color="#5F6B7A"),
+        )
+        fig.add_annotation(
+            x=0.955, y=y_pos - 0.016, xref="paper", yref="paper",
+            text=f"<b>{variation_text}</b>", showarrow=False, align="right",
+            font=dict(family="Candara, Arial", size=12, color=variation_color),
+        )
+
+    fig.add_annotation(
+        x=0.42, y=-0.12, xref="paper", yref="paper",
+        text="Note: Final variation is calculated as (2027 value - 2026 value) / 2026 value.",
+        showarrow=False,
+        font=dict(family="Candara, Arial", size=11, color="#5F6B7A"),
+    )
     return fig
 
 
@@ -10052,6 +10261,7 @@ def render_qs_ranking_module():
         metric_options = list(QS_SCORE_DATA.keys())
         selected_label = st.selectbox("Indicator", metric_options, key="qs_score_metric_selector")
         st.plotly_chart(_qs_grouped_score_chart(selected_label), use_container_width=True)
+        st.plotly_chart(_qs_metric_comparison_line_chart(selected_label), use_container_width=True)
         st.plotly_chart(_qs_usj_indicator_trend_chart(selected_label), use_container_width=True)
         score_table = _qs_scores_long(selected_label).pivot_table(index="University", columns="Year", values="Score", aggfunc="first").reset_index()
         score_table = score_table.set_index("University").reindex(QS_UNIVERSITIES).reset_index()
@@ -10065,6 +10275,12 @@ def render_qs_ranking_module():
             key="qs_academic_nomination_type",
         )
         st.plotly_chart(_qs_nomination_line_chart("academic", nomination_type), use_container_width=True)
+
+        st.markdown("### Academic reputation nominations by subject area")
+        st.plotly_chart(_qs_subject_area_line_dashboard("academic", "Domestic"), use_container_width=True)
+        st.plotly_chart(_qs_subject_area_line_dashboard("academic", "International"), use_container_width=True)
+
+        st.markdown("### 2027 domestic vs international subject summary")
         st.plotly_chart(_qs_subject_bar_chart("academic"), use_container_width=True)
         table = _qs_nomination_long("academic", nomination_type).pivot_table(index="University", columns="Year", values="Nominations", aggfunc="first").reset_index()
         _qs_table_card(table, f"Academic reputation nominations - {nomination_type}", max_height=520)
