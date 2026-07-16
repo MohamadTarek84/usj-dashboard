@@ -10263,6 +10263,33 @@ def render_strategic_plan_table(df, title, max_height=560):
         for col in table.columns
     )
 
+    def _ps_col_weight(col):
+        label = str(col).strip()
+        if label == "Axe Stratégique":
+            return 9
+        if label == "Objectif":
+            return 17
+        if label.startswith("Objectif Supp"):
+            return 6
+        if label == "Code - Indicateur":
+            return 13
+        if label == "Responsable de l'information":
+            return 6
+        if label == "Source de l'information":
+            return 6
+        if label == "Unité":
+            return 4
+        if _ps_is_year_column(label):
+            return 4.5
+        return 6
+
+    col_weights = [_ps_col_weight(col) for col in table.columns]
+    total_weight = sum(col_weights) if col_weights else 1
+    colgroup_html = "".join(
+        f"<col style='width:{(weight / total_weight * 100):.3f}%;'>"
+        for weight in col_weights
+    )
+
     rows_html = []
     for _, row in table.iterrows():
         axis = _ps_axis_display(row.get("Axe Stratégique", ""))
@@ -10286,20 +10313,17 @@ def render_strategic_plan_table(df, title, max_height=560):
         .ps-table-head {{display:flex; justify-content:space-between; align-items:center; gap:16px; padding:18px 22px; border-bottom:1px solid #E7EDF7; background:linear-gradient(135deg,#FFFFFF 0%,#F7FAFF 100%);}}
         .ps-table-title {{color:{USJ_BLUE}; font-size:22px; font-weight:950;}}
         .ps-row-badge {{background:#EEF3FF; border:1px solid #D7E2F4; border-radius:999px; padding:8px 13px; color:{USJ_BLUE}; font-size:13px; font-weight:900;}}
-        .ps-table-wrap {{overflow-x:auto; overflow-y:visible;}}
-        table.ps-table {{width:100%; border-collapse:separate; border-spacing:0; min-width:1480px;}}
-        table.ps-table th {{position:sticky; top:0; z-index:3; background:{USJ_BLUE}; color:#FFFFFF; text-align:left; padding:14px 14px; font-size:14px; font-weight:950; border-right:1px solid rgba(255,255,255,0.18);}}
-        table.ps-table td {{padding:12px 14px; font-size:13.5px; color:{USJ_TEXT}; border-right:1px solid #E5ECF6; border-bottom:1px solid #E5ECF6; vertical-align:top; line-height:1.35;}}
+        .ps-table-wrap {{overflow-x:hidden; overflow-y:visible; width:100%; max-width:100%;}}
+        table.ps-table {{width:100%; max-width:100%; border-collapse:separate; border-spacing:0; min-width:0; table-layout:fixed;}}
+        table.ps-table th {{position:sticky; top:0; z-index:3; background:{USJ_BLUE}; color:#FFFFFF; text-align:left; padding:10px 8px; font-size:12px; font-weight:950; border-right:1px solid rgba(255,255,255,0.18); white-space:normal; overflow-wrap:anywhere; word-break:break-word;}}
+        table.ps-table td {{padding:9px 8px; font-size:12px; color:{USJ_TEXT}; border-right:1px solid #E5ECF6; border-bottom:1px solid #E5ECF6; vertical-align:top; line-height:1.28; overflow-wrap:anywhere; word-break:break-word;}}
         table.ps-table tr:nth-child(even) td {{background:#F8FAFE;}}
         table.ps-table tr:hover td {{background:#FFF7F8;}}
-        table.ps-table .num-cell {{text-align:center; white-space:nowrap; font-weight:800;}}
-        table.ps-table .axis-cell {{font-weight:950; color:{USJ_BLUE}; white-space:nowrap;}}
-        table.ps-table .indicator-cell {{font-weight:900; color:{USJ_BLUE}; min-width:210px; max-width:260px; white-space:normal;}}
-        table.ps-table th:nth-child(1), table.ps-table td:nth-child(1) {{min-width:155px;}}
-        table.ps-table th:nth-child(2), table.ps-table td:nth-child(2) {{min-width:340px;}}
-        /* After removing Nombre d'Objectifs, Code-Indicateur is column 5 and Responsable is column 6. */
-        table.ps-table th:nth-child(5), table.ps-table td:nth-child(5) {{min-width:210px; max-width:260px; width:230px;}}
-        table.ps-table th:nth-child(6), table.ps-table td:nth-child(6) {{min-width:140px; max-width:170px; width:150px; white-space:normal;}}
+        table.ps-table .num-cell {{text-align:center; white-space:normal; font-weight:800; overflow-wrap:normal; font-size:11px;}}
+        table.ps-table .axis-cell {{font-weight:950; color:{USJ_BLUE}; white-space:normal;}}
+        table.ps-table .indicator-cell {{font-weight:900; color:{USJ_BLUE}; white-space:normal;}}
+        table.ps-table th:nth-child(2), table.ps-table td:nth-child(2) {{font-size:12px;}}
+        table.ps-table th:nth-child(5), table.ps-table td:nth-child(5) {{font-size:12px;}}
         </style>
         <div class='ps-table-card'>
             <div class='ps-table-head'>
@@ -10308,6 +10332,7 @@ def render_strategic_plan_table(df, title, max_height=560):
             </div>
             <div class='ps-table-wrap'>
                 <table class='ps-table'>
+                    <colgroup>{colgroup_html}</colgroup>
                     <thead><tr>{header_html}</tr></thead>
                     <tbody>{''.join(rows_html)}</tbody>
                 </table>
