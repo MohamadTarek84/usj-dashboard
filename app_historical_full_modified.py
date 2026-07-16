@@ -10279,7 +10279,7 @@ def render_strategic_plan_table(df, title, max_height=560):
         .ps-table-head {{display:flex; justify-content:space-between; align-items:center; gap:16px; padding:18px 22px; border-bottom:1px solid #E7EDF7; background:linear-gradient(135deg,#FFFFFF 0%,#F7FAFF 100%);}}
         .ps-table-title {{color:{USJ_BLUE}; font-size:22px; font-weight:950;}}
         .ps-row-badge {{background:#EEF3FF; border:1px solid #D7E2F4; border-radius:999px; padding:8px 13px; color:{USJ_BLUE}; font-size:13px; font-weight:900;}}
-        .ps-table-wrap {{max-height:{max_height}px; overflow:auto;}}
+        .ps-table-wrap {{overflow-x:auto; overflow-y:visible;}}
         table.ps-table {{width:100%; border-collapse:separate; border-spacing:0; min-width:1480px;}}
         table.ps-table th {{position:sticky; top:0; z-index:3; background:{USJ_BLUE}; color:#FFFFFF; text-align:left; padding:14px 14px; font-size:14px; font-weight:950; border-right:1px solid rgba(255,255,255,0.18);}}
         table.ps-table td {{padding:12px 14px; font-size:13.5px; color:{USJ_TEXT}; border-right:1px solid #E5ECF6; border-bottom:1px solid #E5ECF6; vertical-align:top; line-height:1.35;}}
