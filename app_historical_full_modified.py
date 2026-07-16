@@ -9893,10 +9893,12 @@ def _qs_subject_history_long(source="academic", nomination_type="Domestic"):
 
 
 def _qs_subject_area_line_dashboard(source="academic", nomination_type="Domestic"):
-    """Rebuild the subject-area line dashboard with 2027 status cards.
+    """Rebuild the subject-area line dashboard with a clean non-overlapping status panel.
 
-    The figure is intentionally close to the uploaded reference: historical lines on the
-    left, a highlighted recent period, values on points, and 2027 status cards on the right.
+    This version keeps the professional layout of the earlier figure:
+    - main line chart on the left
+    - clean 2027 status cards on the right
+    - no overlap between labels, cards, and color strips
     """
     df = _qs_subject_history_long(source, nomination_type)
     if df.empty:
@@ -9904,7 +9906,15 @@ def _qs_subject_area_line_dashboard(source="academic", nomination_type="Domestic
 
     source_label = "Academic Reputation" if source == "academic" else "Employer Reputation"
     title = f"{nomination_type} {source_label} Nominations by Subject Area (2018-2027)"
-    y_max = max(10, float(df["Nominations"].max()) * 1.18)
+    y_max = max(10, float(df["Nominations"].max()) * 1.16)
+
+    text_positions = {
+        "Arts & Humanities": "bottom center",
+        "Engineering & Technology": "top center",
+        "Life Sciences & Medicine": "bottom center",
+        "Natural Sciences": "top center",
+        "Social Sciences & Management": "top center",
+    }
 
     fig = go.Figure()
     for subject in QS_SUBJECT_AREAS:
@@ -9915,51 +9925,69 @@ def _qs_subject_area_line_dashboard(source="academic", nomination_type="Domestic
                 y=subject_df["Nominations"],
                 mode="lines+markers+text",
                 text=subject_df["Nominations"].map(lambda v: f"{int(v)}"),
-                textposition="top center",
-                textfont=dict(family="Candara, Arial", size=12, color=USJ_TEXT),
-                line=dict(color=QS_SUBJECT_COLORS[subject], width=4),
-                marker=dict(size=9, color=QS_SUBJECT_COLORS[subject], line=dict(color="white", width=2)),
+                textposition=text_positions.get(subject, "top center"),
+                textfont=dict(family="Candara, Arial", size=11, color=USJ_TEXT),
+                line=dict(color=QS_SUBJECT_COLORS[subject], width=3.6),
+                marker=dict(size=8.5, color=QS_SUBJECT_COLORS[subject], line=dict(color="white", width=1.8)),
                 name=subject,
                 hovertemplate=f"<b>{subject}</b><br>Year: %{{x}}<br>Nominations: %{{y}}<extra></extra>",
             )
         )
 
-    # Highlight the latest two-year period, as in the reference figures.
-    fig.add_vrect(x0=2025.5, x1=2027.5, fillcolor="rgba(211,226,244,0.55)", line_width=0, layer="below")
+    fig.add_vrect(x0=2025.5, x1=2027.1, fillcolor="rgba(211,226,244,0.50)", line_width=0, layer="below")
 
     fig.update_layout(
-        height=650,
-        title=dict(text=f"<b>{title}</b>", font=dict(family="Candara, Arial", size=25, color=USJ_BLUE), x=0.39, xanchor="center"),
+        height=640,
+        title=dict(
+            text=f"<b>{title}</b>",
+            font=dict(family="Candara, Arial", size=23, color=USJ_BLUE),
+            x=0.36,
+            xanchor="center",
+        ),
         plot_bgcolor="white",
         paper_bgcolor="white",
         font=dict(family="Candara, Arial", size=13, color=USJ_TEXT),
-        margin=dict(l=75, r=330, t=90, b=75),
+        margin=dict(l=70, r=380, t=86, b=74),
         legend=dict(
             orientation="v",
             yanchor="top",
             y=0.96,
             xanchor="left",
-            x=0.02,
-            bgcolor="rgba(255,255,255,0.85)",
+            x=0.025,
+            bgcolor="rgba(255,255,255,0.88)",
             bordercolor="#DDE5F0",
             borderwidth=1,
             title=None,
-            font=dict(size=12),
+            font=dict(size=11),
         ),
     )
-    fig.update_xaxes(title="Year", range=[2017.65, 2027.55], dtick=1, showgrid=False, linecolor="#DDE5F0", domain=[0.0, 0.74])
-    fig.update_yaxes(title="Number of ranked subjects", range=[0, y_max], gridcolor="#E8EDF5", zeroline=False, linecolor="#DDE5F0")
+    fig.update_xaxes(
+        title="Year",
+        range=[2017.65, 2027.55],
+        dtick=1,
+        showgrid=False,
+        linecolor="#DDE5F0",
+        domain=[0.0, 0.71],
+        tickfont=dict(size=12),
+    )
+    fig.update_yaxes(
+        title="Number of ranked subjects",
+        range=[0, y_max],
+        gridcolor="#E8EDF5",
+        zeroline=False,
+        linecolor="#DDE5F0",
+        tickfont=dict(size=12),
+    )
 
-    # Right-side 2027 status area.
     fig.add_annotation(
-        x=0.79, y=0.98, xref="paper", yref="paper",
+        x=0.80, y=0.98, xref="paper", yref="paper",
         text="<b>2027 Status</b>", showarrow=False, align="left",
-        font=dict(family="Candara, Arial", size=21, color=USJ_BLUE),
+        font=dict(family="Candara, Arial", size=18, color=USJ_BLUE),
     )
     fig.add_annotation(
-        x=0.79, y=0.935, xref="paper", yref="paper",
+        x=0.80, y=0.935, xref="paper", yref="paper",
         text="Value and variation from 2026", showarrow=False, align="left",
-        font=dict(family="Candara, Arial", size=11, color="#5F6B7A"),
+        font=dict(family="Candara, Arial", size=10.5, color="#5F6B7A"),
     )
 
     card_y = [0.82, 0.68, 0.54, 0.40, 0.26]
@@ -9977,39 +10005,37 @@ def _qs_subject_area_line_dashboard(source="academic", nomination_type="Domestic
 
         fig.add_shape(
             type="rect", xref="paper", yref="paper",
-            x0=0.79, x1=0.985, y0=y_pos - 0.055, y1=y_pos + 0.055,
+            x0=0.81, x1=0.99, y0=y_pos - 0.052, y1=y_pos + 0.052,
             fillcolor="#F8FAFE", line=dict(color="#DDE5F0", width=1), layer="above",
         )
         fig.add_shape(
             type="rect", xref="paper", yref="paper",
-            x0=0.79, x1=0.797, y0=y_pos - 0.055, y1=y_pos + 0.055,
+            x0=0.803, x1=0.807, y0=y_pos - 0.052, y1=y_pos + 0.052,
             fillcolor=QS_SUBJECT_COLORS[subject], line=dict(color=QS_SUBJECT_COLORS[subject], width=0), layer="above",
         )
         fig.add_annotation(
-            x=0.807, y=y_pos + 0.025, xref="paper", yref="paper",
+            x=0.817, y=y_pos + 0.020, xref="paper", yref="paper",
             text=f"<b>{subject}</b>", showarrow=False, align="left",
-            font=dict(family="Candara, Arial", size=11, color=USJ_TEXT),
+            font=dict(family="Candara, Arial", size=10.5, color=USJ_TEXT),
         )
         fig.add_annotation(
-            x=0.807, y=y_pos - 0.016, xref="paper", yref="paper",
+            x=0.817, y=y_pos - 0.015, xref="paper", yref="paper",
             text=f"2027 value: {current_value}", showarrow=False, align="left",
-            font=dict(family="Candara, Arial", size=11, color="#5F6B7A"),
+            font=dict(family="Candara, Arial", size=10.5, color="#5F6B7A"),
         )
         fig.add_annotation(
-            x=0.955, y=y_pos - 0.016, xref="paper", yref="paper",
+            x=0.975, y=y_pos - 0.015, xref="paper", yref="paper",
             text=f"<b>{variation_text}</b>", showarrow=False, align="right",
-            font=dict(family="Candara, Arial", size=12, color=variation_color),
+            font=dict(family="Candara, Arial", size=11, color=variation_color),
         )
 
     fig.add_annotation(
-        x=0.42, y=-0.12, xref="paper", yref="paper",
+        x=0.355, y=-0.12, xref="paper", yref="paper",
         text="Note: Final variation is calculated as (2027 value - 2026 value) / 2026 value.",
         showarrow=False,
-        font=dict(family="Candara, Arial", size=11, color="#5F6B7A"),
+        font=dict(family="Candara, Arial", size=10.5, color="#5F6B7A"),
     )
     return fig
-
-
 def _qs_subject_bar_chart(source="academic"):
     df = QS_ACADEMIC_SUBJECT_2027.copy() if source == "academic" else QS_EMPLOYER_SUBJECT_2027.copy()
     long_df = df.melt(id_vars=["Subject"], value_vars=["Domestic", "International"], var_name="Type", value_name="Nominations")
