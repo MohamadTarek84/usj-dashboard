@@ -9630,6 +9630,59 @@ QS_EMPLOYER_SUBJECT_2027 = pd.DataFrame([
     {"Subject": "Social Sciences & Management", "Domestic": 61, "International": 24},
 ])
 
+
+QS_SUBJECT_AREAS = [
+    "Arts & Humanities",
+    "Engineering & Technology",
+    "Life Sciences & Medicine",
+    "Natural Sciences",
+    "Social Sciences & Management",
+]
+
+QS_SUBJECT_AREA_COLORS = {
+    "Arts & Humanities": USJ_RED,
+    "Engineering & Technology": "#0065A8",
+    "Life Sciences & Medicine": "#2E9B45",
+    "Natural Sciences": "#7E57C2",
+    "Social Sciences & Management": "#F26A00",
+}
+
+QS_SUBJECT_NOMINATION_YEARS = list(range(2018, 2028))
+
+QS_ACADEMIC_SUBJECT_NOMINATIONS = {
+    "Domestic": {
+        "Arts & Humanities": [4, 11, 19, 19, 32, 32, 29, 27, 23, 23],
+        "Engineering & Technology": [15, 24, 36, 49, 71, 69, 72, 69, 52, 35],
+        "Life Sciences & Medicine": [6, 14, 23, 35, 47, 56, 56, 55, 35, 28],
+        "Natural Sciences": [3, 3, 7, 9, 20, 22, 26, 28, 17, 11],
+        "Social Sciences & Management": [7, 15, 22, 28, 46, 59, 59, 58, 48, 38],
+    },
+    "International": {
+        "Arts & Humanities": [9, 21, 23, 27, 38, 39, 36, 35, 33, 41],
+        "Engineering & Technology": [5, 5, 12, 18, 28, 29, 32, 32, 26, 20],
+        "Life Sciences & Medicine": [3, 3, 4, 8, 14, 15, 17, 20, 17, 14],
+        "Natural Sciences": [2, 2, 4, 7, 15, 17, 16, 15, 12, 8],
+        "Social Sciences & Management": [6, 13, 14, 19, 34, 38, 36, 34, 33, 27],
+    },
+}
+
+QS_EMPLOYER_SUBJECT_NOMINATIONS = {
+    "Domestic": {
+        "Arts & Humanities": [3, 6, 10, 22, 30, 34, 32, 26, 13, 11],
+        "Engineering & Technology": [3, 5, 18, 42, 55, 68, 71, 70, 51, 58],
+        "Life Sciences & Medicine": [3, 5, 13, 26, 36, 42, 42, 36, 24, 24],
+        "Natural Sciences": [1, 2, 6, 13, 20, 23, 22, 19, 15, 23],
+        "Social Sciences & Management": [6, 11, 25, 55, 76, 90, 93, 83, 65, 61],
+    },
+    "International": {
+        "Arts & Humanities": [1, 2, 9, 10, 11, 14, 14, 11, 5, 6],
+        "Engineering & Technology": [1, 3, 10, 11, 16, 19, 21, 24, 22, 15],
+        "Life Sciences & Medicine": [1, 4, 7, 9, 13, 15, 13, 12, 8, 5],
+        "Natural Sciences": [1, 1, 9, 10, 15, 18, 20, 15, 11, 7],
+        "Social Sciences & Management": [2, 5, 12, 14, 21, 31, 34, 34, 27, 24],
+    },
+}
+
 QS_FR_LABELS = {
     "Overall Ranking Scores": "Score global QS",
     "Academic Reputation": "Réputation académique",
@@ -9842,6 +9895,143 @@ def _qs_subject_bar_chart(source="academic"):
     fig.update_yaxes(title="")
     return fig
 
+
+
+
+def _qs_subject_nomination_long(source="academic", nomination_type="Domestic"):
+    data = QS_ACADEMIC_SUBJECT_NOMINATIONS if source == "academic" else QS_EMPLOYER_SUBJECT_NOMINATIONS
+    rows = []
+    for subject in QS_SUBJECT_AREAS:
+        values = data.get(nomination_type, {}).get(subject, [])
+        for year, value in zip(QS_SUBJECT_NOMINATION_YEARS, values):
+            rows.append({
+                "Subject Area": subject,
+                "Year": year,
+                "Nominations": value,
+                "Nomination type": nomination_type,
+            })
+    return pd.DataFrame(rows)
+
+
+def _qs_subject_status_cards(source="academic", nomination_type="Domestic"):
+    data = QS_ACADEMIC_SUBJECT_NOMINATIONS if source == "academic" else QS_EMPLOYER_SUBJECT_NOMINATIONS
+    title = "2027 Status"
+    st.markdown(
+        f"""
+        <div style="font-family:Candara, Arial, sans-serif; margin-top:8px;">
+            <div style="font-size:22px; font-weight:900; color:{USJ_BLUE}; margin-bottom:4px;">{title}</div>
+            <div style="font-size:13px; color:#6B7280; margin-bottom:14px;">Value and variation from 2026</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    for subject in QS_SUBJECT_AREAS:
+        values = data[nomination_type][subject]
+        value_2026 = values[-2]
+        value_2027 = values[-1]
+        if value_2026 in [0, None] or pd.isna(value_2026):
+            variation = np.nan
+        else:
+            variation = (value_2027 - value_2026) / value_2026 * 100
+        color = QS_SUBJECT_AREA_COLORS.get(subject, USJ_BLUE)
+        variation_text = "NA" if pd.isna(variation) else f"{variation:+.1f}%"
+        variation_color = USJ_GREEN if pd.notna(variation) and variation >= 0 else USJ_RED
+        st.markdown(
+            f"""
+            <div style="
+                border:1px solid #D9E4F5;
+                border-left:5px solid {color};
+                background:#FFFFFF;
+                border-radius:0px;
+                padding:10px 12px;
+                margin-bottom:12px;
+                min-height:58px;
+                box-shadow:0 3px 10px rgba(35,43,105,0.04);
+                font-family:Candara, Arial, sans-serif;
+            ">
+                <div style="font-size:12px; font-weight:900; color:{USJ_TEXT}; margin-bottom:5px;">{html_escape(subject)}</div>
+                <div style="display:flex; justify-content:space-between; gap:8px; align-items:center;">
+                    <span style="font-size:12px; color:#536173;">2027 value: <b>{value_2027}</b></span>
+                    <span style="font-size:12px; font-weight:900; color:{variation_color};">{variation_text}</span>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+
+def _qs_subject_area_trend_chart(source="academic", nomination_type="Domestic"):
+    df = _qs_subject_nomination_long(source, nomination_type)
+    if df.empty:
+        return go.Figure()
+
+    if source == "academic":
+        title_prefix = "Academic Reputation Nominations"
+    else:
+        title_prefix = "Employer Reputation Nominations"
+    title = f"{nomination_type} {title_prefix} by Subject Area (2018-2027)"
+
+    fig = px.line(
+        df,
+        x="Year",
+        y="Nominations",
+        color="Subject Area",
+        markers=True,
+        text="Nominations",
+        category_orders={"Subject Area": QS_SUBJECT_AREAS},
+        color_discrete_map=QS_SUBJECT_AREA_COLORS,
+    )
+    fig.update_traces(
+        mode="lines+markers+text",
+        line=dict(width=3.2),
+        marker=dict(size=8, line=dict(color="white", width=1.4)),
+        textposition="top center",
+        textfont=dict(family="Candara, Arial", size=12, color=USJ_TEXT),
+        hovertemplate="<b>%{fullData.name}</b><br>Year: %{x}<br>Nominations: %{y}<extra></extra>",
+        cliponaxis=False,
+    )
+    fig.add_vrect(
+        x0=2025.5,
+        x1=2027.5,
+        fillcolor="rgba(232,241,250,0.85)",
+        line_width=0,
+        layer="below",
+    )
+    fig = _qs_polish_fig(fig, height=610, title=title)
+    max_value = pd.to_numeric(df["Nominations"], errors="coerce").max()
+    y_top = max(10, max_value * 1.18) if pd.notna(max_value) else None
+    if y_top:
+        fig.update_yaxes(range=[0, y_top])
+    fig.update_yaxes(title="Number of ranked subjects")
+    fig.update_xaxes(title="Year", dtick=1)
+    fig.update_layout(
+        legend=dict(
+            orientation="v",
+            yanchor="top",
+            y=0.98,
+            xanchor="left",
+            x=0.02,
+            bgcolor="rgba(255,255,255,0.85)",
+            bordercolor="#D9E4F5",
+            borderwidth=1,
+            font=dict(family="Candara, Arial", size=12, color=USJ_TEXT),
+            title=None,
+        ),
+        margin=dict(l=75, r=40, t=95, b=75),
+    )
+    return fig
+
+
+def _qs_render_subject_area_trend(source="academic", nomination_type="Domestic"):
+    left_col, right_col = st.columns([4.4, 1.05])
+    with left_col:
+        st.plotly_chart(_qs_subject_area_trend_chart(source, nomination_type), use_container_width=True)
+    with right_col:
+        _qs_subject_status_cards(source, nomination_type)
+    st.markdown(
+        "<div style='font-family:Candara, Arial, sans-serif; color:#6B7280; font-size:12px; text-align:center; margin-top:-6px;'>Note: Final variation is calculated as (2027 value - 2026 value) / 2026 value.</div>",
+        unsafe_allow_html=True,
+    )
 
 def _qs_table_format_value(value, column_name, table_title=""):
     """Format QS table values without using the generic Factbook integer rounding.
@@ -10262,7 +10452,7 @@ def render_qs_ranking_module():
             key="qs_academic_nomination_type",
         )
         st.plotly_chart(_qs_nomination_line_chart("academic", nomination_type), use_container_width=True)
-        st.plotly_chart(_qs_subject_bar_chart("academic"), use_container_width=True)
+        _qs_render_subject_area_trend("academic", nomination_type)
         table = _qs_nomination_long("academic", nomination_type).pivot_table(index="University", columns="Year", values="Nominations", aggfunc="first").reset_index()
         _qs_table_card(table, f"Academic reputation nominations - {nomination_type}", max_height=520)
 
@@ -10274,7 +10464,7 @@ def render_qs_ranking_module():
             key="qs_employer_nomination_type",
         )
         st.plotly_chart(_qs_nomination_line_chart("employer", nomination_type), use_container_width=True)
-        st.plotly_chart(_qs_subject_bar_chart("employer"), use_container_width=True)
+        _qs_render_subject_area_trend("employer", nomination_type)
         table = _qs_nomination_long("employer", nomination_type).pivot_table(index="University", columns="Year", values="Nominations", aggfunc="first").reset_index()
         _qs_table_card(table, f"Employer reputation nominations - {nomination_type}", max_height=520)
 
