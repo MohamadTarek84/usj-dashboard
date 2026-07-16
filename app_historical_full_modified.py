@@ -9910,6 +9910,93 @@ def _qs_subject_history_long(source="academic", nomination_type="Domestic"):
     return pd.DataFrame(rows)
 
 
+
+def _qs_add_non_overlapping_point_labels(fig, df, value_col="Nominations"):
+    """Add point labels with dynamic staggering to reduce overlaps in subject-area line charts."""
+    label_df = df.copy()
+    label_df[value_col] = pd.to_numeric(label_df[value_col], errors="coerce")
+    label_df = label_df.dropna(subset=[value_col])
+
+    # Colors stay aligned with subject colors.
+    subject_colors = QS_SUBJECT_COLORS
+
+    for year, year_df in label_df.groupby("Year"):
+        year_df = year_df.sort_values(value_col).reset_index(drop=True)
+
+        # Build clusters of close values for the same year.
+        clusters = []
+        current_cluster = []
+        last_value = None
+        for _, row in year_df.iterrows():
+            value = float(row[value_col])
+            if last_value is None or abs(value - last_value) <= 4:
+                current_cluster.append(row)
+            else:
+                clusters.append(current_cluster)
+                current_cluster = [row]
+            last_value = value
+        if current_cluster:
+            clusters.append(current_cluster)
+
+        for cluster in clusters:
+            cluster_size = len(cluster)
+
+            if cluster_size == 1:
+                row = cluster[0]
+                value = float(row[value_col])
+                # Put high values above and low values below when isolated.
+                yshift = 16 if value >= year_df[value_col].median() else -16
+                xshift = 0
+                font_size = 11
+            else:
+                # Alternating offsets for close points. This avoids labels like 23/24 or 13/15 sitting on top of each other.
+                offsets = [-22, 22, -34, 34, -46, 46, -58, 58]
+                x_offsets = [-8, 8, -14, 14, -20, 20, -26, 26]
+                for pos, row in enumerate(cluster):
+                    value = float(row[value_col])
+                    yshift = offsets[pos % len(offsets)]
+                    xshift = x_offsets[pos % len(x_offsets)]
+                    fig.add_annotation(
+                        x=row["Year"],
+                        y=value,
+                        text=f"<b>{int(round(value))}</b>",
+                        showarrow=False,
+                        xshift=xshift,
+                        yshift=yshift,
+                        font=dict(
+                            family="Candara, Arial",
+                            size=10.5,
+                            color=subject_colors.get(row["Subject"], USJ_TEXT),
+                        ),
+                        bgcolor="rgba(255,255,255,0.88)",
+                        bordercolor="rgba(216,226,240,0.95)",
+                        borderwidth=1,
+                        borderpad=2,
+                        opacity=0.96,
+                    )
+                continue
+
+            fig.add_annotation(
+                x=row["Year"],
+                y=value,
+                text=f"<b>{int(round(value))}</b>",
+                showarrow=False,
+                xshift=xshift,
+                yshift=yshift,
+                font=dict(
+                    family="Candara, Arial",
+                    size=font_size,
+                    color=subject_colors.get(row["Subject"], USJ_TEXT),
+                ),
+                bgcolor="rgba(255,255,255,0.78)",
+                bordercolor="rgba(216,226,240,0.85)",
+                borderwidth=1,
+                borderpad=2,
+                opacity=0.94,
+            )
+    return fig
+
+
 def _qs_subject_area_line_dashboard(source="academic", nomination_type="Domestic"):
     """Historical subject-area line chart used for both Academic and Employer Reputation."""
     df = _qs_subject_history_long(source, nomination_type)
@@ -9934,10 +10021,7 @@ def _qs_subject_area_line_dashboard(source="academic", nomination_type="Domestic
             go.Scatter(
                 x=subject_df["Year"],
                 y=subject_df["Nominations"],
-                mode="lines+markers+text",
-                text=subject_df["Nominations"].map(lambda v: f"{int(v)}"),
-                textposition=text_positions.get(subject, "top center"),
-                textfont=dict(family="Candara, Arial", size=12, color=USJ_TEXT),
+                mode="lines+markers",
                 line=dict(color=QS_SUBJECT_COLORS[subject], width=3.2),
                 marker=dict(size=8, color=QS_SUBJECT_COLORS[subject], line=dict(color="white", width=1.4)),
                 name=subject,
@@ -9953,6 +10037,8 @@ def _qs_subject_area_line_dashboard(source="academic", nomination_type="Domestic
         line_width=0,
         layer="below",
     )
+
+    fig = _qs_add_non_overlapping_point_labels(fig, df)
 
     fig = _qs_polish_fig(fig, height=610, title=title)
     max_value = pd.to_numeric(df["Nominations"], errors="coerce").max()
