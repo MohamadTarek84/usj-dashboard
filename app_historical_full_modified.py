@@ -10173,10 +10173,31 @@ def _ps_table_value(row, col):
 
 
 def _ps_axis_short(value):
+    """Deprecated display helper kept for backward compatibility."""
+    return _ps_clean_text(value)
+
+
+def _ps_axis_display(value):
+    """Display the full strategic-axis label, not only A/B/C."""
     text = _ps_clean_text(value)
-    if " - " in text:
-        return text.split(" - ", 1)[0]
-    return text
+    return text if text else "Non renseigné"
+
+
+def _ps_objective_columns(df):
+    """Return the three objective columns used in PS2027: B, C and D when present."""
+    preferred = ["Objectif", "Objectif Supp : A5 - C3 - F4", "Objectif Supp : C4"]
+    return [col for col in preferred if col in getattr(df, "columns", [])]
+
+
+def _ps_distinct_objective_count(df):
+    values = []
+    for col in _ps_objective_columns(df):
+        values.extend([
+            _ps_clean_text(v)
+            for v in df[col].dropna().tolist()
+            if _ps_clean_text(v)
+        ])
+    return len(set(values))
 
 
 def _ps_section_header(title, subtitle=None):
@@ -10237,7 +10258,7 @@ def render_strategic_plan_table(df, title, max_height=560):
 
     rows_html = []
     for _, row in table.iterrows():
-        axis = _ps_axis_short(row.get("Axe Stratégique", ""))
+        axis = _ps_axis_display(row.get("Axe Stratégique", ""))
         cells = []
         for col in table.columns:
             value = _ps_table_value(row, col)
@@ -10296,7 +10317,7 @@ def _ps_count_bar(df, column, title, top_n=None):
     counts.columns = [column, "Nombre d'indicateurs"]
     if top_n:
         counts = counts.head(top_n)
-    counts[column] = counts[column].map(lambda v: _ps_axis_short(v) if column == "Axe Stratégique" else v)
+    counts[column] = counts[column].map(lambda v: _ps_axis_display(v) if column == "Axe Stratégique" else v)
     fig = px.bar(
         counts.sort_values("Nombre d'indicateurs", ascending=True),
         x="Nombre d'indicateurs",
@@ -10335,41 +10356,66 @@ def _ps_indicator_trend_chart(df, indicator_label):
     }).dropna(subset=["Value"])
     if values.empty:
         return None
+
     unit = row.get("Unité", "")
-    display_values = [_ps_format_indicator_value(v, unit) for v in values["Value"]]
-    y_values = values["Value"].astype(float)
+    y_values = values["Value"].astype(float).copy()
     if "ratio" in _ps_clean_text(unit).lower() or "taux" in _ps_clean_text(unit).lower():
         y_values = y_values.map(lambda v: v * 100 if abs(v) <= 1.5 else v)
         y_title = "Value (%)"
+        display_values = [f"{v:.2f}%" for v in y_values]
     else:
         y_title = _ps_clean_text(unit) or "Value"
+        display_values = [_ps_format_indicator_value(v, unit) for v in values["Value"]]
+
     fig = go.Figure()
     fig.add_trace(go.Scatter(
         x=values["Year"],
         y=y_values,
-        mode="lines+markers+text",
-        text=display_values,
-        textposition="top center",
+        mode="lines+markers",
         line=dict(color=USJ_RED, width=4),
-        marker=dict(size=11, color=USJ_RED, line=dict(color="white", width=2)),
-        textfont=dict(size=14, family="Candara, Arial", color=USJ_TEXT),
+        marker=dict(size=12, color=USJ_RED, line=dict(color="white", width=2)),
         name=_ps_clean_text(row.get("Code - Indicateur", "Indicator")),
+        hovertemplate="%{x}<br>%{y:.2f}<extra></extra>",
     ))
+
+    finite_values = pd.Series(y_values).dropna().astype(float)
+    if not finite_values.empty:
+        y_min = float(finite_values.min())
+        y_max = float(finite_values.max())
+        y_range = y_max - y_min if y_max != y_min else max(abs(y_max), 1)
+        fig.update_yaxes(range=[y_min - y_range * 0.22, y_max + y_range * 0.34])
+
+    for i, (year, y_val, label) in enumerate(zip(values["Year"], y_values, display_values)):
+        if pd.isna(y_val):
+            continue
+        fig.add_annotation(
+            x=year,
+            y=float(y_val),
+            text=f"<b>{html_escape(label)}</b>",
+            showarrow=False,
+            yshift=24 if i % 2 == 0 else 30,
+            font=dict(family="Candara, Arial", size=15, color=USJ_TEXT),
+            bgcolor="rgba(255,255,255,0.94)",
+            bordercolor="rgba(199,34,67,0.35)",
+            borderwidth=1,
+            borderpad=3,
+        )
+
     fig.update_layout(
         title=_ps_clean_text(row.get("Code - Indicateur", "Indicator trend")),
-        height=500,
+        height=540,
         title_font=dict(size=23, family="Candara, Arial", color=USJ_BLUE),
         font=dict(family="Candara, Arial", color=USJ_TEXT),
         plot_bgcolor="white",
         paper_bgcolor="white",
-        margin=dict(l=80, r=80, t=90, b=80),
+        margin=dict(l=80, r=90, t=95, b=90),
         showlegend=False,
         xaxis_title="Academic year",
         yaxis_title=y_title,
     )
     fig.update_yaxes(showgrid=True, gridcolor="#E4EBF5", zeroline=False)
+    fig.update_xaxes(tickfont=dict(size=12), automargin=True)
     return fig
-
 
 def _ps_apply_filters(df):
     filtered = df.copy()
@@ -10378,38 +10424,50 @@ def _ps_apply_filters(df):
             f"""
             <div class='control-panel'>
                 <div class='control-title'>Filtres du Plan Stratégique 2027</div>
-                <div class='control-subtitle'>Filtrez les indicateurs par axe, objectif, responsable, unité ou mot-clé. La colonne source <b>Formule</b> est volontairement exclue du dashboard.</div>
+                <div class='control-subtitle'>Filtrez les indicateurs par axe stratégique, objectif, responsable ou mot-clé. La colonne source <b>Formule</b> est volontairement exclue du dashboard.</div>
             </div>
             """,
             unsafe_allow_html=True,
         )
-        c1, c2, c3, c4 = st.columns([1.15, 1.15, 0.9, 1.3])
+        c1, c2, c3, c4 = st.columns([1.25, 1.55, 1.05, 1.35])
         axis_options = sorted([v for v in filtered.get("Axe Stratégique", pd.Series(dtype=str)).dropna().astype(str).unique()])
+        objective_cols = _ps_objective_columns(filtered)
+        objective_values = []
+        for col in objective_cols:
+            objective_values.extend([
+                _ps_clean_text(v)
+                for v in filtered[col].dropna().tolist()
+                if _ps_clean_text(v)
+            ])
+        objective_options = sorted(set(objective_values))
         resp_options = sorted([v for v in filtered.get("Responsable de l'information", pd.Series(dtype=str)).dropna().astype(str).unique()])
-        unit_options = sorted([v for v in filtered.get("Unité", pd.Series(dtype=str)).dropna().astype(str).unique()])
+
         with c1:
             axes = st.multiselect("Axe stratégique", axis_options, key="ps2027_axes_filter")
         with c2:
-            responsables = st.multiselect("Responsable", resp_options, key="ps2027_responsable_filter")
+            objectives = st.multiselect("Objectif", objective_options, key="ps2027_objectif_filter")
         with c3:
-            units = st.multiselect("Unité", unit_options, key="ps2027_unite_filter")
+            responsables = st.multiselect("Responsable", resp_options, key="ps2027_responsable_filter")
         with c4:
             search = st.text_input("Recherche", key="ps2027_search", placeholder="Code, indicateur, objectif...")
 
-    if axes:
+    if axes and "Axe Stratégique" in filtered.columns:
         filtered = filtered[filtered["Axe Stratégique"].astype(str).isin(axes)]
-    if responsables:
+    if objectives:
+        objective_cols = _ps_objective_columns(filtered)
+        obj_mask = pd.Series(False, index=filtered.index)
+        for col in objective_cols:
+            obj_mask = obj_mask | filtered[col].astype(str).isin(objectives)
+        filtered = filtered[obj_mask]
+    if responsables and "Responsable de l'information" in filtered.columns:
         filtered = filtered[filtered["Responsable de l'information"].astype(str).isin(responsables)]
-    if units:
-        filtered = filtered[filtered["Unité"].astype(str).isin(units)]
     if search:
-        haystack_cols = [col for col in ["Axe Stratégique", "Objectif", "Code - Indicateur", "Responsable de l'information", "Source de l'information"] if col in filtered.columns]
+        haystack_cols = [col for col in ["Axe Stratégique", "Code - Indicateur", "Responsable de l'information", "Source de l'information"] + _ps_objective_columns(filtered) if col in filtered.columns]
         mask = pd.Series(False, index=filtered.index)
         for col in haystack_cols:
             mask = mask | filtered[col].astype(str).str.contains(search, case=False, na=False)
         filtered = filtered[mask]
     return filtered
-
 
 def render_strategic_plan_2027_landing_page():
     st.markdown(
@@ -10481,7 +10539,7 @@ def render_strategic_plan_2027_module():
 
     total_indicators = len(filtered)
     total_axes = filtered["Axe Stratégique"].nunique() if "Axe Stratégique" in filtered.columns else 0
-    total_objectives = filtered["Objectif"].nunique() if "Objectif" in filtered.columns else 0
+    total_objectives = _ps_distinct_objective_count(filtered)
     total_responsables = filtered["Responsable de l'information"].nunique() if "Responsable de l'information" in filtered.columns else 0
     year_span = f"{year_cols[0]} - {year_cols[-1]}" if year_cols else "NA"
     _ps_kpi_cards([
@@ -10512,14 +10570,15 @@ def render_strategic_plan_2027_module():
                 st.plotly_chart(fig, use_container_width=True)
 
         if "Axe Stratégique" in filtered.columns:
-            summary = filtered.groupby("Axe Stratégique", dropna=False).agg(
-                **{
-                    "Nombre d’indicateurs": ("Code - Indicateur", "count"),
-                    "Objectifs distincts": ("Objectif", pd.Series.nunique),
-                    "Responsables distincts": ("Responsable de l'information", pd.Series.nunique),
-                }
-            ).reset_index()
-            summary["Axe Stratégique"] = summary["Axe Stratégique"].map(_ps_axis_short)
+            summary_rows = []
+            for axis_value, group in filtered.groupby("Axe Stratégique", dropna=False):
+                summary_rows.append({
+                    "Axe Stratégique": _ps_axis_display(axis_value),
+                    "Nombre d’indicateurs": len(group),
+                    "Objectifs distincts": _ps_distinct_objective_count(group),
+                    "Responsables distincts": group["Responsable de l'information"].nunique() if "Responsable de l'information" in group.columns else 0,
+                })
+            summary = pd.DataFrame(summary_rows)
             render_strategic_plan_table(summary, "Synthèse par axe stratégique", max_height=420)
 
     elif section == "Indicateurs":
@@ -10533,7 +10592,7 @@ def render_strategic_plan_2027_module():
             if fig:
                 st.plotly_chart(fig, use_container_width=True)
             detail = filtered[filtered["Code - Indicateur"].astype(str) == selected_indicator]
-            cols_to_show = [col for col in ["Axe Stratégique", "Objectif", "Code - Indicateur", "Responsable de l'information", "Source de l'information", "Unité"] + year_cols if col in detail.columns]
+            cols_to_show = [col for col in ["Axe Stratégique"] + _ps_objective_columns(detail) + ["Code - Indicateur", "Responsable de l'information", "Source de l'information", "Unité"] + year_cols if col in detail.columns]
             render_strategic_plan_table(detail[cols_to_show], "Détail de l’indicateur sélectionné", max_height=360)
         else:
             st.info("Aucun indicateur disponible avec les filtres appliqués.")
