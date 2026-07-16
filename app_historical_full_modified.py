@@ -9813,8 +9813,184 @@ def _qs_subject_bar_chart(source="academic"):
     return fig
 
 
+def _qs_table_format_value(value, column_name, table_title=""):
+    """Format QS table values without using the generic Factbook integer rounding.
+
+    QS indicator score tables must keep one decimal (e.g., 38.4, 30.6). The
+    generic Factbook table formatter rounds numeric values to whole numbers,
+    which is correct for student counts but not for QS scores.
+    """
+    if _fb_is_blank(value):
+        return ""
+
+    column_text = str(column_name)
+    title_text = str(table_title).lower()
+
+    if isinstance(value, str):
+        raw = value.replace("\u00a0", " ").strip()
+        if raw in {"", "-", "NA", "N/A", "nan", "None"}:
+            return "" if raw in {"nan", "None"} else raw
+        if raw.endswith("%"):
+            return raw
+        numeric = pd.to_numeric(raw.replace(" ", "").replace(",", "."), errors="coerce")
+    else:
+        raw = value
+        numeric = pd.to_numeric(value, errors="coerce")
+
+    if pd.notna(numeric):
+        # Ranking positions and nomination counts are counts/ranks, not scores.
+        if (
+            column_text.lower().startswith("world")
+            or column_text.lower().startswith("lebanon")
+            or column_text.lower() in {"rank", "year", "nominations"}
+            or "ranking 2022-2027" in title_text
+            or "nominations" in title_text
+        ):
+            return f"{int(round(float(numeric))):,}".replace(",", " ")
+        return f"{float(numeric):.1f}"
+
+    return str(raw)
+
+
 def _qs_table_card(df, title, note=None, max_height=520):
-    return render_factbook_table(df, title, note=note, max_height=max_height)
+    """Render QS tables with the USJ card style and one-decimal score values."""
+    if df is None or df.empty:
+        st.info(f"No data available for {title}.")
+        return
+
+    table = df.copy().dropna(how="all")
+    if table.empty:
+        st.info(f"No data available for {title}.")
+        return
+
+    # Keep QS score values at one decimal. Do not pass through render_factbook_table,
+    # because it is intentionally designed to round Factbook count values.
+    formatted = table.copy()
+    for col in formatted.columns:
+        formatted[col] = formatted[col].map(lambda value, c=col: _qs_table_format_value(value, c, title))
+
+    numeric_cols = []
+    for col in table.columns:
+        numeric_share = pd.to_numeric(table[col], errors="coerce").notna().mean()
+        if numeric_share >= 0.55:
+            numeric_cols.append(col)
+
+    header_html = "".join(
+        f"<th class='{'num-col' if col in numeric_cols else 'text-col'}'>{html_escape(col)}</th>"
+        for col in formatted.columns
+    )
+
+    body_rows = []
+    for _, row in formatted.iterrows():
+        row_is_usj = str(row.get("University", "")).strip().upper() == "USJ"
+        row_class = "qs-usj-row" if row_is_usj else ""
+        cells = []
+        for col in formatted.columns:
+            cls = "num-cell" if col in numeric_cols else "text-cell"
+            cells.append(f"<td class='{cls}'>{html_escape(row[col])}</td>")
+        body_rows.append(f"<tr class='{row_class}'>" + "".join(cells) + "</tr>")
+
+    row_count = len(formatted)
+    note_html = f"<div class='qs-table-note'>{html_escape(note)}</div>" if note else ""
+    body_html = "".join(body_rows)
+
+    st.markdown(
+        f"""
+        <style>
+        .qs-table-card {{
+            background:#FFFFFF;
+            border:1px solid #DDE5F0;
+            border-radius:24px;
+            box-shadow:0 10px 28px rgba(35,43,105,0.08);
+            overflow:hidden;
+            margin:18px 0 22px 0;
+            font-family:Candara, Arial, sans-serif;
+        }}
+        .qs-table-head {{
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            gap:14px;
+            padding:18px 20px 12px 20px;
+        }}
+        .qs-table-title {{
+            color:{USJ_BLUE};
+            font-size:22px;
+            font-weight:950;
+            line-height:1.25;
+        }}
+        .qs-table-count {{
+            color:{USJ_BLUE};
+            background:#F3F7FF;
+            border:1px solid #D7E2F2;
+            border-radius:999px;
+            padding:7px 14px;
+            font-size:13px;
+            font-weight:850;
+            white-space:nowrap;
+        }}
+        .qs-table-scroll {{
+            max-height:{int(max_height)}px;
+            overflow:auto;
+        }}
+        .qs-table {{
+            width:100%;
+            border-collapse:collapse;
+            table-layout:auto;
+            font-size:14px;
+            color:{USJ_TEXT};
+        }}
+        .qs-table th {{
+            position:sticky;
+            top:0;
+            z-index:2;
+            background:{USJ_BLUE};
+            color:#FFFFFF;
+            padding:12px 14px;
+            border:1px solid rgba(255,255,255,0.18);
+            font-weight:950;
+            text-align:left;
+        }}
+        .qs-table th.num-col {{text-align:center;}}
+        .qs-table td {{
+            padding:11px 14px;
+            border:1px solid #E3EAF4;
+            vertical-align:middle;
+            background:#FFFFFF;
+            font-weight:700;
+        }}
+        .qs-table tbody tr:nth-child(even) td {{background:#F6F8FC;}}
+        .qs-table td.num-cell {{text-align:center; font-variant-numeric:tabular-nums;}}
+        .qs-table tr.qs-usj-row td {{
+            background:#FFF3F5 !important;
+            color:{USJ_DARK_RED};
+            font-weight:950;
+            border-top:2px solid rgba(199,34,67,0.22);
+            border-bottom:2px solid rgba(199,34,67,0.22);
+        }}
+        .qs-table-note {{
+            padding:10px 20px 18px 20px;
+            color:#5F6B7A;
+            font-size:13px;
+            line-height:1.45;
+        }}
+        </style>
+        <div class='qs-table-card'>
+            <div class='qs-table-head'>
+                <div class='qs-table-title'>{html_escape(title)}</div>
+                <div class='qs-table-count'>{row_count} rows</div>
+            </div>
+            <div class='qs-table-scroll'>
+                <table class='qs-table'>
+                    <thead><tr>{header_html}</tr></thead>
+                    <tbody>{body_html}</tbody>
+                </table>
+            </div>
+            {note_html}
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 def _qs_module_css():
