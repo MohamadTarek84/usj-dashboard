@@ -9893,27 +9893,26 @@ def _qs_subject_history_long(source="academic", nomination_type="Domestic"):
 
 
 def _qs_subject_area_line_dashboard(source="academic", nomination_type="Domestic"):
-    """Rebuild the subject-area line dashboard with a clean non-overlapping status panel.
+    """Subject-area history dashboard with non-overlapping right-side 2027 cards.
 
-    This version keeps the professional layout of the earlier figure:
-    - main line chart on the left
-    - clean 2027 status cards on the right
-    - no overlap between labels, cards, and color strips
+    Historical subject-area data is available in the code for Academic Reputation.
+    Employer Reputation uses the 2027 selected-type subject bar chart below.
     """
     df = _qs_subject_history_long(source, nomination_type)
     if df.empty:
-        return _qs_subject_bar_chart(source)
+        return _qs_subject_selected_bar_chart(source, nomination_type)
 
     source_label = "Academic Reputation" if source == "academic" else "Employer Reputation"
     title = f"{nomination_type} {source_label} Nominations by Subject Area (2018-2027)"
     y_max = max(10, float(df["Nominations"].max()) * 1.16)
 
+    # Chosen to separate the closest pairs, especially 2022 and 2025 values.
     text_positions = {
         "Arts & Humanities": "bottom center",
         "Engineering & Technology": "top center",
-        "Life Sciences & Medicine": "bottom center",
+        "Life Sciences & Medicine": "top center",
         "Natural Sciences": "top center",
-        "Social Sciences & Management": "top center",
+        "Social Sciences & Management": "bottom center",
     }
 
     fig = go.Figure()
@@ -9926,35 +9925,48 @@ def _qs_subject_area_line_dashboard(source="academic", nomination_type="Domestic
                 mode="lines+markers+text",
                 text=subject_df["Nominations"].map(lambda v: f"{int(v)}"),
                 textposition=text_positions.get(subject, "top center"),
-                textfont=dict(family="Candara, Arial", size=11, color=USJ_TEXT),
-                line=dict(color=QS_SUBJECT_COLORS[subject], width=3.6),
-                marker=dict(size=8.5, color=QS_SUBJECT_COLORS[subject], line=dict(color="white", width=1.8)),
+                textfont=dict(family="Candara, Arial", size=10.5, color=USJ_TEXT),
+                line=dict(color=QS_SUBJECT_COLORS[subject], width=3.5),
+                marker=dict(
+                    size=8,
+                    color=QS_SUBJECT_COLORS[subject],
+                    line=dict(color="white", width=1.7),
+                ),
                 name=subject,
+                cliponaxis=False,
                 hovertemplate=f"<b>{subject}</b><br>Year: %{{x}}<br>Nominations: %{{y}}<extra></extra>",
             )
         )
 
-    fig.add_vrect(x0=2025.5, x1=2027.1, fillcolor="rgba(211,226,244,0.50)", line_width=0, layer="below")
+    # Keep the highlight inside the line-chart domain, not behind the cards.
+    fig.add_vrect(
+        x0=2025.5,
+        x1=2027.5,
+        fillcolor="rgba(211,226,244,0.50)",
+        line_width=0,
+        layer="below",
+    )
 
     fig.update_layout(
         height=640,
         title=dict(
             text=f"<b>{title}</b>",
             font=dict(family="Candara, Arial", size=23, color=USJ_BLUE),
-            x=0.36,
+            x=0.35,
             xanchor="center",
         ),
         plot_bgcolor="white",
         paper_bgcolor="white",
-        font=dict(family="Candara, Arial", size=13, color=USJ_TEXT),
-        margin=dict(l=70, r=380, t=86, b=74),
+        font=dict(family="Candara, Arial", size=12.5, color=USJ_TEXT),
+        margin=dict(l=72, r=420, t=86, b=78),
+        hovermode="x unified",
         legend=dict(
             orientation="v",
             yanchor="top",
             y=0.96,
             xanchor="left",
             x=0.025,
-            bgcolor="rgba(255,255,255,0.88)",
+            bgcolor="rgba(255,255,255,0.90)",
             bordercolor="#DDE5F0",
             borderwidth=1,
             title=None,
@@ -9967,8 +9979,9 @@ def _qs_subject_area_line_dashboard(source="academic", nomination_type="Domestic
         dtick=1,
         showgrid=False,
         linecolor="#DDE5F0",
-        domain=[0.0, 0.71],
-        tickfont=dict(size=12),
+        domain=[0.0, 0.68],
+        tickfont=dict(size=11.5, color=USJ_TEXT),
+        titlefont=dict(size=13, color=USJ_TEXT),
     )
     fig.update_yaxes(
         title="Number of ranked subjects",
@@ -9976,17 +9989,37 @@ def _qs_subject_area_line_dashboard(source="academic", nomination_type="Domestic
         gridcolor="#E8EDF5",
         zeroline=False,
         linecolor="#DDE5F0",
-        tickfont=dict(size=12),
+        tickfont=dict(size=11.5, color=USJ_TEXT),
+        titlefont=dict(size=13, color=USJ_TEXT),
     )
 
+    # Right-side status panel. xanchor is essential: without it, labels drift left and overlap.
+    panel_x0, panel_x1 = 0.76, 0.985
+    strip_x0, strip_x1 = 0.762, 0.766
+    label_x = 0.775
+    value_x = 0.775
+    variation_x = 0.970
+
     fig.add_annotation(
-        x=0.80, y=0.98, xref="paper", yref="paper",
-        text="<b>2027 Status</b>", showarrow=False, align="left",
+        x=panel_x0,
+        y=0.975,
+        xref="paper",
+        yref="paper",
+        text="<b>2027 Status</b>",
+        showarrow=False,
+        align="left",
+        xanchor="left",
         font=dict(family="Candara, Arial", size=18, color=USJ_BLUE),
     )
     fig.add_annotation(
-        x=0.80, y=0.935, xref="paper", yref="paper",
-        text="Value and variation from 2026", showarrow=False, align="left",
+        x=panel_x0,
+        y=0.930,
+        xref="paper",
+        yref="paper",
+        text="Value and variation from 2026",
+        showarrow=False,
+        align="left",
+        xanchor="left",
         font=dict(family="Candara, Arial", size=10.5, color="#5F6B7A"),
     )
 
@@ -10004,39 +10037,112 @@ def _qs_subject_area_line_dashboard(source="academic", nomination_type="Domestic
             variation_color = USJ_GREEN if variation > 0 else (USJ_RED if variation < 0 else USJ_TEXT)
 
         fig.add_shape(
-            type="rect", xref="paper", yref="paper",
-            x0=0.81, x1=0.99, y0=y_pos - 0.052, y1=y_pos + 0.052,
-            fillcolor="#F8FAFE", line=dict(color="#DDE5F0", width=1), layer="above",
+            type="rect",
+            xref="paper",
+            yref="paper",
+            x0=panel_x0,
+            x1=panel_x1,
+            y0=y_pos - 0.052,
+            y1=y_pos + 0.052,
+            fillcolor="#F8FAFE",
+            line=dict(color="#DDE5F0", width=1),
+            layer="above",
         )
         fig.add_shape(
-            type="rect", xref="paper", yref="paper",
-            x0=0.803, x1=0.807, y0=y_pos - 0.052, y1=y_pos + 0.052,
-            fillcolor=QS_SUBJECT_COLORS[subject], line=dict(color=QS_SUBJECT_COLORS[subject], width=0), layer="above",
+            type="rect",
+            xref="paper",
+            yref="paper",
+            x0=strip_x0,
+            x1=strip_x1,
+            y0=y_pos - 0.052,
+            y1=y_pos + 0.052,
+            fillcolor=QS_SUBJECT_COLORS[subject],
+            line=dict(color=QS_SUBJECT_COLORS[subject], width=0),
+            layer="above",
         )
         fig.add_annotation(
-            x=0.817, y=y_pos + 0.020, xref="paper", yref="paper",
-            text=f"<b>{subject}</b>", showarrow=False, align="left",
-            font=dict(family="Candara, Arial", size=10.5, color=USJ_TEXT),
+            x=label_x,
+            y=y_pos + 0.022,
+            xref="paper",
+            yref="paper",
+            text=f"<b>{subject}</b>",
+            showarrow=False,
+            align="left",
+            xanchor="left",
+            font=dict(family="Candara, Arial", size=10.3, color=USJ_TEXT),
         )
         fig.add_annotation(
-            x=0.817, y=y_pos - 0.015, xref="paper", yref="paper",
-            text=f"2027 value: {current_value}", showarrow=False, align="left",
-            font=dict(family="Candara, Arial", size=10.5, color="#5F6B7A"),
+            x=value_x,
+            y=y_pos - 0.018,
+            xref="paper",
+            yref="paper",
+            text=f"2027 value: {current_value}",
+            showarrow=False,
+            align="left",
+            xanchor="left",
+            font=dict(family="Candara, Arial", size=10.2, color="#5F6B7A"),
         )
         fig.add_annotation(
-            x=0.975, y=y_pos - 0.015, xref="paper", yref="paper",
-            text=f"<b>{variation_text}</b>", showarrow=False, align="right",
+            x=variation_x,
+            y=y_pos - 0.018,
+            xref="paper",
+            yref="paper",
+            text=f"<b>{variation_text}</b>",
+            showarrow=False,
+            align="right",
+            xanchor="right",
             font=dict(family="Candara, Arial", size=11, color=variation_color),
         )
 
     fig.add_annotation(
-        x=0.355, y=-0.12, xref="paper", yref="paper",
+        x=0.34,
+        y=-0.12,
+        xref="paper",
+        yref="paper",
         text="Note: Final variation is calculated as (2027 value - 2026 value) / 2026 value.",
         showarrow=False,
         font=dict(family="Candara, Arial", size=10.5, color="#5F6B7A"),
     )
     return fig
+
+
+def _qs_subject_selected_bar_chart(source="academic", nomination_type="Domestic"):
+    """Selected Domestic/International subject chart for the chosen reputation source."""
+    df = QS_ACADEMIC_SUBJECT_2027.copy() if source == "academic" else QS_EMPLOYER_SUBJECT_2027.copy()
+    if nomination_type not in df.columns:
+        nomination_type = "Domestic"
+    chart_df = df[["Subject", nomination_type]].rename(columns={nomination_type: "Nominations"}).copy()
+    chart_df = chart_df.sort_values("Nominations", ascending=True)
+
+    source_label = "Academic Reputation" if source == "academic" else "Employer Reputation"
+    title = f"{nomination_type} {source_label} Nominations by Subject Area - 2027"
+
+    fig = px.bar(
+        chart_df,
+        y="Subject",
+        x="Nominations",
+        orientation="h",
+        text="Nominations",
+        color="Subject",
+        color_discrete_map=QS_SUBJECT_COLORS,
+    )
+    fig.update_traces(
+        textposition="outside",
+        cliponaxis=False,
+        marker_line_color="white",
+        marker_line_width=1.3,
+        textfont=dict(family="Candara, Arial", size=13, color=USJ_TEXT),
+        hovertemplate="<b>%{y}</b><br>Nominations: %{x}<extra></extra>",
+    )
+    fig = _qs_polish_fig(fig, height=470, title=title)
+    fig.update_layout(showlegend=False, margin=dict(l=80, r=90, t=60, b=65))
+    fig.update_xaxes(title="Number of nominations", gridcolor="#E8EDF5", rangemode="tozero")
+    fig.update_yaxes(title="", tickfont=dict(size=12.5, color=USJ_TEXT))
+    return fig
+
+
 def _qs_subject_bar_chart(source="academic"):
+    """Domestic-vs-international 2027 subject summary, kept as an optional summary chart."""
     df = QS_ACADEMIC_SUBJECT_2027.copy() if source == "academic" else QS_EMPLOYER_SUBJECT_2027.copy()
     long_df = df.melt(id_vars=["Subject"], value_vars=["Domestic", "International"], var_name="Type", value_name="Nominations")
     long_df["Type label"] = long_df["Type"].map(lambda x: _qs_t(x, QS_FR_LABELS.get(x, x)))
@@ -10051,12 +10157,11 @@ def _qs_subject_bar_chart(source="academic"):
         color_discrete_sequence=[USJ_BLUE, USJ_RED],
     )
     fig.update_traces(textposition="outside", cliponaxis=False, textfont=dict(color=USJ_TEXT, size=13))
-    fig = _qs_polish_fig(fig, height=520, title=_qs_t("USJ domestic vs international nominations by subject - 2027", "USJ - nominations domestiques vs internationales par domaine - 2027"))
-    fig.update_xaxes(title=_qs_t("Number of nominations", "Nombre de nominations"))
+    source_label = "Academic Reputation" if source == "academic" else "Employer Reputation"
+    fig = _qs_polish_fig(fig, height=500, title=f"{source_label}: Domestic vs International Nominations by Subject Area - 2027")
+    fig.update_xaxes(title="Number of nominations")
     fig.update_yaxes(title="")
     return fig
-
-
 def _qs_table_card(df, title, note=None, max_height=520):
     return render_factbook_table(df, title, note=note, max_height=max_height)
 
@@ -10302,12 +10407,9 @@ def render_qs_ranking_module():
         )
         st.plotly_chart(_qs_nomination_line_chart("academic", nomination_type), use_container_width=True)
 
-        st.markdown("### Academic reputation nominations by subject area")
-        st.plotly_chart(_qs_subject_area_line_dashboard("academic", "Domestic"), use_container_width=True)
-        st.plotly_chart(_qs_subject_area_line_dashboard("academic", "International"), use_container_width=True)
+        st.markdown(f"### {nomination_type} academic reputation nominations by subject area")
+        st.plotly_chart(_qs_subject_area_line_dashboard("academic", nomination_type), use_container_width=True)
 
-        st.markdown("### 2027 domestic vs international subject summary")
-        st.plotly_chart(_qs_subject_bar_chart("academic"), use_container_width=True)
         table = _qs_nomination_long("academic", nomination_type).pivot_table(index="University", columns="Year", values="Nominations", aggfunc="first").reset_index()
         _qs_table_card(table, f"Academic reputation nominations - {nomination_type}", max_height=520)
 
@@ -10319,7 +10421,10 @@ def render_qs_ranking_module():
             key="qs_employer_nomination_type",
         )
         st.plotly_chart(_qs_nomination_line_chart("employer", nomination_type), use_container_width=True)
-        st.plotly_chart(_qs_subject_bar_chart("employer"), use_container_width=True)
+
+        st.markdown(f"### {nomination_type} employer reputation nominations by subject area - 2027")
+        st.plotly_chart(_qs_subject_selected_bar_chart("employer", nomination_type), use_container_width=True)
+
         table = _qs_nomination_long("employer", nomination_type).pivot_table(index="University", columns="Year", values="Nominations", aggfunc="first").reset_index()
         _qs_table_card(table, f"Employer reputation nominations - {nomination_type}", max_height=520)
 
