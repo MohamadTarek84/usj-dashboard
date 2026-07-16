@@ -9468,6 +9468,45 @@ QS_YEAR_COLORS = {
     2027: "#00A6A6",
 }
 
+QS_UNIVERSITY_COLORS = {
+    "AUB": USJ_BLUE,
+    "LAU": "#D14966",
+    "USJ": USJ_RED,
+    "LU": "#34469B",
+    "BAU": "#7E8FC9",
+    "USEK": "#B7AA95",
+    "UoB": "#6573A4",
+    "NDU": "#D76A82",
+    "IUL": "#9AA7D4",
+}
+
+
+def _qs_apply_university_trace_style(fig, dashed_usj=True, highlight_usj=True):
+    """Apply a fixed university color mapping across QS comparison charts."""
+    for trace in fig.data:
+        uni = str(trace.name)
+        color = QS_UNIVERSITY_COLORS.get(uni, USJ_BLUE)
+        base_line = dict(color=color, width=2.8)
+        base_marker = dict(size=7, color=color)
+        opacity = 0.78
+
+        if uni == "USJ" and highlight_usj:
+            base_line.update(width=4.6)
+            if dashed_usj:
+                base_line.update(dash="dash")
+            base_marker.update(size=10, symbol="diamond", line=dict(color="white", width=2))
+            opacity = 1
+        elif uni == "AUB":
+            base_line.update(width=3.2)
+            base_marker.update(size=8)
+            opacity = 0.9
+        else:
+            base_marker.update(size=7)
+
+        trace.update(line=base_line, marker=base_marker, opacity=opacity)
+
+    return fig
+
 QS_INDICATORS = [
     ("Academic Reputation", "30%", "Réputation académique", "30%"),
     ("Employer Reputation", "15%", "Réputation employeur", "15%"),
@@ -9752,19 +9791,9 @@ def _qs_lebanon_rank_chart():
         color="University",
         markers=True,
         category_orders={"University": QS_UNIVERSITIES},
-        color_discrete_sequence=PLOTLY_SEQ,
+        color_discrete_map=QS_UNIVERSITY_COLORS,
     )
-    fig.update_traces(line=dict(width=2.6), marker=dict(size=7), opacity=0.72)
-    # USJ is intentionally shown as a dashed, thicker red line to avoid confusion with similar colors.
-    for trace in fig.data:
-        if trace.name == "USJ":
-            trace.update(
-                line=dict(width=5, dash="dash", color=USJ_RED),
-                marker=dict(size=11, color=USJ_RED, symbol="diamond", line=dict(color="white", width=2)),
-                opacity=1,
-            )
-        elif trace.name == "AUB":
-            trace.update(line=dict(width=3, color=USJ_BLUE), marker=dict(size=8), opacity=0.95)
+    fig = _qs_apply_university_trace_style(fig, dashed_usj=True, highlight_usj=True)
     fig = _qs_polish_fig(fig, height=540, title="Ranking in Lebanon")
     fig.update_yaxes(autorange="reversed", dtick=1, title="Rank", tickfont=dict(size=13, color=USJ_TEXT))
     fig.update_xaxes(dtick=1, title="Year", tickfont=dict(size=13, color=USJ_TEXT))
@@ -9781,14 +9810,15 @@ def _qs_nomination_line_chart(source="academic", nomination_type="Domestic"):
         color="University",
         markers=True,
         category_orders={"University": QS_UNIVERSITIES},
-        color_discrete_sequence=PLOTLY_SEQ,
+        color_discrete_map=QS_UNIVERSITY_COLORS,
     )
-    fig.update_traces(line=dict(width=3), marker=dict(size=7))
+    fig = _qs_apply_university_trace_style(fig, dashed_usj=True, highlight_usj=True)
     title_base = _qs_t("Academic reputation nominations", "Nominations de réputation académique") if source == "academic" else _qs_t("Employer reputation nominations", "Nominations de réputation employeur")
     type_label = _qs_t(nomination_type, QS_FR_LABELS.get(nomination_type, nomination_type))
     fig = _qs_polish_fig(fig, height=620, title=f"{title_base} - {type_label}")
     fig.update_yaxes(title=_qs_t("Number of nominations", "Nombre de nominations"))
     fig.update_xaxes(title="Année" if LANG == "Français" else "Year", dtick=1)
+    fig.update_layout(legend=dict(orientation="h", yanchor="bottom", y=1.04, xanchor="center", x=0.5, title=None))
     return fig
 
 
