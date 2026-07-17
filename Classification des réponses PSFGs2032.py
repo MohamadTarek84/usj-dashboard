@@ -438,6 +438,23 @@ THEME_TAXONOMY = {
         ],
     },
 }
+
+# The same expert-approved taxonomy applies to Menaces and Opportunités for
+# every participant type. This replaces the former external labels so that
+# classification output can only use the eight official themes below.
+EXTERNAL_SWOT_THEMES = [
+    "Exigences ministérielles et environnement réglementaire",
+    "Marché du travail et associations professionnelles",
+    "Institutions paires : concurrence et benchmarking",
+    "Intelligence artificielle",
+    "Attractivité vis-à-vis des élèves des écoles",
+    "Réputation et image",
+    "Autres menaces ou opportunités éventuelles",
+    "Suggestions de meilleures pratiques ou de programmes innovants",
+]
+for _participant_taxonomy in THEME_TAXONOMY.values():
+    _participant_taxonomy["external"] = EXTERNAL_SWOT_THEMES.copy()
+
 PARTICIPANT_TYPE_ALIASES = {
     "psg": "PSG",
     "anciens": "Anciens",
@@ -908,13 +925,14 @@ THEME_KEYWORDS_EXTERNAL = {
 }
 
 EXTERNAL_THEME_KEYWORD_SOURCES = {
+    'exigences ministerielles et environnement reglementaire': ['exigences ministerielles et environnement reglementaire'],
     'marche du travail et associations professionnelles': ['marche du travail et associations professionnelles'],
-    'marche du travail et relations avec les employeurs': ['marche du travail et associations professionnelles'],
-    'concurrence avec les autres universites': ['institutions paires concurrence et benchmarking'],
+    'institutions paires concurrence et benchmarking': ['institutions paires concurrence et benchmarking'],
     'intelligence artificielle': ['intelligence artificielle'],
-    'reputation et image': ['reputation et image', 'attractivite vis a vis des eleves des ecoles'],
-    'environnement politique et economique emigration': ['exigences ministerielles et environnement reglementaire', 'autres menaces ou opportunites eventuelles'],
-    'autres': ['autres menaces ou opportunites eventuelles', 'suggestions de meilleures pratiques ou de programmes innovants'],
+    'attractivite vis a vis des eleves des ecoles': ['attractivite vis a vis des eleves des ecoles'],
+    'reputation et image': ['reputation et image'],
+    'autres menaces ou opportunites eventuelles': ['autres menaces ou opportunites eventuelles'],
+    'suggestions de meilleures pratiques ou de programmes innovants': ['suggestions de meilleures pratiques ou de programmes innovants'],
 }
 def _theme_keywords_for(theme):
     """Return the expert-curated keyword list for one official theme (see
