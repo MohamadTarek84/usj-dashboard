@@ -972,4 +972,101 @@ def render_daily_app() -> None:
     with tab_overview: render_simple_overview(current_projects)
 
 
-render_daily_app()
+def render_ultra_simple_app() -> None:
+    current_projects=visible_projects(user)
+    tasks=all_workspace_tasks()
+    open_tasks=[t for t in tasks if t["status"] not in {"Completed","Cancelled"}]
+    overdue=sum(bool(t["due_date"] and date.fromisoformat(t["due_date"])<date.today()) for t in open_tasks)
+    due_soon=sum(bool(t["due_date"] and date.today()<=date.fromisoformat(t["due_date"])<=date.today()+timedelta(days=7)) for t in open_tasks)
+
+    st.markdown("# Project Tracker")
+    st.caption("One page for projects, tasks, deadlines, and comments")
+    m1,m2,m3=st.columns(3)
+    m1.metric("Active projects",len(current_projects))
+    m2.metric("Due within 7 days",due_soon)
+    m3.metric("Overdue tasks",overdue)
+
+    with st.expander("＋ Add a new project",expanded=not current_projects):
+        create_simple_project()
+
+    if not current_projects:
+        st.info("Add your first project above. It takes only a name and a deadline.")
+        return
+
+    st.caption("🟢 On track   ·   🟠 Needs attention   ·   🔴 Overdue")
+    for project in current_projects:
+        health=project_health(project)
+        project_tasks=query("SELECT * FROM tasks WHERE project_id=? ORDER BY COALESCE(due_date,'9999-12-31')",(project["id"],))
+        open_project_tasks=[t for t in project_tasks if t["status"] not in {"Completed","Cancelled"}]
+        completed_tasks=[t for t in project_tasks if t["status"]=="Completed"]
+        comments=query("SELECT * FROM comments WHERE project_id=? ORDER BY created_at DESC",(project["id"],))
+        due_text=f"Due {project['due_date']}" if project["due_date"] else "No deadline"
+
+        with st.expander(f"{health['icon']}  {project['name']}   |   {project['progress']:.0f}%   |   {due_text}"):
+            st.progress(project["progress"]/100,text=f"{project['progress']:.0f}% complete · {len(open_project_tasks)} task(s) remaining")
+            if comments:
+                latest=comments[0]
+                st.info(f"Latest comment — {latest.get('author_name') or 'Team member'}: {latest['body']}")
+
+            st.markdown("#### Tasks")
+            if not open_project_tasks:
+                st.success("No open tasks.")
+            for task in open_project_tasks:
+                task["project_name"]=project["name"]
+                daily_task_card(task,f"simple_{project['id']}")
+
+            with st.form(f"simple_task_{project['id']}",clear_on_submit=True):
+                t1,t2,t3=st.columns([4,1.5,.8],vertical_alignment="bottom")
+                task_title=t1.text_input("New task",placeholder="What needs to be done?",key=f"simple_title_{project['id']}")
+                task_due=t2.date_input("Due date",value=date.today()+timedelta(days=7),key=f"simple_due_{project['id']}")
+                add_task=t3.form_submit_button("Add",type="primary",width="stretch")
+            if add_task and task_title.strip():
+                save_task(dict(project_id=project["id"],title=task_title.strip(),description="",assignee_id=user["id"],
+                    status="Not started",priority="Medium",start_date=str(date.today()),due_date=str(task_due),
+                    weight=1,estimated_hours=0,actual_hours=0,dependency_task_id=None),user["id"])
+                st.rerun()
+
+            st.markdown("#### Comments")
+            with st.form(f"simple_comment_{project['id']}",clear_on_submit=True):
+                c1,c2,c3=st.columns([1.4,4,.8],vertical_alignment="bottom")
+                author=c1.text_input("Name",placeholder="Your name",key=f"simple_author_{project['id']}")
+                comment=c2.text_input("Comment",placeholder="Feedback, question, or decision",key=f"simple_comment_text_{project['id']}")
+                post=c3.form_submit_button("Post",type="primary",width="stretch")
+            if post:
+                if not author.strip() or not comment.strip():
+                    st.warning("Enter your name and comment.")
+                else:
+                    execute("INSERT INTO comments(project_id,task_id,user_id,author_name,body) VALUES(?,?,?,?,?)",
+                            (project["id"],None,user["id"],author.strip(),comment.strip()))
+                    log_activity(user["id"],"Added comment",f"{author.strip()}: {comment.strip()[:100]}",project["id"])
+                    st.rerun()
+            for item in comments[:5]:
+                st.markdown(f"**{item.get('author_name') or 'Team member'}** · {item['created_at'][:16]}  \n{item['body']}")
+
+            if completed_tasks:
+                with st.expander(f"Completed tasks ({len(completed_tasks)})"):
+                    for task in completed_tasks:
+                        r1,r2=st.columns([5,1],vertical_alignment="center")
+                        r1.write(f"✅ {task['title']}")
+                        task["project_name"]=project["name"]
+                        if r2.button("Reopen",key=f"simple_reopen_{task['id']}"):
+                            change_task_status(task,"In progress")
+
+            with st.expander("Project settings"):
+                with st.form(f"simple_settings_{project['id']}"):
+                    s1,s2=st.columns(2)
+                    new_due=s1.date_input("Project deadline",value=parse_date(project["due_date"],date.today()+timedelta(days=30)),key=f"simple_project_due_{project['id']}")
+                    new_status=s2.selectbox("Project status",PROJECT_STATUSES,index=PROJECT_STATUSES.index(project["status"]),key=f"simple_project_status_{project['id']}")
+                    save_settings=st.form_submit_button("Save")
+                if save_settings:
+                    data=dict(name=project["name"],description=project["description"],category=project["category"],priority=project["priority"],
+                        status=new_status,start_date=project["start_date"],due_date=str(new_due),coordinator_id=None,
+                        manual_progress=project["manual_progress"],alert_days=project["alert_days"],color=project["color"])
+                    save_project(data,user["id"],project["id"]); st.rerun()
+
+    st.divider()
+    st.download_button("Download Excel backup",project_export([p["id"] for p in current_projects]),
+        file_name=f"project_backup_{date.today()}.xlsx",mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+
+render_ultra_simple_app()
