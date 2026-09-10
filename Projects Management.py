@@ -8,7 +8,6 @@ from typing import Any, Iterable
 import os
 import sqlite3
 
-import bcrypt
 import pandas as pd
 import plotly.express as px
 import streamlit as st
@@ -97,46 +96,6 @@ def scalar(sql: str, params: Iterable[Any] = ()) -> Any:
     with connection() as con:
         row = con.execute(sql, tuple(params)).fetchone()
         return row[0] if row else None
-
-
-def hash_password(password: str) -> str:
-    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
-
-
-def verify_password(password: str, password_hash: str) -> bool:
-    try:
-        return bcrypt.checkpw(password.encode(), password_hash.encode())
-    except (ValueError, TypeError):
-        return False
-
-
-def create_user(username: str, full_name: str, email: str, password: str, role: str) -> int:
-    if len(username.strip()) < 3:
-        raise ValueError("Username must contain at least 3 characters.")
-    if len(password) < 8:
-        raise ValueError("Password must contain at least 8 characters.")
-    if role not in {"owner", "coordinator"}:
-        raise ValueError("Invalid role.")
-    return execute("INSERT INTO users(username,full_name,email,password_hash,role) VALUES(?,?,?,?,?)",
-                   (username.strip(), full_name.strip(), email.strip(), hash_password(password), role))
-
-
-def authenticate(username: str, password: str):
-    rows = query("SELECT * FROM users WHERE username=? AND active=1", (username.strip(),))
-    if rows and verify_password(password, rows[0]["password_hash"]):
-        user = rows[0]
-        user.pop("password_hash", None)
-        return user
-    return None
-
-
-def change_password(user_id: int, current: str, new: str) -> None:
-    rows = query("SELECT password_hash FROM users WHERE id=?", (user_id,))
-    if not rows or not verify_password(current, rows[0]["password_hash"]):
-        raise ValueError("The current password is incorrect.")
-    if len(new) < 8:
-        raise ValueError("The new password must contain at least 8 characters.")
-    execute("UPDATE users SET password_hash=? WHERE id=?", (hash_password(new), user_id))
 
 
 def log_activity(user_id: int | None, action: str, details: str = "", project_id: int | None = None) -> None:
@@ -331,74 +290,33 @@ def hero(title: str, subtitle: str) -> None:
     st.markdown(f'<div class="hero"><h1>{title}</h1><p>{subtitle}</p></div>', unsafe_allow_html=True)
 
 
-def logout() -> None:
-    st.session_state.pop("user", None)
-    st.rerun()
+def get_workspace_user() -> dict[str, Any]:
+    """Open the shared workspace directly—no sign-in screen."""
+    rows = query("SELECT * FROM users WHERE role='owner' ORDER BY id LIMIT 1")
+    if not rows:
+        execute("""INSERT INTO users(username,full_name,email,password_hash,role)
+                   VALUES('shared_workspace','Project workspace','','','owner')""")
+        rows = query("SELECT * FROM users WHERE role='owner' ORDER BY id LIMIT 1")
+    workspace_user = rows[0]
+    workspace_user.pop("password_hash", None)
+    return workspace_user
 
 
-def setup_or_login() -> None:
-    user_count = int(scalar("SELECT COUNT(*) FROM users") or 0)
-    _, center, _ = st.columns([1, 1.1, 1])
-    with center:
-        st.markdown("<br><br>", unsafe_allow_html=True)
-        hero("ProjectFlow Pro", "Professional project, task, deadline, and collaboration management")
-        if user_count == 0:
-            st.info("Create the first owner account. You can add your coordinator later.")
-            with st.form("initial_setup"):
-                full_name = st.text_input("Full name")
-                email = st.text_input("Email")
-                username = st.text_input("Username")
-                password = st.text_input("Password (minimum 8 characters)", type="password")
-                confirm = st.text_input("Confirm password", type="password")
-                submitted = st.form_submit_button("Create account", width="stretch", type="primary")
-            if submitted:
-                if not full_name.strip():
-                    st.error("Full name is required.")
-                elif password != confirm:
-                    st.error("Passwords do not match.")
-                else:
-                    try:
-                        create_user(username, full_name, email, password, "owner")
-                        st.success("Account created. Please sign in.")
-                        st.rerun()
-                    except Exception as exc:
-                        st.error(str(exc))
-        else:
-            with st.form("login"):
-                username = st.text_input("Username")
-                password = st.text_input("Password", type="password")
-                submitted = st.form_submit_button("Sign in", width="stretch", type="primary")
-            if submitted:
-                user = authenticate(username, password)
-                if user:
-                    st.session_state.user = user
-                    st.rerun()
-                st.error("Incorrect username or password.")
-
-
-if "user" not in st.session_state:
-    setup_or_login()
-    st.stop()
-
-user = st.session_state.user
+user = get_workspace_user()
 projects = visible_projects(user)
 project_ids = [p["id"] for p in projects]
 
 with st.sidebar:
-    st.markdown(f"### ProjectFlow Pro\n**{user['full_name']}**  \n{user['role'].title()}")
-    page_options = ["Dashboard", "Projects", "Tasks", "Timeline", "Alerts", "Reports"]
-    if user["role"] == "owner":
-        page_options.append("Administration")
+    st.markdown("### ProjectFlow Pro\n**Shared project workspace**")
+    page_options = ["Dashboard", "Projects", "Tasks", "Timeline", "Alerts", "Reports", "Tools"]
     if "nav_page" not in st.session_state or st.session_state.nav_page not in page_options:
         st.session_state.nav_page = "Dashboard"
-    if user["role"] == "owner":
-        q1, q2 = st.columns(2)
-        q1.button("＋ Project", width="stretch", on_click=lambda: st.session_state.update(nav_page="Projects", project_tab="Create project"))
-        q2.button("＋ Task", width="stretch", on_click=lambda: st.session_state.update(nav_page="Tasks"))
+    q1, q2 = st.columns(2)
+    q1.button("＋ Project", width="stretch", on_click=lambda: st.session_state.update(nav_page="Projects"))
+    q2.button("＋ Task", width="stretch", on_click=lambda: st.session_state.update(nav_page="Tasks"))
     page = st.radio("Navigation", page_options, label_visibility="collapsed", key="nav_page")
     st.divider()
-    if st.button("Sign out", width="stretch"):
-        logout()
+    st.caption("Open the app and start working—no account or password required.")
 
 
 def project_selector(label: str = "Project", key: str | None = None) -> int | None:
@@ -477,8 +395,6 @@ def render_dashboard() -> None:
 
 
 def project_form(existing: dict | None = None, template_name: str = "Blank project") -> None:
-    coordinators = query("SELECT id,full_name FROM users WHERE role='coordinator' AND active=1 ORDER BY full_name")
-    coord_map = {None: "Not shared"} | {x["id"]: x["full_name"] for x in coordinators}
     template = PROJECT_TEMPLATES.get(template_name, PROJECT_TEMPLATES["Blank project"])
     default_status = existing["status"] if existing else "Not started"
     default_priority = existing["priority"] if existing else "Medium"
@@ -495,13 +411,8 @@ def project_form(existing: dict | None = None, template_name: str = "Blank proje
             category = c1.text_input("Category", value=existing["category"] if existing else template["category"])
             priority = c2.selectbox("Priority", PRIORITIES, index=PRIORITIES.index(default_priority))
             status = c3.selectbox("Status", PROJECT_STATUSES, index=PROJECT_STATUSES.index(default_status))
-            d3, d4 = st.columns(2)
-            alert_days = d3.number_input("Alert before deadline (days)", 0, 365, int(existing["alert_days"] if existing else 7))
-            current_coord = existing.get("coordinator_id") if existing else None
-            coord_keys = list(coord_map)
-            coordinator_id = d4.selectbox("Share with coordinator", coord_keys,
-                index=coord_keys.index(current_coord) if current_coord in coord_keys else 0,
-                format_func=lambda x: coord_map[x])
+            alert_days = st.number_input("Alert before deadline (days)", 0, 365, int(existing["alert_days"] if existing else 7))
+            coordinator_id = None
             s1, s2 = st.columns(2)
             mode = s1.selectbox("Progress", ["Automatic from tasks", "Manual"],
                                 index=1 if existing and existing["manual_progress"] is not None else 0)
@@ -561,7 +472,8 @@ def render_projects() -> None:
                 a.metric("Progress", f"{p['progress']:.0f}%")
                 b.metric("Priority", p["priority"])
                 c.metric("Submission", p["due_date"] or "—")
-                d.metric("Coordinator", p["coordinator_name"] or "Not shared")
+                remaining = (date.fromisoformat(p["due_date"])-date.today()).days if p["due_date"] else None
+                d.metric("Time remaining", status_label(remaining) if remaining is not None else "No deadline")
                 st.write(p["description"] or "No description.")
                 if user["role"] == "owner":
                     if st.button("Edit project", key=f"editp{p['id']}"):
@@ -576,11 +488,6 @@ def render_projects() -> None:
 
 
 def task_form(project_id: int, existing: dict | None = None) -> None:
-    members = query(
-        """SELECT u.id,u.full_name FROM users u JOIN projects p ON (u.id=p.owner_id OR u.id=p.coordinator_id)
-           WHERE p.id=? AND u.active=1""", (project_id,)
-    )
-    member_map = {None: "Unassigned"} | {m["id"]:m["full_name"] for m in members}
     dependencies = query("SELECT id,title FROM tasks WHERE project_id=? AND id<>? ORDER BY title", (project_id, existing["id"] if existing else -1))
     dep_map = {None:"No dependency"} | {d["id"]:d["title"] for d in dependencies}
     default_status = existing["status"] if existing else "Not started"
@@ -590,9 +497,7 @@ def task_form(project_id: int, existing: dict | None = None) -> None:
         c1,c2 = st.columns(2)
         due = c1.date_input("Due date *", value=parse_date(existing.get("due_date") if existing else None, date.today()+timedelta(days=7)), key=f"td{project_id}{existing['id'] if existing else 0}")
         status = c2.selectbox("Status", TASK_STATUSES, index=TASK_STATUSES.index(default_status))
-        assignee_keys = list(member_map)
-        old_assignee = existing.get("assignee_id") if existing else None
-        assignee = st.selectbox("Assignee", assignee_keys, index=assignee_keys.index(old_assignee) if old_assignee in assignee_keys else 0, format_func=lambda x:member_map[x])
+        assignee = user["id"]
         with st.expander("More details", expanded=bool(existing)):
             description = st.text_area("Description / definition of done", value=existing["description"] if existing else "")
             d1,d2,d3 = st.columns(3)
@@ -648,17 +553,16 @@ def render_tasks() -> None:
         if shown and view_mode == "Compact table":
             table = pd.DataFrame([{
                 "Task":t["title"], "Status":t["status"], "Priority":t["priority"],
-                "Assignee":t["assignee"] or "Unassigned", "Due":t["due_date"],
-                "Hours":f"{t['actual_hours']}/{t['estimated_hours']}"
+                "Due":t["due_date"], "Hours":f"{t['actual_hours']}/{t['estimated_hours']}"
             } for t in shown])
             st.dataframe(table, hide_index=True, width="stretch")
         for t in shown if view_mode == "Action cards" else []:
             overdue = t["due_date"] and date.fromisoformat(t["due_date"]) < date.today() and t["status"] not in {"Completed","Cancelled"}
             with st.expander(f"{'🔴 ' if overdue else ''}{t['title']}  ·  {t['status']}  ·  Due {t['due_date'] or '—'}"):
                 st.write(t["description"] or "No description.")
-                st.caption(f"Assignee: {t['assignee'] or 'Unassigned'} · Priority: {t['priority']} · Weight: {t['weight']} · Dependency: {t['dependency'] or 'None'}")
+                st.caption(f"Priority: {t['priority']} · Weight: {t['weight']} · Dependency: {t['dependency'] or 'None'}")
                 st.caption(f"Estimated: {t['estimated_hours']} h · Actual: {t['actual_hours']} h")
-                can_edit = user["role"] == "owner" or t["assignee_id"] == user["id"]
+                can_edit = True
                 if can_edit:
                     a1,a2,a3,a4 = st.columns(4)
                     if t["status"] != "In progress" and a1.button("▶ Start", key=f"start{t['id']}", width="stretch"):
@@ -782,42 +686,10 @@ def render_reports() -> None:
     st.dataframe(pd.DataFrame(activity), width="stretch", hide_index=True)
 
 
-def render_admin() -> None:
-    hero("Administration", "Manage coordinator access, sample data, security, and project records")
-    t1,t2,t3,t4 = st.tabs(["Coordinator access","Account security","Data tools","Archive"])
+def render_tools() -> None:
+    hero("Tools", "Sample data and project archiving")
+    t1,t2 = st.tabs(["Sample project","Archive"])
     with t1:
-        st.subheader("Create a coordinator account")
-        st.caption("A coordinator sees only projects explicitly shared with their account.")
-        with st.form("new_coordinator"):
-            full_name=st.text_input("Coordinator name")
-            email=st.text_input("Coordinator email")
-            username=st.text_input("Coordinator username")
-            password=st.text_input("Temporary password",type="password")
-            submitted=st.form_submit_button("Create coordinator")
-        if submitted:
-            try:
-                create_user(username,full_name,email,password,"coordinator")
-                log_activity(user["id"],"Created coordinator",full_name)
-                st.success("Coordinator account created. Share the username and temporary password securely.")
-                st.rerun()
-            except Exception as exc:
-                st.error(str(exc))
-        users=query("SELECT id,username,full_name,email,active FROM users WHERE role='coordinator' ORDER BY full_name")
-        st.dataframe(pd.DataFrame(users), hide_index=True, width="stretch")
-    with t2:
-        with st.form("password_change"):
-            current=st.text_input("Current password",type="password")
-            new=st.text_input("New password",type="password")
-            confirm=st.text_input("Confirm new password",type="password")
-            submitted=st.form_submit_button("Change password")
-        if submitted:
-            if new!=confirm:
-                st.error("New passwords do not match.")
-            else:
-                try:
-                    change_password(user["id"],current,new); st.success("Password changed.")
-                except Exception as exc: st.error(str(exc))
-    with t3:
         st.write("Generate one realistic sample project to explore the dashboard immediately.")
         if st.button("Create sample project"):
             before=int(scalar("SELECT COUNT(*) FROM projects WHERE owner_id=?",(user["id"],)) or 0)
@@ -825,7 +697,7 @@ def render_admin() -> None:
             after=int(scalar("SELECT COUNT(*) FROM projects WHERE owner_id=?",(user["id"],)) or 0)
             st.success("Sample project created." if after>before else "Sample data was not added because projects already exist.")
             st.rerun()
-    with t4:
+    with t2:
         archived=visible_projects(user,include_archived=True)
         archived=[p for p in archived if p["archived"]]
         st.write("Archived projects remain in the database and can be restored.")
@@ -840,6 +712,6 @@ def render_admin() -> None:
 ROUTES = {
     "Dashboard": render_dashboard, "Projects": render_projects, "Tasks": render_tasks,
     "Timeline": render_timeline, "Alerts": render_alerts, "Reports": render_reports,
-    "Administration": render_admin,
+    "Tools": render_tools,
 }
 ROUTES[page]()
