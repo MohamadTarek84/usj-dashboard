@@ -289,6 +289,24 @@ init_db()
 PROJECT_STATUSES = ["Not started", "In progress", "On hold", "Completed", "Cancelled"]
 TASK_STATUSES = ["Not started", "In progress", "Blocked", "Completed", "Cancelled"]
 PRIORITIES = ["Low", "Medium", "High", "Critical"]
+PROJECT_TEMPLATES = {
+    "Blank project": {"category": "Other", "days": 30, "tasks": []},
+    "Institutional report": {"category": "Reporting", "days": 30, "tasks": [
+        "Confirm requirements", "Collect data", "Validate data", "Analyze results",
+        "Draft report", "Internal review", "Final submission"]},
+    "Survey project": {"category": "Survey", "days": 45, "tasks": [
+        "Define objectives", "Design questionnaire", "Pilot test", "Collect responses",
+        "Clean and analyze data", "Prepare findings", "Submit report"]},
+    "Dashboard development": {"category": "Dashboard", "days": 35, "tasks": [
+        "Confirm user requirements", "Prepare data model", "Build prototype",
+        "User testing", "Apply revisions", "Publish dashboard"]},
+    "Ranking submission": {"category": "Rankings", "days": 60, "tasks": [
+        "Review methodology", "Map required indicators", "Collect evidence",
+        "Validate figures", "Obtain approval", "Submit and archive"]},
+    "Training activity": {"category": "Training", "days": 21, "tasks": [
+        "Assess participant needs", "Prepare materials", "Deliver training",
+        "Collect evaluation", "Prepare completion report"]},
+}
 
 st.markdown(
     """
@@ -371,7 +389,13 @@ with st.sidebar:
     page_options = ["Dashboard", "Projects", "Tasks", "Timeline", "Alerts", "Reports"]
     if user["role"] == "owner":
         page_options.append("Administration")
-    page = st.radio("Navigation", page_options, label_visibility="collapsed")
+    if "nav_page" not in st.session_state or st.session_state.nav_page not in page_options:
+        st.session_state.nav_page = "Dashboard"
+    if user["role"] == "owner":
+        q1, q2 = st.columns(2)
+        q1.button("＋ Project", width="stretch", on_click=lambda: st.session_state.update(nav_page="Projects", project_tab="Create project"))
+        q2.button("＋ Task", width="stretch", on_click=lambda: st.session_state.update(nav_page="Tasks"))
+    page = st.radio("Navigation", page_options, label_visibility="collapsed", key="nav_page")
     st.divider()
     if st.button("Sign out", width="stretch"):
         logout()
@@ -387,6 +411,20 @@ def project_selector(label: str = "Project", key: str | None = None) -> int | No
 
 def render_dashboard() -> None:
     hero("Dashboard", "A live overview of priorities, progress, risks, and upcoming deadlines")
+    if user["role"] == "owner" and projects:
+        with st.expander("＋ Quick add a task"):
+            project_map = {p["id"]:p["name"] for p in projects}
+            with st.form("quick_task"):
+                q1,q2,q3 = st.columns([2,1.3,1])
+                quick_title = q1.text_input("Task")
+                quick_project = q2.selectbox("Project",list(project_map),format_func=lambda x:project_map[x])
+                quick_due = q3.date_input("Due",value=date.today()+timedelta(days=7))
+                quick_save = st.form_submit_button("Add task",type="primary")
+            if quick_save and quick_title.strip():
+                save_task(dict(project_id=quick_project,title=quick_title.strip(),description="",assignee_id=user["id"],
+                    status="Not started",priority="Medium",start_date=str(date.today()),due_date=str(quick_due),
+                    weight=1,estimated_hours=0,actual_hours=0,dependency_task_id=None),user["id"])
+                st.success("Task added."); st.rerun()
     active = [p for p in projects if p["status"] not in {"Completed", "Cancelled"}]
     completed = [p for p in projects if p["status"] == "Completed"]
     overdue = [a for a in due_alerts(user) if a["days"] < 0]
@@ -438,29 +476,39 @@ def render_dashboard() -> None:
             st.plotly_chart(fig, width="stretch")
 
 
-def project_form(existing: dict | None = None) -> None:
+def project_form(existing: dict | None = None, template_name: str = "Blank project") -> None:
     coordinators = query("SELECT id,full_name FROM users WHERE role='coordinator' AND active=1 ORDER BY full_name")
     coord_map = {None: "Not shared"} | {x["id"]: x["full_name"] for x in coordinators}
+    template = PROJECT_TEMPLATES.get(template_name, PROJECT_TEMPLATES["Blank project"])
     default_status = existing["status"] if existing else "Not started"
     default_priority = existing["priority"] if existing else "Medium"
     with st.form("project_form"):
         name = st.text_input("Project name *", value=existing["name"] if existing else "")
-        description = st.text_area("Purpose and expected outputs", value=existing["description"] if existing else "", height=100)
-        c1, c2, c3 = st.columns(3)
-        category = c1.text_input("Category", value=existing["category"] if existing else "Reporting")
-        priority = c2.selectbox("Priority", PRIORITIES, index=PRIORITIES.index(default_priority))
-        status = c3.selectbox("Status", PROJECT_STATUSES, index=PROJECT_STATUSES.index(default_status))
-        d1, d2, d3 = st.columns(3)
+        d1, d2 = st.columns(2)
         start_date = d1.date_input("Start date", value=parse_date(existing.get("start_date") if existing else None))
-        due_date = d2.date_input("Submission date", value=parse_date(existing.get("due_date") if existing else None, date.today()+timedelta(days=30)))
-        alert_days = d3.number_input("Alert before deadline (days)", 0, 365, int(existing["alert_days"] if existing else 7))
-        s1, s2, s3 = st.columns(3)
-        current_coord = existing.get("coordinator_id") if existing else None
-        coord_keys = list(coord_map)
-        coordinator_id = s1.selectbox("Share with coordinator", coord_keys, index=coord_keys.index(current_coord) if current_coord in coord_keys else 0, format_func=lambda x: coord_map[x])
-        mode = s2.selectbox("Progress calculation", ["Automatic from tasks", "Manual"], index=1 if existing and existing["manual_progress"] is not None else 0)
-        manual = s3.slider("Manual progress (%)", 0, 100, int(existing["manual_progress"] or 0) if existing else 0, disabled=mode.startswith("Automatic"))
-        color = st.color_picker("Project colour", value=existing["color"] if existing else "#1F4E78")
+        due_date = d2.date_input("Submission date *", value=parse_date(
+            existing.get("due_date") if existing else None,
+            date.today()+timedelta(days=int(template["days"]))))
+        description = st.text_area("Short description (optional)", value=existing["description"] if existing else "", height=80)
+        with st.expander("Advanced options", expanded=bool(existing)):
+            c1, c2, c3 = st.columns(3)
+            category = c1.text_input("Category", value=existing["category"] if existing else template["category"])
+            priority = c2.selectbox("Priority", PRIORITIES, index=PRIORITIES.index(default_priority))
+            status = c3.selectbox("Status", PROJECT_STATUSES, index=PROJECT_STATUSES.index(default_status))
+            d3, d4 = st.columns(2)
+            alert_days = d3.number_input("Alert before deadline (days)", 0, 365, int(existing["alert_days"] if existing else 7))
+            current_coord = existing.get("coordinator_id") if existing else None
+            coord_keys = list(coord_map)
+            coordinator_id = d4.selectbox("Share with coordinator", coord_keys,
+                index=coord_keys.index(current_coord) if current_coord in coord_keys else 0,
+                format_func=lambda x: coord_map[x])
+            s1, s2 = st.columns(2)
+            mode = s1.selectbox("Progress", ["Automatic from tasks", "Manual"],
+                                index=1 if existing and existing["manual_progress"] is not None else 0)
+            manual = s2.slider("Manual progress (%)", 0, 100,
+                               int(existing["manual_progress"] or 0) if existing else 0,
+                               disabled=mode.startswith("Automatic"))
+            color = st.color_picker("Project colour", value=existing["color"] if existing else "#1F4E78")
         submitted = st.form_submit_button("Save project", type="primary", width="stretch")
     if submitted:
         if not name.strip():
@@ -472,7 +520,14 @@ def project_form(existing: dict | None = None) -> None:
                         priority=priority, status=status, start_date=str(start_date), due_date=str(due_date),
                         coordinator_id=coordinator_id, manual_progress=None if mode.startswith("Automatic") else manual,
                         alert_days=alert_days, color=color)
-            save_project(data, user["id"], existing["id"] if existing else None)
+            saved_id = save_project(data, user["id"], existing["id"] if existing else None)
+            if not existing and template["tasks"]:
+                span = max((due_date-start_date).days, len(template["tasks"]))
+                for index, task_title in enumerate(template["tasks"], start=1):
+                    task_due = start_date + timedelta(days=round(span*index/len(template["tasks"])))
+                    save_task(dict(project_id=saved_id,title=task_title,description="",assignee_id=user["id"],
+                        status="Not started",priority=priority,start_date=str(start_date),due_date=str(task_due),
+                        weight=1,estimated_hours=0,actual_hours=0,dependency_task_id=None), user["id"])
             st.success("Project saved.")
             st.rerun()
 
@@ -487,13 +542,19 @@ def render_projects() -> None:
     with tab1:
         if not projects:
             st.info("No projects found.")
-        filters = st.columns([1,1,1.5])
+        filters = st.columns([1,1,1.5,1])
         status_filter = filters[0].multiselect("Status", PROJECT_STATUSES)
         priority_filter = filters[1].multiselect("Priority", PRIORITIES)
         search = filters[2].text_input("Search")
+        sort_by = filters[3].selectbox("Sort", ["Priority", "Deadline", "Progress", "Name"])
         shown = [p for p in projects if (not status_filter or p["status"] in status_filter)
                  and (not priority_filter or p["priority"] in priority_filter)
                  and (not search or search.lower() in (p["name"]+p["description"]+p["category"]).lower())]
+        priority_rank = {"Critical":0,"High":1,"Medium":2,"Low":3}
+        if sort_by == "Deadline": shown.sort(key=lambda p:p["due_date"] or "9999-12-31")
+        elif sort_by == "Progress": shown.sort(key=lambda p:p["progress"], reverse=True)
+        elif sort_by == "Name": shown.sort(key=lambda p:p["name"].lower())
+        else: shown.sort(key=lambda p:priority_rank.get(p["priority"],9))
         for p in shown:
             with st.expander(f"{p['name']}  ·  {p['progress']:.0f}%  ·  {p['status']}"):
                 a, b, c, d = st.columns(4)
@@ -509,7 +570,9 @@ def render_projects() -> None:
                         project_form(p)
     if tab2:
         with tab2:
-            project_form()
+            st.info("Choose a template to create a useful task structure automatically, or start blank.")
+            template_name = st.selectbox("Project template", list(PROJECT_TEMPLATES))
+            project_form(template_name=template_name)
 
 
 def task_form(project_id: int, existing: dict | None = None) -> None:
@@ -524,24 +587,25 @@ def task_form(project_id: int, existing: dict | None = None) -> None:
     default_priority = existing["priority"] if existing else "Medium"
     with st.form(f"task_form_{project_id}_{existing['id'] if existing else 'new'}"):
         title = st.text_input("Task title *", value=existing["title"] if existing else "")
-        description = st.text_area("Description / definition of done", value=existing["description"] if existing else "")
-        c1,c2,c3 = st.columns(3)
-        status = c1.selectbox("Status", TASK_STATUSES, index=TASK_STATUSES.index(default_status))
-        priority = c2.selectbox("Priority", PRIORITIES, index=PRIORITIES.index(default_priority))
+        c1,c2 = st.columns(2)
+        due = c1.date_input("Due date *", value=parse_date(existing.get("due_date") if existing else None, date.today()+timedelta(days=7)), key=f"td{project_id}{existing['id'] if existing else 0}")
+        status = c2.selectbox("Status", TASK_STATUSES, index=TASK_STATUSES.index(default_status))
         assignee_keys = list(member_map)
         old_assignee = existing.get("assignee_id") if existing else None
-        assignee = c3.selectbox("Assignee", assignee_keys, index=assignee_keys.index(old_assignee) if old_assignee in assignee_keys else 0, format_func=lambda x:member_map[x])
-        d1,d2,d3 = st.columns(3)
-        start = d1.date_input("Start", value=parse_date(existing.get("start_date") if existing else None), key=f"ts{project_id}{existing['id'] if existing else 0}")
-        due = d2.date_input("Due", value=parse_date(existing.get("due_date") if existing else None, date.today()+timedelta(days=7)), key=f"td{project_id}{existing['id'] if existing else 0}")
-        weight = d3.number_input("Progress weight", .1, 100.0, float(existing["weight"] if existing else 1), .5)
-        h1,h2,h3 = st.columns(3)
-        estimated = h1.number_input("Estimated hours", 0.0, 10000.0, float(existing["estimated_hours"] if existing else 0), .5)
-        actual = h2.number_input("Actual hours", 0.0, 10000.0, float(existing["actual_hours"] if existing else 0), .5)
-        dep_keys = list(dep_map)
-        old_dep = existing.get("dependency_task_id") if existing else None
-        dependency = h3.selectbox("Depends on", dep_keys, index=dep_keys.index(old_dep) if old_dep in dep_keys else 0, format_func=lambda x:dep_map[x])
-        submitted = st.form_submit_button("Save task", type="primary")
+        assignee = st.selectbox("Assignee", assignee_keys, index=assignee_keys.index(old_assignee) if old_assignee in assignee_keys else 0, format_func=lambda x:member_map[x])
+        with st.expander("More details", expanded=bool(existing)):
+            description = st.text_area("Description / definition of done", value=existing["description"] if existing else "")
+            d1,d2,d3 = st.columns(3)
+            start = d1.date_input("Start date", value=parse_date(existing.get("start_date") if existing else None), key=f"ts{project_id}{existing['id'] if existing else 0}")
+            priority = d2.selectbox("Priority", PRIORITIES, index=PRIORITIES.index(default_priority))
+            weight = d3.number_input("Progress weight", .1, 100.0, float(existing["weight"] if existing else 1), .5)
+            h1,h2,h3 = st.columns(3)
+            estimated = h1.number_input("Estimated hours", 0.0, 10000.0, float(existing["estimated_hours"] if existing else 0), .5)
+            actual = h2.number_input("Actual hours", 0.0, 10000.0, float(existing["actual_hours"] if existing else 0), .5)
+            dep_keys = list(dep_map)
+            old_dep = existing.get("dependency_task_id") if existing else None
+            dependency = h3.selectbox("Depends on", dep_keys, index=dep_keys.index(old_dep) if old_dep in dep_keys else 0, format_func=lambda x:dep_map[x])
+        submitted = st.form_submit_button("Save task", type="primary", width="stretch")
     if submitted:
         if not title.strip():
             st.error("Task title is required.")
@@ -575,19 +639,39 @@ def render_tasks() -> None:
     else:
         tabs = st.tabs(["Task board", "Milestones", "Discussion"])
     with tabs[0]:
-        status_filter = st.multiselect("Filter task status", TASK_STATUSES)
+        f1, f2 = st.columns([2,1])
+        status_filter = f1.multiselect("Filter task status", TASK_STATUSES)
+        view_mode = f2.radio("View", ["Action cards", "Compact table"], horizontal=True)
         shown = [t for t in tasks if not status_filter or t["status"] in status_filter]
         if not shown:
             st.info("No tasks match the selection.")
-        for t in shown:
+        if shown and view_mode == "Compact table":
+            table = pd.DataFrame([{
+                "Task":t["title"], "Status":t["status"], "Priority":t["priority"],
+                "Assignee":t["assignee"] or "Unassigned", "Due":t["due_date"],
+                "Hours":f"{t['actual_hours']}/{t['estimated_hours']}"
+            } for t in shown])
+            st.dataframe(table, hide_index=True, width="stretch")
+        for t in shown if view_mode == "Action cards" else []:
             overdue = t["due_date"] and date.fromisoformat(t["due_date"]) < date.today() and t["status"] not in {"Completed","Cancelled"}
             with st.expander(f"{'🔴 ' if overdue else ''}{t['title']}  ·  {t['status']}  ·  Due {t['due_date'] or '—'}"):
                 st.write(t["description"] or "No description.")
                 st.caption(f"Assignee: {t['assignee'] or 'Unassigned'} · Priority: {t['priority']} · Weight: {t['weight']} · Dependency: {t['dependency'] or 'None'}")
                 st.caption(f"Estimated: {t['estimated_hours']} h · Actual: {t['actual_hours']} h")
                 can_edit = user["role"] == "owner" or t["assignee_id"] == user["id"]
-                if can_edit and st.button("Edit", key=f"editt{t['id']}"):
-                    st.session_state.edit_task = t["id"]
+                if can_edit:
+                    a1,a2,a3,a4 = st.columns(4)
+                    if t["status"] != "In progress" and a1.button("▶ Start", key=f"start{t['id']}", width="stretch"):
+                        execute("UPDATE tasks SET status='In progress',updated_at=CURRENT_TIMESTAMP WHERE id=?",(t["id"],))
+                        log_activity(user["id"],"Started task",t["title"],project_id); st.rerun()
+                    if t["status"] != "Completed" and a2.button("✓ Complete", key=f"done{t['id']}", width="stretch"):
+                        execute("UPDATE tasks SET status='Completed',completed_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE id=?",(t["id"],))
+                        log_activity(user["id"],"Completed task",t["title"],project_id); st.rerun()
+                    if t["status"] != "Blocked" and a3.button("! Block", key=f"block{t['id']}", width="stretch"):
+                        execute("UPDATE tasks SET status='Blocked',updated_at=CURRENT_TIMESTAMP WHERE id=?",(t["id"],))
+                        log_activity(user["id"],"Blocked task",t["title"],project_id); st.rerun()
+                    if a4.button("Edit", key=f"editt{t['id']}", width="stretch"):
+                        st.session_state.edit_task = t["id"]
                 if can_edit and st.session_state.get("edit_task") == t["id"]:
                     task_form(project_id, t)
     if user["role"] == "owner":
