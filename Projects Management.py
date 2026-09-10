@@ -271,8 +271,8 @@ st.markdown(
     """
     <style>
       .stApp {background: #f5f7fb;}
-      [data-testid="stSidebar"] {background: linear-gradient(180deg,#102a43,#163f63);}
-      [data-testid="stSidebar"] * {color: white;}
+      section[data-testid="stSidebar"] {display:none;}
+      .block-container {max-width:1280px;padding-top:2rem;padding-bottom:3rem;}
       .hero {padding:1.25rem 1.5rem;border-radius:16px;background:linear-gradient(110deg,#123b5d,#1f6b8c);color:white;margin-bottom:1rem;box-shadow:0 8px 24px #102a4324;}
       .hero h1 {margin:0;font-size:2rem}.hero p{margin:.35rem 0 0;opacity:.88}
       .card {background:white;border:1px solid #e5eaf0;border-radius:14px;padding:1rem;box-shadow:0 3px 12px #102a430d;margin:.3rem 0;}
@@ -280,6 +280,7 @@ st.markdown(
       .danger {color:#b42318;font-weight:700}.warning {color:#b54708;font-weight:700}.good{color:#027a48;font-weight:700}
       div[data-testid="stMetric"] {background:white;border:1px solid #e5eaf0;padding:.9rem;border-radius:12px;}
       .small-muted {font-size:.85rem;color:#667085}
+      .task-row {background:white;border:1px solid #e5eaf0;border-left:5px solid #2e90fa;border-radius:12px;padding:.8rem 1rem;margin:.3rem 0;}
     </style>
     """,
     unsafe_allow_html=True,
@@ -709,9 +710,191 @@ def render_tools() -> None:
                 execute("UPDATE projects SET archived=0 WHERE id=? AND owner_id=?",(p["id"],user["id"])); st.rerun()
 
 
-ROUTES = {
-    "Dashboard": render_dashboard, "Projects": render_projects, "Tasks": render_tasks,
-    "Timeline": render_timeline, "Alerts": render_alerts, "Reports": render_reports,
-    "Tools": render_tools,
-}
-ROUTES[page]()
+def all_workspace_tasks() -> list[dict[str, Any]]:
+    return query("""SELECT t.*,p.name project_name,p.color project_color
+        FROM tasks t JOIN projects p ON p.id=t.project_id
+        WHERE p.archived=0 AND p.status<>'Cancelled'
+        ORDER BY CASE t.priority WHEN 'Critical' THEN 1 WHEN 'High' THEN 2 WHEN 'Medium' THEN 3 ELSE 4 END,
+                 COALESCE(t.due_date,'9999-12-31')""")
+
+
+def change_task_status(task: dict[str, Any], new_status: str) -> None:
+    completed_at = datetime.now().isoformat(timespec="seconds") if new_status == "Completed" else None
+    execute("UPDATE tasks SET status=?,completed_at=?,updated_at=CURRENT_TIMESTAMP WHERE id=?",
+            (new_status,completed_at,task["id"]))
+    log_activity(user["id"],f"Task: {new_status}",task["title"],task["project_id"])
+    st.rerun()
+
+
+def daily_task_card(task: dict[str, Any], key_prefix: str) -> None:
+    due = date.fromisoformat(task["due_date"]) if task["due_date"] else None
+    days = (due-date.today()).days if due else None
+    due_text = "No due date" if days is None else status_label(days)
+    icon = "🔴" if days is not None and days < 0 else "🟠" if days is not None and days <= 2 else "🔵"
+    c1,c2,c3,c4 = st.columns([.35,4.4,1.15,1.15],vertical_alignment="center")
+    c1.markdown(f"### {icon}")
+    c2.markdown(f"**{task['title']}**  \n<span class='small-muted'>{task['project_name']} · {due_text} · {task['priority']}</span>",unsafe_allow_html=True)
+    if task["status"] != "In progress":
+        if c3.button("Start",key=f"{key_prefix}_start_{task['id']}",width="stretch"):
+            change_task_status(task,"In progress")
+    else:
+        c3.caption("In progress")
+    if c4.button("✓ Done",key=f"{key_prefix}_done_{task['id']}",type="primary",width="stretch"):
+        change_task_status(task,"Completed")
+    st.divider()
+
+
+def quick_add_task_form(current_projects: list[dict[str, Any]], form_key: str = "daily_quick_add") -> None:
+    if not current_projects:
+        st.info("Create your first project below, then add tasks here.")
+        return
+    project_map = {p["id"]:p["name"] for p in current_projects}
+    with st.form(form_key,clear_on_submit=True):
+        c1,c2,c3,c4 = st.columns([3,2,1.35,.8],vertical_alignment="bottom")
+        title = c1.text_input("What needs to be done?",placeholder="Example: Validate the final figures")
+        project_id = c2.selectbox("Project",list(project_map),format_func=lambda x:project_map[x])
+        due = c3.date_input("Due date",value=date.today())
+        submitted = c4.form_submit_button("Add",type="primary",width="stretch")
+    if submitted:
+        if not title.strip():
+            st.warning("Write a task before clicking Add.")
+        else:
+            save_task(dict(project_id=project_id,title=title.strip(),description="",assignee_id=user["id"],
+                status="Not started",priority="Medium",start_date=str(date.today()),due_date=str(due),
+                weight=1,estimated_hours=0,actual_hours=0,dependency_task_id=None),user["id"])
+            st.rerun()
+
+
+def render_my_day(current_projects: list[dict[str, Any]]) -> None:
+    st.subheader("Quick add")
+    quick_add_task_form(current_projects)
+    tasks = all_workspace_tasks()
+    open_tasks = [t for t in tasks if t["status"] not in {"Completed","Cancelled"}]
+    overdue = [t for t in open_tasks if t["due_date"] and date.fromisoformat(t["due_date"]) < date.today()]
+    due_today = [t for t in open_tasks if t["due_date"] == str(date.today())]
+    next_week = [t for t in open_tasks if t["due_date"] and date.today() < date.fromisoformat(t["due_date"]) <= date.today()+timedelta(days=7)]
+
+    st.subheader("What needs attention")
+    view = st.radio("Show",["Today","Next 7 days","All open"],horizontal=True,label_visibility="collapsed")
+    if view == "Today":
+        selected = overdue + due_today
+    elif view == "Next 7 days":
+        selected = overdue + due_today + next_week
+    else:
+        selected = open_tasks
+    seen=set(); selected=[t for t in selected if not (t["id"] in seen or seen.add(t["id"]))]
+    if not selected:
+        st.success("Nothing urgent here. Your day is clear.")
+    for task in selected:
+        daily_task_card(task,"day")
+
+    completed_today = [t for t in tasks if t["status"]=="Completed" and (t["completed_at"] or "")[:10]==str(date.today())]
+    with st.expander(f"Completed today ({len(completed_today)})"):
+        for task in completed_today:
+            c1,c2=st.columns([5,1])
+            c1.write(f"✅ **{task['title']}** · {task['project_name']}")
+            if c2.button("Reopen",key=f"reopen_{task['id']}"):
+                change_task_status(task,"In progress")
+
+
+def create_simple_project() -> None:
+    with st.form("simple_project",clear_on_submit=True):
+        c1,c2,c3,c4=st.columns([3,1.4,1.2,.8],vertical_alignment="bottom")
+        name=c1.text_input("Project name",placeholder="Example: QS Sustainability submission")
+        due=c2.date_input("Submission date",value=date.today()+timedelta(days=30))
+        priority=c3.selectbox("Priority",["Medium","High","Critical","Low"])
+        submitted=c4.form_submit_button("Create",type="primary",width="stretch")
+    if submitted:
+        if not name.strip():
+            st.warning("Enter a project name.")
+        else:
+            save_project(dict(name=name.strip(),description="",category="General",priority=priority,
+                status="In progress",start_date=str(date.today()),due_date=str(due),coordinator_id=None,
+                manual_progress=None,alert_days=7,color="#1F6B8C"),user["id"])
+            st.rerun()
+
+
+def render_project_workspace(current_projects: list[dict[str, Any]]) -> None:
+    st.subheader("Create a project")
+    create_simple_project()
+    if not current_projects:
+        st.info("Your projects will appear here.")
+        return
+    st.subheader("Your projects")
+    search=st.text_input("Search projects",placeholder="Type a project name...")
+    shown=[p for p in current_projects if not search or search.lower() in p["name"].lower()]
+    for project in shown:
+        tasks=query("SELECT * FROM tasks WHERE project_id=? ORDER BY COALESCE(due_date,'9999-12-31')",(project["id"],))
+        open_count=sum(t["status"] not in {"Completed","Cancelled"} for t in tasks)
+        with st.expander(f"{project['name']}   ·   {project['progress']:.0f}%   ·   {open_count} open task(s)"):
+            st.progress(project["progress"]/100,text=f"{project['progress']:.0f}% complete · Submission {project['due_date'] or 'not set'}")
+            with st.form(f"project_quick_{project['id']}",clear_on_submit=True):
+                q1,q2,q3=st.columns([4,1.5,.8],vertical_alignment="bottom")
+                task_title=q1.text_input("Add a task",key=f"ptitle_{project['id']}",placeholder="New task")
+                task_due=q2.date_input("Due",value=date.today()+timedelta(days=7),key=f"pdue_{project['id']}")
+                add=q3.form_submit_button("Add",type="primary",width="stretch")
+            if add and task_title.strip():
+                save_task(dict(project_id=project["id"],title=task_title.strip(),description="",assignee_id=user["id"],
+                    status="Not started",priority="Medium",start_date=str(date.today()),due_date=str(task_due),
+                    weight=1,estimated_hours=0,actual_hours=0,dependency_task_id=None),user["id"])
+                st.rerun()
+            for task in tasks:
+                if task["status"] in {"Completed","Cancelled"}: continue
+                task["project_name"]=project["name"]
+                daily_task_card(task,f"project_{project['id']}")
+            with st.expander("Edit project details"):
+                with st.form(f"edit_simple_project_{project['id']}"):
+                    e1,e2,e3=st.columns(3)
+                    project_due=e1.date_input("Submission",value=parse_date(project["due_date"],date.today()+timedelta(days=30)),key=f"epd{project['id']}")
+                    project_priority=e2.selectbox("Priority",PRIORITIES,index=PRIORITIES.index(project["priority"]),key=f"epp{project['id']}")
+                    project_status=e3.selectbox("Status",PROJECT_STATUSES,index=PROJECT_STATUSES.index(project["status"]),key=f"eps{project['id']}")
+                    description=st.text_area("Notes",value=project["description"] or "",key=f"epn{project['id']}")
+                    saved=st.form_submit_button("Save changes")
+                if saved:
+                    data=dict(name=project["name"],description=description,category=project["category"],priority=project_priority,
+                        status=project_status,start_date=project["start_date"],due_date=str(project_due),coordinator_id=None,
+                        manual_progress=project["manual_progress"],alert_days=project["alert_days"],color=project["color"])
+                    save_project(data,user["id"],project["id"]); st.rerun()
+
+
+def render_simple_overview(current_projects: list[dict[str, Any]]) -> None:
+    if not current_projects:
+        st.info("Create a project to see the overview.")
+        return
+    tasks=all_workspace_tasks()
+    active=[p for p in current_projects if p["status"] not in {"Completed","Cancelled"}]
+    overdue=[t for t in tasks if t["status"] not in {"Completed","Cancelled"} and t["due_date"] and date.fromisoformat(t["due_date"])<date.today()]
+    completed=sum(t["status"]=="Completed" for t in tasks)
+    c1,c2,c3,c4=st.columns(4)
+    c1.metric("Active projects",len(active)); c2.metric("Open tasks",sum(t["status"] not in {"Completed","Cancelled"} for t in tasks))
+    c3.metric("Overdue",len(overdue)); c4.metric("Completed tasks",completed)
+    df=pd.DataFrame(current_projects)
+    fig=px.bar(df,x="progress",y="name",orientation="h",color="priority",text="progress",
+               labels={"name":"Project","progress":"Progress (%)"},color_discrete_map={"Critical":"#b42318","High":"#f79009","Medium":"#2e90fa","Low":"#12b76a"})
+    fig.update_layout(height=max(320,55*len(df)),xaxis_range=[0,100],margin=dict(l=10,r=10,t=20,b=10),showlegend=True)
+    st.plotly_chart(fig,width="stretch")
+    with st.expander("Timeline"):
+        timeline=gantt_data([p["id"] for p in current_projects])
+        if timeline.empty: st.info("Add task dates to display the timeline.")
+        else:
+            chart=px.timeline(timeline,x_start="Start",x_end="Finish",y="Task",color="Status",hover_data=["Project"])
+            chart.update_yaxes(autorange="reversed"); st.plotly_chart(chart,width="stretch")
+    st.download_button("Download complete Excel backup",project_export([p["id"] for p in current_projects]),
+        file_name=f"projectflow_backup_{date.today()}.xlsx",mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+
+def render_daily_app() -> None:
+    current_projects=visible_projects(user)
+    tasks=all_workspace_tasks()
+    open_tasks=[t for t in tasks if t["status"] not in {"Completed","Cancelled"}]
+    overdue=sum(bool(t["due_date"] and date.fromisoformat(t["due_date"])<date.today()) for t in open_tasks)
+    due_today=sum(t["due_date"]==str(date.today()) for t in open_tasks)
+    st.markdown("# ProjectFlow Daily")
+    st.caption(f"{date.today().strftime('%A, %d %B %Y')} · {due_today} due today · {overdue} overdue")
+    tab_day,tab_projects,tab_overview=st.tabs(["☀️ My Day","📁 Projects","📊 Overview"])
+    with tab_day: render_my_day(current_projects)
+    with tab_projects: render_project_workspace(current_projects)
+    with tab_overview: render_simple_overview(current_projects)
+
+
+render_daily_app()
