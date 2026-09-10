@@ -66,7 +66,7 @@ def init_db() -> None:
           FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE);
         CREATE TABLE IF NOT EXISTS comments(
           id INTEGER PRIMARY KEY AUTOINCREMENT, project_id INTEGER NOT NULL, task_id INTEGER,
-          user_id INTEGER NOT NULL, body TEXT NOT NULL, created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+          user_id INTEGER NOT NULL, author_name TEXT DEFAULT '', body TEXT NOT NULL, created_at TEXT DEFAULT CURRENT_TIMESTAMP,
           FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE,
           FOREIGN KEY(task_id) REFERENCES tasks(id) ON DELETE CASCADE,
           FOREIGN KEY(user_id) REFERENCES users(id));
@@ -79,6 +79,9 @@ def init_db() -> None:
         CREATE INDEX IF NOT EXISTS idx_tasks_due ON tasks(due_date,status);
         CREATE INDEX IF NOT EXISTS idx_projects_due ON projects(due_date,status);
         """)
+        comment_columns = {row[1] for row in con.execute("PRAGMA table_info(comments)").fetchall()}
+        if "author_name" not in comment_columns:
+            con.execute("ALTER TABLE comments ADD COLUMN author_name TEXT DEFAULT ''")
 
 
 def execute(sql: str, params: Iterable[Any] = ()) -> int:
@@ -814,6 +817,34 @@ def create_simple_project() -> None:
             st.rerun()
 
 
+def project_health(project: dict[str, Any]) -> dict[str, Any]:
+    tasks=query("SELECT status,due_date FROM tasks WHERE project_id=?",(project["id"],))
+    open_tasks=[t for t in tasks if t["status"] not in {"Completed","Cancelled"}]
+    overdue=sum(bool(t["due_date"] and date.fromisoformat(t["due_date"])<date.today()) for t in open_tasks)
+    blocked=sum(t["status"]=="Blocked" for t in open_tasks)
+    project_days=(date.fromisoformat(project["due_date"])-date.today()).days if project["due_date"] else None
+    if overdue or (project_days is not None and project_days<0):
+        label,icon="Overdue","🔴"
+    elif blocked or (project_days is not None and project_days<=7 and project["progress"]<90):
+        label,icon="Attention","🟠"
+    elif project["status"]=="Completed":
+        label,icon="Completed","✅"
+    else:
+        label,icon="On track","🟢"
+    return dict(label=label,icon=icon,open=len(open_tasks),overdue=overdue,blocked=blocked,days=project_days)
+
+
+def add_followup_comment(project_id: int, body: str) -> None:
+    author=st.session_state.get("comment_author","").strip()
+    if not author:
+        st.warning("Set your name at the top of the page before adding a comment.")
+        return
+    execute("INSERT INTO comments(project_id,task_id,user_id,author_name,body) VALUES(?,?,?,?,?)",
+            (project_id,None,user["id"],author,body.strip()))
+    log_activity(user["id"],"Added follow-up comment",f"{author}: {body.strip()[:100]}",project_id)
+    st.rerun()
+
+
 def render_project_workspace(current_projects: list[dict[str, Any]]) -> None:
     st.subheader("Create a project")
     create_simple_project()
@@ -826,7 +857,9 @@ def render_project_workspace(current_projects: list[dict[str, Any]]) -> None:
     for project in shown:
         tasks=query("SELECT * FROM tasks WHERE project_id=? ORDER BY COALESCE(due_date,'9999-12-31')",(project["id"],))
         open_count=sum(t["status"] not in {"Completed","Cancelled"} for t in tasks)
-        with st.expander(f"{project['name']}   ·   {project['progress']:.0f}%   ·   {open_count} open task(s)"):
+        health=project_health(project)
+        comments=query("SELECT * FROM comments WHERE project_id=? ORDER BY created_at DESC",(project["id"],))
+        with st.expander(f"{health['icon']} {project['name']}   ·   {project['progress']:.0f}%   ·   {open_count} open   ·   {len(comments)} comment(s)"):
             st.progress(project["progress"]/100,text=f"{project['progress']:.0f}% complete · Submission {project['due_date'] or 'not set'}")
             with st.form(f"project_quick_{project['id']}",clear_on_submit=True):
                 q1,q2,q3=st.columns([4,1.5,.8],vertical_alignment="bottom")
@@ -842,6 +875,19 @@ def render_project_workspace(current_projects: list[dict[str, Any]]) -> None:
                 if task["status"] in {"Completed","Cancelled"}: continue
                 task["project_name"]=project["name"]
                 daily_task_card(task,f"project_{project['id']}")
+            with st.expander(f"💬 Follow-up comments ({len(comments)})"):
+                with st.form(f"comment_{project['id']}",clear_on_submit=True):
+                    cc1,cc2=st.columns([5,1],vertical_alignment="bottom")
+                    comment=cc1.text_input("Add a comment",placeholder="Question, decision, feedback, or requested action")
+                    post=cc2.form_submit_button("Post",type="primary",width="stretch")
+                if post and comment.strip():
+                    add_followup_comment(project["id"],comment)
+                if not comments:
+                    st.caption("No comments yet.")
+                for item in comments[:10]:
+                    author=item.get("author_name") or "Team member"
+                    st.markdown(f"**{author}** · {item['created_at'][:16]}  \n{item['body']}")
+                    st.divider()
             with st.expander("Edit project details"):
                 with st.form(f"edit_simple_project_{project['id']}"):
                     e1,e2,e3=st.columns(3)
@@ -868,6 +914,21 @@ def render_simple_overview(current_projects: list[dict[str, Any]]) -> None:
     c1,c2,c3,c4=st.columns(4)
     c1.metric("Active projects",len(active)); c2.metric("Open tasks",sum(t["status"] not in {"Completed","Cancelled"} for t in tasks))
     c3.metric("Overdue",len(overdue)); c4.metric("Completed tasks",completed)
+    st.subheader("Coordinator follow-up")
+    followup=[]
+    for project in current_projects:
+        health=project_health(project)
+        next_tasks=query("""SELECT title,due_date FROM tasks WHERE project_id=?
+            AND status NOT IN ('Completed','Cancelled') ORDER BY COALESCE(due_date,'9999-12-31') LIMIT 1""",(project["id"],))
+        last_comment=query("SELECT author_name,body,created_at FROM comments WHERE project_id=? ORDER BY created_at DESC LIMIT 1",(project["id"],))
+        followup.append({
+            "Health":f"{health['icon']} {health['label']}","Project":project["name"],
+            "Progress":f"{project['progress']:.0f}%","Open tasks":health["open"],"Overdue":health["overdue"],
+            "Next action":next_tasks[0]["title"] if next_tasks else "—",
+            "Submission":project["due_date"] or "—",
+            "Latest comment":(last_comment[0]["body"][:70] if last_comment else "—")
+        })
+    st.dataframe(pd.DataFrame(followup),hide_index=True,width="stretch")
     df=pd.DataFrame(current_projects)
     fig=px.bar(df,x="progress",y="name",orientation="h",color="priority",text="progress",
                labels={"name":"Project","progress":"Progress (%)"},color_discrete_map={"Critical":"#b42318","High":"#f79009","Medium":"#2e90fa","Low":"#12b76a"})
@@ -879,6 +940,15 @@ def render_simple_overview(current_projects: list[dict[str, Any]]) -> None:
         else:
             chart=px.timeline(timeline,x_start="Start",x_end="Finish",y="Task",color="Status",hover_data=["Project"])
             chart.update_yaxes(autorange="reversed"); st.plotly_chart(chart,width="stretch")
+    recent_comments=query("""SELECT c.author_name,c.body,c.created_at,p.name project_name
+        FROM comments c JOIN projects p ON p.id=c.project_id
+        WHERE p.archived=0 ORDER BY c.created_at DESC LIMIT 12""")
+    with st.expander(f"Recent comments ({len(recent_comments)})",expanded=bool(recent_comments)):
+        if not recent_comments:
+            st.caption("No comments have been added.")
+        for item in recent_comments:
+            st.markdown(f"**{item['author_name'] or 'Team member'}** on **{item['project_name']}** · {item['created_at'][:16]}  \n{item['body']}")
+            st.divider()
     st.download_button("Download complete Excel backup",project_export([p["id"] for p in current_projects]),
         file_name=f"projectflow_backup_{date.today()}.xlsx",mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
@@ -889,8 +959,13 @@ def render_daily_app() -> None:
     open_tasks=[t for t in tasks if t["status"] not in {"Completed","Cancelled"}]
     overdue=sum(bool(t["due_date"] and date.fromisoformat(t["due_date"])<date.today()) for t in open_tasks)
     due_today=sum(t["due_date"]==str(date.today()) for t in open_tasks)
-    st.markdown("# ProjectFlow Daily")
-    st.caption(f"{date.today().strftime('%A, %d %B %Y')} · {due_today} due today · {overdue} overdue")
+    h1,h2=st.columns([5,1.4],vertical_alignment="center")
+    h1.markdown("# ProjectFlow Daily")
+    h1.caption(f"{date.today().strftime('%A, %d %B %Y')} · {due_today} due today · {overdue} overdue")
+    with h2.popover("💬 Commenting identity",width="stretch"):
+        st.text_input("Your name",key="comment_author",placeholder="Example: Tarek or Coordinator",
+                      help="Used only to identify your comments. No account or password is created.")
+        st.caption("Set this once per browser session.")
     tab_day,tab_projects,tab_overview=st.tabs(["☀️ My Day","📁 Projects","📊 Overview"])
     with tab_day: render_my_day(current_projects)
     with tab_projects: render_project_workspace(current_projects)
