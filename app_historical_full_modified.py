@@ -14382,6 +14382,125 @@ def render_all_questions_single_result(question_label, question_col, original_fi
         unsafe_allow_html=True
     )
 
+def render_q19_general_yes_chart(question_map, original_data, coded_filter_data):
+    """Affiche une vue générale du pourcentage de « Oui » pour les canaux Q19."""
+    rows = []
+
+    for question_label, question_col in question_map.items():
+        question_key = normalize_question_key(question_col)
+        if not re.match(r"^19_(?:[a-o]|autre)-", question_key):
+            continue
+
+        responses, _, _, _ = get_applicable_response_series(
+            original_data,
+            coded_filter_data,
+            question_col
+        )
+        valid = responses.dropna()
+        if valid.empty:
+            continue
+
+        valid_normalized = valid.map(normalize_response_for_order)
+        yes_n = int(valid_normalized.eq("oui").sum())
+        valid_n = int(len(valid_normalized))
+        yes_pct = (yes_n / valid_n * 100) if valid_n else np.nan
+
+        channel_label = re.sub(
+            r"^19_(?:[a-o]|autre)-\s*",
+            "",
+            str(question_label),
+            flags=re.IGNORECASE
+        ).strip()
+        channel_label = re.sub(
+            r"^Canaux? d[’']accès à votre emploi actuel\s*:\s*",
+            "",
+            channel_label,
+            flags=re.IGNORECASE
+        ).strip()
+
+        rows.append({
+            "Canal": channel_label or str(question_label),
+            "Oui (%)": yes_pct,
+            "N Oui": yes_n,
+            "N valide": valid_n,
+        })
+
+    summary = pd.DataFrame(rows)
+    if summary.empty:
+        return
+
+    # Ascending=True places the largest value at the top of a horizontal chart.
+    summary = summary.sort_values("Oui (%)", ascending=True).reset_index(drop=True)
+    summary["Étiquette"] = summary["Oui (%)"].map(lambda value: f"{value:.2f}%")
+
+    st.markdown(
+        f"""
+        <div style='background:#FFFFFF;border:1px solid #DDE5F0;border-left:7px solid {USJ_BLUE};border-radius:18px;padding:18px 20px;margin:24px 0 16px 0;box-shadow:0 5px 16px rgba(0,0,0,0.05);'>
+            <div style='font-size:14px;font-weight:800;color:#667085;margin-bottom:6px;'>Vue générale</div>
+            <div style='font-size:22px;font-weight:900;color:{USJ_BLUE};line-height:1.35;'>Canaux d’accès à votre emploi actuel</div>
+            <div style='font-size:14px;color:#667085;margin-top:8px;'>Pourcentage de réponses « Oui » par canal, classé du plus élevé au plus faible.</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    fig = px.bar(
+        summary,
+        x="Oui (%)",
+        y="Canal",
+        orientation="h",
+        text="Étiquette",
+        color="Oui (%)",
+        color_continuous_scale=[[0, "#EAF2FF"], [0.5, "#7FA6D9"], [1, USJ_BLUE]],
+        custom_data=["N Oui", "N valide"],
+        title="Pourcentage de réponses « Oui » par canal"
+    )
+    fig.update_traces(
+        texttemplate="%{text}",
+        textposition="outside",
+        cliponaxis=False,
+        marker_line_color="white",
+        marker_line_width=1,
+        hovertemplate=(
+            "<b>%{y}</b><br>"
+            "Oui : %{x:.2f}%<br>"
+            "N Oui : %{customdata[0]}<br>"
+            "N valide : %{customdata[1]}"
+            "<extra></extra>"
+        )
+    )
+    fig.update_layout(
+        xaxis_title="Pourcentage de réponses « Oui »",
+        yaxis_title="",
+        coloraxis_showscale=False,
+        margin=dict(l=320, r=90, t=75, b=50)
+    )
+    fig.update_xaxes(
+        range=[0, 100],
+        ticksuffix="%",
+        gridcolor="#E6ECF3",
+        zeroline=False
+    )
+    fig.update_yaxes(automargin=True)
+    theme_layout(fig, height=max(500, 42 * len(summary) + 150), showlegend=False)
+
+    st.plotly_chart(
+        fig,
+        use_container_width=True,
+        config={"displayModeBar": False},
+        key="q19_general_yes_chart"
+    )
+
+    summary_box(
+        """
+        Les pourcentages sont calculés sur les réponses valides des répondants auxquels chaque question est applicable.
+        Les répondants non concernés selon la question 17 sont exclus du dénominateur.
+        """,
+        color=USJ_BLUE,
+        background="#F7F9FC"
+    )
+
+
 def page_all_questions_results():
     section_header(
         "Résultats descriptifs de toutes les questions",
@@ -14451,7 +14570,21 @@ def page_all_questions_results():
         st.info("Cette section contient plusieurs questions. Les blocs ci-dessous peuvent être longs à afficher, mais toutes les questions de la section sont présentées sans menu de sélection supplémentaire.")
 
     current_main_group = None
+    q19_general_chart_rendered = False
+
     for question_label, question_col in question_map.items():
+        question_key = normalize_question_key(question_col)
+        if (
+            not q19_general_chart_rendered
+            and re.match(r"^19_(?:[a-o]|autre)-", question_key)
+        ):
+            render_q19_general_yes_chart(
+                question_map,
+                original_filtered,
+                data_questions
+            )
+            q19_general_chart_rendered = True
+
         group_info = get_main_question_group_header(question_col)
         group_code = group_info["code"] if group_info else None
         if group_code and group_code != current_main_group:
