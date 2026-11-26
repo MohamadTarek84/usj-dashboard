@@ -14430,7 +14430,9 @@ def render_q20_general_yes_chart(original_data, coded_filter_data):
                       hovertemplate="<b>%{y}</b><br>Oui : %{x:.2f}%<br>N Oui : %{customdata[0]}<br>Base : %{customdata[1]}<extra></extra>")
     fig.update_layout(xaxis_title="Pourcentage de réponses « Oui »", yaxis_title="", coloraxis_showscale=False,
                       margin=dict(l=390,r=90,t=75,b=50))
-    fig.update_xaxes(range=[0,100], ticksuffix="%", gridcolor="#E6ECF3", zeroline=False)
+    max_yes_pct = float(summary["Oui (%)"].max())
+    x_axis_max = min(100.0, max_yes_pct * 1.12)
+    fig.update_xaxes(range=[0, x_axis_max], ticksuffix="%", gridcolor="#E6ECF3", zeroline=False)
     fig.update_yaxes(automargin=True)
     theme_layout(fig, height=max(560,48*len(summary)+160), showlegend=False)
     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar":False}, key="q20_general_yes_chart")
