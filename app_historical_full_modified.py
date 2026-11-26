@@ -14382,171 +14382,58 @@ def render_all_questions_single_result(question_label, question_col, original_fi
         unsafe_allow_html=True
     )
 
-def render_q19_general_yes_chart(question_map, original_data, coded_filter_data):
-    """
-    Affiche les 10 canaux d'accès à l'emploi demandés.
-    Pour chaque canal, le pourcentage correspond à : N Oui / base Q19 applicable.
-    La même base, issue de la dépendance Q17, est donc utilisée pour tous les canaux.
-    """
-    requested_channels = [
-        "Service de l’insertion professionnelle de l’USJ",
-        "Institution USJ / enseignants",
-        "Réseau des anciens – Plateforme AlumniUSJ",
-        "Stage ou autre formation post-diplôme",
-        "Démarche spontanée, envoi de CV",
-        "Participation à des concours USJ",
-        "Participation à des concours publics",
-        "Agence de recrutement/ Services de recrutement/ Portails de recrutement",
-        "Journaux, internet ou réseaux sociaux",
-        "Relations personnelles et familiales",
+def render_q20_general_yes_chart(original_data, coded_filter_data):
+    """Vue générale des 10 canaux Q20, sur la même base applicable issue de Q17."""
+    channels = [
+        ("20_a-", "Service de l’insertion professionnelle de l’USJ"),
+        ("20_b-", "Institution USJ / enseignants"),
+        ("20_c-", "Réseau des anciens – Plateforme AlumniUSJ"),
+        ("20_d-", "Stage ou autre formation post-diplôme"),
+        ("20_e-", "Démarche spontanée, envoi de CV"),
+        ("20_f-", "Participation à des concours USJ"),
+        ("20_g-", "Participation à des concours publics"),
+        ("20_h-", "Agence de recrutement/ Services de recrutement/ Portails de recrutement"),
+        ("20_i-", "Journaux, internet ou réseaux sociaux"),
+        ("20_j-", "Relations personnelles et familiales"),
     ]
-
-    def normalized_channel_text(value):
-        value = normalize_response_for_order(value)
-        value = re.sub(r"^19_(?:[a-o]|autre)-\s*", "", value)
-        value = re.sub(
-            r"^canaux? d'acces a votre emploi actuel\s*:\s*",
-            "",
-            value
-        )
-        value = re.sub(r"\s+", " ", value).strip(" :-")
-        return value
-
-    # Correspondance fondée sur le texte des options, et non sur une supposition
-    # concernant les lettres a, b, c, etc. dans le fichier Excel.
-    available_q19 = []
-    for question_label, question_col in question_map.items():
-        question_key = normalize_question_key(question_col)
-        if re.match(r"^19_(?:[a-o]|autre)-", question_key):
-            available_q19.append({
-                "label": question_label,
-                "column": question_col,
-                "normalized": normalized_channel_text(question_label),
-                "column_normalized": normalized_channel_text(question_col),
-            })
-
-    rows = []
-    common_base_n = None
-
-    for requested_label in requested_channels:
-        requested_normalized = normalized_channel_text(requested_label)
-        matching_item = next(
-            (
-                item for item in available_q19
-                if requested_normalized == item["normalized"]
-                or requested_normalized == item["column_normalized"]
-                or requested_normalized in item["normalized"]
-                or requested_normalized in item["column_normalized"]
-                or item["normalized"] in requested_normalized
-                or item["column_normalized"] in requested_normalized
-            ),
-            None
-        )
-
-        if matching_item is None:
-            continue
-
-        responses, eligible_index, _, _ = get_applicable_response_series(
-            original_data,
-            coded_filter_data,
-            matching_item["column"]
-        )
-
-        base_n = int(len(eligible_index))
-        if common_base_n is None:
-            common_base_n = base_n
-
-        # Toutes les options Q19 dépendent de Q17 et doivent partager la même base.
-        # On conserve explicitement la base commune pour éviter de diviser par le
-        # nombre variable de réponses non manquantes de chaque option.
-        denominator = common_base_n
-        normalized_responses = responses.map(normalize_response_for_order)
-        yes_n = int(normalized_responses.eq("oui").sum())
-        yes_pct = (yes_n / denominator * 100) if denominator else np.nan
-
-        rows.append({
-            "Canal": requested_label,
-            "Oui (%)": yes_pct,
-            "N Oui": yes_n,
-            "Base Q19": denominator,
-        })
-
-    summary = pd.DataFrame(rows)
-    if summary.empty:
-        st.warning("Les 10 options de la question Q19 n’ont pas été trouvées dans les colonnes affichées.")
+    found = []
+    for prefix, label in channels:
+        col = find_column_by_prefix(original_data.columns, [prefix])
+        if col is not None:
+            found.append((prefix, label, col))
+    if not found:
+        st.warning("Aucune colonne Q20_a à Q20_j n’a été détectée.")
         return
-
-    # Graphique horizontal : cet ordre place la valeur la plus élevée en haut.
-    summary = summary.sort_values("Oui (%)", ascending=True).reset_index(drop=True)
-    summary["Étiquette"] = summary["Oui (%)"].map(lambda value: f"{value:.2f}%")
-
-    st.markdown(
-        f"""
-        <div style='background:#FFFFFF;border:1px solid #DDE5F0;border-left:7px solid {USJ_BLUE};border-radius:18px;padding:18px 20px;margin:24px 0 16px 0;box-shadow:0 5px 16px rgba(0,0,0,0.05);'>
-            <div style='font-size:14px;font-weight:800;color:#667085;margin-bottom:6px;'>Vue générale</div>
-            <div style='font-size:22px;font-weight:900;color:{USJ_BLUE};line-height:1.35;'>Canaux d’accès à votre emploi actuel</div>
-            <div style='font-size:14px;color:#667085;margin-top:8px;'>Pourcentage de réponses « Oui » par canal, calculé sur la base commune Q19 de <b>N = {common_base_n:,}</b>.</div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    fig = px.bar(
-        summary,
-        x="Oui (%)",
-        y="Canal",
-        orientation="h",
-        text="Étiquette",
-        color="Oui (%)",
-        color_continuous_scale=[[0, "#EAF2FF"], [0.5, "#7FA6D9"], [1, USJ_BLUE]],
-        custom_data=["N Oui", "Base Q19"],
-        title=f"Pourcentage de réponses « Oui » par canal (N = {common_base_n:,})"
-    )
-    fig.update_traces(
-        texttemplate="%{text}",
-        textposition="outside",
-        cliponaxis=False,
-        marker_line_color="white",
-        marker_line_width=1,
-        hovertemplate=(
-            "<b>%{y}</b><br>"
-            "Oui : %{x:.2f}%<br>"
-            "N Oui : %{customdata[0]}<br>"
-            "Base Q19 : %{customdata[1]}"
-            "<extra></extra>"
-        )
-    )
-    fig.update_layout(
-        xaxis_title="Pourcentage de réponses « Oui »",
-        yaxis_title="",
-        coloraxis_showscale=False,
-        margin=dict(l=390, r=90, t=75, b=50)
-    )
-    fig.update_xaxes(
-        range=[0, 100],
-        ticksuffix="%",
-        gridcolor="#E6ECF3",
-        zeroline=False
-    )
+    first_col = found[0][2]
+    _, eligible_index, _, _ = get_applicable_response_series(original_data, coded_filter_data, first_col)
+    base_n = int(len(eligible_index))
+    if base_n == 0:
+        st.warning("La base applicable Q20 est nulle pour la sélection active.")
+        return
+    rows = []
+    for _, label, col in found:
+        responses = original_data.loc[eligible_index, col].map(clean_response_value)
+        yes_n = int(responses.map(is_yes_response).fillna(False).sum())
+        rows.append({"Canal": label, "Oui (%)": yes_n / base_n * 100, "N Oui": yes_n, "Base": base_n})
+    summary = pd.DataFrame(rows).sort_values("Oui (%)", ascending=True).reset_index(drop=True)
+    summary["Étiquette"] = summary["Oui (%)"].map(lambda x: f"{x:.2f}%")
+    st.markdown(f"""
+    <div style='background:#FFFFFF;border:1px solid #DDE5F0;border-left:7px solid {USJ_BLUE};border-radius:18px;padding:18px 20px;margin:24px 0 16px 0;box-shadow:0 5px 16px rgba(0,0,0,0.05);'>
+      <div style='font-size:14px;font-weight:800;color:#667085;margin-bottom:6px;'>Vue générale</div>
+      <div style='font-size:22px;font-weight:900;color:{USJ_BLUE};'>Canaux d’accès à votre emploi actuel</div>
+      <div style='font-size:14px;color:#667085;margin-top:8px;'>Pourcentage de réponses « Oui » par canal, sur la base commune <b>N = {base_n}</b>.</div>
+    </div>""", unsafe_allow_html=True)
+    fig = px.bar(summary, x="Oui (%)", y="Canal", orientation="h", text="Étiquette", color="Oui (%)",
+                 color_continuous_scale=[[0,"#EAF2FF"],[0.5,"#7FA6D9"],[1,USJ_BLUE]],
+                 custom_data=["N Oui","Base"], title=f"Canaux d’accès à votre emploi actuel – réponses « Oui » (N = {base_n})")
+    fig.update_traces(texttemplate="%{text}", textposition="outside", cliponaxis=False,
+                      hovertemplate="<b>%{y}</b><br>Oui : %{x:.2f}%<br>N Oui : %{customdata[0]}<br>Base : %{customdata[1]}<extra></extra>")
+    fig.update_layout(xaxis_title="Pourcentage de réponses « Oui »", yaxis_title="", coloraxis_showscale=False,
+                      margin=dict(l=390,r=90,t=75,b=50))
+    fig.update_xaxes(range=[0,100], ticksuffix="%", gridcolor="#E6ECF3", zeroline=False)
     fig.update_yaxes(automargin=True)
-    theme_layout(fig, height=max(560, 48 * len(summary) + 160), showlegend=False)
-
-    st.plotly_chart(
-        fig,
-        use_container_width=True,
-        config={"displayModeBar": False},
-        key="q19_general_yes_chart"
-    )
-
-    summary_box(
-        f"""
-        Tous les pourcentages utilisent le même dénominateur : <b>N = {common_base_n:,}</b>,
-        correspondant aux répondants concernés par la question Q19 selon la réponse à la question 17.
-        Le calcul appliqué à chaque canal est : <b>nombre de « Oui » / {common_base_n:,} × 100</b>.
-        """,
-        color=USJ_BLUE,
-        background="#F7F9FC"
-    )
+    theme_layout(fig, height=max(560,48*len(summary)+160), showlegend=False)
+    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar":False}, key="q20_general_yes_chart")
 
 
 def page_all_questions_results():
@@ -14618,20 +14505,12 @@ def page_all_questions_results():
         st.info("Cette section contient plusieurs questions. Les blocs ci-dessous peuvent être longs à afficher, mais toutes les questions de la section sont présentées sans menu de sélection supplémentaire.")
 
     current_main_group = None
-    q19_general_chart_rendered = False
-
+    q20_general_chart_rendered = False
     for question_label, question_col in question_map.items():
         question_key = normalize_question_key(question_col)
-        if (
-            not q19_general_chart_rendered
-            and re.match(r"^19_(?:[a-o]|autre)-", question_key)
-        ):
-            render_q19_general_yes_chart(
-                question_map,
-                original_filtered,
-                data_questions
-            )
-            q19_general_chart_rendered = True
+        if not q20_general_chart_rendered and re.match(r"^20_[a-j]-", question_key):
+            render_q20_general_yes_chart(original_filtered, data_questions)
+            q20_general_chart_rendered = True
 
         group_info = get_main_question_group_header(question_col)
         group_code = group_info["code"] if group_info else None
