@@ -14439,9 +14439,12 @@ def render_q20_general_yes_chart(original_data, coded_filter_data):
                       margin=dict(l=390,r=90,t=75,b=50))
     max_yes_pct = float(summary["Oui (%)"].max())
     x_axis_max = min(100.0, max_yes_pct * 1.12)
-    fig.update_xaxes(range=[0, x_axis_max], ticksuffix="%", gridcolor="#E6ECF3", zeroline=False)
+    fig.update_xaxes(range=[0, x_axis_max], ticksuffix="%", showgrid=False, zeroline=False)
     fig.update_yaxes(automargin=True)
     theme_layout(fig, height=max(560,48*len(summary)+160), showlegend=False)
+    fig.update_xaxes(showgrid=False)
+    fig.update_yaxes(showgrid=False)
+
     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar":False}, key="q20_general_yes_chart")
 
 
@@ -14607,7 +14610,7 @@ def render_q28_services_positive_summary(original_data, coded_filter_data):
     fig.update_xaxes(
         range=[0, x_axis_max],
         ticksuffix="%",
-        gridcolor="#E6ECF3",
+        showgrid=False,
         zeroline=False
     )
     fig.update_yaxes(automargin=True)
@@ -14617,6 +14620,9 @@ def render_q28_services_positive_summary(original_data, coded_filter_data):
         height=max(610, 50 * len(summary) + 175),
         showlegend=True
     )
+
+    fig.update_xaxes(showgrid=False)
+    fig.update_yaxes(showgrid=False)
 
     st.plotly_chart(
         fig,
@@ -14662,8 +14668,11 @@ def render_q29_student_life_positive_summary(original_data, coded_filter_data):
         fig.add_annotation(x=float(row["Total positif (%)"]),y=row["Aspect"],text=f"<b>{row['Total positif (%)']:.2f}%</b>  <b>(n = {int(row['N positif'])})</b>",showarrow=False,xanchor="left",xshift=8,font=dict(family="Candara, Arial",size=15,color=USJ_BLUE),align="left")
     fig.update_layout(barmode="stack",title="Satisfaction positive des aspects de la vie étudiante : Très satisfaisante + Satisfaisante",xaxis_title="Pourcentage des réponses valides",yaxis_title="",legend=dict(orientation="h",yanchor="bottom",y=1.02,xanchor="left",x=0,font=dict(size=13)),margin=dict(l=420,r=180,t=110,b=55))
     max_pct=float(summary["Total positif (%)"].max()); x_axis_max=min(100.0,max_pct*1.16)
-    fig.update_xaxes(range=[0,x_axis_max],ticksuffix="%",gridcolor="#E6ECF3",zeroline=False); fig.update_yaxes(automargin=True)
+    fig.update_xaxes(range=[0,x_axis_max],ticksuffix="%",showgrid=False,zeroline=False); fig.update_yaxes(automargin=True)
     theme_layout(fig,height=max(570,54*len(summary)+175),showlegend=True)
+    fig.update_xaxes(showgrid=False)
+    fig.update_yaxes(showgrid=False)
+
     st.plotly_chart(fig,use_container_width=True,config={"displayModeBar":False},key="q29_student_life_positive_summary")
 
 
@@ -14803,7 +14812,7 @@ def render_q12_stage_employment_summary(original_data, coded_filter_data):
         range=[0, 100],
         ticksuffix="%",
         dtick=20,
-        gridcolor="#E6ECF3",
+        showgrid=False,
         zeroline=False
     )
     fig.update_yaxes(
@@ -14813,6 +14822,9 @@ def render_q12_stage_employment_summary(original_data, coded_filter_data):
     )
 
     theme_layout(fig, height=450, showlegend=True)
+
+    fig.update_xaxes(showgrid=False)
+    fig.update_yaxes(showgrid=False)
 
     st.plotly_chart(
         fig,
@@ -14860,8 +14872,11 @@ def render_q14_workshops_positive_summary(original_data, coded_filter_data):
         fig.add_annotation(x=float(row["Total positif (%)"]),y=row["Workshop"],text=f"<b>{row['Total positif (%)']:.2f}%</b>  <b>(n = {int(row['N positif'])})</b>",showarrow=False,xanchor="left",xshift=8,font=dict(family="Candara, Arial",size=15,color=USJ_BLUE),align="left")
     fig.update_layout(barmode="stack",title="Utilité positive des workshops : Tout à fait + Plutôt oui",xaxis_title="Pourcentage des réponses valides",yaxis_title="",legend=dict(orientation="h",yanchor="bottom",y=1.02,xanchor="left",x=0,font=dict(size=13)),margin=dict(l=420,r=180,t=110,b=55))
     max_pct=float(summary["Total positif (%)"].max()); x_axis_max=min(100.0,max_pct*1.16)
-    fig.update_xaxes(range=[0,x_axis_max],ticksuffix="%",gridcolor="#E6ECF3",zeroline=False); fig.update_yaxes(automargin=True)
+    fig.update_xaxes(range=[0,x_axis_max],ticksuffix="%",showgrid=False,zeroline=False); fig.update_yaxes(automargin=True)
     theme_layout(fig,height=max(580,52*len(summary)+175),showlegend=True)
+    fig.update_xaxes(showgrid=False)
+    fig.update_yaxes(showgrid=False)
+
     st.plotly_chart(fig,use_container_width=True,config={"displayModeBar":False},key="q14_workshops_positive_summary")
 
 
