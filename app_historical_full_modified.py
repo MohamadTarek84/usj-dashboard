@@ -14661,100 +14661,159 @@ def render_q29_student_life_positive_summary(original_data, coded_filter_data):
 
 
 def render_q12_stage_employment_summary(original_data, coded_filter_data):
-    """Regroupe Q12_a (stage) et Q12_b (emploi) dans une figure comparative du % de Oui."""
+    """Q12_a et Q12_b dans une figure commune, en conservant les 3 modalités originales."""
     items = [
         ("12_a-", "Stage"),
         ("12_b-", "Emploi"),
     ]
-    rows = []
+
+    question_data = []
+    response_order = []
+
     for prefix, label in items:
         col = find_column_by_prefix(original_data.columns, [prefix])
         if col is None:
             continue
-        responses, _, non_applicable_n, parent_col = get_applicable_response_series(
-            original_data, coded_filter_data, col
+
+        responses, _, non_applicable_n, _ = get_applicable_response_series(
+            original_data,
+            coded_filter_data,
+            col
         )
         valid = responses.dropna()
         valid_n = int(len(valid))
         if valid_n == 0:
             continue
-        yes_n = int(valid.map(is_yes_response).fillna(False).sum())
-        yes_pct = yes_n / valid_n * 100
-        rows.append({
-            "Proposition": label,
-            "Oui (%)": yes_pct,
-            "N Oui": yes_n,
-            "N valide": valid_n,
-            "Non applicable": non_applicable_n,
-        })
-    summary = pd.DataFrame(rows)
-    if summary.empty:
+
+        counts = valid.value_counts(dropna=False)
+        rows = []
+        for response_label, n in counts.items():
+            response_text = str(response_label).strip()
+            n = int(n)
+            pct = n / valid_n * 100
+            rows.append({
+                "Question": label,
+                "Réponse": response_text,
+                "Pourcentage": pct,
+                "N": n,
+                "N valide": valid_n,
+                "Non applicable": non_applicable_n,
+            })
+            if response_text not in response_order:
+                response_order.append(response_text)
+
+        question_data.extend(rows)
+
+    chart_df = pd.DataFrame(question_data)
+    if chart_df.empty:
         st.warning("Aucune donnée exploitable n’a été détectée pour les questions 12_a et 12_b.")
         return
-    summary = summary.sort_values("Oui (%)", ascending=True).reset_index(drop=True)
-    summary["Étiquette"] = summary.apply(
-        lambda row: f"{row['Oui (%)']:.2f}%  (n = {int(row['N Oui'])})",
-        axis=1
-    )
+
+    # Lorsque les deux questions ont exactement trois modalités, les trois réponses
+    # originales sont conservées telles quelles. Aucun regroupement Oui/Non n'est fait.
+    normalized_order = [normalize_response_for_order(x) for x in response_order]
+    preferred = []
+    for target in ["oui", "non", "ne sait pas", "je ne sais pas", "pas concerne", "pas concernee"]:
+        for original, normalized in zip(response_order, normalized_order):
+            if original not in preferred and normalized == target:
+                preferred.append(original)
+    for response in response_order:
+        if response not in preferred:
+            preferred.append(response)
+    response_order = preferred
+
+    palette = [USJ_BLUE, "#86A9D8", "#D8E4F5"]
+    color_map = {
+        response: palette[i % len(palette)]
+        for i, response in enumerate(response_order)
+    }
+
     st.markdown(
         f"""
         <div style='background:#FFFFFF;border:1px solid #DDE5F0;border-left:7px solid {USJ_BLUE};border-radius:18px;padding:18px 20px;margin:24px 0 16px 0;box-shadow:0 5px 16px rgba(0,0,0,0.05);'>
             <div style='font-size:14px;font-weight:800;color:#667085;margin-bottom:6px;'>Vue comparative</div>
             <div style='font-size:22px;font-weight:900;color:{USJ_BLUE};line-height:1.35;'>Propositions du Service de l’insertion professionnelle</div>
-            <div style='font-size:14px;color:#667085;margin-top:8px;'>Comparaison du pourcentage de réponses <b>« Oui »</b> pour la proposition d’un stage et la proposition d’un emploi.</div>
+            <div style='font-size:14px;color:#667085;margin-top:8px;'>Les questions <b>Stage</b> et <b>Emploi</b> sont présentées dans une même figure en conservant séparément les <b>trois modalités de réponse originales</b>.</div>
         </div>
         """,
         unsafe_allow_html=True
     )
-    fig = px.bar(
-        summary,
-        x="Oui (%)",
-        y="Proposition",
-        orientation="h",
-        text="Étiquette",
-        color="Proposition",
-        color_discrete_map={"Stage": USJ_BLUE, "Emploi": "#86A9D8"},
-        custom_data=["N Oui", "N valide", "Non applicable"],
-        title="Le Service de l’insertion professionnelle vous a-t-il proposé un stage ou un emploi ?"
-    )
-    fig.update_traces(
-        texttemplate="<b>%{text}</b>",
-        textposition="outside",
-        cliponaxis=False,
-        marker_line_color="white",
-        marker_line_width=1,
-        textfont=dict(size=15, color=USJ_BLUE),
-        hovertemplate=(
-            "<b>%{y}</b><br>"
-            "Oui : %{x:.2f}%<br>"
-            "N Oui : %{customdata[0]}<br>"
-            "N valide : %{customdata[1]}<br>"
-            "Non applicable : %{customdata[2]}"
-            "<extra></extra>"
-        )
-    )
+
+    fig = go.Figure()
+
+    for response in response_order:
+        part = chart_df[chart_df["Réponse"] == response].copy()
+        # Ensure both Stage and Emploi have a position even if one modality is absent.
+        part = part.set_index("Question").reindex(["Stage", "Emploi"]).reset_index()
+        part["Pourcentage"] = part["Pourcentage"].fillna(0)
+        part["N"] = part["N"].fillna(0).astype(int)
+        part["N valide"] = part["N valide"].fillna(0).astype(int)
+
+        text_values = [
+            f"{pct:.2f}%<br>(n={n})" if pct >= 7 else ""
+            for pct, n in zip(part["Pourcentage"], part["N"])
+        ]
+
+        fig.add_trace(go.Bar(
+            y=part["Question"],
+            x=part["Pourcentage"],
+            name=response,
+            orientation="h",
+            marker=dict(color=color_map[response]),
+            text=text_values,
+            textposition="inside",
+            insidetextanchor="middle",
+            textfont=dict(size=13, color="white" if color_map[response] != "#D8E4F5" else USJ_BLUE),
+            customdata=part[["N", "N valide"]].to_numpy(),
+            hovertemplate=(
+                "<b>%{y}</b><br>"
+                + f"Réponse : <b>{response}</b><br>"
+                + "Pourcentage : %{x:.2f}%<br>"
+                + "n = %{customdata[0]}<br>"
+                + "N valide = %{customdata[1]}"
+                + "<extra></extra>"
+            )
+        ))
+
     fig.update_layout(
-        xaxis_title="Pourcentage de réponses « Oui »",
+        barmode="stack",
+        title="Stage et emploi proposés par le Service de l’insertion professionnelle",
+        xaxis_title="Pourcentage des réponses valides",
         yaxis_title="",
-        showlegend=False,
-        margin=dict(l=160, r=160, t=80, b=55)
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.03,
+            xanchor="left",
+            x=0,
+            font=dict(size=13)
+        ),
+        margin=dict(l=150, r=70, t=115, b=55),
+        uniformtext_minsize=11,
+        uniformtext_mode="hide"
     )
-    max_yes_pct = float(summary["Oui (%)"].max())
-    x_axis_max = min(100.0, max_yes_pct * 1.22)
     fig.update_xaxes(
-        range=[0, x_axis_max],
+        range=[0, 100],
         ticksuffix="%",
+        dtick=20,
         gridcolor="#E6ECF3",
         zeroline=False
     )
-    fig.update_yaxes(automargin=True)
-    theme_layout(fig, height=430, showlegend=False)
+    fig.update_yaxes(
+        categoryorder="array",
+        categoryarray=["Emploi", "Stage"],
+        automargin=True
+    )
+
+    theme_layout(fig, height=450, showlegend=True)
+
     st.plotly_chart(
         fig,
         use_container_width=True,
         config={"displayModeBar": False},
         key="q12_stage_employment_summary"
     )
+
 
 
 def page_all_questions_results():
