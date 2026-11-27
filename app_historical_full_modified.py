@@ -14619,6 +14619,47 @@ def render_q28_services_positive_summary(original_data, coded_filter_data):
     )
 
 
+def render_q29_student_life_positive_summary(original_data, coded_filter_data):
+    """Vue générale Q29 : une barre empilée Très satisfaisante + Satisfaisante par aspect."""
+    aspects = [
+        ("29_a-", "Activités organisées par la pastorale / l’Aumônerie"),
+        ("29_b-", "Activités sociales par campus / Événements et clubs étudiants"),
+        ("29_c-", "Vie sur le campus, environnement et ambiance sociales"),
+        ("29_d-", "Liberté d'expression et respect des croyances religieuses d’autrui"),
+        ("29_e-", "Activités sportives"),
+        ("29_f-", "Clubs étudiants"),
+        ("29_g-", "Leadership et bénévolat (O7/USJ en mission)"),
+        ("29_h-", "Activités du Service de la vie étudiante"),
+    ]
+    rows=[]
+    for prefix, label in aspects:
+        col=find_column_by_prefix(original_data.columns,[prefix])
+        if col is None: continue
+        responses,_,_,_=get_applicable_response_series(original_data,coded_filter_data,col)
+        valid=responses.dropna(); valid_n=int(len(valid))
+        if valid_n==0: continue
+        normalized=valid.map(normalize_response_for_order)
+        very=normalized.isin(["tres satisfaisante","tres satisfaisant","tres satisfait","tres satisfaite"])
+        sat=normalized.isin(["satisfaisante","satisfaisant","satisfait","satisfaite"])
+        very_n=int(very.sum()); sat_n=int(sat.sum()); pos_n=very_n+sat_n
+        rows.append({"Aspect":label,"Très satisfaisante (%)":very_n/valid_n*100,"Satisfaisante (%)":sat_n/valid_n*100,"Total positif (%)":pos_n/valid_n*100,"N Très satisfaisante":very_n,"N Satisfaisante":sat_n,"N positif":pos_n,"N valide":valid_n})
+    summary=pd.DataFrame(rows)
+    if summary.empty:
+        st.warning("Aucune donnée exploitable n’a été détectée pour les aspects de la question 29."); return
+    summary=summary.sort_values("Total positif (%)",ascending=True).reset_index(drop=True)
+    st.markdown(f"""<div style='background:#FFFFFF;border:1px solid #DDE5F0;border-left:7px solid {USJ_BLUE};border-radius:18px;padding:18px 20px;margin:24px 0 16px 0;box-shadow:0 5px 16px rgba(0,0,0,0.05);'><div style='font-size:14px;font-weight:800;color:#667085;margin-bottom:6px;'>Vue générale</div><div style='font-size:22px;font-weight:900;color:{USJ_BLUE};line-height:1.35;'>29- Évaluez chacun des aspects suivants de votre expérience de vie étudiante à l’USJ :</div><div style='font-size:14px;color:#667085;margin-top:8px;'>Chaque barre présente séparément <b>Très satisfaisante</b> et <b>Satisfaisante</b>. Le total affiché à droite correspond à la somme des deux modalités.</div></div>""",unsafe_allow_html=True)
+    fig=go.Figure()
+    fig.add_trace(go.Bar(y=summary["Aspect"],x=summary["Très satisfaisante (%)"],name="Très satisfaisante",orientation="h",marker=dict(color=USJ_BLUE),customdata=summary[["N Très satisfaisante","N valide"]].to_numpy(),hovertemplate="<b>%{y}</b><br>Très satisfaisante : %{x:.2f}%<br>n = %{customdata[0]}<br>N valide = %{customdata[1]}<extra></extra>"))
+    fig.add_trace(go.Bar(y=summary["Aspect"],x=summary["Satisfaisante (%)"],name="Satisfaisante",orientation="h",marker=dict(color="#86A9D8"),customdata=summary[["N Satisfaisante","N valide"]].to_numpy(),hovertemplate="<b>%{y}</b><br>Satisfaisante : %{x:.2f}%<br>n = %{customdata[0]}<br>N valide = %{customdata[1]}<extra></extra>"))
+    for _,row in summary.iterrows():
+        fig.add_annotation(x=float(row["Total positif (%)"]),y=row["Aspect"],text=f"<b>{row['Total positif (%)']:.2f}%</b>  <b>(n = {int(row['N positif'])})</b>",showarrow=False,xanchor="left",xshift=8,font=dict(family="Candara, Arial",size=15,color=USJ_BLUE),align="left")
+    fig.update_layout(barmode="stack",title="Satisfaction positive des aspects de la vie étudiante : Très satisfaisante + Satisfaisante",xaxis_title="Pourcentage des réponses valides",yaxis_title="",legend=dict(orientation="h",yanchor="bottom",y=1.02,xanchor="left",x=0,font=dict(size=13)),margin=dict(l=420,r=180,t=110,b=55))
+    max_pct=float(summary["Total positif (%)"].max()); x_axis_max=min(100.0,max_pct*1.16)
+    fig.update_xaxes(range=[0,x_axis_max],ticksuffix="%",gridcolor="#E6ECF3",zeroline=False); fig.update_yaxes(automargin=True)
+    theme_layout(fig,height=max(570,54*len(summary)+175),showlegend=True)
+    st.plotly_chart(fig,use_container_width=True,config={"displayModeBar":False},key="q29_student_life_positive_summary")
+
+
 def page_all_questions_results():
     section_header(
         "Résultats descriptifs de toutes les questions",
@@ -14690,6 +14731,7 @@ def page_all_questions_results():
     current_main_group = None
     q20_general_chart_rendered = False
     q28_services_summary_rendered = False
+    q29_student_life_summary_rendered = False
     for question_label, question_col in question_map.items():
         question_key = normalize_question_key(question_col)
         if not q20_general_chart_rendered and re.match(r"^20_[a-j]-", question_key):
@@ -14708,6 +14750,16 @@ def page_all_questions_results():
                 data_questions
             )
             q28_services_summary_rendered = True
+
+        if (
+            not q29_student_life_summary_rendered
+            and extract_question_number(question_col) == 29
+        ):
+            render_q29_student_life_positive_summary(
+                original_filtered,
+                data_questions
+            )
+            q29_student_life_summary_rendered = True
 
         group_info = get_main_question_group_header(question_col)
         group_code = group_info["code"] if group_info else None
