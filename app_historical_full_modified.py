@@ -2476,15 +2476,15 @@ OTHER_QUESTION_LABELS = {
     "12_b- Vous a-t-il proposé un emploi?": "12_b-Le Service de l’insertion professionnelle vous a-t-il proposé un emploi ?",
     "13-Avez-vous participé au Job Fair organisé par le Service ?": "13-Avez-vous participé au Job Fair organisé par le Service de l’insertion professionnelle ?",
 
-    "14_a- Recherche d’emploi": "14_a-Avez-vous suivi une formation du Service de l’insertion professionnelle sur : Recherche d’emploi",
-    "14_b- Compétences en entretien": "14_b-Avez-vous suivi une formation du Service de l’insertion professionnelle sur : Compétences en entretien",
-    "14_c- Compétences en communication": "14_c-Avez-vous suivi une formation du Service de l’insertion professionnelle sur : Compétences en communication",
-    "14_d- Compétences en présentation": "14_d-Avez-vous suivi une formation du Service de l’insertion professionnelle sur : Compétences en présentation",
-    "14_e- Compétences en leadership": "14_e-Avez-vous suivi une formation du Service de l’insertion professionnelle sur : Compétences en leadership",
-    "14_f- Connaissance de soi / prise de décision de carrière": "14_f-Avez-vous suivi une formation du Service de l’insertion professionnelle sur : Connaissance de soi et prise de décision de carrière",
-    "14_g- Démarrez votre propre entreprise": "14_g-Avez-vous suivi une formation du Service de l’insertion professionnelle sur : Démarrer votre propre entreprise",
-    "14_h- Comment créer et gérer une «persona» publique sur les réseaux sociaux": "14_h-Avez-vous suivi une formation du Service de l’insertion professionnelle sur : Créer et gérer une persona publique sur les réseaux sociaux",
-    "14_i- Créez votre propre blog": "14_i-Avez-vous suivi une formation du Service de l’insertion professionnelle sur : Créer votre propre blog",
+    "14_a- Recherche d’emploi": "14_a-Avez-vous participé aux workshops organisés par le Service ? Si oui, dans quelle mesure les avez-vous trouvés utiles ? Recherche d’emploi",
+    "14_b- Compétences en entretien": "14_b-Avez-vous participé aux workshops organisés par le Service ? Si oui, dans quelle mesure les avez-vous trouvés utiles ? Compétences en entretien",
+    "14_c- Compétences en communication": "14_c-Avez-vous participé aux workshops organisés par le Service ? Si oui, dans quelle mesure les avez-vous trouvés utiles ? Compétences en communication",
+    "14_d- Compétences en présentation": "14_d-Avez-vous participé aux workshops organisés par le Service ? Si oui, dans quelle mesure les avez-vous trouvés utiles ? Compétences en présentation",
+    "14_e- Compétences en leadership": "14_e-Avez-vous participé aux workshops organisés par le Service ? Si oui, dans quelle mesure les avez-vous trouvés utiles ? Compétences en leadership",
+    "14_f- Connaissance de soi / prise de décision de carrière": "14_f-Avez-vous participé aux workshops organisés par le Service ? Si oui, dans quelle mesure les avez-vous trouvés utiles ? Connaissance de soi et prise de décision de carrière",
+    "14_g- Démarrez votre propre entreprise": "14_g-Avez-vous participé aux workshops organisés par le Service ? Si oui, dans quelle mesure les avez-vous trouvés utiles ? Démarrer votre propre entreprise",
+    "14_h- Comment créer et gérer une «persona» publique sur les réseaux sociaux": "14_h-Avez-vous participé aux workshops organisés par le Service ? Si oui, dans quelle mesure les avez-vous trouvés utiles ? Créer et gérer une persona publique sur les réseaux sociaux",
+    "14_i- Créez votre propre blog": "14_i-Avez-vous participé aux workshops organisés par le Service ? Si oui, dans quelle mesure les avez-vous trouvés utiles ? Créer votre propre blog",
 
     "15-De manière générale, êtes-vous satisfait des formations que vous avez suivies au Service de l’insertion professionnelle de l’USJ ?": "15-De manière générale, êtes-vous satisfait des formations suivies au Service de l’insertion professionnelle de l’USJ ?",
 
@@ -14189,6 +14189,13 @@ def get_main_question_group_header(question_col):
     """Return the main questionnaire wording that should appear before grouped sub-items."""
     q_norm = normalize_question_key(question_col)
 
+    if q_norm.startswith("14_") or q_norm.startswith("14-"):
+        return {
+            "code": "14",
+            "title": "14- Avez-vous participé aux workshops organisés par le Service ? Si oui, dans quelle mesure les avez-vous trouvés utiles ?",
+            "subtitle": "Les résultats ci-dessous présentent l’utilité perçue de chacun des workshops du Service de l’insertion professionnelle."
+        }
+
     if q_norm.startswith("28_") or q_norm.startswith("28-"):
         return {
             "code": "28",
@@ -14816,6 +14823,48 @@ def render_q12_stage_employment_summary(original_data, coded_filter_data):
 
 
 
+def render_q14_workshops_positive_summary(original_data, coded_filter_data):
+    """Vue générale Q14 : Tout à fait + Plutôt oui, en deux couleurs dans une barre empilée."""
+    workshops = [
+        ("14_a-", "Recherche d’emploi"),
+        ("14_b-", "Compétences en entretien"),
+        ("14_c-", "Compétences en communication"),
+        ("14_d-", "Compétences en présentation"),
+        ("14_e-", "Compétences en leadership"),
+        ("14_f-", "Connaissance de soi / prise de décision de carrière"),
+        ("14_g-", "Démarrer votre propre entreprise"),
+        ("14_h-", "Créer et gérer une persona publique sur les réseaux sociaux"),
+        ("14_i-", "Créer votre propre blog"),
+    ]
+    rows=[]
+    for prefix,label in workshops:
+        col=find_column_by_prefix(original_data.columns,[prefix])
+        if col is None: continue
+        responses,_,_,_=get_applicable_response_series(original_data,coded_filter_data,col)
+        valid=responses.dropna(); valid_n=int(len(valid))
+        if valid_n==0: continue
+        norm=valid.map(normalize_response_for_order)
+        tout=norm.eq("tout a fait")
+        plutot=norm.eq("plutot oui")
+        tout_n=int(tout.sum()); plutot_n=int(plutot.sum()); positive_n=tout_n+plutot_n
+        rows.append({"Workshop":label,"Tout à fait (%)":tout_n/valid_n*100,"Plutôt oui (%)":plutot_n/valid_n*100,"Total positif (%)":positive_n/valid_n*100,"N Tout à fait":tout_n,"N Plutôt oui":plutot_n,"N positif":positive_n,"N valide":valid_n})
+    summary=pd.DataFrame(rows)
+    if summary.empty:
+        st.warning("Aucune donnée exploitable n’a été détectée pour les workshops de la question 14."); return
+    summary=summary.sort_values("Total positif (%)",ascending=True).reset_index(drop=True)
+    st.markdown(f"""<div style='background:#FFFFFF;border:1px solid #DDE5F0;border-left:7px solid {USJ_BLUE};border-radius:18px;padding:18px 20px;margin:24px 0 16px 0;box-shadow:0 5px 16px rgba(0,0,0,0.05);'><div style='font-size:14px;font-weight:800;color:#667085;margin-bottom:6px;'>Vue générale</div><div style='font-size:22px;font-weight:900;color:{USJ_BLUE};line-height:1.35;'>Avez-vous participé aux workshops organisés par le Service ? Si oui, dans quelle mesure les avez-vous trouvés utiles ?</div><div style='font-size:14px;color:#667085;margin-top:8px;'>Chaque barre présente <b>Tout à fait</b> et <b>Plutôt oui</b>. Le total affiché à droite correspond à la somme de ces deux réponses positives.</div></div>""",unsafe_allow_html=True)
+    fig=go.Figure()
+    fig.add_trace(go.Bar(y=summary["Workshop"],x=summary["Tout à fait (%)"],name="Tout à fait",orientation="h",marker=dict(color=USJ_BLUE),customdata=summary[["N Tout à fait","N valide"]].to_numpy(),hovertemplate="<b>%{y}</b><br>Tout à fait : %{x:.2f}%<br>n = %{customdata[0]}<br>N valide = %{customdata[1]}<extra></extra>"))
+    fig.add_trace(go.Bar(y=summary["Workshop"],x=summary["Plutôt oui (%)"],name="Plutôt oui",orientation="h",marker=dict(color="#86A9D8"),customdata=summary[["N Plutôt oui","N valide"]].to_numpy(),hovertemplate="<b>%{y}</b><br>Plutôt oui : %{x:.2f}%<br>n = %{customdata[0]}<br>N valide = %{customdata[1]}<extra></extra>"))
+    for _,row in summary.iterrows():
+        fig.add_annotation(x=float(row["Total positif (%)"]),y=row["Workshop"],text=f"<b>{row['Total positif (%)']:.2f}%</b>  <b>(n = {int(row['N positif'])})</b>",showarrow=False,xanchor="left",xshift=8,font=dict(family="Candara, Arial",size=15,color=USJ_BLUE),align="left")
+    fig.update_layout(barmode="stack",title="Utilité positive des workshops : Tout à fait + Plutôt oui",xaxis_title="Pourcentage des réponses valides",yaxis_title="",legend=dict(orientation="h",yanchor="bottom",y=1.02,xanchor="left",x=0,font=dict(size=13)),margin=dict(l=420,r=180,t=110,b=55))
+    max_pct=float(summary["Total positif (%)"].max()); x_axis_max=min(100.0,max_pct*1.16)
+    fig.update_xaxes(range=[0,x_axis_max],ticksuffix="%",gridcolor="#E6ECF3",zeroline=False); fig.update_yaxes(automargin=True)
+    theme_layout(fig,height=max(580,52*len(summary)+175),showlegend=True)
+    st.plotly_chart(fig,use_container_width=True,config={"displayModeBar":False},key="q14_workshops_positive_summary")
+
+
 def page_all_questions_results():
     section_header(
         "Résultats descriptifs de toutes les questions",
@@ -14886,6 +14935,7 @@ def page_all_questions_results():
 
     current_main_group = None
     q12_stage_employment_summary_rendered = False
+    q14_workshops_summary_rendered = False
     q20_general_chart_rendered = False
     q28_services_summary_rendered = False
     q29_student_life_summary_rendered = False
@@ -14901,6 +14951,16 @@ def page_all_questions_results():
                 data_questions
             )
             q12_stage_employment_summary_rendered = True
+
+        if (
+            not q14_workshops_summary_rendered
+            and extract_question_number(question_col) == 14
+        ):
+            render_q14_workshops_positive_summary(
+                original_filtered,
+                data_questions
+            )
+            q14_workshops_summary_rendered = True
 
         if not q20_general_chart_rendered and re.match(r"^20_[a-j]-", question_key):
             render_q20_general_yes_chart(original_filtered, data_questions)
