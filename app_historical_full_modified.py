@@ -14763,7 +14763,7 @@ def render_q12_stage_employment_summary(original_data, coded_filter_data):
             text=text_values,
             textposition="inside",
             insidetextanchor="middle",
-            textfont=dict(size=13, color="white" if color_map[response] != "#D8E4F5" else USJ_BLUE),
+            textfont=dict(size=17, color="white" if color_map[response] != "#D8E4F5" else USJ_BLUE),
             customdata=part[["N", "N valide"]].to_numpy(),
             hovertemplate=(
                 "<b>%{y}</b><br>"
@@ -14789,7 +14789,7 @@ def render_q12_stage_employment_summary(original_data, coded_filter_data):
             font=dict(size=13)
         ),
         margin=dict(l=150, r=70, t=115, b=55),
-        uniformtext_minsize=11,
+        uniformtext_minsize=15,
         uniformtext_mode="hide"
     )
     fig.update_xaxes(
