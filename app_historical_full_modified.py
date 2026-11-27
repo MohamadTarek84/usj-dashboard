@@ -14441,8 +14441,9 @@ def render_q20_general_yes_chart(original_data, coded_filter_data):
 def render_q28_services_positive_summary(original_data, coded_filter_data):
     """
     Vue générale Q28 des services USJ.
-    Pour chaque service, combine « Très satisfaisante » + « Satisfaisante ».
-    Le dénominateur est le nombre de réponses valides propre à chaque service.
+    Une barre horizontale empilée par service :
+    « Très satisfaisante » + « Satisfaisante » en deux couleurs.
+    Le total des deux modalités est affiché clairement à droite de chaque barre.
     """
     services = [
         ("28_a-", "Processus d’admission"),
@@ -14475,22 +14476,31 @@ def render_q28_services_positive_summary(original_data, coded_filter_data):
             continue
 
         normalized = valid.map(normalize_response_for_order)
-        positive_mask = normalized.isin([
-            "tres satisfaisante",
-            "tres satisfaisant",
-            "tres satisfait",
-            "tres satisfaite",
-            "satisfaisante",
-            "satisfaisant",
-            "satisfait",
-            "satisfaite",
+
+        very_satisfied_mask = normalized.isin([
+            "tres satisfaisante", "tres satisfaisant",
+            "tres satisfait", "tres satisfaite",
         ])
-        positive_n = int(positive_mask.sum())
+        satisfied_mask = normalized.isin([
+            "satisfaisante", "satisfaisant",
+            "satisfait", "satisfaite",
+        ])
+
+        very_satisfied_n = int(very_satisfied_mask.sum())
+        satisfied_n = int(satisfied_mask.sum())
+        positive_n = very_satisfied_n + satisfied_n
+
+        very_satisfied_pct = very_satisfied_n / valid_n * 100
+        satisfied_pct = satisfied_n / valid_n * 100
         positive_pct = positive_n / valid_n * 100
 
         rows.append({
             "Service": service_label,
-            "Satisfaction positive (%)": positive_pct,
+            "Très satisfaisante (%)": very_satisfied_pct,
+            "Satisfaisante (%)": satisfied_pct,
+            "Total positif (%)": positive_pct,
+            "N Très satisfaisante": very_satisfied_n,
+            "N Satisfaisante": satisfied_n,
             "N positif": positive_n,
             "N valide": valid_n,
         })
@@ -14500,67 +14510,93 @@ def render_q28_services_positive_summary(original_data, coded_filter_data):
         st.warning("Aucune donnée exploitable n’a été détectée pour les services de la question 28.")
         return
 
-    # Avec un graphique horizontal Plotly, l'ordre croissant place la valeur
-    # la plus élevée en haut de la figure.
+    # Plus forte satisfaction positive en haut.
     summary = summary.sort_values(
-        "Satisfaction positive (%)",
+        "Total positif (%)",
         ascending=True
     ).reset_index(drop=True)
-
-    # La barre représente uniquement le pourcentage.
-    # Le nombre combiné est affiché comme valeur texte, pas comme seconde barre.
-    summary["Étiquette"] = summary.apply(
-        lambda row: f"{row['Satisfaction positive (%)']:.2f}%  (n = {int(row['N positif'])})",
-        axis=1
-    )
 
     st.markdown(
         f"""
         <div style='background:#FFFFFF;border:1px solid #DDE5F0;border-left:7px solid {USJ_BLUE};border-radius:18px;padding:18px 20px;margin:24px 0 16px 0;box-shadow:0 5px 16px rgba(0,0,0,0.05);'>
             <div style='font-size:14px;font-weight:800;color:#667085;margin-bottom:6px;'>Vue générale</div>
             <div style='font-size:22px;font-weight:900;color:{USJ_BLUE};line-height:1.35;'>28- Comment évaluez-vous la qualité des services suivants offerts par l’USJ ?</div>
-            <div style='font-size:14px;color:#667085;margin-top:8px;'>Part des réponses <b>« Très satisfaisante » + « Satisfaisante »</b>, classée du pourcentage le plus élevé au plus faible. Le <b>n</b> affiché correspond au nombre total de réponses appartenant à ces deux modalités.</div>
+            <div style='font-size:14px;color:#667085;margin-top:8px;'>Chaque barre présente séparément <b>Très satisfaisante</b> et <b>Satisfaisante</b>. Le total affiché à droite correspond à la somme des deux modalités.</div>
         </div>
         """,
         unsafe_allow_html=True
     )
 
-    fig = px.bar(
-        summary,
-        x="Satisfaction positive (%)",
-        y="Service",
-        orientation="h",
-        text="Étiquette",
-        color="Satisfaction positive (%)",
-        color_continuous_scale=[[0, "#EAF2FF"], [0.5, "#7FA6D9"], [1, USJ_BLUE]],
-        custom_data=["N positif", "N valide"],
-        title="Satisfaction positive par service : Très satisfaisante + Satisfaisante"
-    )
+    # Une seule barre empilée par service, en deux couleurs distinctes.
+    fig = go.Figure()
 
-    fig.update_traces(
-        texttemplate="%{text}",
-        textposition="outside",
-        cliponaxis=False,
-        marker_line_color="white",
-        marker_line_width=1,
+    fig.add_trace(go.Bar(
+        y=summary["Service"],
+        x=summary["Très satisfaisante (%)"],
+        name="Très satisfaisante",
+        orientation="h",
+        marker=dict(color=USJ_BLUE),
+        customdata=summary[["N Très satisfaisante", "N valide"]].to_numpy(),
         hovertemplate=(
             "<b>%{y}</b><br>"
-            "Très satisfaisante + Satisfaisante : %{x:.2f}%<br>"
-            "N combiné : %{customdata[0]}<br>"
-            "N valide : %{customdata[1]}"
+            "Très satisfaisante : %{x:.2f}%<br>"
+            "n = %{customdata[0]}<br>"
+            "N valide = %{customdata[1]}"
             "<extra></extra>"
         )
-    )
+    ))
+
+    fig.add_trace(go.Bar(
+        y=summary["Service"],
+        x=summary["Satisfaisante (%)"],
+        name="Satisfaisante",
+        orientation="h",
+        marker=dict(color="#86A9D8"),
+        customdata=summary[["N Satisfaisante", "N valide"]].to_numpy(),
+        hovertemplate=(
+            "<b>%{y}</b><br>"
+            "Satisfaisante : %{x:.2f}%<br>"
+            "n = %{customdata[0]}<br>"
+            "N valide = %{customdata[1]}"
+            "<extra></extra>"
+        )
+    ))
+
+    # Total des deux options affiché à droite de la barre empilée.
+    for _, row in summary.iterrows():
+        fig.add_annotation(
+            x=float(row["Total positif (%)"]),
+            y=row["Service"],
+            text=f"<b>{row['Total positif (%)']:.2f}%</b>  <b>(n = {int(row['N positif'])})</b>",
+            showarrow=False,
+            xanchor="left",
+            xshift=8,
+            font=dict(
+                family="Candara, Arial",
+                size=15,
+                color=USJ_BLUE
+            ),
+            align="left"
+        )
 
     fig.update_layout(
-        xaxis_title="Très satisfaisante + Satisfaisante (%)",
+        barmode="stack",
+        title="Satisfaction positive par service : Très satisfaisante + Satisfaisante",
+        xaxis_title="Pourcentage des réponses valides",
         yaxis_title="",
-        coloraxis_showscale=False,
-        margin=dict(l=390, r=135, t=75, b=50)
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="left",
+            x=0,
+            font=dict(size=13)
+        ),
+        margin=dict(l=390, r=180, t=110, b=55)
     )
 
-    max_positive_pct = float(summary["Satisfaction positive (%)"].max())
-    x_axis_max = min(100.0, max_positive_pct * 1.18)
+    max_positive_pct = float(summary["Total positif (%)"].max())
+    x_axis_max = min(100.0, max_positive_pct * 1.16)
     fig.update_xaxes(
         range=[0, x_axis_max],
         ticksuffix="%",
@@ -14571,8 +14607,8 @@ def render_q28_services_positive_summary(original_data, coded_filter_data):
 
     theme_layout(
         fig,
-        height=max(590, 48 * len(summary) + 160),
-        showlegend=False
+        height=max(610, 50 * len(summary) + 175),
+        showlegend=True
     )
 
     st.plotly_chart(
