@@ -14660,8 +14660,17 @@ def page_all_questions_results():
             render_q20_general_yes_chart(original_filtered, data_questions)
             q20_general_chart_rendered = True
 
-        if not q28_services_summary_rendered and re.match(r"^28_[a-k]-", question_key):
-            render_q28_services_positive_summary(original_filtered, data_questions)
+        # Render the Q28 overview immediately before the first detailed Q28 item.
+        # extract_question_number() is used instead of a strict regex because the
+        # Excel column labels may include spaces, punctuation or wording variations.
+        if (
+            not q28_services_summary_rendered
+            and extract_question_number(question_col) == 28
+        ):
+            render_q28_services_positive_summary(
+                original_filtered,
+                data_questions
+            )
             q28_services_summary_rendered = True
 
         group_info = get_main_question_group_header(question_col)
