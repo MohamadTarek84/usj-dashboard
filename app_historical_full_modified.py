@@ -14438,6 +14438,151 @@ def render_q20_general_yes_chart(original_data, coded_filter_data):
     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar":False}, key="q20_general_yes_chart")
 
 
+def render_q28_services_positive_summary(original_data, coded_filter_data):
+    """
+    Vue générale Q28 des services USJ.
+    Pour chaque service, combine « Très satisfaisante » + « Satisfaisante ».
+    Le dénominateur est le nombre de réponses valides propre à chaque service.
+    """
+    services = [
+        ("28_a-", "Processus d’admission"),
+        ("28_b-", "Service d'aide psychologique"),
+        ("28_c-", "Service de l’insertion professionnelle"),
+        ("28_d-", "Service étudiant d’information et d’orientation"),
+        ("28_e-", "Service social"),
+        ("28_f-", "Service de la vie étudiante"),
+        ("28_g-", "USJ en mission"),
+        ("28_h-", "O7"),
+        ("28_i-", "Service du sport"),
+        ("28_j-", "Service de soins (Centre de soins dentaires, …)"),
+        ("28_k-", "Aumônerie et pastorale"),
+    ]
+
+    rows = []
+    for prefix, service_label in services:
+        col = find_column_by_prefix(original_data.columns, [prefix])
+        if col is None:
+            continue
+
+        responses, _, _, _ = get_applicable_response_series(
+            original_data,
+            coded_filter_data,
+            col
+        )
+        valid = responses.dropna()
+        valid_n = int(len(valid))
+        if valid_n == 0:
+            continue
+
+        normalized = valid.map(normalize_response_for_order)
+        positive_mask = normalized.isin([
+            "tres satisfaisante",
+            "tres satisfaisant",
+            "tres satisfait",
+            "tres satisfaite",
+            "satisfaisante",
+            "satisfaisant",
+            "satisfait",
+            "satisfaite",
+        ])
+        positive_n = int(positive_mask.sum())
+        positive_pct = positive_n / valid_n * 100
+
+        rows.append({
+            "Service": service_label,
+            "Satisfaction positive (%)": positive_pct,
+            "N positif": positive_n,
+            "N valide": valid_n,
+        })
+
+    summary = pd.DataFrame(rows)
+    if summary.empty:
+        st.warning("Aucune donnée exploitable n’a été détectée pour les services de la question 28.")
+        return
+
+    # Avec un graphique horizontal Plotly, l'ordre croissant place la valeur
+    # la plus élevée en haut de la figure.
+    summary = summary.sort_values(
+        "Satisfaction positive (%)",
+        ascending=True
+    ).reset_index(drop=True)
+
+    # La barre représente uniquement le pourcentage.
+    # Le nombre combiné est affiché comme valeur texte, pas comme seconde barre.
+    summary["Étiquette"] = summary.apply(
+        lambda row: f"{row['Satisfaction positive (%)']:.2f}%  (n = {int(row['N positif'])})",
+        axis=1
+    )
+
+    st.markdown(
+        f"""
+        <div style='background:#FFFFFF;border:1px solid #DDE5F0;border-left:7px solid {USJ_BLUE};border-radius:18px;padding:18px 20px;margin:24px 0 16px 0;box-shadow:0 5px 16px rgba(0,0,0,0.05);'>
+            <div style='font-size:14px;font-weight:800;color:#667085;margin-bottom:6px;'>Vue générale</div>
+            <div style='font-size:22px;font-weight:900;color:{USJ_BLUE};line-height:1.35;'>28- Comment évaluez-vous la qualité des services suivants offerts par l’USJ ?</div>
+            <div style='font-size:14px;color:#667085;margin-top:8px;'>Part des réponses <b>« Très satisfaisante » + « Satisfaisante »</b>, classée du pourcentage le plus élevé au plus faible. Le <b>n</b> affiché correspond au nombre total de réponses appartenant à ces deux modalités.</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    fig = px.bar(
+        summary,
+        x="Satisfaction positive (%)",
+        y="Service",
+        orientation="h",
+        text="Étiquette",
+        color="Satisfaction positive (%)",
+        color_continuous_scale=[[0, "#EAF2FF"], [0.5, "#7FA6D9"], [1, USJ_BLUE]],
+        custom_data=["N positif", "N valide"],
+        title="Satisfaction positive par service : Très satisfaisante + Satisfaisante"
+    )
+
+    fig.update_traces(
+        texttemplate="%{text}",
+        textposition="outside",
+        cliponaxis=False,
+        marker_line_color="white",
+        marker_line_width=1,
+        hovertemplate=(
+            "<b>%{y}</b><br>"
+            "Très satisfaisante + Satisfaisante : %{x:.2f}%<br>"
+            "N combiné : %{customdata[0]}<br>"
+            "N valide : %{customdata[1]}"
+            "<extra></extra>"
+        )
+    )
+
+    fig.update_layout(
+        xaxis_title="Très satisfaisante + Satisfaisante (%)",
+        yaxis_title="",
+        coloraxis_showscale=False,
+        margin=dict(l=390, r=135, t=75, b=50)
+    )
+
+    max_positive_pct = float(summary["Satisfaction positive (%)"].max())
+    x_axis_max = min(100.0, max_positive_pct * 1.18)
+    fig.update_xaxes(
+        range=[0, x_axis_max],
+        ticksuffix="%",
+        gridcolor="#E6ECF3",
+        zeroline=False
+    )
+    fig.update_yaxes(automargin=True)
+
+    theme_layout(
+        fig,
+        height=max(590, 48 * len(summary) + 160),
+        showlegend=False
+    )
+
+    st.plotly_chart(
+        fig,
+        use_container_width=True,
+        config={"displayModeBar": False},
+        key="q28_services_positive_summary"
+    )
+
+
 def page_all_questions_results():
     section_header(
         "Résultats descriptifs de toutes les questions",
@@ -14508,11 +14653,16 @@ def page_all_questions_results():
 
     current_main_group = None
     q20_general_chart_rendered = False
+    q28_services_summary_rendered = False
     for question_label, question_col in question_map.items():
         question_key = normalize_question_key(question_col)
         if not q20_general_chart_rendered and re.match(r"^20_[a-j]-", question_key):
             render_q20_general_yes_chart(original_filtered, data_questions)
             q20_general_chart_rendered = True
+
+        if not q28_services_summary_rendered and re.match(r"^28_[a-k]-", question_key):
+            render_q28_services_positive_summary(original_filtered, data_questions)
+            q28_services_summary_rendered = True
 
         group_info = get_main_question_group_header(question_col)
         group_code = group_info["code"] if group_info else None
